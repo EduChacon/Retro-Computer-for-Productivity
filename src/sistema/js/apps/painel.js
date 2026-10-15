@@ -22,6 +22,7 @@ const ITENS = [
   { chave: 'claude', rotulo: marcar('Claude'), icone: 'claude', descricao: marcar('Instala o Claude Code e guarda a chave de API.'), abrir: () => dialogoClaude() },
   { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e onde abrir os links.'), abrir: () => dialogoInternet() },
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
+  { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('Mostra a data e a hora do computador.'), abrir: () => dialogoData() },
@@ -220,6 +221,85 @@ function inicioComComputador() {
     lugar.replaceChildren(...partes);
   }).catch(() => { });
   return caixa;
+}
+
+/* Senhas (a tela de bloqueio) */
+
+/** Criar, trocar ou tirar a senha: com uma senha já criada, a atual é pedida antes. */
+function mudarSenha(tirar) {
+  return new Promise((resolve) => {
+    const tem = !!(estado.config.bloqueio || {}).temSenha;
+    let feito = false;
+    const fim = (v) => { if (!feito) { feito = true; j.fechar(true); resolve(v); } };
+    const j = new Janela({ titulo: tirar ? tr('Tirar a senha') : tem ? tr('Trocar a senha') : tr('Criar a senha'), icone: 'chave', dialogo: true, largura: 360, altura: 200, aoFechar: () => { if (!feito) { feito = true; resolve(false); } } });
+    const campo = () => h('input', { type: 'password', autocomplete: 'off', spellcheck: false });
+    const atual = campo();
+    const nova = campo();
+    const repetir = campo();
+    const aviso = h('div', { style: { color: '#800000', minHeight: '13px', marginTop: '4px' } });
+    const linha = (rot, c) => h('div', { style: { display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', gap: '6px', marginBottom: '6px' } }, h('span', rot), c);
+    const ok = h('button.padrao', { type: 'button' }, tr('OK'));
+    const confirmar = async () => {
+      if (!tirar) {
+        if (nova.value.length < 4) { aviso.textContent = tr('A senha precisa de pelo menos 4 letras ou números.'); return nova.focus(); }
+        if (nova.value !== repetir.value) { aviso.textContent = tr('As duas senhas novas não são iguais.'); return repetir.focus(); }
+      }
+      ok.disabled = true;
+      aviso.textContent = tr('Conferindo…');
+      const r = await retro.bloqueio.definir(atual.value, tirar ? '' : nova.value).catch((e) => ({ ok: false, erro: e.message }));
+      ok.disabled = false;
+      if (r.ok) { await definirConfig({}); return fim(true); }
+      aviso.textContent = r.senhaErrada ? tr('A senha atual não está certa.') : (r.erro || '?');
+      (r.senhaErrada ? atual : nova).focus();
+    };
+    ok.addEventListener('click', confirmar);
+    j.corpo.append(
+      h('div.mensagem', img('chave', 32), h('div', { style: { flex: '1' } },
+        tem ? linha(tr('Senha atual:'), atual) : null,
+        tirar ? null : linha(tr('Senha nova:'), nova),
+        tirar ? null : linha(tr('Repita a senha nova:'), repetir),
+        aviso)),
+      h('div.acoes.direita', ok, h('button', { type: 'button', on: { click: () => fim(false) } }, tr('Cancelar'))));
+    j.corpo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); confirmar(); } });
+    ajustarAoConteudo(j, { minLarg: 360 });
+    (tem ? atual : nova).focus();
+  });
+}
+
+function dialogoSenhas() {
+  const b = () => estado.config.bloqueio || {};
+  const estadoEl = h('div', { style: { flex: '1', lineHeight: '13px' } });
+  const btCriar = h('button', { type: 'button' });
+  const btTirar = h('button', { type: 'button' }, tr('Tirar a senha…'));
+  const chkVoltar = h('input', { type: 'checkbox', checked: b().aoVoltar !== false });
+  const chkAbrir = h('input', { type: 'checkbox', checked: !!b().aoAbrir });
+  const chkProtecao = h('input', { type: 'checkbox', checked: !!b().naProtecao });
+  const desenhar = () => {
+    const tem = !!b().temSenha;
+    estadoEl.textContent = tem ? tr('Há uma senha para desbloquear o computador.') : tr('Ainda não há senha: a tela de bloqueio fica desligada.');
+    btCriar.textContent = tem ? tr('Trocar a senha…') : tr('Criar a senha…');
+    btTirar.disabled = !tem;
+    for (const c of [chkVoltar, chkAbrir, chkProtecao]) c.disabled = !tem;
+  };
+  btCriar.addEventListener('click', () => mudarSenha(false).then(desenhar));
+  btTirar.addEventListener('click', () => mudarSenha(true).then(desenhar));
+  desenhar();
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('chave', 32),
+      h('div', { style: { lineHeight: '13px' } }, tr('Com uma senha, o Retro Computer pode ficar bloqueado quando você sai de perto: Iniciar › Bloquear o computador.'))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Senha do Retro Computer')),
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, estadoEl),
+      h('div', { style: { display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '8px' } }, btCriar, btTirar)),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Pedir a senha')),
+      h('div', { style: { marginBottom: '5px' } }, h('label', chkVoltar, h('span', tr('Ao voltar da suspensão (ou ao fechar a tampa)')))),
+      h('div', { style: { marginBottom: '5px' } }, h('label', chkProtecao, h('span', tr('Ao sair da proteção de tela')))),
+      h('div', h('label', chkAbrir, h('span', tr('Ao abrir o Retro Computer')))),
+      estado.config.plataforma === 'linux' ? h('div', { style: { color: '#808080', marginTop: '8px', lineHeight: '13px' } }, tr('No Linux, a senha de entrada do Linux também desbloqueia (para o caso de esquecer a do Retro Computer).')) : null));
+  dialogoBase({
+    titulo: tr('Propriedades de Senhas'), icone: 'chave', larg: 400,
+    abas: [{ titulo: tr('Tela de bloqueio'), conteudo }],
+    aoAplicar: () => definirConfig({ bloqueio: { aoVoltar: chkVoltar.checked, aoAbrir: chkAbrir.checked, naProtecao: chkProtecao.checked } }),
+  });
 }
 
 /* Teclado */

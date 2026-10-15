@@ -9,7 +9,7 @@
  * A área de trabalho fala com este processo só pela ponte do preload
  * (window.retro); os programas, só pela área de trabalho (postMessage).
  */
-const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -23,6 +23,7 @@ const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
 const sistemaLinux = require('./sistema-linux');
+const { Bloqueio, semSegredos } = require('./bloqueio');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -77,6 +78,7 @@ let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
 let loja = null; // os programas do Linux pelo Flathub (loja.js)
+let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -405,6 +407,12 @@ function teclasDoSistema() {
     wc.on('before-input-event', (e, input) => {
       if (input.type === 'keyDown') {
         logotipoSozinho = input.key === 'Meta' && !input.isAutoRepeat;
+        // A tecla do logotipo com L bloqueia (como no Windows).
+        if (input.meta && (input.key === 'l' || input.key === 'L')) {
+          e.preventDefault();
+          enviar('sistema:tecla', 'bloquear');
+          return;
+        }
         const acao = DO_TECLADO[input.key];
         if (acao && !globais.has(acao)) {
           e.preventDefault();
@@ -449,7 +457,7 @@ function tratar(canal, fn) {
 function registrarPonte() {
   // Configurações
   tratar('config:obter', () => ({
-    ...config.obter(),
+    ...semSegredos(config.obter()),
     plataforma: process.platform,
     modoSistema: MODO_SISTEMA,
     versaoApp: app.getVersion(),
@@ -462,8 +470,12 @@ function registrarPonte() {
   tratar('config:definir', (parte) => {
     const proibidas = ['disco', 'versao', 'pastas'];
     for (const k of proibidas) delete parte[k];
-    return config.definir(parte);
+    // A senha da tela de bloqueio só muda por bloqueio:definir (conferindo a atual).
+    if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
+    return semSegredos(config.definir(parte));
   });
+  tratar('bloqueio:conferir', (senha) => bloqueio.conferir(String(senha || '')));
+  tratar('bloqueio:definir', (atual, nova) => bloqueio.definir(String(atual || ''), String(nova || '')));
   tratar('config:chave', (chave) => config.gravarChave(chave));
 
   // Disco
@@ -678,6 +690,15 @@ app.whenReady().then(async () => {
   programas = new Programas(path.join(app.getPath('userData'), 'programas'), (url, o) => net.fetch(url, o));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
+  bloqueio = new Bloqueio(config);
+  // A tela bloqueia antes de o computador dormir (e quando o próprio sistema bloqueia):
+  // na volta, a senha é pedida.
+  const bloquear = () => {
+    const b = config.obter().bloqueio || {};
+    if (bloqueio.temSenha() && b.aoVoltar !== false) enviar('bloqueio:bloquear');
+  };
+  powerMonitor.on('suspend', bloquear);
+  powerMonitor.on('lock-screen', bloquear);
   // Depois de instalar ou remover um programa do Linux, a lista dos programas do computador é refeita.
   loja = new (process.env.RETRO_LOJA_FALSA ? LojaFalsa : Loja)({ fetch: (u, o) => net.fetch(u, o), aoInstalar: () => { try { aplicativos.listar(true); } catch { } } });
   atualizador = new Atualizador({ app, enviar, antesDeSair: () => { terminais.fecharTodos(); if (janela) janela.__podeFechar = true; } });

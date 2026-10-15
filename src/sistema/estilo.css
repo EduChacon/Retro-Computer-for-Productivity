@@ -203,6 +203,8 @@ input[type=radio] {
 input[type=radio]:checked { background: var(--ponto-radio), var(--radio); }
 label { display: inline-flex; align-items: center; }
 label:has(input:focus-visible) span { outline: 1px dotted #000; }
+/* As opções desativadas ficam cinzentas, como na época. */
+label:has(input:disabled) { color: var(--sombra); }
 
 input[type=range] {
   appearance: none;
@@ -1088,6 +1090,24 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 .aviso-topo b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aviso-hora { color: #808080; flex: none; }
 .aviso-texto { overflow-wrap: anywhere; line-height: 13px; }
+
+/* A tela de bloqueio: por cima de tudo, a cor da área de trabalho, o relógio e a caixa da senha. */
+#bloqueio {
+  position: fixed; inset: 0; z-index: 2147483000; background: var(--mesa);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+}
+.bloq-relogio { color: #fff; text-align: center; text-shadow: 1px 1px #000; }
+.bloq-hora { font-size: 40px; line-height: 40px; font-weight: bold; }
+.bloq-data { font-size: 20px; line-height: 22px; margin-top: 6px; }
+.bloq-data::first-letter { text-transform: uppercase; }
+.bloq-caixa { width: 340px; background: var(--face); box-shadow: var(--relevo-janela); padding: 3px; }
+.bloq-caixa .titulo { background: var(--titulo); color: var(--titulo-texto); }
+.bloq-corpo { display: flex; gap: 12px; padding: 12px 10px 8px; align-items: flex-start; }
+.bloq-corpo > div { flex: 1; }
+.bloq-texto { line-height: 13px; margin-bottom: 10px; }
+.bloq-linha { display: flex; align-items: center; gap: 8px; }
+.bloq-linha input { flex: 1; }
+.bloq-aviso { min-height: 13px; margin: 6px 0 4px; color: #800000; }
 
 /* O indicador das teclas de volume e de brilho. */
 .indicador-bandeja {

@@ -13,6 +13,7 @@ import { carregarIdioma, tr } from './idioma.js';
 import { atualizarEmSegundoPlano } from './apps/programas.js';
 import { programasAbertos } from './apps/craft.js';
 import { procurarAtualizacao } from './atualizacao.js';
+import { bloquearAoAbrir } from './bloqueio.js';
 
 import './apps/explorador.js';
 import './apps/bloco.js';
@@ -116,6 +117,8 @@ async function iniciar() {
   montarBarra();
   await montarMesa();
   dicas();
+  // Com "pedir a senha ao abrir", a área de trabalho só aparece depois da senha.
+  bloquearAoAbrir();
   boot.classList.remove('visivel');
   boot.replaceChildren();
   if (!rapido) tocar('inicio');

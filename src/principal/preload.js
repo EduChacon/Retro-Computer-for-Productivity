@@ -130,6 +130,12 @@ contextBridge.exposeInMainWorld('retro', {
     abrir: (id) => chamar('loja:abrir', id),
     aoAndamento: ouvir('loja:andamento'),
   },
+  // A tela de bloqueio: a senha só é conferida aqui; o resumo dela nunca vem para a página.
+  bloqueio: {
+    conferir: (senha) => chamar('bloqueio:conferir', senha),
+    definir: (atual, nova) => chamar('bloqueio:definir', atual, nova),
+    aoBloquear: ouvir('bloqueio:bloquear'),
+  },
   // A bandeja: o volume, o brilho e a rede do computador.
   bandeja: {
     bateria: () => chamar('bandeja:bateria'),

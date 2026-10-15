@@ -12,6 +12,7 @@ import { tr, marcar, localidade } from './idioma.js';
 import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './nativos.js';
 import { alternarCalendario, montarBusca } from './barra-extras.js';
 import { montarBandeja } from './bandeja.js';
+import { bloquear, temSenha } from './bloqueio.js';
 
 let btIniciar;
 let tarefas;
@@ -344,6 +345,8 @@ export async function abrirIniciar() {
     { rotulo: tr('&Ajuda'), icone: 'ajuda', acao: () => abrir('ajuda') },
     { rotulo: tr('&Executar…'), icone: 'executar', acao: () => abrir('executar') },
     { separador: true },
+    // Sem senha ainda, o item leva ao Painel de controle › Senhas para criar uma.
+    { rotulo: tr('&Bloquear o computador'), icone: 'chave', acao: () => (temSenha() ? bloquear() : abrir('painel', { secao: 'senhas' })) },
     { rotulo: tr('&Desligar…'), icone: 'desligar', acao: () => abrir('desligar') },
   ], {
     x: r.left,

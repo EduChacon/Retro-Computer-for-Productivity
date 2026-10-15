@@ -675,6 +675,43 @@ const ROTEIROS = {
     console.log('tela:', await pagina.evaluate(() => document.getElementById('boot').innerText));
   },
 
+  // A tela de bloqueio: criar a senha no Painel, bloquear pelo Iniciar, errar e acertar.
+  async bloqueio() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'senhas' });
+    await pagina.waitForTimeout(400);
+    await foto('senhas-painel');
+    await pagina.click('.janela.ativa fieldset button >> nth=0');
+    await pagina.waitForSelector('.janela.dialogo input[type=password]');
+    const campos = pagina.locator('.janela.dialogo input[type=password]');
+    await campos.nth(0).fill('abcd1234');
+    await campos.nth(1).fill('abcd1234');
+    await foto('senhas-criar');
+    await pagina.click('.janela.dialogo .acoes button.padrao');
+    await pagina.waitForTimeout(1200);
+    console.log('tem senha:', await pagina.evaluate(() => window.__retro.estado.config.bloqueio.temSenha), '| resumo na página?', await pagina.evaluate(() => JSON.stringify(window.__retro.estado.config.bloqueio)));
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(300);
+    await pagina.evaluate(() => import('./js/bloqueio.js').then((m) => m.bloquear()));
+    await pagina.waitForSelector('#bloqueio input[type=password]');
+    await pagina.waitForTimeout(300);
+    await foto('bloqueio');
+    // Nenhuma tecla passa para trás: Ctrl+Esc não abre o Iniciar.
+    await pagina.keyboard.press('Control+Escape');
+    await pagina.waitForTimeout(300);
+    console.log('Iniciar aberto por trás?', await pagina.evaluate(() => document.getElementById('iniciar').classList.contains('apertado')));
+    await pagina.keyboard.type('errada');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2200);
+    await foto('bloqueio-errada');
+    console.log('aviso:', await pagina.textContent('#bloqueio .bloq-aviso'));
+    await pagina.keyboard.type('abcd1234');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1500);
+    console.log('desbloqueado:', await pagina.evaluate(() => !document.getElementById('bloqueio')));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

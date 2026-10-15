@@ -538,6 +538,7 @@ export function montarBandeja() {
     else if (acao === 'brilho-') mudarBrilho(-10);
     else if (acao === 'iniciar') import('./barra.js').then((m) => m.alternarIniciar());
     else if (acao === 'calculadora') abrir('calculadora');
+    else if (acao === 'bloquear') import('./bloqueio.js').then((m) => m.bloquear());
   });
   return { antes: [redeIco, somIco, batIco], depois: [sino] };
 }

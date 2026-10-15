@@ -33,6 +33,8 @@ function sair() {
   ativa.el.remove();
   ativa = null;
   ultima = Date.now();
+  // A tela de bloqueio escuta (com "pedir a senha ao sair da proteção de tela").
+  document.dispatchEvent(new Event('retro-protecao-saiu'));
 }
 
 function entrar(tipo = 'estrelas') {
