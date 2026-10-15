@@ -54,7 +54,7 @@ ferramentas/           icones.py, fontes.sh, fonte-serenity.py, textos.js (as tr
 testes/                *.test.js (npm test: disco, idiomas, atualizações) e capturas.mjs (Playwright + Electron)
 docs/                  uso.md, proposta.md, img/ (img/en e img/es para os READMEs), lancamentos/ (notas, em inglês)
 .github/workflows/compilar.yml   testes e instaladores (Windows, macOS, Linux PC e ARM64) a cada push
-.github/workflows/publicar.yml   numa etiqueta vX.Y.Z: compila e cria o lançamento no GitHub
+.github/workflows/publicar.yml   na main, com versão nova no package.json: compila e cria o lançamento vX.Y.Z
 ```
 
 ## Rodar, testar e compilar
@@ -86,8 +86,8 @@ Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do proc
 
 1. Suba a versão no `package.json` (e no `package-lock.json`) e na linha "Version" dos três READMEs.
 2. Escreva as notas em inglês em `docs/lancamentos/vX.Y.Z.md`.
-3. Teste (`npm test`, as capturas nos três idiomas), faça o commit e o push.
-4. Crie e envie a etiqueta: `git tag vX.Y.Z && git push origin vX.Y.Z`. O fluxo "Publicar" compila os instaladores (Windows, macOS, Linux PC e ARM64) e cria o lançamento; ele confere se a etiqueta bate com o `package.json`.
+3. Teste (`npm test`, as capturas nos três idiomas), faça o commit e o push na branch de trabalho, e espere o fluxo "Compilar" passar nos quatro sistemas.
+4. Leve o commit para a `main` (`git push origin <commit>:main`). O fluxo "Publicar" vê que a versão do `package.json` ainda não tem lançamento, compila os instaladores (Windows, macOS, Linux PC e ARM64) e cria o lançamento `vX.Y.Z`, com a etiqueta. Sem versão nova, ele não faz nada. Não é preciso enviar etiquetas (nas sessões na nuvem, o envio de etiquetas é recusado).
 5. O Retro Computer instalado avisa os usuários da versão nova (consulta o último lançamento uma vez por dia).
 
 ## Como editar

@@ -1,35 +1,54 @@
-# Publica uma versão: ao enviar uma etiqueta "vX.Y.Z", compila os instaladores dos três sistemas
-# (com o fluxo "Compilar") e cria o lançamento no GitHub com eles e com as notas de
-# docs/lancamentos/vX.Y.Z.md (em inglês, a língua da página do projeto).
+# Publica uma versão: quando a main recebe uma versão do package.json que ainda não tem lançamento,
+# compila os instaladores (com o fluxo "Compilar") e cria o lançamento vX.Y.Z no GitHub, com a
+# etiqueta, os instaladores e as notas de docs/lancamentos/vX.Y.Z.md (em inglês, a língua da página).
+# Sem versão nova, não faz nada. Também pode ser disparado à mão (aba Actions › Publicar).
 name: Publicar
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.v.outputs.versao }}
+      publicar: ${{ steps.v.outputs.publicar }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Há versão nova?
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          versao="$(node -p "require('./package.json').version")"
+          echo "versao=$versao" >> "$GITHUB_OUTPUT"
+          if gh release view "v$versao" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "A versão $versao já foi publicada."
+            echo "publicar=false" >> "$GITHUB_OUTPUT"
+          else
+            test -f "docs/lancamentos/v$versao.md" || { echo "Faltam as notas: docs/lancamentos/v$versao.md" >&2; exit 1; }
+            echo "Versão nova: $versao."
+            echo "publicar=true" >> "$GITHUB_OUTPUT"
+          fi
+
   compilar:
+    needs: verificar
+    if: needs.verificar.outputs.publicar == 'true'
     uses: ./.github/workflows/compilar.yml
 
   publicar:
-    needs: compilar
+    needs: [verificar, compilar]
+    if: needs.verificar.outputs.publicar == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Conferir a versão
-        run: |
-          versao="$(node -p "require('./package.json').version")"
-          if [ "v$versao" != "$GITHUB_REF_NAME" ]; then
-            echo "A etiqueta $GITHUB_REF_NAME não bate com a versão do package.json ($versao)." >&2
-            exit 1
-          fi
-          test -f "docs/lancamentos/$GITHUB_REF_NAME.md"
 
       - name: Baixar os instaladores
         uses: actions/download-artifact@v4
@@ -38,12 +57,14 @@ jobs:
           path: instaladores
           merge-multiple: true
 
-      - name: Criar o lançamento
+      - name: Criar o lançamento (e a etiqueta)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSAO: ${{ needs.verificar.outputs.versao }}
         run: |
           ls -la instaladores
-          gh release create "$GITHUB_REF_NAME" instaladores/* \
-            --title "Retro Computer ${GITHUB_REF_NAME#v}" \
-            --notes-file "docs/lancamentos/$GITHUB_REF_NAME.md" \
-            --verify-tag
+          gh release create "v$VERSAO" instaladores/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Retro Computer $VERSAO" \
+            --notes-file "docs/lancamentos/v$VERSAO.md"
