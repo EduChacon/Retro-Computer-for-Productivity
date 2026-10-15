@@ -221,6 +221,80 @@ PENDRIVE_32 = [
     "................................",
 ]
 
+# 1.0: a impressora (Painel de controle › Impressoras) e o Bluetooth (a bandeja), desenhos próprios.
+IMPRESSORA_32 = [
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "..........KKKKKKKKKKKK..........",
+    "..........KWWWWWWWWWWK..........",
+    "..........KWGGGGGGGGWK..........",
+    "..........KWWWWWWWWWWK..........",
+    "..........KWGGGGGGWWWK..........",
+    "..........KWWWWWWWWWWK..........",
+    ".....KKKKKKKKKKKKKKKKKKKKKK.....",
+    "....KlllllllllllllllllllllLK....",
+    "...KlWWWWWWWWWWWWWWWWWWWWWLGK...",
+    "...KlLLLLLLLLLLLLLLLLLLLLLLGK...",
+    "...KlLLLLLLLLLLLLLLLLLgLhLLGK...",
+    "...KlLLLLLLLLLLLLLLLLLLLLLLGK...",
+    "...KlLDDDDDDDDDDDDDDDDDDDDLGK...",
+    "...KlLKKKKKKKKKKKKKKKKKKKKLGK...",
+    "...KlLLLLLLLLLLLLLLLLLLLLLLGK...",
+    "...KGGGGGGGGGGGGGGGGGGGGGGGGK...",
+    "...KKKKKKKKKKKKKKKKKKKKKKKKKK...",
+    ".......KWWWWWWWWWWWWWWWWWK......",
+    ".......KWGGGGGGGGGGGGWWWWK......",
+    ".......KWWWWWWWWWWWWWWWWWK......",
+    ".......KWGGGGGGGGGWWWWWWWK......",
+    ".......KKKKKKKKKKKKKKKKKKK......",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+]
+
+IMPRESSORA_16 = [
+    "................",
+    "................",
+    ".....KKKKKK.....",
+    ".....KWWWWK.....",
+    ".....KWGGWK.....",
+    "..KKKKKKKKKKKK..",
+    ".KlWWWWWWWWWWLK.",
+    ".KlLLLLLLLgLhGK.",
+    ".KlLLLLLLLLLLGK.",
+    ".KlDDDDDDDDDDGK.",
+    ".KGGGGGGGGGGGGK.",
+    ".KKKKKKKKKKKKKK.",
+    "...KWWWWWWWWK...",
+    "...KWGGGGGWWK...",
+    "...KKKKKKKKKK...",
+    "................",
+]
+
+BLUETOOTH_16 = [
+    "................",
+    "................",
+    ".....bbbbbbb....",
+    "....bbbbWbbbb...",
+    "....bbbbWWbbb...",
+    "....bbWbWbWbb...",
+    "....bbbWWWbbb...",
+    "....bbbbWbbbb...",
+    "....bbbWWWbbb...",
+    "....bbWbWbWbb...",
+    "....bbbbWWbbb...",
+    "....bbbbWbbbb...",
+    ".....bbbbbbb....",
+    "................",
+    "................",
+    "................",
+]
+
 PENDRIVE_16 = [
     "................",
     "................",
@@ -717,6 +791,11 @@ def gerar(serenity):
     feitos[16]['reprodutor'] = colar(abrir_serenity(serenity, 16, 'filetype-video'), abrir_serenity(serenity, 16, 'play').crop((2, 1, 14, 15)).resize((8, 9), Image.NEAREST), 8, 7)
     feitos[32]['lightcraft'] = colar(abrir_serenity(serenity, 32, 'app-image-viewer'), grade(SOL_16), 16, 15)
     feitos[16]['lightcraft'] = colar(abrir_serenity(serenity, 16, 'app-image-viewer'), grade(SOL_16).resize((9, 9), Image.NEAREST), 7, 7)
+
+    feitos[32]['impressora'] = grade(IMPRESSORA_32)
+    feitos[16]['impressora'] = grade(IMPRESSORA_16)
+    feitos[16]['bluetooth'] = grade(BLUETOOTH_16)
+    feitos[32]['bluetooth'] = grade(BLUETOOTH_16).resize((32, 32), Image.NEAREST)
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

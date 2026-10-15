@@ -23,6 +23,7 @@ const ITENS = [
   { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e onde abrir os links.'), abrir: () => dialogoInternet() },
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
   { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
+  { chave: 'impressoras', rotulo: marcar('Impressoras'), icone: 'impressora', descricao: marcar('As impressoras, a padrão, a fila de impressão e a página de teste.'), abrir: () => dialogoImpressoras() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('Mostra a data e a hora do computador.'), abrir: () => dialogoData() },
@@ -560,6 +561,75 @@ function dialogoInternet() {
       return definirConfig({ navegador: { correio, busca: selBusca.value, links: rPrincipal.checked ? 'principal' : 'retro' } });
     },
   });
+}
+
+/* Impressoras */
+
+function dialogoImpressoras() {
+  const lista = h('div.imp-lista', { tabIndex: 0 });
+  let impressoras = [];
+  let escolhida = null;
+  const btPadrao = h('button', { on: { click: async () => {
+    if (!escolhida) return;
+    const r = await retro.impressoras.padrao(escolhida.nome);
+    if (!r.ok) erro(tr('Não foi possível mudar a impressora padrão: {erro}', { erro: r.erro || '?' }));
+    carregar();
+  } } }, tr('Definir como padrão'));
+  const btFila = h('button', { on: { click: () => escolhida && dialogoFila(escolhida) } }, tr('Fila de impressão…'));
+  const btTeste = h('button', { on: { click: async () => {
+    if (!escolhida) return;
+    const { paginaDeTeste } = await import('../impressao.js');
+    const r = await paginaDeTeste(escolhida.nome, escolhida.rotulo);
+    if (r.ok) avisar(tr('Impressoras'), tr('A página de teste foi enviada para {nome}.', { nome: escolhida.rotulo }), { icone: 'impressora', som: null });
+  } } }, tr('Imprimir página de teste'));
+  const btAdicionar = h('button', { on: { click: async () => {
+    const r = await retro.impressoras.adicionar().catch(() => null);
+    if (r && r.como === 'pagina') abrirEndereco(r.url);
+  } } }, tr('Adicionar impressora…'));
+  const SITUACAO = { pronta: marcar('Pronta'), imprimindo: marcar('Imprimindo'), parada: marcar('Parada') };
+  const desenhar = () => {
+    lista.replaceChildren(...(impressoras.length ? impressoras.map((p) => {
+      const el = h('div.imp-item' + (escolhida && escolhida.nome === p.nome ? '.sel' : ''),
+        img('impressora', 32),
+        h('div', h('b', p.rotulo + (p.padrao ? ' ' + tr('(padrão)') : '')), h('div', [tr(SITUACAO[p.situacao]), p.descricao, p.local].filter(Boolean).join(' · '))));
+      el.addEventListener('mousedown', () => { escolhida = p; desenhar(); });
+      el.addEventListener('dblclick', () => dialogoFila(p));
+      return el;
+    }) : [h('div.imp-vazia', tr('Nenhuma impressora encontrada. As impressoras da rede (Wi-Fi) costumam aparecer sozinhas; se a sua não aparecer, use Adicionar impressora.'))]));
+    for (const b of [btPadrao, btFila, btTeste]) b.disabled = !escolhida;
+    btPadrao.disabled = !escolhida || escolhida.padrao;
+  };
+  const carregar = async () => {
+    impressoras = await retro.impressoras.listar().catch(() => []);
+    escolhida = escolhida ? impressoras.find((p) => p.nome === escolhida.nome) || null : impressoras.find((p) => p.padrao) || impressoras[0] || null;
+    desenhar();
+  };
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('impressora', 32), h('div', tr('As impressoras do computador. Os programas do Retro Computer imprimem pela caixa de impressão do sistema (Arquivo › Imprimir).'))),
+    lista,
+    h('div.imp-botoes', btPadrao, btFila, btTeste, btAdicionar));
+  dialogoBase({ titulo: tr('Impressoras'), icone: 'impressora', larg: 440, abas: [{ titulo: tr('Impressoras'), conteudo }] });
+  carregar();
+}
+
+/** A fila de impressão de uma impressora (cancelar o que ainda não saiu). */
+async function dialogoFila(p) {
+  const j = new Janela({ titulo: tr('Fila de {nome}', { nome: p.rotulo }), icone: 'impressora', largura: 380, altura: 240, minimizavel: false });
+  const corpo = h('div.imp-fila');
+  const desenhar = async () => {
+    const f = await retro.impressoras.fila(p.nome).catch(() => ({ disponivel: false, trabalhos: [] }));
+    if (!f.disponivel) {
+      corpo.replaceChildren(h('div.imp-vazia', tr('A fila de impressão deste sistema fica no programa de impressoras dele.')));
+      return;
+    }
+    corpo.replaceChildren(...(f.trabalhos.length ? f.trabalhos.map((t) => h('div.imp-trabalho',
+      h('span', t.id), h('span', tamanho(t.tamanho)), h('span', t.quando),
+      h('button', { on: { click: async () => { const r = await retro.impressoras.cancelar(t.id); if (!r.ok) erro(tr('Não foi possível cancelar: {erro}', { erro: r.erro || '?' })); desenhar(); } } }, tr('Cancelar'))))
+      : [h('div.imp-vazia', tr('Nada esperando para imprimir.'))]));
+  };
+  j.corpo.style.padding = '8px';
+  j.corpo.append(corpo, h('div.acoes.direita', h('button', { on: { click: desenhar } }, tr('Atualizar')), h('button.padrao', { on: { click: () => j.fechar() } }, tr('Fechar'))));
+  desenhar();
 }
 
 /* Data e hora */

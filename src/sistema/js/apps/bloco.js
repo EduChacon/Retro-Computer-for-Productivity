@@ -43,6 +43,8 @@ class Bloco {
           { rotulo: tr('&Salvar'), atalho: 'Ctrl+S', acao: () => this.salvar() },
           { rotulo: tr('Salvar &como…'), acao: () => this.salvar(true) },
           { separador: true },
+          { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', acao: () => this.imprimir() },
+          { separador: true },
           { rotulo: tr('Sai&r'), acao: () => this.j.fechar() },
         ],
       },
@@ -81,6 +83,11 @@ class Bloco {
     ];
   }
 
+  async imprimir() {
+    const { imprimirTexto } = await import('../impressao.js');
+    imprimirTexto(this.rel ? nomeDe(this.rel) : tr('Sem título'), this.texto.value, { fixa: this.fixa });
+  }
+
   marcarSujo(v) {
     this.sujo = v;
     this.atualizarTitulo();
@@ -98,6 +105,7 @@ class Bloco {
     else if (ctrl && k === 'o') { e.preventDefault(); this.abrir(); }
     else if (ctrl && k === 'n') { e.preventDefault(); this.novo(); }
     else if (ctrl && k === 'f') { e.preventDefault(); this.localizar(true); }
+    else if (ctrl && k === 'p') { e.preventDefault(); this.imprimir(); }
     else if (e.key === 'F3') { e.preventDefault(); this.localizar(false); }
     else if (e.key === 'F5') { e.preventDefault(); this.horaData(); }
     else if (e.key === 'Tab') {

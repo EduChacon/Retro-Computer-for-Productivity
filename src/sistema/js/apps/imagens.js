@@ -95,6 +95,7 @@ class Visualizador {
           { rotulo: tr('&Abrir…'), atalho: 'Ctrl+O', acao: () => this.abrirOutra() },
           { rotulo: tr('Abrir c&om'), desativado: !this.rel, sub: () => this.itensAbrirCom() },
           { separador: true },
+          { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.natural.w, acao: () => this.imprimir() },
           { rotulo: tr('&Excluir'), atalho: 'Del', desativado: !this.rel, acao: () => this.excluir() },
           { rotulo: tr('&Propriedades'), desativado: !this.rel, acao: () => propriedades(this.rel) },
           { separador: true },
@@ -290,6 +291,21 @@ class Visualizador {
     this.mostrar(resto[Math.min(i, resto.length - 1)]);
   }
 
+  /** Imprime a imagem como está na tela (com o giro). */
+  async imprimir() {
+    if (!this.natural.w) return;
+    const c = document.createElement('canvas');
+    const deitada = this.giro % 180 !== 0;
+    c.width = deitada ? this.natural.h : this.natural.w;
+    c.height = deitada ? this.natural.w : this.natural.h;
+    const g = c.getContext('2d');
+    g.translate(c.width / 2, c.height / 2);
+    g.rotate((this.giro * Math.PI) / 180);
+    g.drawImage(this.imagem, -this.natural.w / 2, -this.natural.h / 2, this.natural.w, this.natural.h);
+    const { imprimirImagem } = await import('../impressao.js');
+    imprimirImagem(nomeDe(this.rel), c.toDataURL('image/png'));
+  }
+
   async copiar() {
     try {
       const c = document.createElement('canvas');
@@ -314,6 +330,7 @@ class Visualizador {
     let feito = true;
     if (ctrl && k.toLowerCase() === 'o') this.abrirOutra();
     else if (ctrl && k.toLowerCase() === 'c') this.copiar();
+    else if (ctrl && k.toLowerCase() === 'p') this.imprimir();
     else if (ctrl && k === ',') this.girar(-90);
     else if (ctrl && k === '.') this.girar(90);
     else if (ctrl && (k === '+' || k === '=')) this.ampliar(1);

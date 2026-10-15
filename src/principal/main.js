@@ -28,6 +28,7 @@ const { Unidades, UnidadesFalsas } = require('./unidades');
 const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
+const { Impressoras, ImpressorasFalsas } = require('./impressoras');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -779,6 +780,14 @@ function registrarPonte() {
     setTimeout(() => app.exit(0), 50);
   });
   tratar('sistema:escalaTela', () => (janela ? screen.getDisplayMatching(janela.getBounds()).scaleFactor : 1));
+  // As impressoras (RETRO_IMPRESSORAS_FALSAS: duas de mentira, para os testes).
+  const impressoras = new (process.env.RETRO_IMPRESSORAS_FALSAS ? ImpressorasFalsas : Impressoras)({ webContents: () => janela && janela.webContents, BrowserWindow, shell });
+  tratar('impressoras:listar', () => impressoras.listar());
+  tratar('impressoras:padrao', (nome) => impressoras.definirPadrao(String(nome)));
+  tratar('impressoras:fila', (nome) => impressoras.fila(nome ? String(nome) : null));
+  tratar('impressoras:cancelar', (id) => impressoras.cancelar(String(id)));
+  tratar('impressoras:adicionar', () => impressoras.adicionar());
+  tratar('impressoras:imprimir', (html, o) => impressoras.imprimirHtml(String(html), o || {}));
   // O Monitor do sistema.
   const monitor = new Monitor({ app });
   tratar('monitor:amostra', () => monitor.amostra());

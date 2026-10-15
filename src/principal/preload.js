@@ -61,6 +61,14 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  impressoras: {
+    listar: () => chamar('impressoras:listar'),
+    padrao: (nome) => chamar('impressoras:padrao', nome),
+    fila: (nome) => chamar('impressoras:fila', nome),
+    cancelar: (id) => chamar('impressoras:cancelar', id),
+    adicionar: () => chamar('impressoras:adicionar'),
+    imprimir: (html, o) => chamar('impressoras:imprimir', html, o),
+  },
   monitor: {
     amostra: () => chamar('monitor:amostra'),
     processos: () => chamar('monitor:processos'),

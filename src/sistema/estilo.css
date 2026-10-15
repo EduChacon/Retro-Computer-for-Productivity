@@ -1266,3 +1266,12 @@ button.ferramenta.apertado { box-shadow: var(--raso); background: var(--face) va
 .foco-volta.vazia { justify-content: center; color: var(--sombra); }
 .foco-campos { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 4px; }
 .foco-rapidos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+
+/* As impressoras (Painel de controle). */
+.imp-lista { height: 150px; overflow: auto; padding: 2px; background: #fff; box-shadow: var(--campo); outline: none; }
+.imp-item { display: flex; align-items: center; gap: 8px; padding: 4px; }
+.imp-item.sel { background: var(--selecao); color: var(--selecao-texto); }
+.imp-vazia { padding: 8px; color: #404040; }
+.imp-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.imp-fila { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 2px; background: #fff; box-shadow: var(--campo); }
+.imp-trabalho { display: grid; grid-template-columns: 1fr auto 1.5fr auto; align-items: center; gap: 6px; padding: 2px 4px; }

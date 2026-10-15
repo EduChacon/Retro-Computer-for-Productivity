@@ -1033,6 +1033,32 @@ const ROTEIROS = {
     await foto('foco-temporizador');
   },
 
+  // As impressoras (com RETRO_IMPRESSORAS_FALSAS=1): a lista, a padrão, a fila e imprimir do Bloco.
+  async impressoras() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'impressoras' });
+    await pagina.waitForTimeout(800);
+    await foto('impressoras-painel');
+    await pagina.click('.janela.ativa .imp-item >> nth=1');
+    await pagina.click(`.janela.ativa button:has-text("${T('Definir como padrão')}")`);
+    await pagina.waitForTimeout(600);
+    await foto('impressoras-padrao');
+    await pagina.click('.janela.ativa .imp-item >> nth=0');
+    await pagina.click(`.janela.ativa button:has-text("${T('Fila de impressão…')}")`);
+    await pagina.waitForTimeout(700);
+    await foto('impressoras-fila');
+    await pagina.click(`.janela.ativa .imp-trabalho button`);
+    await pagina.waitForTimeout(500);
+    await foto('impressoras-fila-vazia');
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.type('Um texto para imprimir.');
+    await pagina.keyboard.press('Control+p');
+    await pagina.waitForTimeout(800);
+    console.log('impresso:', await app.evaluate(() => 'ok'));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();
