@@ -270,6 +270,18 @@ function menuDoSistema() {
 /* ---------- Permissões e downloads ---------- */
 
 const SESSAO_NAVEGADOR = 'persist:navegador';
+
+/** Baixa um arquivo pequeno de um site com a sessão do Navegador (o ícone, o manifesto). */
+async function baixarDoSite(url, limite, como) {
+  if (!/^https?:\/\//i.test(String(url || ''))) throw new Error('endereco');
+  const s = session.fromPartition(SESSAO_NAVEGADOR);
+  const r = await comLimite(s.fetch(String(url)), 15000);
+  if (!r.ok) throw new Error(String(r.status));
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (buf.length > limite) throw new Error('grande');
+  if (como === 'json') return JSON.parse(buf.toString('utf8'));
+  return { tipo: (r.headers.get('content-type') || '').split(';')[0].trim(), dados: 'data:' + ((r.headers.get('content-type') || 'application/octet-stream').split(';')[0].trim()) + ';base64,' + buf.toString('base64') };
+}
 const enderecoDaWeb = (url) => /^https?:\/\//i.test(url) || url === 'about:blank';
 
 /** Os downloads vão para "Meus documentos/Recebidos" (com um nome livre) e avisam a área de trabalho. */
@@ -660,6 +672,10 @@ function registrarPonte() {
     config.definir({ navegador: { permissoes: null } });
     return true;
   });
+  // Os sites instalados como programas: o manifesto e os ícones do site, buscados pela sessão do
+  // Navegador (só http e https, até 1 MB). A área de trabalho escolhe e converte o ícone.
+  tratar('navegador:baixarIcone', (url) => baixarDoSite(url, 1 << 20, 'binario'));
+  tratar('navegador:manifesto', (url) => baixarDoSite(url, 256 << 10, 'json'));
   tratar('navegador:limparDados', () => session.fromPartition(SESSAO_NAVEGADOR).clearStorageData().then(() => session.fromPartition(SESSAO_NAVEGADOR).clearCache()));
   tratar('sistema:telaCheia', (v) => {
     if (MODO_SISTEMA) return true;

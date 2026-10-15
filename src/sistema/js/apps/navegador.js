@@ -69,21 +69,23 @@ export function paraEndereco(texto, urlBusca = BUSCAS.duckduckgo.url) {
 const abertos = new Set();
 
 class Navegador {
-  constructor({ url, correio = false } = {}) {
+  /** app: um site instalado como programa (webapps.js): só a página, sem a barra de endereço. */
+  constructor({ url, correio = false, app = null } = {}) {
     this.correio = correio;
-    this.base = correio ? tr('E-mail') : tr('Navegador');
+    this.app = app;
+    this.base = app ? app.nome : correio ? tr('E-mail') : tr('Navegador');
     this.zoom = 1;
     this.busca = '';
     const t = document.getElementById('janelas').getBoundingClientRect();
     this.j = new Janela({
       titulo: this.base,
-      icone: correio ? 'correio' : 'navegador',
+      icone: app ? app.icone || 'internet' : correio ? 'correio' : 'navegador',
       largura: Math.min(1000, Math.round(t.width * 0.86)),
       altura: Math.min(720, Math.round(t.height * 0.88)),
       minLargura: 380,
       minAltura: 240,
-      classe: 'navegador',
-      menus: this.menus(),
+      classe: app ? 'navegador webapp' : 'navegador',
+      menus: app ? this.menusApp() : this.menus(),
       status: [tr('Pronto'), ''],
     });
     abertos.add(this);
@@ -121,7 +123,8 @@ class Navegador {
     this.inicio = h('div.nav-inicio');
     this.erroEl = h('div.nav-erro', { hidden: true });
     this.area.append(this.inicio, this.erroEl);
-    this.j.corpo.append(barra, linhaEndereco, this.area);
+    if (app) this.j.corpo.append(this.area);
+    else this.j.corpo.append(barra, linhaEndereco, this.area);
     this.j.ev.on('ativada', () => setTimeout(() => (this.wv && !this.wv.hidden ? this.wv.focus() : this.campo.focus()), 0));
     this.desenharInicio();
     this.atualizarBotoes();
@@ -135,6 +138,7 @@ class Navegador {
         rotulo: tr('&Arquivo'), itens: () => [
           { rotulo: tr('&Nova janela'), atalho: 'Ctrl+N', acao: () => abrirNavegador() },
           { rotulo: tr('&Abrir endereço…'), atalho: 'Ctrl+L', acao: () => this.focarEndereco() },
+          { rotulo: tr('Instalar como &programa…'), desativado: !this.visivel(), acao: () => this.instalarComoPrograma() },
           { separador: true },
           { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.visivel(), acao: () => this.wv.print().catch(() => { }) },
           { separador: true },
@@ -181,6 +185,52 @@ class Navegador {
         rotulo: tr('&Favoritos'), itens: () => this.itensFavoritos(),
       },
     ];
+  }
+
+  /** Os menus do site instalado como programa: a página e o tamanho. */
+  menusApp() {
+    return [
+      {
+        rotulo: tr('&Página'), itens: () => [
+          { rotulo: tr('&Voltar'), atalho: 'Alt+←', desativado: !this.podeVoltar(), acao: () => this.voltar() },
+          { rotulo: tr('&Avançar'), atalho: 'Alt+→', desativado: !this.podeAvancar(), acao: () => this.avancar() },
+          { rotulo: tr('A&tualizar'), atalho: 'F5', acao: () => this.atualizar() },
+          { separador: true },
+          { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.visivel(), acao: () => this.wv.print().catch(() => { }) },
+          { rotulo: tr('Locali&zar nesta página…'), atalho: 'Ctrl+F', desativado: !this.visivel(), acao: () => this.localizar(true) },
+          { separador: true },
+          { rotulo: tr('&Copiar o endereço'), desativado: !this.url, acao: () => navigator.clipboard.writeText(this.url).catch(() => { }) },
+          { rotulo: tr('Abrir no &Navegador'), desativado: !this.url, acao: () => abrirNavegador({ url: this.url }) },
+          { separador: true },
+          { rotulo: tr('&Desinstalar {nome}…', { nome: this.app.nome.replace(/&/g, '&&') }), acao: () => this.desinstalar() },
+          { separador: true },
+          { rotulo: tr('&Fechar'), atalho: 'Ctrl+W', acao: () => this.j.fechar() },
+        ],
+      },
+      {
+        rotulo: tr('E&xibir'), itens: () => [
+          { rotulo: tr('A&umentar'), atalho: 'Ctrl++', desativado: !this.visivel(), acao: () => this.mudarZoom(0.1) },
+          { rotulo: tr('&Diminuir'), atalho: 'Ctrl+-', desativado: !this.visivel(), acao: () => this.mudarZoom(-0.1) },
+          { rotulo: tr('Tamanho &normal'), atalho: 'Ctrl+0', desativado: !this.visivel(), acao: () => this.mudarZoom(0) },
+        ],
+      },
+    ];
+  }
+
+  /** Arquivo › Instalar como programa: lê o nome e o ícone do site e pergunta. */
+  async instalarComoPrograma() {
+    if (!this.visivel() || !this.url) return;
+    this.j.definirStatus([tr('Lendo o site…'), '']);
+    const w = await import('../webapps.js');
+    const site = await w.descobrirSite(this.wv, this.url);
+    this.j.definirStatus([tr('Concluído'), this.textoZoom()]);
+    const r = await w.perguntarInstalacao(site);
+    if (r) await w.instalarWebapp({ ...site, nome: r.nome }, r);
+  }
+
+  async desinstalar() {
+    const w = await import('../webapps.js');
+    if (await w.removerWebapp(this.app.id)) this.j.fechar();
   }
 
   /* ---------- Navegar ---------- */
@@ -299,6 +349,8 @@ class Navegador {
   }
 
   mostrarInicio() {
+    // No site instalado como programa, o início é o próprio site.
+    if (this.app) return this.ir(this.app.url);
     if (this.wv) {
       this.wv.stop();
       this.wv.hidden = true;
@@ -356,7 +408,7 @@ class Navegador {
   /** A notificação do site vira o balão da barra de tarefas; o clique traz a janela. */
   notificar(titulo, corpo) {
     avisar(String(titulo || nomeDoSite(this.url)), String(corpo || ''), {
-      icone: this.correio ? 'correio' : 'navegador', ms: 8000,
+      icone: this.app ? this.app.icone || 'internet' : this.correio ? 'correio' : 'navegador', ms: 8000,
       aoClicar: () => { if (!this.j.fechada) this.j.focar(); },
     });
   }

@@ -537,9 +537,24 @@ function dialogoInternet() {
           avisar(tr('Internet'), tr('Os sites vão pedir as permissões de novo.'), { icone: 'navegador', som: null });
         } } }, tr('Esquecer…')))),
   );
+  // Os sites instalados como programas (Navegador › Arquivo › Instalar como programa).
+  const listaApps = h('div.webapps-lista');
+  const desenharApps = () => {
+    const apps = estado.config.webapps || [];
+    listaApps.replaceChildren(...(apps.length ? apps.map((w) => h('div.webapp-linha',
+      w.icone ? h('img', { src: w.icone, width: 32, height: 32, alt: '' }) : img('internet', 32),
+      h('div', h('b', w.nome), h('div.webapp-endereco', w.url)),
+      h('button', { on: { click: () => abrir('webapp:' + w.id) } }, tr('Abrir')),
+      h('button', { on: { click: async () => { const m = await import('../webapps.js'); if (await m.removerWebapp(w.id)) desenharApps(); } } }, tr('Desinstalar…'))))
+      : [h('div', { style: { padding: '8px' } }, tr('Nenhum site instalado. Para instalar, abra o site no Navegador e use Arquivo › Instalar como programa.'))]));
+  };
+  desenharApps();
+  const conteudoApps = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('programas-caixa', 32), h('div', tr('Os sites instalados como programas abrem numa janela própria e ficam no menu Iniciar › Programas.'))),
+    listaApps);
   dialogoBase({
     titulo: tr('Propriedades de Internet'), icone: 'navegador', larg: 420,
-    abas: [{ titulo: tr('Geral'), conteudo }],
+    abas: [{ titulo: tr('Geral'), conteudo }, { titulo: tr('Programas da internet'), conteudo: conteudoApps }],
     aoAplicar: () => {
       const correio = outro.value.trim() ? paraEndereco(outro.value) : (selCorreio.value || null);
       return definirConfig({ navegador: { correio, busca: selBusca.value, links: rPrincipal.checked ? 'principal' : 'retro' } });

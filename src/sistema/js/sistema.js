@@ -72,6 +72,8 @@ export function instalado(id) {
 
 /** Abre um programa embutido ("bloco", "explorador"…) ou instalado ("craft:wordcraft"). */
 export function abrir(id, args = {}) {
+  // Um site instalado como programa (webapps.js).
+  if (id.startsWith('webapp:')) return import('./webapps.js').then((m) => m.abrirWebapp(id.slice(7)));
   if (id.startsWith('craft:')) {
     const a = apps.get('craft');
     return a && comPrograma(id, () => a.abrir({ ...args, programa: id.slice(6) }));

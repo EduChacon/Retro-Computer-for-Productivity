@@ -41,6 +41,11 @@ function atalhoDe(chave) {
     if (!p) return null;
     return { rotulo: p.nome, icone: p.icone || 'programa', abrir: () => abrir(chave), atalhoSeta: true };
   }
+  if (chave.startsWith('webapp:')) {
+    const w = (estado.config.webapps || []).find((x) => x.id === chave.slice(7));
+    if (!w) return null;
+    return { rotulo: w.nome, semTraducao: true, icone: 'internet', iconeUrl: w.icone || null, abrir: () => abrir(chave), atalhoSeta: true };
+  }
   return null;
 }
 

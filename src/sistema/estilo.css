@@ -1209,3 +1209,13 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .mon-desempenho { overflow-y: auto; }
 .mon-linha-graficos .mon-quadro:first-child { flex: none; width: 96px; box-sizing: border-box; }
 .mon-linha-graficos .mon-quadro:first-child .mon-medidor { margin: 0 auto; }
+
+/* Os sites instalados como programas. */
+.janela.webapp .nav-area { box-shadow: none; }
+.webapp-campos { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.webapp-campos .linha { display: flex; align-items: center; gap: 6px; }
+.webapp-endereco { color: var(--sombra); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 300px; }
+.webapps-lista { display: flex; flex-direction: column; gap: 2px; min-height: 120px; max-height: 260px; overflow: auto; padding: 2px; background: #fff; box-shadow: var(--campo); }
+.webapp-linha { display: flex; align-items: center; gap: 8px; padding: 4px; }
+.webapp-linha > div { flex: 1; min-width: 0; }
+.webapp-linha .webapp-endereco { max-width: 200px; }

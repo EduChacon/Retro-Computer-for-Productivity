@@ -129,8 +129,9 @@ export function tipoDe(nome, pasta) {
 
 export const ehTexto = (nome) => ['txt', 'log', 'ini', 'md', 'markdown', 'csv', 'tsv', 'json', 'js', 'ts', 'py', 'sh', 'bat', 'ps1', 'css', 'xml', 'yml', 'yaml', 'toml', 'html', 'htm', 'url'].includes(extensao(nome));
 
-/** Ícone: icone('pasta', 16) → "icones/16/pasta.png" */
+/** Ícone: icone('pasta', 16) → "icones/16/pasta.png" (um endereço, como o ícone de um site, fica como está). */
 export function icone(nome, tam = 32) {
+  if (/^(data:|blob:)/.test(nome || '')) return nome;
   return `icones/${tam}/${nome || 'arquivo'}.png`;
 }
 

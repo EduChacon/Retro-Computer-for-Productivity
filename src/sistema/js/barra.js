@@ -130,6 +130,10 @@ export function programaDe(chave) {
     const p = instalado(chave.slice(6));
     return p ? { chave, nome: p.nome, icone: p.icone || 'programa', abrir: () => abrir(chave) } : null;
   }
+  if (chave.startsWith('webapp:')) {
+    const w = (estado.config.webapps || []).find((x) => x.id === chave.slice(7));
+    return w ? { chave, nome: w.nome, icone: 'internet', iconeUrl: w.icone || null, abrir: () => abrir(chave) } : null;
+  }
   if (chave.startsWith('nativo:')) {
     const id = chave.slice(7);
     if (!iconeNativoJa(id) && !iconesPedidos.has(id)) {
@@ -274,7 +278,10 @@ async function itensProgramas() {
   const craft = estado.instalados
     .slice()
     .sort((a, b) => a.nome.localeCompare(b.nome))
-    .map((p) => ({ rotulo: p.nome, icone: p.icone || 'programa', acao: () => abrir('craft:' + p.id) }));
+    .map((p) => ({ rotulo: p.nome, icone: p.icone || 'programa', acao: () => abrir('craft:' + p.id) }))
+    // Os sites instalados como programas, entre eles, por nome.
+    .concat((estado.config.webapps || []).map((w) => ({ rotulo: w.nome.replace(/&/g, '&&'), icone: 'internet', iconeUrl: w.icone || null, acao: () => abrir('webapp:' + w.id), webapp: w.id })))
+    .sort((a, b) => a.rotulo.localeCompare(b.rotulo));
   return [
     {
       rotulo: tr('Acessórios'), icone: 'pasta-programas', sub: () => [

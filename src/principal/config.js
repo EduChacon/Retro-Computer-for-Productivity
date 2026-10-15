@@ -25,6 +25,8 @@ const PADRAO = {
   bloqueio: { aoVoltar: true, aoAbrir: false, naProtecao: false },
   // A barra de tarefas: os programas fixados (ao lado da busca) e os botões das janelas ('nomes' ou 'icones').
   barra: { fixados: ['explorador', 'navegador', 'correio', 'bloco'], botoes: 'nomes' },
+  // Os sites instalados como programas: [{ id, nome, url, icone (PNG em data:) }].
+  webapps: [],
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,

@@ -182,5 +182,7 @@ contextBridge.exposeInMainWorld('retro', {
     aoTela: ouvir('navegador:tela'),
     responder: (id, resposta) => chamar('navegador:responder', id, resposta),
     esquecerPermissoes: () => chamar('navegador:esquecerPermissoes'),
+    baixarIcone: (url) => chamar('navegador:baixarIcone', url),
+    manifesto: (url) => chamar('navegador:manifesto', url),
   },
 });

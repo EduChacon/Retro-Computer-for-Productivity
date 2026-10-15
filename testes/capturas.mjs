@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
+import http from 'node:http';
 
 const require = createRequire(import.meta.url);
 const RAIZ = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -927,6 +928,60 @@ const ROTEIROS = {
     await pagina.click('.janela.monitor .abas > div >> nth=2');
     await pagina.waitForTimeout(6500);
     await foto('monitor-desempenho');
+  },
+
+  // Instalar um site como programa (um site local com manifesto e ícone).
+  async webapps() {
+    const icone = path.join(tmp, 'icone-site.png');
+    execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=192x192', '-frames:v', '1', icone]);
+    const servidor = http.createServer((req, res) => {
+      const u = new URL(req.url, 'http://x');
+      if (u.pathname === '/manifest.json') { res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify({ name: 'Anotações da Web', short_name: 'Anotações', start_url: '/?app=1', icons: [{ src: '/icone.png', sizes: '192x192', type: 'image/png' }] })); }
+      if (u.pathname === '/icone.png') { res.setHeader('Content-Type', 'image/png'); return res.end(fs.readFileSync(icone)); }
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.end('<!doctype html><html><head><title>Anotações — página</title><link rel="manifest" href="/manifest.json"><link rel="icon" href="/favicon.ico"></head><body style="font-family:sans-serif;background:#ffe;padding:20px"><h1>Anotações</h1><p>Uma página de teste para instalar como programa.</p><p>' + u.search + '</p></body></html>');
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    const url = `http://127.0.0.1:${servidor.address().port}/notas`;
+    await fecharTudo();
+    await abrir('navegador', { url });
+    await pagina.waitForTimeout(3500);
+    await pagina.click('.janela.ativa .menubar >> text=' + T('&Arquivo'));
+    await pagina.waitForTimeout(300);
+    await foto('webapps-menu-arquivo');
+    await pagina.click(`.menu .opcao:has-text("${T('Instalar como &programa…')}")`);
+    await pagina.waitForSelector('.janela.dialogo input[type=text]', { timeout: 15000 });
+    await pagina.waitForTimeout(500);
+    await foto('webapps-instalar');
+    await pagina.click('.janela.dialogo input[type=checkbox] >> nth=1');
+    await pagina.click('.janela.dialogo button.padrao');
+    await pagina.waitForTimeout(1200);
+    const apps = await pagina.evaluate(() => window.__retro.estado.config.webapps.map((w) => ({ nome: w.nome, url: w.url, icone: !!w.icone })));
+    console.log('instalados:', JSON.stringify(apps));
+    await fecharTudo();
+    await pagina.waitForTimeout(500);
+    await foto('webapps-mesa-e-barra');
+    await pagina.dblclick(`#mesa .item:has-text("Anotações")`);
+    await pagina.waitForTimeout(3500);
+    await foto('webapps-janela');
+    await pagina.click('.janela.ativa .menubar >> text=' + T('&Página'));
+    await pagina.waitForTimeout(300);
+    await foto('webapps-menu-pagina');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('&Programas')}")`);
+    await pagina.waitForTimeout(800);
+    await foto('webapps-iniciar');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+    await abrir('painel', { secao: 'internet' });
+    await pagina.waitForTimeout(600);
+    await pagina.click(`.janela.ativa .abas > div:has-text("${T('Programas da internet')}")`);
+    await pagina.waitForTimeout(400);
+    await foto('webapps-painel');
+    servidor.close();
   },
 
   // Os jogos: as regras (conferidas aqui) e as janelas.
