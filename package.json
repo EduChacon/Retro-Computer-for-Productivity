@@ -1,0 +1,80 @@
+{
+  "name": "retro-computer",
+  "productName": "Retro Computer",
+  "version": "0.1.0",
+  "description": "Um computador retrô para produtividade: área de trabalho no estilo dos anos 90, programas Craft, o disco na sua pasta e o Claude Code no Prompt de comando.",
+  "main": "src/principal/main.js",
+  "license": "MIT",
+  "author": "EduChacon",
+  "homepage": "https://github.com/EduChacon/Retro-Computer-for-Productivity",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"testes/*.test.js\"",
+    "capturas": "node testes/capturas.mjs",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "electron-builder --publish never"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-unicode11": "^0.9.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
+    "node-pty": "^1.1.0",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "electron": "^44.7.2",
+    "electron-builder": "^26.0.0",
+    "playwright-core": "^1.56.1"
+  },
+  "build": {
+    "appId": "io.github.educhacon.retrocomputer",
+    "productName": "Retro Computer",
+    "directories": {
+      "output": "dist",
+      "buildResources": "recursos"
+    },
+    "files": [
+      "src/**/*",
+      "catalogo/**/*",
+      "package.json",
+      "LICENSE",
+      "ATRIBUICOES.md"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "recursos/icone.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "recursos/icone.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office",
+      "icon": "recursos/icone.png"
+    }
+  }
+}

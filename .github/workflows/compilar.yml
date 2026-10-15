@@ -1,0 +1,64 @@
+# Compila o Retro Computer para Windows, macOS e Linux a cada push.
+# Os instaladores ficam nos "Artifacts" da execução (aba Actions do GitHub).
+name: Compilar
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar as dependências
+        run: npm ci
+
+      - name: Testes do disco
+        run: npm test
+
+      - name: Teste da área de trabalho (com capturas)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas geral
+
+      - name: Guardar as capturas
+        if: runner.os == 'Linux' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: capturas/*.png
+          if-no-files-found: ignore
+
+      - name: Gerar os instaladores
+        run: npx electron-builder --publish never
+        env:
+          # Sem certificado da Apple ou da Microsoft: os instaladores saem sem assinatura.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Guardar os instaladores
+        uses: actions/upload-artifact@v4
+        with:
+          name: retro-computer-${{ runner.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.zip
+          if-no-files-found: warn

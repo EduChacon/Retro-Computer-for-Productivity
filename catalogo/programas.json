@@ -1,0 +1,136 @@
+{
+  "sobre": "Programas que o Retro Computer sabe instalar. Cada um é baixado do lançamento oficial no GitHub (a versão para navegador, nome-web-versão.zip). Os Craft são do ArtCraft Team, código aberto (MIT ou Apache-2.0); os nomes e logotipos são marcas deles.",
+  "programas": [
+    {
+      "id": "wordcraft",
+      "nome": "WordCraft",
+      "categoria": "Escritório",
+      "descricao": "Processador de texto: lê e grava .docx, com estilos, tabelas, revisão e exportação em PDF.",
+      "repo": "storytold/wordcraft",
+      "versaoConhecida": "0.7.0",
+      "tamanho": "15 MB",
+      "icone": "wordcraft",
+      "tipos": ["docx", "doc", "dotx", "odt", "rtf", "md", "htm", "html"]
+    },
+    {
+      "id": "gridcraft",
+      "nome": "GridCraft",
+      "categoria": "Escritório",
+      "descricao": "Planilha: fórmulas, gráficos e arquivos .xlsx e .csv.",
+      "repo": "storytold/gridcraft",
+      "versaoConhecida": "0.7.0",
+      "icone": "gridcraft",
+      "tipos": ["xlsx", "xls", "xlsm", "ods", "csv", "tsv"]
+    },
+    {
+      "id": "deckcraft",
+      "nome": "DeckCraft",
+      "categoria": "Escritório",
+      "descricao": "Apresentações: slides em .pptx, com temas e modo de apresentação.",
+      "repo": "storytold/deckcraft",
+      "versaoConhecida": "0.7.0",
+      "icone": "deckcraft",
+      "tipos": ["pptx", "ppt", "odp"]
+    },
+    {
+      "id": "pdfcraft",
+      "nome": "PdfCraft",
+      "categoria": "Escritório",
+      "descricao": "Leitor e editor de PDF: anotar, preencher, assinar e organizar páginas.",
+      "repo": "storytold/pdfcraft",
+      "versaoConhecida": "0.8.0",
+      "icone": "pdfcraft",
+      "tipos": ["pdf"]
+    },
+    {
+      "id": "photocraft",
+      "nome": "PhotoCraft",
+      "categoria": "Imagem",
+      "descricao": "Editor de imagens com camadas, que abre arquivos .psd.",
+      "repo": "storytold/photocraft",
+      "versaoConhecida": "0.9.0",
+      "icone": "photocraft",
+      "tipos": ["psd", "png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff"]
+    },
+    {
+      "id": "lightcraft",
+      "nome": "LightCraft",
+      "categoria": "Imagem",
+      "descricao": "Revelação de fotos sem alterar o original (ajustes de luz e cor).",
+      "repo": "storytold/lightcraft",
+      "versaoConhecida": "0.8.0",
+      "icone": "lightcraft",
+      "tipos": ["dng", "cr2", "cr3", "nef", "arw", "raf", "orf", "rw2"]
+    },
+    {
+      "id": "vectorcraft",
+      "nome": "VectorCraft",
+      "categoria": "Imagem",
+      "descricao": "Desenho vetorial: curvas, formas e arquivos .svg.",
+      "repo": "storytold/vectorcraft",
+      "versaoConhecida": "0.11.0",
+      "icone": "vectorcraft",
+      "tipos": ["svg", "ai", "eps"]
+    },
+    {
+      "id": "figcraft",
+      "nome": "FigCraft",
+      "categoria": "Imagem",
+      "descricao": "Desenho de interfaces e protótipos.",
+      "repo": "storytold/figcraft",
+      "versaoConhecida": "0.6.0",
+      "icone": "figcraft",
+      "tipos": []
+    },
+    {
+      "id": "designcraft",
+      "nome": "DesignCraft",
+      "categoria": "Imagem",
+      "descricao": "Diagramação de páginas: livros, revistas e folhetos.",
+      "repo": "storytold/designcraft",
+      "versaoConhecida": "0.8.0",
+      "icone": "designcraft",
+      "tipos": ["idml"]
+    },
+    {
+      "id": "filmcraft",
+      "nome": "FilmCraft",
+      "categoria": "Vídeo e som",
+      "descricao": "Edição de vídeo em linha do tempo. É pesado: prefira o computador principal para projetos longos.",
+      "repo": "storytold/filmcraft",
+      "versaoConhecida": "0.8.0",
+      "icone": "filmcraft",
+      "tipos": []
+    },
+    {
+      "id": "effectcraft",
+      "nome": "EffectCraft",
+      "categoria": "Vídeo e som",
+      "descricao": "Animação e composição de efeitos.",
+      "repo": "storytold/effectcraft",
+      "versaoConhecida": "0.10.0",
+      "icone": "effectcraft",
+      "tipos": []
+    },
+    {
+      "id": "soundcraft",
+      "nome": "SoundCraft",
+      "categoria": "Vídeo e som",
+      "descricao": "Gravação e edição de áudio em várias pistas.",
+      "repo": "storytold/soundcraft",
+      "versaoConhecida": "0.7.0",
+      "icone": "soundcraft",
+      "tipos": ["wav", "mp3", "flac", "ogg", "aiff"]
+    },
+    {
+      "id": "cadcraft",
+      "nome": "CADCraft",
+      "categoria": "Engenharia",
+      "descricao": "Desenho técnico (CAD) com arquivos .dxf.",
+      "repo": "storytold/cadcraft",
+      "versaoConhecida": "0.7.0",
+      "icone": "cadcraft",
+      "tipos": ["dxf", "dwg"]
+    }
+  ]
+}

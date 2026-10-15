@@ -1,0 +1,210 @@
+/*
+ * A área de trabalho: os atalhos do sistema (Meu computador, Meus documentos,
+ * Lixeira, Claude, Prompt de comando, os programas instalados) e os arquivos
+ * da pasta "Área de trabalho" do disco.
+ */
+import { tipoDe, juntar } from './util.js';
+import { VistaIcones } from './vista.js';
+import { abrirMenu } from './menus.js';
+import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado } from './sistema.js';
+import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir } from './arquivos.js';
+import { confirmar } from './dialogos.js';
+import { tocar } from './sons.js';
+
+const PASTA_MESA = 'Área de trabalho';
+let vista;
+let lixeiraCheia = false;
+
+const ATALHOS = {
+  'meu-computador': { rotulo: 'Meu computador', icone: 'computador', abrir: () => abrir('explorador', { pasta: '::computador' }) },
+  'meus-documentos': { rotulo: 'Meus documentos', icone: 'documentos', alvo: 'Meus documentos', abrir: () => abrir('explorador', { pasta: 'Meus documentos' }) },
+  lixeira: { rotulo: 'Lixeira', icone: 'lixeira', alvo: '::lixeira', abrir: () => abrir('lixeira') },
+  claude: { rotulo: 'Claude', icone: 'claude', abrir: () => abrir('claude') },
+  prompt: { rotulo: 'Prompt de comando', icone: 'prompt', abrir: () => abrir('prompt') },
+  bloco: { rotulo: 'Bloco de notas', icone: 'bloco', abrir: () => abrir('bloco') },
+  foco: { rotulo: 'Foco', icone: 'foco', abrir: () => abrir('foco') },
+  programas: { rotulo: 'Adicionar programas', icone: 'programas-caixa', abrir: () => abrir('programas') },
+};
+
+function atalhoDe(chave) {
+  if (ATALHOS[chave]) return ATALHOS[chave];
+  if (chave.startsWith('craft:')) {
+    const p = instalado(chave.slice(6));
+    if (!p) return null;
+    return { rotulo: p.nome, icone: p.icone || 'programa', abrir: () => abrir(chave), atalhoSeta: true };
+  }
+  return null;
+}
+
+export async function montarMesa() {
+  const raiz = document.getElementById('mesa');
+  vista = new VistaIcones(raiz, {
+    modo: 'mesa',
+    pastaSoltar: PASTA_MESA,
+    aoAbrir: (it) => {
+      if (it.sistema) return atalhoDe(it.chave).abrir();
+      if (it.pasta) return abrir('explorador', { pasta: it.rel });
+      return abrirArquivo(it.rel);
+    },
+    aoMenu: (sel, e) => menu(sel, e),
+    aoRenomear: (it) => renomearItem(it),
+    aoExcluir: (itens) => {
+      const rels = itens.filter((i) => i.rel).map((i) => i.rel);
+      if (rels.length) excluir(rels);
+    },
+    aoMover: (it, pos) => {
+      estado.config.mesa.posicoes = { ...(estado.config.mesa.posicoes || {}), [it.chave]: pos };
+      definirConfig({ mesa: { posicoes: { [it.chave]: pos } } });
+    },
+  });
+  await atualizar();
+  retro.disco.aoMudar((pastas) => {
+    if (pastas.includes(PASTA_MESA) || pastas.includes('')) atualizar();
+    if (pastas.includes('::lixeira')) atualizarLixeira();
+  });
+  eventos.on('programas', () => atualizar());
+  window.addEventListener('resize', () => vista.posicionarMesa());
+  atualizarLixeira();
+  raiz.focus();
+}
+
+async function atualizarLixeira() {
+  const itens = await retro.disco.lixeira().catch(() => []);
+  const cheia = itens.length > 0;
+  if (cheia !== lixeiraCheia) {
+    lixeiraCheia = cheia;
+    ATALHOS.lixeira.icone = cheia ? 'lixeira-cheia' : 'lixeira';
+    atualizar();
+  }
+}
+
+export async function atualizar(selecionarChaves) {
+  const c = estado.config;
+  const posicoes = (c.mesa && c.mesa.posicoes) || {};
+  const atalhos = ((c.mesa && c.mesa.atalhos) || []).map((k) => ({ k, a: atalhoDe(k) })).filter((x) => x.a);
+  const itens = atalhos.map(({ k, a }) => ({
+    chave: k, rotulo: a.rotulo, icone: a.icone, sistema: true, alvo: a.alvo, atalho: a.atalhoSeta,
+    pos: posicoes[k], arrastavel: true,
+  }));
+  let arquivos = [];
+  try { arquivos = await retro.disco.listar(PASTA_MESA); } catch { }
+  for (const f of arquivos) {
+    const t = tipoDe(f.nome, f.pasta);
+    const chave = 'arq:' + f.nome;
+    itens.push({ chave, rotulo: f.nome, icone: t.icone, rel: f.rel, pasta: f.pasta, alvo: f.pasta ? f.rel : null, pos: posicoes[chave] });
+  }
+  vista.desenhar(itens, { selecionarChaves });
+}
+
+async function renomearItem(it) {
+  if (it.sistema) return;
+  const i = vista.itens.indexOf(it);
+  const novo = await editarRotulo(vista.els[i].itemEl, it.rotulo, { semExtensao: !it.pasta });
+  if (!novo) return;
+  const rel = await renomear(it.rel, novo);
+  if (rel) {
+    const posicoes = { ...(estado.config.mesa.posicoes || {}) };
+    if (posicoes[it.chave]) {
+      const mudanca = { [it.chave]: null, ['arq:' + novo]: posicoes[it.chave] };
+      posicoes['arq:' + novo] = posicoes[it.chave];
+      delete posicoes[it.chave];
+      estado.config.mesa.posicoes = posicoes;
+      definirConfig({ mesa: { posicoes: mudanca } });
+    }
+    atualizar(['arq:' + novo]);
+  }
+}
+
+function menu(sel, e) {
+  const pos = { x: e.clientX, y: e.clientY };
+  if (!sel.length) {
+    return abrirMenu([
+      {
+        rotulo: '&Organizar ícones', sub: () => [
+          { rotulo: 'Por &nome', acao: () => organizar('nome') },
+          { rotulo: 'Por &tipo', acao: () => organizar('tipo') },
+        ],
+      },
+      { rotulo: 'A&linhar ícones', acao: () => organizar('alinhar') },
+      { rotulo: '&Atualizar', acao: () => atualizar() },
+      ...menuDoFundo(PASTA_MESA, {
+        aoNovo: async (rel) => {
+          const chave = 'arq:' + rel.split('/').pop();
+          await atualizar([chave]);
+          const it = vista.itens.find((x) => x.chave === chave);
+          if (it) renomearItem(it);
+        },
+      }).slice(1),
+      { separador: true },
+      { rotulo: 'P&ropriedades', acao: () => abrir('painel', { secao: 'aparencia' }) },
+    ], pos);
+  }
+  if (sel.length === 1 && sel[0].sistema) {
+    const it = sel[0];
+    const a = atalhoDe(it.chave);
+    const itens = [{ rotulo: '&Abrir', negrito: true, acao: a.abrir }];
+    if (it.chave === 'meu-computador' || it.chave === 'meus-documentos') {
+      itens.push({ rotulo: '&Explorar', acao: a.abrir });
+      itens.push({ rotulo: '&Mostrar no computador principal', acao: () => retro.disco.mostrar(it.chave === 'meus-documentos' ? 'Meus documentos' : '') });
+    }
+    if (it.chave === 'lixeira') {
+      itens.push({ rotulo: '&Esvaziar Lixeira', desativado: !lixeiraCheia, acao: esvaziarLixeira });
+    }
+    if (it.chave === 'claude') {
+      itens.push({ rotulo: 'Configurar a &chave de API…', acao: () => abrir('painel', { secao: 'claude' }) });
+    }
+    itens.push({ separador: true });
+    itens.push({ rotulo: 'Remover da área de &trabalho', desativado: it.chave === 'meu-computador' || it.chave === 'lixeira', acao: () => removerAtalho(it.chave) });
+    if (it.chave === 'meu-computador') itens.push({ separador: true }, { rotulo: 'P&ropriedades', acao: () => abrir('painel', { secao: 'disco' }) });
+    return abrirMenu(itens, pos);
+  }
+  const arquivos = sel.filter((s) => !s.sistema);
+  return abrirMenu(menuDeItens(arquivos, { aoRenomear: renomearItem }), pos);
+}
+
+export async function esvaziarLixeira() {
+  const itens = await retro.disco.lixeira();
+  if (!itens.length) return;
+  const ok = await confirmar(`Deseja mesmo apagar definitivamente ${itens.length === 1 ? `"${itens[0].nome}"` : `estes ${itens.length} itens`}?\n\nDepois de apagados, eles não podem ser recuperados.`, { titulo: 'Esvaziar Lixeira', tipo: 'aviso' });
+  if (!ok) return;
+  await retro.disco.esvaziarLixeira();
+  tocar('lixeira');
+  atualizarLixeira();
+}
+
+function removerAtalho(chave) {
+  const atalhos = (estado.config.mesa.atalhos || []).filter((k) => k !== chave);
+  estado.config.mesa.atalhos = atalhos;
+  definirConfig({ mesa: { atalhos } }).then(() => atualizar());
+}
+
+export function adicionarAtalho(chave) {
+  const atalhos = estado.config.mesa.atalhos || [];
+  if (atalhos.includes(chave)) return;
+  estado.config.mesa.atalhos = [...atalhos, chave];
+  definirConfig({ mesa: { atalhos: estado.config.mesa.atalhos } }).then(() => atualizar());
+}
+
+function organizar(como) {
+  const itens = vista.itens.slice();
+  if (como !== 'alinhar') {
+    itens.sort((a, b) => {
+      if (a.sistema !== b.sistema) return a.sistema ? -1 : 1;
+      if (a.sistema) return 0;
+      if (a.pasta !== b.pasta) return a.pasta ? -1 : 1;
+      if (como === 'tipo') {
+        const ta = tipoDe(a.rotulo).descricao;
+        const tb = tipoDe(b.rotulo).descricao;
+        if (ta !== tb) return ta.localeCompare(tb, 'pt-BR');
+      }
+      return a.rotulo.localeCompare(b.rotulo, 'pt-BR', { numeric: true });
+    });
+  }
+  for (const it of itens) it.pos = null;
+  const apagar = Object.fromEntries(Object.keys(estado.config.mesa.posicoes || {}).map((k) => [k, null]));
+  estado.config.mesa.posicoes = {};
+  vista.desenhar(itens);
+  definirConfig({ mesa: { posicoes: apagar } });
+}
+
+export { juntar };

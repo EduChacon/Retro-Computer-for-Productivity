@@ -1,0 +1,5 @@
+node_modules/
+dist/
+_to_delete/
+*.log
+.DS_Store
