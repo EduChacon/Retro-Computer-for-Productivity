@@ -1253,3 +1253,16 @@ button.migalha:hover { box-shadow: var(--raso-alto); }
 button.migalha:active { box-shadow: var(--raso); padding: 1px 2px 0 4px; }
 .migalha-sep { flex: none; padding: 0 1px; color: var(--sombra); }
 button.ferramenta.apertado { box-shadow: var(--raso); background: var(--face) var(--xadrez); }
+
+/* O Foco: as abas do Pomodoro, do cronômetro e do temporizador. */
+.foco-paineis { display: flex; flex-direction: column; }
+.foco-painel { padding: 10px; }
+.foco-relogio.cron, .foco-relogio.temp { transform: scale(3); margin: 22px 0 26px; }
+.foco-relogio.temp { color: #000080; }
+.foco-relogio.piscando { animation: foco-pisca 0.5s steps(1) 8; }
+@keyframes foco-pisca { 50% { visibility: hidden; } }
+.foco-voltas { height: 96px; margin-top: 8px; padding: 2px 4px; overflow: auto; background: #fff; box-shadow: var(--campo); }
+.foco-volta { display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+.foco-volta.vazia { justify-content: center; color: var(--sombra); }
+.foco-campos { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 4px; }
+.foco-rapidos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }

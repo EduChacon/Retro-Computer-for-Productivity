@@ -1014,6 +1014,25 @@ const ROTEIROS = {
     await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ explorador: { modo: 'icones' } })));
   },
 
+  // O Foco: o cronômetro (com voltas) e o temporizador.
+  async focoAbas() {
+    await fecharTudo();
+    await abrir('foco', { aba: 1 });
+    await pagina.waitForTimeout(400);
+    await pagina.click('.janela.ativa .foco-painel:not([hidden]) button.padrao');
+    await pagina.waitForTimeout(1300);
+    await pagina.click(`.janela.ativa .foco-painel:not([hidden]) button:has-text("${T('Volta')}")`);
+    await pagina.waitForTimeout(900);
+    await pagina.click(`.janela.ativa .foco-painel:not([hidden]) button:has-text("${T('Volta')}")`);
+    await pagina.waitForTimeout(300);
+    await foto('foco-cronometro');
+    await pagina.click('.janela.ativa .abas > div >> nth=2');
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.janela.ativa .foco-rapidos button >> nth=0`);
+    await pagina.waitForTimeout(1500);
+    await foto('foco-temporizador');
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();
