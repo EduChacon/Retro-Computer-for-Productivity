@@ -91,6 +91,11 @@ export function programasPara(nome) {
   const ext = extensao(nome);
   const r = [];
   if (['txt', 'log', 'ini'].includes(ext)) r.push({ id: 'bloco', nome: tr('Bloco de notas'), icone: 'bloco' });
+  // As ferramentas que só mostram (o Visualizador de imagens, o Reprodutor de mídia) vêm antes dos
+  // Craft, que editam: abrem mais depressa. Os Craft ficam em "Abrir com".
+  for (const a of apps.values()) {
+    if ((a.tipos || []).includes(ext)) r.push({ id: a.id, nome: tr(a.nome), icone: a.icone || 'programa' });
+  }
   for (const p of estado.instalados) {
     if ((p.tipos || []).includes(ext)) r.push({ id: 'craft:' + p.id, nome: p.nome, icone: p.icone || 'programa' });
   }

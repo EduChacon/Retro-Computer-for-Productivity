@@ -282,6 +282,8 @@ async function itensProgramas() {
         { rotulo: tr('Calculadora'), icone: 'calculadora', acao: () => abrir('calculadora') },
         { rotulo: tr('Foco (Pomodoro)'), icone: 'foco', acao: () => abrir('foco') },
         { rotulo: tr('Prompt de comando'), icone: 'prompt', acao: () => abrir('prompt') },
+        { rotulo: tr('Reprodutor de mídia'), icone: 'reprodutor', acao: () => abrir('midia') },
+        { rotulo: tr('Visualizador de imagens'), icone: 'imagens', acao: () => abrir('imagens') },
         {
           rotulo: tr('Jogos'), icone: 'jogos', sub: () => [
             { rotulo: tr('Paciência'), icone: 'paciencia', acao: () => abrir('paciencia') },

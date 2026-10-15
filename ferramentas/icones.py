@@ -73,14 +73,13 @@ DO_SERENITY = {
     'deckcraft': ('app-presenter', 'app-presenter'),
     'pdfcraft': ('app-pdf-viewer', 'app-pdf-viewer'),
     'photocraft': ('app-pixel-paint', 'app-pixel-paint'),
-    'lightcraft': ('app-screenshot', 'app-screenshot'),
     'vectorcraft': ('app-gradient', 'app-gradient'),
     'figcraft': ('app-theme-editor', 'app-theme-editor'),
     'designcraft': ('app-font-editor', 'app-font-editor'),
-    'filmcraft': ('app-video-player', 'app-video-player'),
     'effectcraft': ('animation-effects', 'app-libgfx-demo'),
     'soundcraft': ('app-piano', 'app-piano'),
     'cadcraft': ('app-3d-file-viewer', 'app-3d-file-viewer'),
+    'filmcraft': ('app-video-player', 'app-video-player'),
     'programa': ('filetype-executable', 'filetype-executable'),
     # 0.3.0: e-mail, jogos e a barra do Navegador (só em 16 pontos).
     'correio': ('app-mail', 'app-mail'),
@@ -95,9 +94,28 @@ DO_SERENITY = {
     'favoritos': (None, 'bookmark-filled'),
     # 1.0: o Painel de controle › Teclado.
     'teclado': ('app-keyboard-settings', 'app-keyboard-settings'),
+    # 1.0: as ferramentas (o Reprodutor de mídia, a Captura de tela, o Monitor do sistema)
+    # e os botões das barras delas (só em 16 pontos).
+    'captura': ('app-screenshot', 'app-screenshot'),
+    'monitor': ('app-system-monitor', 'app-system-monitor'),
+    'tocar': (None, 'play'),
+    'pausar': (None, 'pause'),
+    'anterior': (None, 'go-first'),
+    'proximo': (None, 'go-last'),
+    'girar-esq': (None, 'edit-rotate-ccw'),
+    'girar-dir': (None, 'edit-rotate-cw'),
+    'ajustar': (None, 'fit-image-to-view'),
+    'tela-cheia': (None, 'fullscreen'),
+    'ampliar': (None, 'zoom-in'),
+    'reduzir': (None, 'zoom-out'),
+    'tamanho-real': (None, 'zoom-reset'),
+    'excluir': (None, 'delete'),
+    'copiar': (None, 'edit-copy'),
+    'finalizar': (None, 'kill'),
+    'selecao': (None, 'select-all'),
 }
 
-PASTAS = {'pasta', 'pasta-aberta'}
+PASTAS = {'pasta', 'pasta-aberta', 'compactado'}  # a pasta compactada também fica amarela
 
 # Paleta dos desenhos próprios (a mesma família de cinzas dos ícones do SerenityOS).
 P = {
@@ -692,6 +710,13 @@ def gerar(serenity):
         feitos[16][f'sinal-{n}'] = grade(sinal(n))
         feitos[16][f'bateria-{n}'] = grade(bateria(n))
         feitos[16][f'bateria-carga-{n}'] = grade(bateria(n, True))
+
+    # 1.0: o Reprodutor de mídia é o filme com o botão de tocar (a claquete fica com o FilmCraft),
+    # e o LightCraft (as fotos) passa a ser a foto com o sol, já que a câmera é da Captura de tela.
+    feitos[32]['reprodutor'] = colar(abrir_serenity(serenity, 32, 'filetype-video'), abrir_serenity(serenity, 16, 'play'), 16, 15)
+    feitos[16]['reprodutor'] = colar(abrir_serenity(serenity, 16, 'filetype-video'), abrir_serenity(serenity, 16, 'play').crop((2, 1, 14, 15)).resize((8, 9), Image.NEAREST), 8, 7)
+    feitos[32]['lightcraft'] = colar(abrir_serenity(serenity, 32, 'app-image-viewer'), grade(SOL_16), 16, 15)
+    feitos[16]['lightcraft'] = colar(abrir_serenity(serenity, 16, 'app-image-viewer'), grade(SOL_16).resize((9, 9), Image.NEAREST), 7, 7)
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

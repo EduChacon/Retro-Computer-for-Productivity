@@ -10,6 +10,7 @@ import { alternarFlutuante, fecharFlutuante } from './barra-extras.js';
 import { entrada } from './dialogos.js';
 import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
+import { deslizante } from './controles.js';
 
 /* ---------- Peças comuns ---------- */
 
@@ -41,65 +42,6 @@ function emFila(fn) {
       andando = false;
     })();
   };
-}
-
-/** Um controle deslizante da época (de pé ou deitado), com o mouse, o dedo e o teclado. */
-function deslizante({ valor, min = 0, max = 100, vertical = false, tamanho = 120, rotulo, aoMudar, aoSoltar }) {
-  const pega = h('div.desl-pega');
-  const el = h('div.deslizante' + (vertical ? '.vertical' : ''), {
-    tabIndex: 0, role: 'slider', 'aria-label': rotulo, 'aria-valuemin': min, 'aria-valuemax': max,
-    style: vertical ? { height: tamanho + 'px' } : { width: tamanho + 'px' },
-  }, h('div.desl-trilho'), pega);
-  let v = valor;
-  const curso = tamanho - 11;
-  const posicionar = () => {
-    const f = (v - min) / (max - min);
-    if (vertical) pega.style.top = Math.round((1 - f) * curso) + 'px';
-    else pega.style.left = Math.round(f * curso) + 'px';
-    el.setAttribute('aria-valuenow', v);
-  };
-  const definir = (n) => {
-    n = Math.max(min, Math.min(max, Math.round(n)));
-    if (n === v) return;
-    v = n;
-    posicionar();
-    if (aoMudar) aoMudar(v);
-  };
-  const doPonteiro = (e) => {
-    const r = el.getBoundingClientRect();
-    const f = vertical ? 1 - (e.clientY - r.top - 5) / (r.height - 11) : (e.clientX - r.left - 5) / (r.width - 11);
-    definir(min + Math.max(0, Math.min(1, f)) * (max - min));
-  };
-  el.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    el.focus();
-    el.setPointerCapture(e.pointerId);
-    doPonteiro(e);
-    const mover = (ev) => doPonteiro(ev);
-    const soltar = () => {
-      el.removeEventListener('pointermove', mover);
-      el.removeEventListener('pointerup', soltar);
-      el.removeEventListener('pointercancel', soltar);
-      if (aoSoltar) aoSoltar(v);
-    };
-    el.addEventListener('pointermove', mover);
-    el.addEventListener('pointerup', soltar);
-    el.addEventListener('pointercancel', soltar);
-  });
-  el.addEventListener('keydown', (e) => {
-    const passo = { ArrowUp: 2, ArrowRight: 2, ArrowDown: -2, ArrowLeft: -2, PageUp: 10, PageDown: -10 }[e.key];
-    if (passo) definir(v + passo);
-    else if (e.key === 'Home') definir(min);
-    else if (e.key === 'End') definir(max);
-    else return;
-    e.preventDefault();
-    e.stopPropagation();
-  });
-  el.addEventListener('keyup', (e) => { if (aoSoltar && /^(Arrow|Page|Home|End)/.test(e.key)) aoSoltar(v); });
-  el.addEventListener('wheel', (e) => { e.preventDefault(); definir(v + (e.deltaY < 0 ? 5 : -5)); if (aoSoltar) aoSoltar(v); }, { passive: false });
-  posicionar();
-  return { el, definir, valor: () => v };
 }
 
 const caixa = (classe, ...filhos) => h('div.caixa-bandeja' + (classe ? '.' + classe : ''), ...filhos);

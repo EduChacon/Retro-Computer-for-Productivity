@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
 const RAIZ = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -771,6 +772,70 @@ const ROTEIROS = {
     await pagina.click(`.menu .opcao:has-text("${T('Remover com &segurança')}")`);
     await pagina.waitForTimeout(5000);
     await foto('unidades-removido');
+  },
+
+  // As ferramentas: o Visualizador de imagens e o Reprodutor de mídia (os arquivos de exemplo
+  // são feitos pelo ffmpeg, se houver).
+  async ferramentas() {
+    const pasta = path.join(disco, DOCS, 'Mídia');
+    fs.mkdirSync(pasta, { recursive: true });
+    const ff = (...a) => execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...a], { stdio: 'inherit' });
+    ff('-f', 'lavfi', '-i', 'testsrc2=size=1600x1200', '-frames:v', '1', path.join(pasta, 'foto 1.jpg'));
+    ff('-f', 'lavfi', '-i', 'mandelbrot=size=900x600', '-frames:v', '1', path.join(pasta, 'foto 2.png'));
+    ff('-f', 'lavfi', '-i', 'testsrc=size=16x16', '-frames:v', '1', path.join(pasta, 'icone.png'));
+    ff('-f', 'lavfi', '-i', 'testsrc=size=640x360:rate=25', '-f', 'lavfi', '-i', 'sine=frequency=440', '-t', '6', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', path.join(pasta, 'filme.mp4'));
+    fs.writeFileSync(path.join(pasta, 'filme.srt'), '1\n00:00:00,000 --> 00:00:05,000\nUma legenda de teste: ação!\n');
+    ff('-f', 'lavfi', '-i', 'sine=frequency=330:duration=20', '-f', 'lavfi', '-i', 'anoisesrc=d=20:a=0.2', '-filter_complex', 'amix=inputs=2', '-c:a', 'libmp3lame', path.join(pasta, 'música.mp3'));
+    await fecharTudo();
+    const abrirArq = (rel) => pagina.evaluate((r) => import('./js/sistema.js').then((m) => m.abrirArquivo(r)), rel);
+    await abrirArq(`${DOCS}/Mídia/foto 1.jpg`);
+    await pagina.waitForTimeout(1500);
+    await foto('imagens-ajustada');
+    await pagina.keyboard.press('ArrowRight');
+    await pagina.waitForTimeout(1200);
+    await foto('imagens-proxima');
+    await pagina.keyboard.press('ArrowRight');
+    await pagina.waitForTimeout(800);
+    for (let i = 0; i < 4; i++) await pagina.keyboard.press('+');
+    await pagina.waitForTimeout(600);
+    await foto('imagens-icone-ampliado');
+    await pagina.keyboard.press('ArrowLeft');
+    await pagina.waitForTimeout(900);
+    await pagina.keyboard.press('Control+.');
+    await pagina.waitForTimeout(600);
+    await foto('imagens-girada');
+    await pagina.click('.janela.ativa .menubar >> text=' + T('E&xibir'));
+    await pagina.waitForTimeout(300);
+    await foto('imagens-menu-exibir');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('F5');
+    await pagina.waitForTimeout(1200);
+    await foto('imagens-slides');
+    await pagina.keyboard.press('Escape');
+    await pagina.waitForTimeout(400);
+    console.log('saiu dos slides?', await pagina.evaluate(() => !document.getElementById('apresentacao')));
+    await fecharTudo();
+    await abrirArq(`${DOCS}/Mídia/filme.mp4`);
+    await pagina.waitForTimeout(2500);
+    console.log('vídeo:', await pagina.evaluate(() => { const v = document.querySelector('.rep-video'); return { tocando: !v.paused, tempo: v.currentTime.toFixed(1), largura: v.videoWidth, legendas: v.textTracks.length, erro: v.error && v.error.code }; }));
+    await foto('reprodutor-video');
+    await pagina.keyboard.press('Alt+Enter');
+    await pagina.mouse.move(500, 600);
+    await pagina.waitForTimeout(800);
+    await foto('reprodutor-tela-cheia');
+    await pagina.keyboard.press('Escape');
+    await pagina.waitForTimeout(300);
+    await pagina.click('.janela.ativa .menubar >> text=' + T('Re&produzir'));
+    await pagina.waitForTimeout(300);
+    await foto('reprodutor-menu');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+    await fecharTudo();
+    await abrirArq(`${DOCS}/Mídia/música.mp3`);
+    await pagina.waitForTimeout(3000);
+    console.log('música:', await pagina.evaluate(() => { const v = document.querySelector('.rep-video'); return { tocando: !v.paused, tempo: v.currentTime.toFixed(1), erro: v.error && v.error.code }; }));
+    await foto('reprodutor-musica');
   },
 
   // Os jogos: as regras (conferidas aqui) e as janelas.

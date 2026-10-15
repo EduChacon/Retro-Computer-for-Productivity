@@ -61,6 +61,11 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  compactados: {
+    listar: (rel) => chamar('compactados:listar', rel),
+    extrair: (rel, o) => chamar('compactados:extrair', rel, o),
+    compactar: (rels) => chamar('compactados:compactar', rels),
+  },
   programas: {
     catalogo: () => chamar('programas:catalogo'),
     instalados: () => chamar('programas:instalados'),

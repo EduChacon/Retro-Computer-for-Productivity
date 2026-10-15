@@ -25,6 +25,8 @@ const { Loja, LojaFalsa } = require('./loja');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos } = require('./bloqueio');
 const { Unidades, UnidadesFalsas } = require('./unidades');
+const { servirArquivo } = require('./servir');
+const compactados = require('./compactados');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -152,6 +154,12 @@ function registrarProtocolos() {
       const arquivo = VENDOR[rel.slice('/vendor/'.length)];
       if (!arquivo) return new Response('404', { status: 404 });
       return new Response(await fsp.readFile(arquivo), { headers: { 'Content-Type': mimeDe(arquivo) } });
+    }
+    // Os arquivos do disco C: (o Visualizador de imagens e o Reprodutor de mídia), só para ler.
+    if (rel.startsWith('/disco/')) {
+      let arquivo;
+      try { arquivo = disco.real(rel.slice('/disco/'.length)); } catch { return new Response('404', { status: 404 }); }
+      return servirArquivo(arquivo, pedido.headers.get('range'));
     }
     if (rel === '/' || rel === '') rel = '/index.html';
     const arquivo = path.resolve(PASTA_SISTEMA, '.' + rel);
@@ -535,6 +543,29 @@ function registrarPonte() {
   });
   tratar('disco:abrirFora', (rel) => shell.openPath(disco.real(rel)));
   tratar('disco:buscar', (termo, o) => disco.buscar(termo, o));
+  // As pastas compactadas (.zip; os .tar só para extrair).
+  tratar('compactados:listar', (rel) => compactados.listarZip(disco.real(rel)));
+  tratar('compactados:extrair', async (rel, { apenas = null } = {}) => {
+    const n = disco.normalizar(rel);
+    const pai = path.posix.dirname(n) === '.' ? '' : path.posix.dirname(n);
+    const nome = await disco.nomeLivre(pai, compactados.semExtensao(path.posix.basename(n)));
+    const pasta = pai ? `${pai}/${nome}` : nome;
+    await fsp.mkdir(disco.real(pasta));
+    if (compactados.ehTar(n)) await compactados.extrairTar(disco.real(n), disco.real(pasta));
+    else await compactados.extrairZip(disco.real(n), disco.real(pasta), { apenas });
+    return pasta;
+  });
+  tratar('compactados:compactar', async (rels) => {
+    const lista = (rels || []).map((r) => disco.normalizar(r)).filter(Boolean);
+    if (!lista.length) throw new Error('vazio');
+    const pai = path.posix.dirname(lista[0]) === '.' ? '' : path.posix.dirname(lista[0]);
+    const primeiro = path.posix.basename(lista[0]);
+    const base = (await disco.info(lista[0])).pasta ? primeiro : primeiro.replace(/\.[^.]+$/, '') || primeiro;
+    const nome = await disco.nomeLivre(pai, base + '.zip');
+    const zip = pai ? `${pai}/${nome}` : nome;
+    await compactados.compactar(lista.map((r) => ({ abs: disco.real(r), nome: path.posix.basename(r) })), disco.real(zip));
+    return zip;
+  });
   tratar('disco:exportar', async (rels, onde) => {
     let pasta = onde === 'downloads' ? app.getPath('downloads') : onde === 'desktop' ? app.getPath('desktop') : null;
     if (!pasta) {

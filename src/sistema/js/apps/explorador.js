@@ -141,7 +141,7 @@ class Explorador {
           ];
         },
       },
-      { rotulo: tr('&Exibir'), itens: () => this.itensExibir() },
+      { rotulo: tr('E&xibir'), itens: () => this.itensExibir() },
       {
         rotulo: tr('&Ir'), itens: () => [
           { rotulo: tr('&Voltar'), atalho: 'Backspace', desativado: !this.historico.length, acao: () => this.voltar() },

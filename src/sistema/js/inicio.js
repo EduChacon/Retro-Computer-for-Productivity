@@ -31,6 +31,8 @@ import './apps/campominado.js';
 import './apps/paciencia.js';
 import './apps/breakout.js';
 import './apps/nativos.js';
+import './apps/imagens.js';
+import './apps/midia.js';
 
 const boot = document.getElementById('boot');
 

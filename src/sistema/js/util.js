@@ -61,6 +61,8 @@ export function caminhoInterno(texto) {
 export const nomeDe = (rel) => String(rel || '').split('/').filter(Boolean).pop() || '';
 export const paiDe = (rel) => String(rel || '').split('/').filter(Boolean).slice(0, -1).join('/');
 export const juntar = (pai, nome) => (pai ? `${pai}/${nome}` : nome);
+/** O endereço de um arquivo do disco para <img> e <video> (só leitura; servido pelo processo principal). */
+export const urlDoDisco = (rel) => 'disco/' + String(rel || '').split('/').filter(Boolean).map(encodeURIComponent).join('/');
 export function extensao(nome) {
   const m = String(nome).match(/\.([^.\/]+)$/);
   return m ? m[1].toLowerCase() : '';

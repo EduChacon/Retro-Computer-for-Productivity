@@ -1130,3 +1130,41 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .cal-rodape { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
 .cal-rodape a { color: var(--link); }
 #busca-barra input::-webkit-search-cancel-button { display: none; }
+
+/* O controle deslizante que ocupa o resto da linha (a posição do Reprodutor de mídia). */
+.deslizante.flex { flex: 1 1 auto; width: auto; min-width: 40px; }
+
+/* O Visualizador de imagens. */
+.vis-area { flex: 1 1 auto; min-height: 0; display: flex; overflow: auto; padding: 4px; background: #808080; box-shadow: var(--campo); outline: none; }
+.vis-area.rola { cursor: grab; }
+.vis-area.arrastando { cursor: grabbing; }
+.vis-palco { position: relative; flex: none; margin: auto; }
+.vis-img { position: absolute; left: 50%; top: 50%; max-width: none; background: repeating-conic-gradient(#c8c8c8 0 25%, #fff 0 50%) 0 0 / 16px 16px; }
+.vis-img.pixelada { image-rendering: pixelated; }
+.vis-aviso { display: none; margin: auto; max-width: 340px; padding: 8px; text-align: center; color: #fff; }
+.vis-area.com-aviso .vis-aviso { display: block; }
+#apresentacao { position: fixed; inset: 0; z-index: 980000; background: #000; display: flex; align-items: center; justify-content: center; cursor: none; }
+#apresentacao img { width: 100%; height: 100%; object-fit: contain; }
+.slides-dica { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); padding: 3px 10px; white-space: pre; background: var(--face); box-shadow: var(--relevo); opacity: 0; transition: opacity 0.3s; }
+.slides-dica.visivel { opacity: 1; }
+
+/* O Reprodutor de mídia. */
+.rep-tela { flex: 1 1 auto; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #000; box-shadow: var(--campo); }
+.rep-video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
+.rep-video::cue { font-family: var(--fonte, sans-serif); background: rgba(0, 0, 0, 0.7); }
+.rep-capa { display: none; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; padding: 12px; color: #fff; text-align: center; }
+.rep-tela.audio .rep-video { display: none; }
+.rep-tela.audio .rep-capa { display: flex; }
+.rep-capa-titulo { max-width: 100%; overflow: hidden; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; }
+.rep-barras { width: 256px; max-width: 100%; height: 64px; image-rendering: pixelated; box-shadow: var(--campo); }
+.rep-aviso { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; padding: 16px; color: #fff; text-align: center; background: #000; }
+.rep-tela.com-aviso .rep-aviso { display: flex; }
+.rep-controles { flex: none; display: flex; align-items: center; gap: 2px; padding: 3px 2px 1px; }
+.rep-controles .sep { flex: none; width: 2px; height: 20px; margin: 0 3px; box-shadow: inset 1px 0 var(--sombra), inset -1px 0 var(--luz); }
+.rep-tempo { flex: none; min-width: 88px; padding: 0 4px; text-align: center; font-variant-numeric: tabular-nums; }
+/* Na tela cheia, a janela inteira sobe acima da barra de tarefas (a ordem das janelas fica de lado). */
+.janela.reprodutor.rep-cheia { z-index: 980000 !important; }
+.janela.reprodutor.rep-cheia .rep-tela { position: fixed; inset: 0; z-index: 1; box-shadow: none; }
+.janela.reprodutor.rep-cheia .rep-controles { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; padding: 4px; background: var(--face); box-shadow: var(--relevo); transform: translateY(110%); transition: transform 0.2s; }
+.janela.reprodutor.rep-cheia.rep-mostrar .rep-controles { transform: none; }
+.janela.reprodutor.rep-cheia:not(.rep-mostrar) .rep-tela { cursor: none; }
