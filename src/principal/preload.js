@@ -130,6 +130,16 @@ contextBridge.exposeInMainWorld('retro', {
     abrir: (id) => chamar('loja:abrir', id),
     aoAndamento: ouvir('loja:andamento'),
   },
+  // Os pendrives e cartões de memória.
+  unidades: {
+    listar: () => chamar('unidades:listar'),
+    pasta: (id, rel) => chamar('unidades:pasta', id, rel),
+    montar: (id) => chamar('unidades:montar', id),
+    ejetar: (id) => chamar('unidades:ejetar', id),
+    trazer: (id, rels, destino) => chamar('unidades:trazer', id, rels, destino),
+    levar: (id, rels, destino) => chamar('unidades:levar', id, rels, destino),
+    aoMudar: ouvir('unidades:mudou'),
+  },
   // A tela de bloqueio: a senha só é conferida aqui; o resumo dela nunca vem para a página.
   bloqueio: {
     conferir: (senha) => chamar('bloqueio:conferir', senha),

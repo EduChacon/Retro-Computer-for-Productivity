@@ -71,6 +71,16 @@ if (process.env.RETRO_SEM_BOAS_VINDAS) {
   fs.mkdirSync(dados, { recursive: true });
   fs.writeFileSync(path.join(dados, 'config.json'), JSON.stringify({ primeiraVez: false }));
 }
+// Roteiro "unidades": um "pendrive" que é uma pasta comum (RETRO_UNIDADES_FALSAS), com arquivos.
+if (ROTEIRO === 'unidades' && !process.env.RETRO_UNIDADES_FALSAS) {
+  const pen = path.join(tmp, 'pendrive');
+  fs.mkdirSync(path.join(pen, 'Fotos'), { recursive: true });
+  fs.mkdirSync(path.join(pen, 'System Volume Information'), { recursive: true });
+  fs.writeFileSync(path.join(pen, 'Relatório.txt'), 'Um relatório trazido no pendrive.\n');
+  fs.writeFileSync(path.join(pen, 'Planilha.csv'), 'a;b\n1;2\n');
+  fs.writeFileSync(path.join(pen, 'Fotos', 'praia.txt'), 'x');
+  process.env.RETRO_UNIDADES_FALSAS = pen;
+}
 // Arquivos de exemplo no disco.
 fs.mkdirSync(path.join(disco, DOCS), { recursive: true });
 fs.writeFileSync(path.join(disco, DOCS, 'Teste.md'), '# Título do teste\n\nUm parágrafo com **negrito** e acentuação: ação, coração, você.\n');
@@ -710,6 +720,57 @@ const ROTEIROS = {
     await pagina.keyboard.press('Enter');
     await pagina.waitForTimeout(1500);
     console.log('desbloqueado:', await pagina.evaluate(() => !document.getElementById('bloqueio')));
+  },
+
+  // Os pendrives: no Meu computador, abrir, trazer para o C:, levar do C:, Enviar para e remover.
+  async unidades() {
+    await fecharTudo();
+    await abrir('explorador', { pasta: '::computador' });
+    await pagina.waitForTimeout(900);
+    await foto('unidades-meu-computador');
+    await pagina.dblclick(`.janela.ativa .item:has-text("PENDRIVE")`);
+    await pagina.waitForTimeout(900);
+    await foto('unidades-pendrive');
+    console.log('escondida a System Volume Information?', await pagina.evaluate(() => ![...document.querySelectorAll('.janela.ativa .item')].some((e) => e.textContent.includes('System Volume'))));
+    await pagina.click(`.janela.ativa .item:has-text("Relatório")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('unidades-menu-item');
+    await pagina.click(`.menu .opcao:has-text("${T('Copiar para Meus &documentos')}")`);
+    await pagina.waitForTimeout(1000);
+    await foto('unidades-trazido');
+    console.log('no disco C:?', fs.existsSync(path.join(disco, DOCS, 'Relatório.txt')), '| ainda no pendrive?', fs.existsSync(path.join(process.env.RETRO_UNIDADES_FALSAS, 'Relatório.txt')));
+    // Levar do C: pelo Enviar para (no Teste.md de Meus documentos).
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.click(`.janela.ativa .item:has-text("Teste")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('&Enviar para')}")`);
+    await pagina.waitForTimeout(800);
+    await foto('unidades-enviar-para');
+    await pagina.click(`.menu .opcao:has-text("PENDRIVE")`);
+    await pagina.waitForTimeout(1000);
+    await foto('unidades-levado');
+    console.log('no pendrive?', fs.existsSync(path.join(process.env.RETRO_UNIDADES_FALSAS, 'Teste.md')));
+    // Abrir um arquivo do pendrive: vai para Recebidos e abre de lá.
+    await fecharTudo();
+    await abrir('explorador', { pasta: '::computador' });
+    await pagina.waitForTimeout(700);
+    await pagina.dblclick(`.janela.ativa .item:has-text("PENDRIVE")`);
+    await pagina.waitForTimeout(800);
+    await pagina.dblclick(`.janela.ativa .item:has-text("Planilha")`);
+    await pagina.waitForTimeout(1500);
+    await foto('unidades-aberto');
+    // Remover com segurança.
+    await fecharTudo();
+    await abrir('explorador', { pasta: '::computador' });
+    await pagina.waitForTimeout(700);
+    await pagina.click(`.janela.ativa .item:has-text("PENDRIVE")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('unidades-menu-remover');
+    await pagina.click(`.menu .opcao:has-text("${T('Remover com &segurança')}")`);
+    await pagina.waitForTimeout(5000);
+    await foto('unidades-removido');
   },
 
   // Os jogos: as regras (conferidas aqui) e as janelas.

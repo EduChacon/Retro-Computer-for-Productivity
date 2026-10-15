@@ -24,6 +24,7 @@ const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos } = require('./bloqueio');
+const { Unidades, UnidadesFalsas } = require('./unidades');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -79,6 +80,7 @@ let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
 let loja = null; // os programas do Linux pelo Flathub (loja.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
+let unidades = null; // os pendrives e cartões (unidades.js)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -427,6 +429,25 @@ function teclasDoSistema() {
   app.on('will-quit', () => globalShortcut.unregisterAll());
 }
 
+/**
+ * Avisa a área de trabalho quando um pendrive chega ou sai (e, no modo sistema, monta o que
+ * chega). No Windows, a consulta é mais cara (o PowerShell): mais espaçada.
+ */
+function vigiarUnidades() {
+  let antes = null;
+  const olhar = async () => {
+    try {
+      if (MODO_SISTEMA) await unidades.montarNovas();
+      const lista = await unidades.listar();
+      const assinatura = lista.map((u) => u.id + (u.montada ? '+' : '-')).sort().join('|');
+      if (antes !== null && assinatura !== antes) enviar('unidades:mudou', lista);
+      antes = assinatura;
+    } catch { }
+  };
+  olhar();
+  setInterval(olhar, process.platform === 'win32' ? 8000 : 4000).unref();
+}
+
 function configurarSessao() {
   const s = session.defaultSession;
   const permitidas = new Set(['clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'local-fonts']);
@@ -474,6 +495,13 @@ function registrarPonte() {
     if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
     return semSegredos(config.definir(parte));
   });
+  // Os pendrives: listar, abrir, trazer para o C:, levar do C: e remover com segurança.
+  tratar('unidades:listar', () => unidades.listar());
+  tratar('unidades:pasta', (id, rel) => unidades.listarPasta(String(id), String(rel || '')));
+  tratar('unidades:montar', (id) => unidades.montar(String(id)));
+  tratar('unidades:ejetar', (id) => unidades.ejetar(String(id)));
+  tratar('unidades:trazer', (id, rels, destino) => unidades.trazer(String(id), (rels || []).map(String), String(destino || '')));
+  tratar('unidades:levar', (id, rels, destino) => unidades.levar(String(id), (rels || []).map(String), String(destino || '')));
   tratar('bloqueio:conferir', (senha) => bloqueio.conferir(String(senha || '')));
   tratar('bloqueio:definir', (atual, nova) => bloqueio.definir(String(atual || ''), String(nova || '')));
   tratar('config:chave', (chave) => config.gravarChave(chave));
@@ -715,6 +743,11 @@ app.whenReady().then(async () => {
     };
   }
   await abrirDisco();
+  // Os pendrives e cartões (RETRO_UNIDADES_FALSAS: uma pasta comum, para os testes).
+  unidades = process.env.RETRO_UNIDADES_FALSAS
+    ? new UnidadesFalsas({ disco: () => disco }, process.env.RETRO_UNIDADES_FALSAS)
+    : new Unidades({ disco: () => disco, sistema: MODO_SISTEMA });
+  vigiarUnidades();
   menuDoSistema();
   configurarSessao();
   configurarNavegador();

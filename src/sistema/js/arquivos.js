@@ -8,6 +8,7 @@ import { confirmar, erro, mensagem, propriedades } from './dialogos.js';
 import { abrir, abrirArquivo, programasPara, avisar, pastaMesa } from './sistema.js';
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
+import { listarUnidades, levarParaUnidade, nomeUnidade } from './unidades.js';
 
 export const TIPO_ARRASTO = 'application/x-retro-arquivos';
 
@@ -190,13 +191,19 @@ export function menuDeItens(sel, o = {}) {
     itens.push({ rotulo: tr('&Copiar'), atalho: 'Ctrl+C', acao: () => copiarItens(rels, false) });
     itens.push({ separador: true });
     itens.push({
-      rotulo: tr('&Enviar para'), sub: () => [
-        { rotulo: tr('Área de trabalho do computador principal'), icone: 'computador', acao: () => levar(rels, 'desktop') },
-        { rotulo: tr('Downloads do computador principal'), icone: 'pasta', acao: () => levar(rels, 'downloads') },
-        { rotulo: tr('Outra pasta do computador principal…'), icone: 'pasta-aberta', acao: () => levar(rels, 'escolher') },
-        { separador: true },
-        { rotulo: tr('Área de trabalho (atalho)'), icone: 'documentos', desativado: sel.every((s) => paiDe(s.rel) === pastaMesa()), acao: () => moverPara(rels, pastaMesa(), true) },
-      ],
+      rotulo: tr('&Enviar para'), sub: async () => {
+        // Os pendrives e cartões conectados entram no fim (uma cópia; o do disco C: fica).
+        const unidades = (await listarUnidades()).filter((u) => u.montada);
+        return [
+          { rotulo: tr('Área de trabalho do computador principal'), icone: 'computador', acao: () => levar(rels, 'desktop') },
+          { rotulo: tr('Downloads do computador principal'), icone: 'pasta', acao: () => levar(rels, 'downloads') },
+          { rotulo: tr('Outra pasta do computador principal…'), icone: 'pasta-aberta', acao: () => levar(rels, 'escolher') },
+          { separador: true },
+          { rotulo: tr('Área de trabalho (atalho)'), icone: 'documentos', desativado: sel.every((s) => paiDe(s.rel) === pastaMesa()), acao: () => moverPara(rels, pastaMesa(), true) },
+          ...(unidades.length ? [{ separador: true }] : []),
+          ...unidades.map((u) => ({ rotulo: nomeUnidade(u), icone: 'removivel', acao: () => levarParaUnidade(u, rels) })),
+        ];
+      },
     });
     if (um) itens.push({ rotulo: tr('&Mostrar no computador principal'), acao: () => retro.disco.mostrar(um.rel) });
     itens.push({ separador: true });

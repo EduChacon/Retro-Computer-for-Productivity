@@ -2,6 +2,7 @@
  * As janelas de pasta (o explorador do disco), Meu computador e a Lixeira.
  *   pasta '::computador'  Meu computador (o disco C:, o Painel de controle, a Lixeira)
  *   pasta '::lixeira'     a Lixeira
+ *   pasta '::unidade:…'   um pendrive ou cartão (unidades.js): ver, trazer para o C:, levar do C:
  *   qualquer outra        uma pasta do disco ('' é a raiz C:\)
  */
 import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, dataHora, rotulo } from '../util.js';
@@ -14,6 +15,7 @@ import { erro, confirmar, propriedades, mensagem } from '../dialogos.js';
 import { esvaziarLixeira } from '../mesa.js';
 import { tocar } from '../sons.js';
 import { tr, marcar } from '../idioma.js';
+import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos } from '../unidades.js';
 
 const ESPECIAIS = {
   '::computador': { titulo: marcar('Meu computador'), icone: 'computador' },
@@ -22,12 +24,15 @@ const ESPECIAIS = {
 
 function tituloDe(pasta) {
   if (ESPECIAIS[pasta]) return tr(ESPECIAIS[pasta].titulo);
+  const un = lerPastaUnidade(pasta);
+  if (un) return un.rel ? nomeDe(un.rel) : nomeUnidade(unidadeConhecida(un.id));
   if (!pasta) return 'C:\\';
   return nomeDe(pasta);
 }
 
 function iconeDe(pasta, cheia) {
   if (pasta === '::lixeira') return cheia ? 'lixeira-cheia' : 'lixeira';
+  if (lerPastaUnidade(pasta)) return lerPastaUnidade(pasta).rel ? 'pasta-aberta' : 'removivel';
   if (ESPECIAIS[pasta]) return ESPECIAIS[pasta].icone;
   if (!pasta) return 'disco';
   if (pasta === pastaDocs()) return 'documentos';
@@ -85,7 +90,14 @@ class Explorador {
     this.paraDeOuvir = retro.disco.aoMudar((pastas) => {
       if (pastas.includes(this.pasta) || (this.pasta === '::lixeira' && pastas.includes('::lixeira')) || this.pasta === '::computador') this.carregar();
     });
-    this.j.ev.on('fechada', () => this.paraDeOuvir());
+    // Um pendrive que chega ou sai: o Meu computador se atualiza; a janela do que saiu volta para ele.
+    const aoMudarUnidades = (e) => {
+      const un = lerPastaUnidade(this.pasta);
+      if (this.pasta === '::computador') this.carregar();
+      else if (un && !e.detail.some((u) => u.id === un.id)) this.navegar('::computador');
+    };
+    document.addEventListener('retro-unidades', aoMudarUnidades);
+    this.j.ev.on('fechada', () => { this.paraDeOuvir(); document.removeEventListener('retro-unidades', aoMudarUnidades); });
     this.j.ev.on('ativada', () => setTimeout(() => { if (!this.j.el.contains(document.activeElement)) this.vista.focoNoRaiz(); }, 0));
     this.carregar(selecionar);
   }
@@ -200,6 +212,8 @@ class Explorador {
     if (this.pasta === '::computador') return;
     const de = this.pasta;
     if (this.pasta === '' || this.pasta === '::lixeira') return this.navegar('::computador', de === '' ? 'disco' : 'lixeira');
+    const un = lerPastaUnidade(this.pasta);
+    if (un) return un.rel ? this.navegar(pastaDaUnidade(un.id, paiDe(un.rel)), 'un:' + un.rel) : this.navegar('::computador', 'unidade:' + un.id);
     this.navegar(paiDe(this.pasta), 'arq:' + de);
   }
 
@@ -220,13 +234,15 @@ class Explorador {
   async carregar(selecionar) {
     const pasta = this.pasta;
     this.j.definirTitulo(tituloDe(pasta));
-    this.endereco.value = ESPECIAIS[pasta] ? tr(ESPECIAIS[pasta].titulo) : caminhoTela(pasta);
+    const un = lerPastaUnidade(pasta);
+    this.endereco.value = ESPECIAIS[pasta] ? tr(ESPECIAIS[pasta].titulo) : un ? nomeUnidade(unidadeConhecida(un.id)) + (un.rel ? '\\' + un.rel.replace(/\//g, '\\') : '') : caminhoTela(pasta);
     this.btVoltar.disabled = !this.historico.length;
     this.btAcima.disabled = pasta === '::computador';
     let itens = [];
     try {
       if (pasta === '::computador') itens = await this.itensComputador();
       else if (pasta === '::lixeira') itens = await this.itensLixeira();
+      else if (un) itens = await this.itensUnidade(un.id, un.rel);
       else itens = await this.itensPasta(pasta);
     } catch (e) {
       if (pasta !== this.pasta) return;
@@ -250,7 +266,30 @@ class Explorador {
       { chave: 'painel', rotulo: tr('Painel de controle'), icone: 'painel', especial: () => abrir('painel'), arrastavel: false, colunas: ['', tr('Pasta do sistema'), ''] },
       { chave: 'programas', rotulo: tr('Adicionar ou remover programas'), icone: 'programas-caixa', especial: () => abrir('programas'), arrastavel: false, colunas: ['', tr('Programa do sistema'), ''] },
       { chave: 'lixeira', rotulo: tr('Lixeira'), icone: 'lixeira', alvo: '::lixeira', especial: () => this.navegar('::lixeira'), arrastavel: false, colunas: ['', tr('Lixeira'), ''] },
+      // Os pendrives e cartões ligados agora.
+      ...(await listarUnidades()).map((u) => ({
+        chave: 'unidade:' + u.id, rotulo: nomeUnidade(u), icone: 'removivel', unidadeRaiz: u, arrastavel: false,
+        especial: () => this.navegar(pastaDaUnidade(u.id)),
+        dica: u.total ? tr('Espaço livre: {livre}\nCapacidade: {total}', { livre: tamanho(u.livre), total: tamanho(u.total) }) : tr('Disco removível'),
+        colunas: ['', tr('Disco removível'), ''],
+      })),
     ];
+  }
+
+  /** O conteúdo de um pendrive (só para ver e copiar: nada é apagado nem renomeado nele por aqui). */
+  async itensUnidade(id, rel) {
+    const lista = await retro.unidades.pasta(id, rel);
+    lista.sort((a, b) => (b.pasta - a.pasta) || a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    return lista.map((f) => {
+      const t = tipoDe(f.nome, f.pasta);
+      return {
+        chave: 'un:' + f.rel, rotulo: f.nome, icone: t.icone, nome: f.nome, pasta: f.pasta, arrastavel: false,
+        unidade: { id, rel: f.rel },
+        dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
+        colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
+        tamanho: f.tamanho,
+      };
+    });
   }
 
   async itensLixeira() {
@@ -310,6 +349,7 @@ class Explorador {
 
   abrirItem(it) {
     if (it.especial) return it.especial();
+    if (it.unidade) return it.pasta ? this.navegar(pastaDaUnidade(it.unidade.id, it.unidade.rel)) : abrirDaUnidade(it.unidade.id, it.unidade.rel);
     if (it.lixo) return propriedadesLixo(it.lixo);
     if (it.pasta) return this.navegar(it.rel);
     return abrirArquivo(it.rel);
@@ -336,7 +376,27 @@ class Explorador {
         itens.push({ separador: true }, { rotulo: tr('P&ropriedades'), acao: () => (it.chave === 'disco' ? abrir('painel', { secao: 'disco' }) : propriedades(pastaDocs())) });
       }
       if (it.chave === 'lixeira') itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
+      if (it.unidadeRaiz) itens.push({ separador: true }, { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(it.unidadeRaiz) });
       return abrirMenu(itens, pos);
+    }
+    const un = lerPastaUnidade(this.pasta);
+    if (un) {
+      const u = unidadeConhecida(un.id);
+      if (!sel.length) {
+        return abrirMenu([
+          { rotulo: tr('C&olar aqui (copiar do disco C:)'), desativado: !transferencia.rels.length, acao: () => levarParaUnidade(u, transferencia.rels, un.rel).then(() => this.carregar()) },
+          { rotulo: tr('&Atualizar'), acao: () => this.carregar() },
+          { separador: true },
+          { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(u) },
+        ], pos);
+      }
+      const rels = sel.map((s) => s.unidade.rel);
+      return abrirMenu([
+        { rotulo: tr('&Abrir'), negrito: true, desativado: sel.length !== 1, acao: () => this.abrirItem(sel[0]) },
+        { separador: true },
+        { rotulo: tr('Copiar para Meus &documentos'), acao: () => trazerDaUnidade(un.id, rels, pastaDocs()).then((f) => avisarTrazidos(f, pastaDocs())) },
+        { rotulo: tr('Copiar para a Área de &trabalho'), acao: () => trazerDaUnidade(un.id, rels, pastaMesa()).then((f) => avisarTrazidos(f, pastaMesa())) },
+      ], pos);
     }
     if (!sel.length) {
       return abrirMenu(menuDoFundo(this.pasta, {
