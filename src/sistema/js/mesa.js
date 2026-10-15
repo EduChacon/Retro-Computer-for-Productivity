@@ -155,7 +155,7 @@ function menu(sel, e) {
     const a = atalhoDe(it.chave);
     const itens = [{ rotulo: tr('&Abrir'), negrito: true, acao: a.abrir }];
     if (it.chave === 'meu-computador' || it.chave === 'meus-documentos') {
-      itens.push({ rotulo: tr('&Explorar'), acao: a.abrir });
+      itens.push({ rotulo: tr('Expl&orar'), acao: a.abrir });
       itens.push({ rotulo: tr('&Mostrar no computador principal'), acao: () => retro.disco.mostrar(it.chave === 'meus-documentos' ? pastaDocs() : '') });
     }
     if (it.chave === 'lixeira') {

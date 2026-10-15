@@ -111,6 +111,12 @@ export function sugestoesPara(nome) {
 
 export async function abrirArquivo(rel, { com } = {}) {
   const nome = nomeDe(rel);
+  // As pastas compactadas: o .zip abre como pasta no Explorador; o .tar só se extrai.
+  if (!com && /\.(zip|tar|tgz|txz|tbz2?|tar\.(gz|xz|bz2))$/i.test(nome)) {
+    const c = await import('./compactados.js');
+    adicionarRecente(rel);
+    return c.ehZip(nome) ? abrir('explorador', { pasta: c.pastaDoZip(rel) }) : c.abrirTar(rel);
+  }
   const opcoes = programasPara(nome);
   const escolha = com || (opcoes[0] && opcoes[0].id);
   adicionarRecente(rel);

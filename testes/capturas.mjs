@@ -838,6 +838,51 @@ const ROTEIROS = {
     await foto('reprodutor-musica');
   },
 
+  // As pastas compactadas: Enviar para › Pasta compactada, ver por dentro, abrir um arquivo
+  // (extrai antes) e Extrair tudo.
+  async compactados() {
+    const base = path.join(disco, DOCS, 'Projeto');
+    fs.mkdirSync(path.join(base, 'Notas'), { recursive: true });
+    fs.writeFileSync(path.join(base, 'Notas', 'ideia.txt'), 'Uma ideia guardada.\n');
+    fs.writeFileSync(path.join(base, 'Leia isto.txt'), 'Leia isto primeiro.\n');
+    fs.writeFileSync(path.join(base, 'dados.csv'), 'a;b\n1;2\n');
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.click(`.janela.ativa .item:has-text("Projeto")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('&Enviar para')}")`);
+    await pagina.waitForTimeout(800);
+    await foto('compactados-enviar-para');
+    await pagina.click(`.menu .opcao:has-text("${T('Pasta compactada (zip)')}")`);
+    await pagina.waitForTimeout(1500);
+    await foto('compactados-criada');
+    console.log('zip criado?', fs.existsSync(path.join(disco, DOCS, 'Projeto.zip')));
+    await pagina.dblclick(`.janela.ativa .item:has-text("Projeto.zip")`);
+    await pagina.waitForTimeout(1200);
+    await foto('compactados-por-dentro');
+    await pagina.dblclick(`.janela.ativa .item:has-text("Projeto")`);
+    await pagina.waitForTimeout(900);
+    await foto('compactados-pasta-de-dentro');
+    await pagina.dblclick(`.janela.ativa .item:has-text("Leia isto")`);
+    await pagina.waitForTimeout(600);
+    await foto('compactados-pergunta');
+    await pagina.click(`.janela.dialogo button:has-text("${T('E&xtrair')}")`);
+    await pagina.waitForTimeout(1500);
+    await foto('compactados-aberto');
+    console.log('extraído em "Projeto (2)", sem pasta a mais?', fs.existsSync(path.join(disco, DOCS, 'Projeto (2)', 'Leia isto.txt')));
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.click(`.janela.ativa .item:has-text("Projeto.zip")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('compactados-menu-zip');
+    await pagina.click(`.menu .opcao:has-text("${T('Extra&ir tudo…')}")`);
+    await pagina.waitForTimeout(1500);
+    await foto('compactados-extraido');
+    console.log('pastas:', fs.readdirSync(path.join(disco, DOCS)).sort().join(' | '));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

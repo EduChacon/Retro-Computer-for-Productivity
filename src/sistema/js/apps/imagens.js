@@ -93,7 +93,7 @@ class Visualizador {
       {
         rotulo: tr('&Arquivo'), itens: () => [
           { rotulo: tr('&Abrir…'), atalho: 'Ctrl+O', acao: () => this.abrirOutra() },
-          { rotulo: tr('Abrir &com'), desativado: !this.rel, sub: () => this.itensAbrirCom() },
+          { rotulo: tr('Abrir c&om'), desativado: !this.rel, sub: () => this.itensAbrirCom() },
           { separador: true },
           { rotulo: tr('&Excluir'), atalho: 'Del', desativado: !this.rel, acao: () => this.excluir() },
           { rotulo: tr('&Propriedades'), desativado: !this.rel, acao: () => propriedades(this.rel) },

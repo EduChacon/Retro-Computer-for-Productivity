@@ -9,6 +9,7 @@ import { abrir, abrirArquivo, programasPara, avisar, pastaMesa } from './sistema
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
 import { listarUnidades, levarParaUnidade, nomeUnidade } from './unidades.js';
+import { ehCompactado, extrairEMostrar, compactarItens } from './compactados.js';
 
 export const TIPO_ARRASTO = 'application/x-retro-arquivos';
 
@@ -171,19 +172,20 @@ export function menuDeItens(sel, o = {}) {
   const itens = [];
   if (um && um.pasta) {
     itens.push({ rotulo: tr('&Abrir'), negrito: true, acao: () => (o.abrirPasta ? o.abrirPasta(um.rel) : abrir('explorador', { pasta: um.rel })) });
-    itens.push({ rotulo: tr('&Explorar'), acao: () => abrir('explorador', { pasta: um.rel }) });
+    itens.push({ rotulo: tr('Expl&orar'), acao: () => abrir('explorador', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Abrir o &Prompt de comando aqui'), acao: () => abrir('prompt', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Abrir o C&laude aqui'), icone: 'claude', acao: () => abrir('claude', { pasta: um.rel }) });
   } else if (um) {
     const progs = programasPara(um.nome);
     itens.push({ rotulo: tr('&Abrir'), negrito: true, acao: () => abrirArquivo(um.rel) });
     itens.push({
-      rotulo: tr('Abrir &com'), sub: () => [
+      rotulo: tr('Abrir c&om'), sub: () => [
         ...progs.map((p) => ({ rotulo: p.nome, icone: p.icone, acao: () => abrirArquivo(um.rel, { com: p.id }) })),
         ...(progs.length ? [{ separador: true }] : []),
         { rotulo: tr('Programa do computador principal'), acao: () => retro.disco.abrirFora(um.rel).catch((e) => erro(e.message)) },
       ],
     });
+    if (ehCompactado(um.nome)) itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(um.rel) });
   }
   if (sel.length) {
     itens.push({ separador: true });
@@ -200,6 +202,7 @@ export function menuDeItens(sel, o = {}) {
           { rotulo: tr('Outra pasta do computador principal…'), icone: 'pasta-aberta', acao: () => levar(rels, 'escolher') },
           { separador: true },
           { rotulo: tr('Área de trabalho (atalho)'), icone: 'documentos', desativado: sel.every((s) => paiDe(s.rel) === pastaMesa()), acao: () => moverPara(rels, pastaMesa(), true) },
+          { rotulo: tr('Pasta compactada (zip)'), icone: 'compactado', acao: () => compactarItens(rels) },
           ...(unidades.length ? [{ separador: true }] : []),
           ...unidades.map((u) => ({ rotulo: nomeUnidade(u), icone: 'removivel', acao: () => levarParaUnidade(u, rels) })),
         ];
@@ -208,7 +211,7 @@ export function menuDeItens(sel, o = {}) {
     if (um) itens.push({ rotulo: tr('&Mostrar no computador principal'), acao: () => retro.disco.mostrar(um.rel) });
     itens.push({ separador: true });
     itens.push({ rotulo: tr('E&xcluir'), atalho: 'Del', acao: () => excluir(rels) });
-    if (um && o.aoRenomear) itens.push({ rotulo: tr('&Renomear'), atalho: 'F2', acao: () => o.aoRenomear(um) });
+    if (um && o.aoRenomear) itens.push({ rotulo: tr('Re&nomear'), atalho: 'F2', acao: () => o.aoRenomear(um) });
     if (um && !um.pasta) itens.push({ rotulo: tr('&Versões anteriores…'), acao: () => versoesAnteriores(um.rel) });
     if (um) {
       itens.push({ separador: true });

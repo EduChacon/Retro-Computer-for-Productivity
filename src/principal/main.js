@@ -548,12 +548,28 @@ function registrarPonte() {
   tratar('compactados:extrair', async (rel, { apenas = null } = {}) => {
     const n = disco.normalizar(rel);
     const pai = path.posix.dirname(n) === '.' ? '' : path.posix.dirname(n);
-    const nome = await disco.nomeLivre(pai, compactados.semExtensao(path.posix.basename(n)));
-    const pasta = pai ? `${pai}/${nome}` : nome;
-    await fsp.mkdir(disco.real(pasta));
-    if (compactados.ehTar(n)) await compactados.extrairTar(disco.real(n), disco.real(pasta));
-    else await compactados.extrairZip(disco.real(n), disco.real(pasta), { apenas });
-    return pasta;
+    const juntar = (nome) => (pai ? `${pai}/${nome}` : nome);
+    // Extrai numa pasta escondida e só no fim dá o nome: o pacote que já traz uma pasta só
+    // ("Projeto.zip" › "Projeto") vira só ela, sem outra por fora.
+    const provisoria = juntar(`.extraindo-${process.pid}-${Date.now()}`);
+    await fsp.mkdir(disco.real(provisoria));
+    try {
+      if (compactados.ehTar(n)) await compactados.extrairTar(disco.real(n), disco.real(provisoria));
+      else await compactados.extrairZip(disco.real(n), disco.real(provisoria), { apenas });
+    } catch (e) {
+      await fsp.rm(disco.real(provisoria), { recursive: true, force: true }); // só o que esta extração gravou
+      throw e;
+    }
+    const dentro = await fsp.readdir(disco.real(provisoria), { withFileTypes: true });
+    if (dentro.length === 1 && dentro[0].isDirectory()) {
+      const pasta = juntar(await disco.nomeLivre(pai, dentro[0].name));
+      await fsp.rename(disco.real(`${provisoria}/${dentro[0].name}`), disco.real(pasta));
+      await fsp.rmdir(disco.real(provisoria)); // já vazia
+      return { pasta, retirada: dentro[0].name };
+    }
+    const pasta = juntar(await disco.nomeLivre(pai, compactados.semExtensao(path.posix.basename(n))));
+    await fsp.rename(disco.real(provisoria), disco.real(pasta));
+    return { pasta, retirada: '' };
   });
   tratar('compactados:compactar', async (rels) => {
     const lista = (rels || []).map((r) => disco.normalizar(r)).filter(Boolean);

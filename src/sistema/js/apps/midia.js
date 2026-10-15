@@ -70,7 +70,7 @@ class Reprodutor {
       {
         rotulo: tr('&Arquivo'), itens: () => [
           { rotulo: tr('&Abrir…'), atalho: 'Ctrl+O', acao: () => this.abrirOutro() },
-          { rotulo: tr('Abrir &com'), desativado: !this.rel, sub: () => this.itensAbrirCom() },
+          { rotulo: tr('Abrir c&om'), desativado: !this.rel, sub: () => this.itensAbrirCom() },
           { separador: true },
           { rotulo: tr('&Propriedades'), desativado: !this.rel, acao: () => propriedades(this.rel) },
           { separador: true },

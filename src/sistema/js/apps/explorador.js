@@ -3,6 +3,7 @@
  *   pasta '::computador'  Meu computador (o disco C:, o Painel de controle, a Lixeira)
  *   pasta '::lixeira'     a Lixeira
  *   pasta '::unidade:…'   um pendrive ou cartão (unidades.js): ver, trazer para o C:, levar do C:
+ *   pasta '::zip:…'       por dentro de uma pasta compactada (compactados.js): ver e extrair
  *   qualquer outra        uma pasta do disco ('' é a raiz C:\)
  */
 import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, dataHora, rotulo } from '../util.js';
@@ -16,6 +17,7 @@ import { esvaziarLixeira } from '../mesa.js';
 import { tocar } from '../sons.js';
 import { tr, marcar } from '../idioma.js';
 import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos } from '../unidades.js';
+import { pastaDoZip, lerPastaZip, itensDoZip, extrairEMostrar, abrirDoZip } from '../compactados.js';
 
 const ESPECIAIS = {
   '::computador': { titulo: marcar('Meu computador'), icone: 'computador' },
@@ -26,6 +28,8 @@ function tituloDe(pasta) {
   if (ESPECIAIS[pasta]) return tr(ESPECIAIS[pasta].titulo);
   const un = lerPastaUnidade(pasta);
   if (un) return un.rel ? nomeDe(un.rel) : nomeUnidade(unidadeConhecida(un.id));
+  const zip = lerPastaZip(pasta);
+  if (zip) return nomeDe(zip.dentro || zip.rel);
   if (!pasta) return 'C:\\';
   return nomeDe(pasta);
 }
@@ -33,6 +37,7 @@ function tituloDe(pasta) {
 function iconeDe(pasta, cheia) {
   if (pasta === '::lixeira') return cheia ? 'lixeira-cheia' : 'lixeira';
   if (lerPastaUnidade(pasta)) return lerPastaUnidade(pasta).rel ? 'pasta-aberta' : 'removivel';
+  if (lerPastaZip(pasta)) return lerPastaZip(pasta).dentro ? 'pasta-aberta' : 'compactado';
   if (ESPECIAIS[pasta]) return ESPECIAIS[pasta].icone;
   if (!pasta) return 'disco';
   if (pasta === pastaDocs()) return 'documentos';
@@ -112,6 +117,9 @@ class Explorador {
           if (this.pasta === '::lixeira') {
             itens.push({ rotulo: tr('&Restaurar'), desativado: !sel.length, acao: () => this.restaurar(sel) });
             itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
+            itens.push({ separador: true });
+          } else if (lerPastaZip(this.pasta)) {
+            itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(lerPastaZip(this.pasta).rel) });
             itens.push({ separador: true });
           } else if (doDisco) {
             if (sel.length) itens.push(...menuDeItens(sel.filter((s) => s.rel), { aoRenomear: (it) => this.renomearItem(it) }), { separador: true });
@@ -214,6 +222,8 @@ class Explorador {
     if (this.pasta === '' || this.pasta === '::lixeira') return this.navegar('::computador', de === '' ? 'disco' : 'lixeira');
     const un = lerPastaUnidade(this.pasta);
     if (un) return un.rel ? this.navegar(pastaDaUnidade(un.id, paiDe(un.rel)), 'un:' + un.rel) : this.navegar('::computador', 'unidade:' + un.id);
+    const zip = lerPastaZip(this.pasta);
+    if (zip) return zip.dentro ? this.navegar(pastaDoZip(zip.rel, paiDe(zip.dentro)), 'zip:' + zip.dentro) : this.navegar(paiDe(zip.rel), 'arq:' + zip.rel);
     this.navegar(paiDe(this.pasta), 'arq:' + de);
   }
 
@@ -235,7 +245,11 @@ class Explorador {
     const pasta = this.pasta;
     this.j.definirTitulo(tituloDe(pasta));
     const un = lerPastaUnidade(pasta);
-    this.endereco.value = ESPECIAIS[pasta] ? tr(ESPECIAIS[pasta].titulo) : un ? nomeUnidade(unidadeConhecida(un.id)) + (un.rel ? '\\' + un.rel.replace(/\//g, '\\') : '') : caminhoTela(pasta);
+    const zip = lerPastaZip(pasta);
+    this.endereco.value = ESPECIAIS[pasta] ? tr(ESPECIAIS[pasta].titulo)
+      : un ? nomeUnidade(unidadeConhecida(un.id)) + (un.rel ? '\\' + un.rel.replace(/\//g, '\\') : '')
+        : zip ? caminhoTela(zip.rel) + (zip.dentro ? '\\' + zip.dentro.replace(/\//g, '\\') : '')
+          : caminhoTela(pasta);
     this.btVoltar.disabled = !this.historico.length;
     this.btAcima.disabled = pasta === '::computador';
     let itens = [];
@@ -243,6 +257,7 @@ class Explorador {
       if (pasta === '::computador') itens = await this.itensComputador();
       else if (pasta === '::lixeira') itens = await this.itensLixeira();
       else if (un) itens = await this.itensUnidade(un.id, un.rel);
+      else if (zip) itens = await this.itensZip(zip.rel, zip.dentro);
       else itens = await this.itensPasta(pasta);
     } catch (e) {
       if (pasta !== this.pasta) return;
@@ -287,6 +302,23 @@ class Explorador {
         unidade: { id, rel: f.rel },
         dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
+        tamanho: f.tamanho,
+      };
+    });
+  }
+
+  /** Por dentro de uma pasta compactada (só para ver: abrir um arquivo extrai o pacote antes). */
+  async itensZip(rel, dentro) {
+    const lista = await itensDoZip(rel, dentro);
+    lista.sort((a, b) => (b.pasta - a.pasta) || a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    return lista.map((f) => {
+      const nome = nomeDe(f.nome);
+      const t = tipoDe(nome, f.pasta);
+      return {
+        chave: 'zip:' + f.nome, rotulo: nome, icone: t.icone, nome, pasta: f.pasta, arrastavel: false,
+        zip: { rel, nome: f.nome, pasta: f.pasta },
+        dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nCompactado: {compactado}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), compactado: tamanho(f.compactado) }),
+        colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, f.modificado ? dataHora(f.modificado) : ''],
         tamanho: f.tamanho,
       };
     });
@@ -350,6 +382,7 @@ class Explorador {
   abrirItem(it) {
     if (it.especial) return it.especial();
     if (it.unidade) return it.pasta ? this.navegar(pastaDaUnidade(it.unidade.id, it.unidade.rel)) : abrirDaUnidade(it.unidade.id, it.unidade.rel);
+    if (it.zip) return it.pasta ? this.navegar(pastaDoZip(it.zip.rel, it.zip.nome)) : abrirDoZip(it.zip.rel, it.zip.nome);
     if (it.lixo) return propriedadesLixo(it.lixo);
     if (it.pasta) return this.navegar(it.rel);
     return abrirArquivo(it.rel);
@@ -378,6 +411,12 @@ class Explorador {
       if (it.chave === 'lixeira') itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
       if (it.unidadeRaiz) itens.push({ separador: true }, { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(it.unidadeRaiz) });
       return abrirMenu(itens, pos);
+    }
+    const zip = lerPastaZip(this.pasta);
+    if (zip) {
+      const extrair = { rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(zip.rel) };
+      if (!sel.length) return abrirMenu([extrair, { rotulo: tr('&Atualizar'), acao: () => this.carregar() }], pos);
+      return abrirMenu([{ rotulo: tr('&Abrir'), negrito: true, desativado: sel.length !== 1, acao: () => this.abrirItem(sel[0]) }, { separador: true }, extrair], pos);
     }
     const un = lerPastaUnidade(this.pasta);
     if (un) {
