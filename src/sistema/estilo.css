@@ -1275,3 +1275,19 @@ button.ferramenta.apertado { box-shadow: var(--raso); background: var(--face) va
 .imp-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 .imp-fila { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 2px; background: #fff; box-shadow: var(--campo); }
 .imp-trabalho { display: grid; grid-template-columns: 1fr auto 1.5fr auto; align-items: center; gap: 6px; padding: 2px 4px; }
+
+/* O Bluetooth: a bandeja, o Painel e o pareamento. */
+.bandeja-ico.bt-ico.desligado { filter: grayscale(1); opacity: 0.6; }
+.caixa-bandeja.bluetooth { width: 280px; }
+.bt-lista { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow: auto; margin: 4px 0; }
+.bt-lista .bt-item { display: flex; align-items: center; gap: 6px; padding: 2px; }
+.bt-lista .bt-item > div { flex: 1; min-width: 0; }
+.bt-sit { color: #404040; }
+.bt-cabeca { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.bt-ligar { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+.bt-painel-lista { height: 170px; overflow: auto; padding: 2px; background: #fff; box-shadow: var(--campo); outline: none; }
+.bt-painel-lista .bt-item { display: flex; align-items: center; gap: 8px; padding: 4px; }
+.bt-painel-lista .bt-item.sel { background: var(--selecao); color: var(--selecao-texto); }
+.bt-vazio { padding: 8px; color: #404040; }
+.bt-nota { min-height: 28px; padding: 4px 0; color: #404040; }
+.bt-codigo { margin: 8px 0; font: bold 22px/26px monospace; letter-spacing: 4px; text-align: center; }

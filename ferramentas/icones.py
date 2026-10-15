@@ -113,6 +113,8 @@ DO_SERENITY = {
     'copiar': (None, 'edit-copy'),
     'finalizar': (None, 'kill'),
     'selecao': (None, 'select-all'),
+    # 1.0: o mouse (os aparelhos do Bluetooth).
+    'mouse': ('app-mouse', 'app-mouse'),
 }
 
 PASTAS = {'pasta', 'pasta-aberta', 'compactado'}  # a pasta compactada também fica amarela

@@ -23,6 +23,7 @@ const ITENS = [
   { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e onde abrir os links.'), abrir: () => dialogoInternet() },
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
   { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
+  { chave: 'bluetooth', rotulo: marcar('Bluetooth'), icone: 'bluetooth', descricao: marcar('Os mouses, os teclados e os fones sem fio: parear, conectar e esquecer.'), abrir: () => import('../bluetooth.js').then((m) => m.abrirBluetooth()) },
   { chave: 'impressoras', rotulo: marcar('Impressoras'), icone: 'impressora', descricao: marcar('As impressoras, a padrão, a fila de impressão e a página de teste.'), abrir: () => dialogoImpressoras() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },

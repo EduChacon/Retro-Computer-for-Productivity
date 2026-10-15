@@ -61,6 +61,20 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  bluetooth: {
+    estado: () => chamar('bluetooth:estado'),
+    ligar: (v) => chamar('bluetooth:ligar', v),
+    aparelhos: () => chamar('bluetooth:aparelhos'),
+    procurar: () => chamar('bluetooth:procurar'),
+    conectar: (mac) => chamar('bluetooth:conectar', mac),
+    desconectar: (mac) => chamar('bluetooth:desconectar', mac),
+    esquecer: (mac) => chamar('bluetooth:esquecer', mac),
+    parear: (mac) => chamar('bluetooth:parear', mac),
+    responder: (r) => chamar('bluetooth:responder', r),
+    cancelar: () => chamar('bluetooth:cancelar'),
+    configuracoesDoSistema: () => chamar('bluetooth:configuracoesDoSistema'),
+    aoPergunta: ouvir('bluetooth:pergunta'),
+  },
   impressoras: {
     listar: () => chamar('impressoras:listar'),
     padrao: (nome) => chamar('impressoras:padrao', nome),

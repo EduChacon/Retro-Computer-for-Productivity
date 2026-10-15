@@ -1059,6 +1059,24 @@ const ROTEIROS = {
     console.log('impresso:', await app.evaluate(() => 'ok'));
   },
 
+  // O Bluetooth (com RETRO_BLUETOOTH_FALSO=1): a bandeja, o Painel, procurar e parear um teclado.
+  async bluetooth() {
+    await fecharTudo();
+    await pagina.waitForSelector('.bt-ico:not([hidden])', { timeout: 10000 });
+    await pagina.click('.bt-ico');
+    await pagina.waitForTimeout(700);
+    await foto('bluetooth-bandeja');
+    await pagina.click(`.caixa-bandeja.bluetooth a:has-text("${T('Adicionar aparelho…')}")`);
+    await pagina.waitForTimeout(1500);
+    await foto('bluetooth-procurado');
+    await pagina.click('.janela.ativa .bt-item:has-text("8BitDo")');
+    await pagina.click(`.janela.ativa button:has-text("${T('Parear')}")`);
+    await pagina.waitForTimeout(700);
+    await foto('bluetooth-codigo');
+    await pagina.waitForTimeout(3000);
+    await foto('bluetooth-pareado');
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

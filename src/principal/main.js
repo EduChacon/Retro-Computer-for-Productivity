@@ -29,6 +29,7 @@ const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
 const { Impressoras, ImpressorasFalsas } = require('./impressoras');
+const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -788,6 +789,19 @@ function registrarPonte() {
   tratar('impressoras:cancelar', (id) => impressoras.cancelar(String(id)));
   tratar('impressoras:adicionar', () => impressoras.adicionar());
   tratar('impressoras:imprimir', (html, o) => impressoras.imprimirHtml(String(html), o || {}));
+  // O Bluetooth (no Linux, pelo bluetoothctl; no Windows e no macOS, as configurações do sistema).
+  const bluetooth = new (process.env.RETRO_BLUETOOTH_FALSO ? BluetoothFalso : Bluetooth)({ aoPergunta: (p) => enviar('bluetooth:pergunta', p) });
+  tratar('bluetooth:estado', () => bluetooth.estado());
+  tratar('bluetooth:ligar', (v) => bluetooth.ligar(!!v));
+  tratar('bluetooth:aparelhos', () => bluetooth.aparelhos());
+  tratar('bluetooth:procurar', () => bluetooth.procurar(12));
+  tratar('bluetooth:conectar', (mac) => bluetooth.conectar(String(mac)));
+  tratar('bluetooth:desconectar', (mac) => bluetooth.desconectar(String(mac)));
+  tratar('bluetooth:esquecer', (mac) => bluetooth.esquecer(String(mac)));
+  tratar('bluetooth:parear', (mac) => bluetooth.parear(String(mac)));
+  tratar('bluetooth:responder', (r) => { bluetooth.responder(String(r).slice(0, 16)); return true; });
+  tratar('bluetooth:cancelar', () => { bluetooth.cancelar(); return true; });
+  tratar('bluetooth:configuracoesDoSistema', () => shell.openExternal(process.platform === 'win32' ? 'ms-settings:bluetooth' : 'x-apple.systempreferences:com.apple.BluetoothSettings'));
   // O Monitor do sistema.
   const monitor = new Monitor({ app });
   tratar('monitor:amostra', () => monitor.amostra());

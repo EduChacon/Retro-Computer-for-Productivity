@@ -11,6 +11,7 @@ import { entrada } from './dialogos.js';
 import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
 import { deslizante } from './controles.js';
+import { iconeBluetooth } from './bluetooth.js';
 
 /* ---------- Peças comuns ---------- */
 
@@ -484,5 +485,5 @@ export function montarBandeja() {
     else if (acao === 'monitor') abrir('monitor');
     else if (acao.startsWith('captura')) import('./apps/captura.js').then((m) => m.capturaRapida(acao === 'captura-janela' ? 'janela' : acao === 'captura-regiao' ? 'regiao' : 'tela'));
   });
-  return { antes: [redeIco, somIco, batIco], depois: [sino] };
+  return { antes: [iconeBluetooth(), redeIco, somIco, batIco], depois: [sino] };
 }
