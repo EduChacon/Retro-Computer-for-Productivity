@@ -1219,3 +1219,37 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .webapp-linha { display: flex; align-items: center; gap: 8px; padding: 4px; }
 .webapp-linha > div { flex: 1; min-width: 0; }
 .webapp-linha .webapp-endereco { max-width: 200px; }
+
+/* A vista de miniaturas (o Explorador). */
+.vista-miniaturas { gap: 8px 4px; }
+.vista-miniaturas .item { width: 108px; }
+.vista-miniaturas .item .icone { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #fff; box-shadow: inset 0 0 0 1px var(--sombra); }
+.vista-miniaturas .item .icone img { width: 32px; height: 32px; }
+.vista-miniaturas .item .icone img.mini { width: auto; height: auto; max-width: 94px; max-height: 94px; }
+.vista-miniaturas .item .rotulo { max-width: 108px; }
+.vista-miniaturas .item.sel .icone { box-shadow: inset 0 0 0 2px var(--selecao); }
+.vista-miniaturas .item.sel .icone::after { -webkit-mask: none; background: none; }
+.vista-miniaturas .item.sel .icone:not(.com-foto)::after { -webkit-mask: var(--ico) center / 32px 32px no-repeat; background: var(--xadrez-azul); }
+
+/* O Explorador: a barra de pastas, a divisória e o endereço em pedaços. */
+.exp-corpo { flex: 1 1 auto; min-height: 0; display: flex; }
+.exp-corpo > .lista-arquivos { flex: 1 1 auto; min-width: 0; }
+.exp-arvore { flex: none; min-width: 100px; overflow: auto; background: #fff; box-shadow: var(--campo); }
+.exp-divisoria { flex: none; width: 4px; cursor: col-resize; touch-action: none; }
+.exp-corpo:not(.com-arvore) .exp-divisoria { display: none; }
+.arvore { min-width: max-content; padding: 2px; outline: none; }
+.arv-linha { display: flex; align-items: center; gap: 3px; height: 18px; white-space: nowrap; cursor: default; }
+.arv-linha img { flex: none; }
+.arv-rotulo { padding: 0 2px 1px; }
+.arv-linha.sel .arv-rotulo { background: var(--selecao); color: var(--selecao-texto); }
+.arvore:focus .arv-linha.sel .arv-rotulo { outline: 1px dotted #ffff7f; outline-offset: -1px; }
+.arv-botao { flex: none; width: 9px; height: 9px; display: flex; align-items: center; justify-content: center; font-size: 9px; line-height: 9px; color: #000; background: #fff; border: 1px solid var(--sombra); }
+.arv-botao.vazio { border-color: transparent; background: none; }
+.exp-endereco { flex: 1 1 auto; min-width: 60px; height: 20px; display: flex; background: #fff; box-shadow: var(--campo); }
+.exp-endereco input { flex: 1 1 auto; min-width: 0; height: 100%; box-shadow: none; }
+.migalhas { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 0 2px; overflow: hidden; white-space: nowrap; cursor: text; }
+button.migalha { flex: none; min-width: 0; min-height: 0; height: 16px; padding: 0 3px; display: inline-flex; align-items: center; gap: 3px; background: none; box-shadow: none; cursor: default; }
+button.migalha:hover { box-shadow: var(--raso-alto); }
+button.migalha:active { box-shadow: var(--raso); padding: 1px 2px 0 4px; }
+.migalha-sep { flex: none; padding: 0 1px; color: var(--sombra); }
+button.ferramenta.apertado { box-shadow: var(--raso); background: var(--face) var(--xadrez); }

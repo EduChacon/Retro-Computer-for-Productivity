@@ -984,6 +984,36 @@ const ROTEIROS = {
     servidor.close();
   },
 
+  // O Explorador: a barra de pastas, o endereço em pedaços e as miniaturas das fotos.
+  async explorador() {
+    const fotos = path.join(disco, DOCS, 'Fotos', 'Viagem');
+    fs.mkdirSync(fotos, { recursive: true });
+    const ff = (...a) => execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...a]);
+    ff('-f', 'lavfi', '-i', 'testsrc2=size=1600x1200', '-frames:v', '1', path.join(fotos, 'praia.jpg'));
+    ff('-f', 'lavfi', '-i', 'mandelbrot=size=800x600', '-frames:v', '1', path.join(fotos, 'montanha.png'));
+    ff('-f', 'lavfi', '-i', 'testsrc=size=600x800', '-frames:v', '1', path.join(fotos, 'retrato.jpg'));
+    fs.writeFileSync(path.join(fotos, 'roteiro.txt'), 'Dia 1: praia.\n');
+    await fecharTudo();
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ explorador: { modo: 'miniaturas', arvore: true } })));
+    await abrir('explorador', { pasta: `${DOCS}/Fotos/Viagem` });
+    await pagina.waitForTimeout(400);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret.w = 700; j.ret.h = 460; j.aplicarRet(); });
+    await pagina.waitForTimeout(2500);
+    await foto('explorador-miniaturas');
+    await pagina.click(`.janela.ativa .migalha:has-text("${DOCS}")`);
+    await pagina.waitForTimeout(1200);
+    await foto('explorador-migalha');
+    const caixa = await pagina.locator('.janela.ativa .migalhas').boundingBox();
+    await pagina.mouse.click(caixa.x + caixa.width - 12, caixa.y + caixa.height / 2);
+    await pagina.waitForTimeout(300);
+    await foto('explorador-endereco-texto');
+    await pagina.keyboard.press('Escape');
+    await pagina.click(`.janela.ativa .arv-linha:has-text("${T('Lixeira')}")`);
+    await pagina.waitForTimeout(800);
+    await foto('explorador-arvore-lixeira');
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ explorador: { modo: 'icones' } })));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

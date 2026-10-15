@@ -63,6 +63,8 @@ export const paiDe = (rel) => String(rel || '').split('/').filter(Boolean).slice
 export const juntar = (pai, nome) => (pai ? `${pai}/${nome}` : nome);
 /** O endereço de um arquivo do disco para <img> e <video> (só leitura; servido pelo processo principal). */
 export const urlDoDisco = (rel) => 'disco/' + String(rel || '').split('/').filter(Boolean).map(encodeURIComponent).join('/');
+/** A miniatura de uma foto do disco (o Explorador); "v" muda quando o arquivo muda. */
+export const urlMiniatura = (rel, v = 0) => 'miniatura/' + String(rel || '').split('/').filter(Boolean).map(encodeURIComponent).join('/') + '?v=' + Math.round(v);
 export function extensao(nome) {
   const m = String(nome).match(/\.([^.\/]+)$/);
   return m ? m[1].toLowerCase() : '';

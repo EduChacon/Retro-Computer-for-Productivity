@@ -6,7 +6,7 @@
  *   pasta '::zip:…'       por dentro de uma pasta compactada (compactados.js): ver e extrair
  *   qualquer outra        uma pasta do disco ('' é a raiz C:\)
  */
-import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, dataHora, rotulo } from '../util.js';
+import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, dataHora, rotulo, extensao, urlMiniatura } from '../util.js';
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
@@ -18,6 +18,10 @@ import { tocar } from '../sons.js';
 import { tr, marcar } from '../idioma.js';
 import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos } from '../unidades.js';
 import { pastaDoZip, lerPastaZip, itensDoZip, extrairEMostrar, abrirDoZip } from '../compactados.js';
+import { Arvore } from '../arvore.js';
+
+// As fotos com miniatura (as que o Electron ou o sistema sabem encolher).
+const COM_MINIATURA = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif', 'tif', 'tiff', 'heic']);
 
 const ESPECIAIS = {
   '::computador': { titulo: marcar('Meu computador'), icone: 'computador' },
@@ -66,10 +70,16 @@ class Explorador {
       if (e.button === 3) { e.preventDefault(); this.voltar(); }
       else if (e.button === 4) { e.preventDefault(); this.avancar(); }
     });
-    this.endereco = h('input', { type: 'text', spellcheck: false, style: { flex: '1' } });
+    // O endereço: os pedaços do caminho para clicar; um clique no espaço vazio (ou Alt+D) vira o campo de texto.
+    this.endereco = h('input.exp-endereco-texto', { type: 'text', spellcheck: false, hidden: true });
+    this.migalhas = h('div.migalhas', { title: tr('Clique num nome para ir até ele; clique no espaço vazio para digitar um endereço.') });
+    this.migalhas.addEventListener('mousedown', (e) => { if (!e.target.closest('button')) { e.preventDefault(); this.editarEndereco(); } });
     this.endereco.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); this.irPara(this.endereco.value); }
+      if (e.key === 'Enter') { e.preventDefault(); this.fecharEndereco(); this.irPara(this.endereco.value); }
+      if (e.key === 'Escape') { e.preventDefault(); this.fecharEndereco(); this.vista.focoNoRaiz(); }
     });
+    this.endereco.addEventListener('blur', () => this.fecharEndereco());
+    this.caixaEndereco = h('div.exp-endereco', this.migalhas, this.endereco);
     this.btVoltar = h('button.ferramenta', { title: tr('Voltar (Backspace)'), on: { click: () => this.voltar() } }, img('pasta-aberta', 16), tr('Voltar'));
     this.btAcima = h('button.ferramenta', { title: tr('Subir um nível'), on: { click: () => this.subir() } }, h('span', { style: { fontWeight: 'bold' } }, '↑'), tr('Acima'));
     const btVista = h('button.ferramenta', { title: tr('Exibir'), dataset: { abreMenu: '1' } }, img('imagens', 16), tr('Exibir'));
@@ -77,11 +87,20 @@ class Explorador {
       const r = btVista.getBoundingClientRect();
       abrirMenu(this.itensExibir(), { x: r.left, y: r.bottom });
     });
+    this.btPastas = h('button.ferramenta', { title: tr('Mostrar ou esconder a barra de pastas'), on: { click: () => this.alternarArvore() } }, img('pasta', 16), tr('Pastas'));
     const ferramentas = h('div.barra-ferramentas',
-      this.btVoltar, this.btAcima, h('div.sep'),
-      h('span', tr('Endereço')), this.endereco, h('div.sep'), btVista);
+      this.btVoltar, this.btAcima, this.btPastas, h('div.sep'),
+      h('span', tr('Endereço')), this.caixaEndereco, h('div.sep'), btVista);
     this.area = h('div.lista-arquivos', { style: { flex: '1' } });
-    this.j.corpo.append(ferramentas, this.area);
+    // A barra de pastas à esquerda (a árvore), com a divisória para arrastar.
+    this.arvore = new Arvore({ aoEscolher: (p) => this.navegar(p) });
+    this.painelArvore = h('div.exp-arvore', { style: { width: ((c.explorador && c.explorador.largArvore) || 170) + 'px' } }, this.arvore.el);
+    const divisoria = h('div.exp-divisoria');
+    divisoria.addEventListener('pointerdown', (e) => this.arrastarDivisoria(e));
+    this.comArvore = !(c.explorador && c.explorador.arvore === false);
+    this.corpo = h('div.exp-corpo', this.painelArvore, divisoria, this.area);
+    this.j.corpo.append(ferramentas, this.corpo);
+    this.aplicarArvore();
     this.vista = new VistaIcones(this.area, {
       modo: this.modo,
       colunas: [tr('Nome'), tr('Tamanho'), tr('Tipo'), tr('Modificado')],
@@ -94,12 +113,14 @@ class Explorador {
     this.area.addEventListener('keydown', (e) => this.atalhos(e));
     this.paraDeOuvir = retro.disco.aoMudar((pastas) => {
       if (pastas.includes(this.pasta) || (this.pasta === '::lixeira' && pastas.includes('::lixeira')) || this.pasta === '::computador') this.carregar();
+      if (this.comArvore) for (const p of pastas) this.arvore.recarregar(p);
     });
     // Um pendrive que chega ou sai: o Meu computador se atualiza; a janela do que saiu volta para ele.
     const aoMudarUnidades = (e) => {
       const un = lerPastaUnidade(this.pasta);
       if (this.pasta === '::computador') this.carregar();
       else if (un && !e.detail.some((u) => u.id === un.id)) this.navegar('::computador');
+      if (this.comArvore) this.arvore.recarregar('::computador');
     };
     document.addEventListener('retro-unidades', aoMudarUnidades);
     this.j.ev.on('fechada', () => { this.paraDeOuvir(); document.removeEventListener('retro-unidades', aoMudarUnidades); });
@@ -171,13 +192,23 @@ class Explorador {
     ];
   }
 
-  itensExibir() {
+  itensModos() {
     const m = (modo, r) => ({ rotulo: r, radio: true, marcado: this.modo === modo, acao: () => this.definirModo(modo) });
+    return [m('icones', tr('Ícones &grandes')), m('miniaturas', tr('&Miniaturas')), m('lista', tr('&Lista')), m('detalhes', tr('&Detalhes'))];
+  }
+
+  itensOrganizar() {
     const o = (ordem, r) => ({ rotulo: r, radio: true, marcado: this.ordem === ordem, acao: () => { this.ordem = ordem; this.carregar(); } });
+    return [o('nome', 'Por &nome'), o('tipo', 'Por &tipo'), o('tamanho', 'Por &tamanho'), o('data', 'Por &data')];
+  }
+
+  itensExibir() {
     return [
-      m('icones', tr('Ícones &grandes')), m('lista', tr('&Lista')), m('detalhes', tr('&Detalhes')),
+      ...this.itensModos(),
       { separador: true },
-      { rotulo: tr('&Organizar ícones'), sub: () => [o('nome', 'Por &nome'), o('tipo', 'Por &tipo'), o('tamanho', 'Por &tamanho'), o('data', 'Por &data')] },
+      { rotulo: tr('Barra de &pastas'), marcado: this.comArvore, acao: () => this.alternarArvore() },
+      { separador: true },
+      { rotulo: tr('&Organizar ícones'), sub: () => this.itensOrganizar() },
       { separador: true },
       { rotulo: tr('&Atualizar'), atalho: 'F5', acao: () => this.carregar() },
       { separador: true },
@@ -186,9 +217,89 @@ class Explorador {
   }
 
   definirModo(modo) {
+    const antes = this.modo;
     this.modo = modo;
-    this.vista.definirModo(modo);
+    // As miniaturas entram nos itens ao carregar: trocar de ou para elas lê a pasta de novo.
+    if ((antes === 'miniaturas') !== (modo === 'miniaturas')) { this.vista.modo = modo; this.carregar(); }
+    else this.vista.definirModo(modo);
     definirConfig({ explorador: { modo } }).catch(() => { });
+  }
+
+  /* ---------- A barra de pastas e o endereço ---------- */
+
+  aplicarArvore() {
+    this.painelArvore.hidden = !this.comArvore;
+    this.corpo.classList.toggle('com-arvore', this.comArvore);
+    this.btPastas.classList.toggle('apertado', this.comArvore);
+    if (this.comArvore) this.arvore.revelar(this.pasta);
+  }
+
+  alternarArvore() {
+    this.comArvore = !this.comArvore;
+    this.aplicarArvore();
+    definirConfig({ explorador: { arvore: this.comArvore } }).catch(() => { });
+  }
+
+  arrastarDivisoria(e) {
+    e.preventDefault();
+    const ini = { x: e.clientX, w: this.painelArvore.offsetWidth };
+    const alvo = e.currentTarget;
+    alvo.setPointerCapture(e.pointerId);
+    const mover = (ev) => { this.painelArvore.style.width = Math.max(100, Math.min(this.corpo.clientWidth - 120, ini.w + ev.clientX - ini.x)) + 'px'; };
+    const soltar = () => {
+      alvo.removeEventListener('pointermove', mover);
+      alvo.removeEventListener('pointerup', soltar);
+      definirConfig({ explorador: { largArvore: this.painelArvore.offsetWidth } }).catch(() => { });
+    };
+    alvo.addEventListener('pointermove', mover);
+    alvo.addEventListener('pointerup', soltar);
+  }
+
+  /** Os pedaços do caminho da pasta: [{ rotulo, pasta, icone }]. */
+  segmentos(pasta) {
+    const pc = { rotulo: tr('Meu computador'), pasta: '::computador', icone: 'computador' };
+    if (pasta === '::computador') return [pc];
+    if (pasta === '::lixeira') return [{ rotulo: tr('Lixeira'), pasta, icone: 'lixeira' }];
+    const disco = (rel) => {
+      const partes = String(rel || '').split('/').filter(Boolean);
+      return [pc, { rotulo: 'C:', pasta: '', icone: 'disco' }, ...partes.map((p, i) => ({ rotulo: p, pasta: partes.slice(0, i + 1).join('/') }))];
+    };
+    const un = lerPastaUnidade(pasta);
+    if (un) {
+      const partes = un.rel ? un.rel.split('/') : [];
+      return [pc, { rotulo: nomeUnidade(unidadeConhecida(un.id)), pasta: pastaDaUnidade(un.id), icone: 'removivel' },
+        ...partes.map((p, i) => ({ rotulo: p, pasta: pastaDaUnidade(un.id, partes.slice(0, i + 1).join('/')) }))];
+    }
+    const zip = lerPastaZip(pasta);
+    if (zip) {
+      const partes = zip.dentro ? zip.dentro.split('/') : [];
+      return [...disco(paiDe(zip.rel)), { rotulo: nomeDe(zip.rel), pasta: pastaDoZip(zip.rel), icone: 'compactado' },
+        ...partes.map((p, i) => ({ rotulo: p, pasta: pastaDoZip(zip.rel, partes.slice(0, i + 1).join('/')) }))];
+    }
+    return disco(pasta);
+  }
+
+  desenharMigalhas() {
+    const segs = this.segmentos(this.pasta);
+    this.migalhas.replaceChildren(...segs.flatMap((s, i) => {
+      const bt = h('button.migalha', { type: 'button', tabIndex: -1, title: s.rotulo, on: { click: () => this.navegar(s.pasta) } }, s.icone && i === 0 ? img(s.icone, 16) : null, h('span', s.rotulo));
+      return i ? [h('span.migalha-sep', '›'), bt] : [bt];
+    }));
+    // O fim do caminho fica sempre à vista.
+    requestAnimationFrame(() => { this.migalhas.scrollLeft = this.migalhas.scrollWidth; });
+  }
+
+  editarEndereco() {
+    this.migalhas.hidden = true;
+    this.endereco.hidden = false;
+    this.endereco.focus();
+    this.endereco.select();
+  }
+
+  fecharEndereco() {
+    if (this.endereco.hidden) return;
+    this.endereco.hidden = true;
+    this.migalhas.hidden = false;
   }
 
   /* ---------- Navegação ---------- */
@@ -250,6 +361,8 @@ class Explorador {
       : un ? nomeUnidade(unidadeConhecida(un.id)) + (un.rel ? '\\' + un.rel.replace(/\//g, '\\') : '')
         : zip ? caminhoTela(zip.rel) + (zip.dentro ? '\\' + zip.dentro.replace(/\//g, '\\') : '')
           : caminhoTela(pasta);
+    this.desenharMigalhas();
+    if (this.comArvore) this.arvore.revelar(pasta);
     this.btVoltar.disabled = !this.historico.length;
     this.btAcima.disabled = pasta === '::computador';
     let itens = [];
@@ -354,6 +467,7 @@ class Explorador {
         dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
         tamanho: f.tamanho,
+        miniatura: this.modo === 'miniaturas' && !f.pasta && COM_MINIATURA.has(extensao(f.nome)) ? urlMiniatura(f.rel, f.modificado) : null,
       };
     });
   }
@@ -439,8 +553,8 @@ class Explorador {
     }
     if (!sel.length) {
       return abrirMenu(menuDoFundo(this.pasta, {
-        vista: () => this.itensExibir().slice(0, 3),
-        organizar: () => this.itensExibir()[4].sub(),
+        vista: () => this.itensModos(),
+        organizar: () => this.itensOrganizar(),
         atualizar: () => this.carregar(),
         aoNovo: (rel) => this.depoisDeCriar(rel),
       }), pos);
@@ -452,6 +566,7 @@ class Explorador {
     const doDisco = !this.pasta.startsWith('::');
     const sel = () => this.vista.selecionados().filter((s) => s.rel).map((s) => s.rel);
     if (e.key === 'Backspace') { e.preventDefault(); this.subir(); return; }
+    if ((e.altKey && e.key.toLowerCase() === 'd') || e.key === 'F4') { e.preventDefault(); this.editarEndereco(); return; }
     if (e.key === 'F5') { e.preventDefault(); this.carregar(); return; }
     if (!(e.ctrlKey || e.metaKey) || !doDisco) return;
     const k = e.key.toLowerCase();

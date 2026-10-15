@@ -4,7 +4,8 @@
  * (clique, Ctrl, Shift, laço), do teclado, de arrastar e de soltar.
  *
  * Item: { chave, rotulo, icone, rel?, pasta?, alvo? (pasta ou '::lixeira' que aceita soltar),
- *         atalho?, arrastavel?, colunas? (vista de detalhes), pos? ([x, y] na área de trabalho) }
+ *         atalho?, arrastavel?, colunas? (vista de detalhes), pos? ([x, y] na área de trabalho),
+ *         miniatura? (o endereço da miniatura de uma foto, na vista de miniaturas) }
  */
 import { h, img, limitar } from './util.js';
 import { TIPO_ARRASTO, aceitaSoltar, soltarEm } from './arquivos.js';
@@ -16,7 +17,7 @@ export class VistaIcones {
   /**
    * @param {HTMLElement} raiz
    * @param {object} o
-   * @param {'mesa'|'icones'|'lista'|'detalhes'} o.modo
+   * @param {'mesa'|'icones'|'miniaturas'|'lista'|'detalhes'} o.modo
    * @param {Function} o.aoAbrir   (item) => void
    * @param {Function} o.aoMenu    (itensSelecionados, evento) => void (sem itens: menu do fundo)
    * @param {Function} [o.aoRenomear] (item) => void
@@ -79,6 +80,7 @@ export class VistaIcones {
     this.itens = itens;
     this.raiz.className = this.raiz.className.replace(/\bvista-\S+|\bicones\b/g, '').trim();
     if (this.modo === 'icones') this.raiz.classList.add('icones');
+    if (this.modo === 'miniaturas') this.raiz.classList.add('icones', 'vista-miniaturas');
     if (this.modo === 'lista') this.raiz.classList.add('vista-lista');
     if (this.modo === 'detalhes') this.raiz.classList.add('vista-detalhes');
     this.els = itens.map((it, i) => this.criarItem(it, i));
@@ -101,6 +103,13 @@ export class VistaIcones {
     const icone = it.iconeUrl
       ? h('div.icone', { style: { '--ico': `url("${it.iconeUrl}")` } }, h('img.de-fora', { src: it.iconeUrl, width: tam, height: tam, alt: '', draggable: 'false' }))
       : h('div.icone', { style: { '--ico': `url(icones/${tam}/${it.icone}.png)` } }, img(it.icone, tam));
+    // Na vista de miniaturas, a foto encolhida no quadro (se não carregar, fica o ícone).
+    if (this.modo === 'miniaturas' && it.miniatura) {
+      const mini = h('img.mini', { src: it.miniatura, alt: '', draggable: 'false', loading: 'lazy', decoding: 'async' });
+      mini.addEventListener('error', () => mini.replaceWith(img(it.icone, 32)));
+      icone.replaceChildren(mini);
+      icone.classList.add('com-foto');
+    }
     if (it.atalho && tam === 32) icone.append(h('div.atalho-seta'));
     let el;
     if (this.modo === 'detalhes') {
@@ -379,7 +388,7 @@ export class VistaIcones {
       return { dir: linhas, baixo: 1 };
     }
     if (this.modo === 'detalhes') return { dir: 1, baixo: 1 };
-    const cols = Math.max(1, Math.floor((this.raiz.clientWidth - 8) / 76));
+    const cols = Math.max(1, Math.floor((this.raiz.clientWidth - 8) / (this.modo === 'miniaturas' ? 112 : 76)));
     return { dir: 1, baixo: cols };
   }
 

@@ -25,7 +25,7 @@ const { Loja, LojaFalsa } = require('./loja');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos } = require('./bloqueio');
 const { Unidades, UnidadesFalsas } = require('./unidades');
-const { servirArquivo } = require('./servir');
+const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
 
@@ -161,6 +161,12 @@ function registrarProtocolos() {
       let arquivo;
       try { arquivo = disco.real(rel.slice('/disco/'.length)); } catch { return new Response('404', { status: 404 }); }
       return servirArquivo(arquivo, pedido.headers.get('range'));
+    }
+    // As miniaturas das fotos no Explorador (num cache dos dados do programa).
+    if (rel.startsWith('/miniatura/')) {
+      let arquivo;
+      try { arquivo = disco.real(rel.slice('/miniatura/'.length)); } catch { return new Response('404', { status: 404 }); }
+      return miniatura(arquivo, path.join(app.getPath('userData'), 'miniaturas'), nativeImage);
     }
     if (rel === '/' || rel === '') rel = '/index.html';
     const arquivo = path.resolve(PASTA_SISTEMA, '.' + rel);
@@ -456,6 +462,20 @@ function teclasDoSistema() {
     });
   });
   app.on('will-quit', () => globalShortcut.unregisterAll());
+}
+
+/** O cache das miniaturas do Explorador não cresce sem fim: passando de 3000, saem as 1000 mais antigas. */
+function podarMiniaturas() {
+  const pasta = path.join(app.getPath('userData'), 'miniaturas');
+  setTimeout(async () => {
+    try {
+      const nomes = await fsp.readdir(pasta);
+      if (nomes.length <= 3000) return;
+      const lista = await Promise.all(nomes.map(async (n) => ({ n, t: (await fsp.stat(path.join(pasta, n))).mtimeMs })));
+      lista.sort((a, b) => a.t - b.t);
+      for (const { n } of lista.slice(0, 1000)) await fsp.rm(path.join(pasta, n), { force: true });
+    } catch { }
+  }, 30000).unref();
 }
 
 /**
@@ -843,6 +863,7 @@ app.whenReady().then(async () => {
     ? new UnidadesFalsas({ disco: () => disco }, process.env.RETRO_UNIDADES_FALSAS)
     : new Unidades({ disco: () => disco, sistema: MODO_SISTEMA });
   vigiarUnidades();
+  podarMiniaturas();
   menuDoSistema();
   configurarSessao();
   configurarNavegador();
