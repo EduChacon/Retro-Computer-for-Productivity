@@ -16,11 +16,14 @@ const path = require('node:path');
 
 const { Disco } = require('./disco');
 const { Config } = require('./config');
-const { Programas, mimeDe } = require('./programas');
+const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
 const { Terminais, acharClaude, comandoInstalarClaude } = require('./terminal');
+const idioma = require('./idioma');
+const { tr } = idioma;
 
 const RAIZ_APP = path.join(__dirname, '..', '..');
 const PASTA_SISTEMA = path.join(RAIZ_APP, 'src', 'sistema');
+const REPO_SISTEMA = 'EduChacon/Retro-Computer-for-Productivity';
 const VENDOR = {
   'xterm/xterm.js': path.join(RAIZ_APP, 'node_modules', '@xterm', 'xterm', 'lib', 'xterm.js'),
   'xterm/xterm.css': path.join(RAIZ_APP, 'node_modules', '@xterm', 'xterm', 'css', 'xterm.css'),
@@ -29,13 +32,22 @@ const VENDOR = {
   'xterm/addon-unicode11.js': path.join(RAIZ_APP, 'node_modules', '@xterm', 'addon-unicode11', 'lib', 'addon-unicode11.js'),
 };
 
-// A interface dos programas (o WordCraft, por exemplo) segue o idioma do navegador.
-app.commandLine.appendSwitch('lang', 'pt-BR');
+if (process.env.RETRO_DADOS) app.setPath('userData', path.resolve(process.env.RETRO_DADOS));
+
+// O idioma escolhido vale também para os programas (o WordCraft segue o do navegador).
+// No "automático", o Chromium usa o idioma do sistema.
+const idiomaEscolhido = (() => {
+  if (process.env.RETRO_IDIOMA) return process.env.RETRO_IDIOMA;
+  try {
+    return JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'config.json'), 'utf8')).idioma || 'auto';
+  } catch {
+    return 'auto';
+  }
+})();
+if (idioma.CODIGOS.includes(idiomaEscolhido)) app.commandLine.appendSwitch('lang', idiomaEscolhido);
 // Sem placa de vídeo utilizável (máquinas virtuais, computadores antigos), os Craft
 // ainda desenham com o WebGL2 por software. Só roda conteúdo local e confiável aqui.
 app.commandLine.appendSwitch('enable-unsafe-swiftshader');
-
-if (process.env.RETRO_DADOS) app.setPath('userData', path.resolve(process.env.RETRO_DADOS));
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'sistema', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
@@ -57,6 +69,18 @@ function enviar(canal, ...args) {
   if (janela && !janela.isDestroyed()) janela.webContents.send(canal, ...args);
 }
 
+/** Os nomes das pastas do disco: os que já existem nele ou os do idioma atual. */
+function nomesDasPastas(raiz) {
+  const c = config.obter();
+  if (c.pastas && c.pastas.documentos) return c.pastas;
+  const ordem = [idioma.idioma(), ...idioma.CODIGOS.filter((x) => x !== idioma.idioma())];
+  for (const cod of ordem) {
+    const n = idioma.PASTAS[cod];
+    if (fs.existsSync(path.join(raiz, n.documentos))) return n;
+  }
+  return idioma.PASTAS[idioma.idioma()];
+}
+
 async function abrirDisco() {
   let raiz = config.obter().disco;
   if (!raiz) {
@@ -64,34 +88,38 @@ async function abrirDisco() {
     config.definir({ disco: raiz });
   }
   disco = new Disco(raiz);
-  const novo = !fs.existsSync(raiz);
-  await disco.preparar();
-  if (novo) await criarBoasVindas();
+  // A primeira vez com este disco: a configuração ainda não sabe os nomes das pastas dele.
+  const primeiraVez = !(config.obter().pastas && config.obter().pastas.documentos);
+  const pastas = nomesDasPastas(raiz);
+  config.definir({ pastas });
+  await disco.preparar([pastas.documentos, pastas.mesa]);
+  if (primeiraVez && !fs.existsSync(path.join(raiz, pastas.documentos, pastas.leiame))) await criarBoasVindas(pastas);
   pararObservar();
-  pararObservar = disco.observar((pastas) => enviar('disco:mudou', pastas));
+  pararObservar = disco.observar((mudancas) => enviar('disco:mudou', mudancas));
 }
 
-async function criarBoasVindas() {
+async function criarBoasVindas(pastas) {
   const texto = [
-    'Bem-vindo ao Retro Computer!',
+    tr('Bem-vindo ao Retro Computer!'),
     '',
-    'Este é o seu disco C:. Ele é uma pasta comum do seu computador:',
+    tr('Este é o seu disco C:. Ele é uma pasta comum do seu computador:'),
     `  ${disco.raiz}`,
     '',
-    'Tudo o que você salvar aqui fica nessa pasta, visível fora do programa.',
-    'Para trazer arquivos, arraste-os para uma janela de pasta ou para a área de trabalho.',
-    'Para levar, abra a pasta no computador principal (botão direito › Mostrar no computador principal).',
+    tr('Tudo o que você salvar aqui fica nessa pasta, visível fora do programa.'),
+    tr('Para trazer arquivos, arraste-os para uma janela de pasta ou para a área de trabalho.'),
+    tr('Para levar, use o botão direito › Enviar para, ou › Mostrar no computador principal.'),
     '',
-    'Nada se perde: o que você exclui vai para a Lixeira, e cada gravação guarda a versão anterior',
-    '(botão direito no arquivo › Versões anteriores).',
+    tr('Nada se perde: o que você exclui vai para a Lixeira, e cada gravação guarda a versão anterior'),
+    tr('(botão direito no arquivo › Versões anteriores).'),
     '',
-    'Para instalar programas: Iniciar › Configurações › Painel de controle › Adicionar ou remover programas.',
-    'Para usar o Claude Code: Iniciar › Programas › Claude (ou o ícone na área de trabalho).',
+    tr('Para instalar programas: Iniciar › Configurações › Adicionar ou remover programas.'),
+    tr('Para usar o Claude Code: o ícone Claude, na área de trabalho.'),
+    tr('Para trocar o idioma: Iniciar › Configurações › Painel de controle › Idioma.'),
     '',
-    'Bom trabalho!',
+    tr('Bom trabalho!'),
     '',
   ].join('\r\n');
-  await disco.gravar('Meus documentos/Leia-me.txt', Buffer.from(texto, 'utf8'), { versao: false });
+  await disco.gravar(`${pastas.documentos}/${pastas.leiame}`, Buffer.from(texto, 'utf8'), { versao: false });
 }
 
 /* ---------- Protocolos ---------- */
@@ -102,13 +130,13 @@ function registrarProtocolos() {
     let rel = decodeURIComponent(url.pathname);
     if (rel.startsWith('/vendor/')) {
       const arquivo = VENDOR[rel.slice('/vendor/'.length)];
-      if (!arquivo) return new Response('Não encontrado', { status: 404 });
+      if (!arquivo) return new Response('404', { status: 404 });
       return new Response(await fsp.readFile(arquivo), { headers: { 'Content-Type': mimeDe(arquivo) } });
     }
     if (rel === '/' || rel === '') rel = '/index.html';
     const arquivo = path.resolve(PASTA_SISTEMA, '.' + rel);
     if (!arquivo.startsWith(PASTA_SISTEMA + path.sep) || !fs.existsSync(arquivo)) {
-      return new Response('Não encontrado', { status: 404 });
+      return new Response('404', { status: 404 });
     }
     return new Response(await fsp.readFile(arquivo), {
       headers: { 'Content-Type': mimeDe(arquivo), 'Cache-Control': 'no-cache' },
@@ -186,9 +214,9 @@ function menuDoSistema() {
   }
   // No macOS, Copiar e Colar dependem dos itens do menu.
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'Retro Computer', submenu: [{ role: 'about', label: 'Sobre o Retro Computer' }, { type: 'separator' }, { role: 'hide', label: 'Ocultar' }, { role: 'quit', label: 'Sair' }] },
-    { label: 'Editar', submenu: [{ role: 'undo', label: 'Desfazer' }, { role: 'redo', label: 'Refazer' }, { type: 'separator' }, { role: 'cut', label: 'Recortar' }, { role: 'copy', label: 'Copiar' }, { role: 'paste', label: 'Colar' }, { role: 'selectAll', label: 'Selecionar tudo' }] },
-    { label: 'Janela', submenu: [{ role: 'togglefullscreen', label: 'Tela cheia' }, { role: 'minimize', label: 'Minimizar' }] },
+    { label: 'Retro Computer', submenu: [{ role: 'about', label: tr('Sobre o Retro Computer') }, { type: 'separator' }, { role: 'hide', label: tr('Ocultar') }, { role: 'quit', label: tr('Sair') }] },
+    { label: tr('Editar'), submenu: [{ role: 'undo', label: tr('Desfazer') }, { role: 'redo', label: tr('Refazer') }, { type: 'separator' }, { role: 'cut', label: tr('Recortar') }, { role: 'copy', label: tr('Copiar') }, { role: 'paste', label: tr('Colar') }, { role: 'selectAll', label: tr('Selecionar tudo') }] },
+    { label: tr('Janela'), submenu: [{ role: 'togglefullscreen', label: tr('Tela cheia') }, { role: 'minimize', label: tr('Minimizar') }] },
   ]));
 }
 
@@ -207,9 +235,11 @@ function configurarSessao() {
   // Um download que escapar do adaptador vai para "Meus documentos/Recebidos".
   s.on('will-download', (_e, item) => {
     try {
-      const pasta = disco.real('Meus documentos/Recebidos');
+      const p = config.obter().pastas || idioma.PASTAS[idioma.idioma()];
+      const relPasta = `${p.documentos}/${p.recebidos || idioma.PASTAS[idioma.idioma()].recebidos}`;
+      const pasta = disco.real(relPasta);
       fs.mkdirSync(pasta, { recursive: true });
-      let nome = item.getFilename() || 'arquivo';
+      const nome = item.getFilename() || 'arquivo';
       let alvo = path.join(pasta, nome);
       for (let i = 2; fs.existsSync(alvo); i++) {
         const ext = path.extname(nome);
@@ -217,7 +247,7 @@ function configurarSessao() {
       }
       item.setSavePath(alvo);
       item.once('done', (_ev, estado) => {
-        if (estado === 'completed') enviar('sistema:recebido', `Meus documentos/Recebidos/${path.basename(alvo)}`);
+        if (estado === 'completed') enviar('sistema:recebido', `${relPasta}/${path.basename(alvo)}`);
       });
     } catch {
       item.cancel();
@@ -229,7 +259,7 @@ function configurarSessao() {
 
 function tratar(canal, fn) {
   ipcMain.handle(canal, async (e, ...args) => {
-    if (!janela || e.sender !== janela.webContents) throw new Error('Origem não autorizada.');
+    if (!janela || e.sender !== janela.webContents) throw new Error('origem');
     try {
       return { ok: true, valor: await fn(...args) };
     } catch (erro) {
@@ -247,9 +277,11 @@ function registrarPonte() {
     temChave: config.temChave(),
     cofre: config.cofreDisponivel(),
     telaCheiaAgora: janela ? janela.isFullScreen() : false,
+    idiomaEfetivo: idioma.idioma(),
+    idiomaSistema: app.getLocale(),
   }));
   tratar('config:definir', (parte) => {
-    const proibidas = ['disco', 'versao'];
+    const proibidas = ['disco', 'versao', 'pastas'];
     for (const k of proibidas) delete parte[k];
     return config.definir(parte);
   });
@@ -287,25 +319,25 @@ function registrarPonte() {
   tratar('disco:exportar', async (rels, onde) => {
     let pasta = onde === 'downloads' ? app.getPath('downloads') : onde === 'desktop' ? app.getPath('desktop') : null;
     if (!pasta) {
-      const r = await dialog.showOpenDialog(janela, { title: 'Levar para qual pasta do computador principal?', properties: ['openDirectory', 'createDirectory'] });
+      const r = await dialog.showOpenDialog(janela, { title: tr('Levar para qual pasta do computador principal?'), properties: ['openDirectory', 'createDirectory'] });
       if (r.canceled || !r.filePaths[0]) return null;
       pasta = r.filePaths[0];
     }
     return disco.exportar(rels, pasta);
   });
   tratar('disco:importarEscolhendo', async (destino) => {
-    const r = await dialog.showOpenDialog(janela, { title: 'Trazer arquivos do computador principal', properties: ['openFile', 'multiSelections'] });
+    const r = await dialog.showOpenDialog(janela, { title: tr('Trazer arquivos do computador principal'), properties: ['openFile', 'multiSelections'] });
     if (r.canceled || !r.filePaths.length) return [];
     return disco.importar(r.filePaths, destino);
   });
   tratar('disco:trocar', async () => {
     const r = await dialog.showOpenDialog(janela, {
-      title: 'Escolha a pasta do disco C:',
+      title: tr('Escolha a pasta do disco C:'),
       properties: ['openDirectory', 'createDirectory'],
       defaultPath: disco.raiz,
     });
     if (r.canceled || !r.filePaths[0]) return null;
-    config.definir({ disco: r.filePaths[0] });
+    config.definir({ disco: r.filePaths[0], pastas: null });
     await abrirDisco();
     return disco.raiz;
   });
@@ -313,17 +345,19 @@ function registrarPonte() {
   // Programas
   tratar('programas:catalogo', () => programas.catalogo());
   tratar('programas:instalados', () => programas.instalados());
-  tratar('programas:instalar', (id) => programas.instalar(id, (p) => enviar('programas:progresso', id, p)));
+  tratar('programas:instalar', (id, opcoes) => programas.instalar(id, (p) => enviar('programas:progresso', id, p), opcoes || {}));
   tratar('programas:instalarArquivo', async () => {
     const r = await dialog.showOpenDialog(janela, {
-      title: 'Instalar programa de um arquivo .zip',
-      filters: [{ name: 'Pacote web (.zip)', extensions: ['zip'] }],
+      title: tr('Instalar programa de um arquivo .zip'),
+      filters: [{ name: tr('Pacote para navegador (.zip)'), extensions: ['zip'] }],
       properties: ['openFile'],
     });
     if (r.canceled || !r.filePaths[0]) return null;
     return programas.instalarZip(r.filePaths[0]);
   });
   tratar('programas:remover', (id) => programas.remover(id));
+  tratar('programas:verificar', (id, o) => programas.verificar(id, o));
+  tratar('programas:verificarTodos', (o) => programas.verificarTodos(o));
 
   // Terminal
   tratar('terminal:disponivel', () => terminais.disponivel());
@@ -347,7 +381,7 @@ function registrarPonte() {
     return janela ? janela.isFullScreen() : false;
   });
   tratar('sistema:abrirLink', (url) => {
-    if (!/^https?:\/\//i.test(String(url))) throw new Error('Endereço inválido.');
+    if (!/^https?:\/\//i.test(String(url))) throw new Error(tr('Endereço inválido.'));
     return shell.openExternal(url);
   });
   tratar('sistema:desligar', () => {
@@ -359,9 +393,27 @@ function registrarPonte() {
     terminais.fecharTodos();
     if (janela) janela.webContents.reload();
   });
+  // Reabre o aplicativo inteiro (para trocar o idioma, que vale também para os programas).
+  tratar('sistema:reabrir', () => {
+    terminais.fecharTodos();
+    if (janela) janela.__podeFechar = true;
+    app.relaunch();
+    setTimeout(() => app.exit(0), 50);
+  });
   tratar('sistema:escalaTela', () => (janela ? screen.getDisplayMatching(janela.getBounds()).scaleFactor : 1));
   tratar('sistema:zoom', (fator) => {
     if (janela && fator > 0.2 && fator < 6) janela.webContents.setZoomFactor(fator);
+  });
+  // Há uma versão nova do próprio Retro Computer? (no máximo uma vez por dia)
+  tratar('sistema:novaVersao', async (forcar) => {
+    const c = config.obter();
+    const b = c.buscaSistema || {};
+    if (!forcar && b.em && Date.now() - b.em < 24 * 3600 * 1000) {
+      return { atual: app.getVersion(), nova: b.versao, pagina: b.pagina, temAtualizacao: compararVersoes(b.versao, app.getVersion()) > 0 };
+    }
+    const ult = await comLimite(ultimoLancamento((u, o) => net.fetch(u, o), REPO_SISTEMA), 8000);
+    config.definir({ buscaSistema: { em: Date.now(), versao: ult.versao, pagina: ult.pagina } });
+    return { atual: app.getVersion(), nova: ult.versao, pagina: ult.pagina, temAtualizacao: compararVersoes(ult.versao, app.getVersion()) > 0 };
   });
 }
 
@@ -376,6 +428,7 @@ app.on('second-instance', () => {
 
 app.whenReady().then(async () => {
   config = new Config(app.getPath('userData'), safeStorage);
+  idioma.definir(idioma.resolver(idiomaEscolhido, app.getLocale()));
   programas = new Programas(path.join(app.getPath('userData'), 'programas'), (url, o) => net.fetch(url, o));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
   await abrirDisco();

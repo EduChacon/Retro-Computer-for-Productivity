@@ -7,6 +7,7 @@ import { Janela, lista as janelas, minimizarTodas } from '../janelas.js';
 import { registrarApp, estado, definirConfig, avisar, eventos } from '../sistema.js';
 import { ajustarAoConteudo } from '../dialogos.js';
 import { tocar } from '../sons.js';
+import { tr } from '../idioma.js';
 
 const F = {
   fase: 'foco',      // foco | pausa | longa
@@ -40,8 +41,8 @@ const mmss = (ms) => {
 };
 
 function nomeFase() {
-  if (F.fase === 'foco') return `Foco ${F.ciclo} de ${cfg().ciclo}`;
-  return F.fase === 'pausa' ? 'Pausa curta' : 'Pausa longa';
+  if (F.fase === 'foco') return tr('Foco {n} de {total}', { n: F.ciclo, total: cfg().ciclo });
+  return F.fase === 'pausa' ? tr('Pausa curta') : tr('Pausa longa');
 }
 
 function avisarBarra() {
@@ -105,14 +106,14 @@ function terminouFase() {
   F.rodando = false;
   F.resta = 0;
   tocar('foco');
-  avisar(eraFoco ? 'Fim do foco!' : 'Fim da pausa', eraFoco ? `Bom trabalho. Hora de uma ${F.fase === 'longa' ? 'pausa longa' : 'pausa curta'}.` : 'Hora de voltar ao trabalho.', { icone: 'foco', som: null, ms: 12000, aoClicar: () => abrirFoco() });
+  avisar(eraFoco ? tr('Fim do foco!') : tr('Fim da pausa'), eraFoco ? (F.fase === 'longa' ? tr('Bom trabalho. Hora de uma pausa longa.') : tr('Bom trabalho. Hora de uma pausa curta.')) : tr('Hora de voltar ao trabalho.'), { icone: 'foco', som: null, ms: 12000, aoClicar: () => abrirFoco() });
   // A próxima fase começa sozinha.
   iniciar();
 }
 
 class JanelaFoco {
   constructor() {
-    this.j = new Janela({ id: 'foco', titulo: 'Foco', icone: 'foco', largura: 300, altura: 300, redimensionavel: false, maximizavel: false });
+    this.j = new Janela({ id: 'foco', titulo: tr('Foco'), icone: 'foco', largura: 320, altura: 300, redimensionavel: false, maximizavel: false });
     this.tempo = h('div.foco-relogio');
     this.fase = h('div.foco-fase');
     this.hoje = h('div', { style: { textAlign: 'center', color: '#808080', marginTop: '4px' } });
@@ -127,24 +128,24 @@ class JanelaFoco {
     for (const x of [this.cMin, this.cPausa, this.cLonga, this.cMinimizar]) x.addEventListener('change', salvar);
     this.j.corpo.style.padding = '10px';
     this.j.corpo.append(
-      h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } }, img('foco', 32), h('div', h('b', 'Foco (Pomodoro)'), h('div', 'Trabalhe em blocos, com pausas no meio.'))),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } }, img('foco', 32), h('div', h('b', tr('Foco (Pomodoro)')), h('div', tr('Trabalhe em blocos, com pausas no meio.')))),
       this.tempo, this.fase, this.hoje,
-      h('div.acoes', this.btIniciar, h('button', { on: { click: pular } }, 'Pular'), h('button', { on: { click: zerar } }, 'Zerar')),
-      h('fieldset', { style: { margin: '10px 0 0' } }, h('legend', 'Minutos'),
-        h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'space-between' } }, 'Foco', this.cMin, 'Pausa', this.cPausa, 'Longa', this.cLonga),
-        h('div', { style: { marginTop: '8px' } }, h('label', this.cMinimizar, h('span', 'Minimizar as outras janelas no começo do foco')))),
+      h('div.acoes', this.btIniciar, h('button', { on: { click: pular } }, tr('Pular')), h('button', { on: { click: zerar } }, tr('Zerar'))),
+      h('fieldset', { style: { margin: '10px 0 0' } }, h('legend', tr('Minutos')),
+        h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'space-between' } }, tr('Foco'), this.cMin, tr('Pausa'), this.cPausa, tr('Longa'), this.cLonga),
+        h('div', { style: { marginTop: '8px' } }, h('label', this.cMinimizar, h('span', tr('Minimizar as outras janelas no começo do foco'))))),
     );
     this.j.ev.on('fechada', () => { janela = null; });
     this.atualizar();
-    ajustarAoConteudo(this.j, { minLarg: 300 });
+    ajustarAoConteudo(this.j, { minLarg: 320 });
   }
 
   atualizar() {
     this.tempo.textContent = mmss(restante());
     this.tempo.style.color = F.fase === 'foco' ? '#800000' : '#008000';
-    this.fase.textContent = nomeFase() + (F.rodando ? '' : ' (parado)');
-    this.hoje.textContent = `Focos concluídos hoje: ${F.hoje}`;
-    this.btIniciar.textContent = F.rodando ? 'Pausar' : (F.resta ? 'Continuar' : 'Iniciar');
+    this.fase.textContent = F.rodando ? nomeFase() : tr('{fase} (parado)', { fase: nomeFase() });
+    this.hoje.textContent = tr('Focos concluídos hoje: {n}', { n: F.hoje });
+    this.btIniciar.textContent = F.rodando ? tr('Pausar') : (F.resta ? tr('Continuar') : tr('Começar'));
   }
 }
 

@@ -9,6 +9,9 @@ import { montarMesa, atualizar as atualizarMesa } from './mesa.js';
 import { tocar } from './sons.js';
 import { confirmar } from './dialogos.js';
 import * as janelas from './janelas.js';
+import { carregarIdioma, tr } from './idioma.js';
+import { atualizarEmSegundoPlano } from './apps/programas.js';
+import { programasAbertos } from './apps/craft.js';
 
 import './apps/explorador.js';
 import './apps/bloco.js';
@@ -23,17 +26,20 @@ import './apps/ajuda.js';
 
 const boot = document.getElementById('boot');
 
+// As linhas do BIOS: o nome, os pontos e o valor alinhado na coluna 35.
+const pontos = (nome, valor) => `${nome} ${'.'.repeat(Math.max(3, 33 - nome.length))} ${valor}`;
+
 async function telaBios() {
   const linhas = [
     ['Retro Computer BIOS v1.0', true],
-    ['Copyright (C) 2026, projeto Retro Computer (código aberto)', false],
+    [tr('Copyright (C) 2026, projeto Retro Computer (código aberto)'), false],
     ['', false],
-    [`Processador: ${navigator.hardwareConcurrency || 1} núcleo(s) ... OK`, false],
-    ['Memória .......................... 640K OK', false],
-    [`Disco C: ......................... ${estado.raizDisco ? 'OK' : '?'}`, false],
-    [`Programas instalados ............. ${estado.instalados.length}`, false],
+    [tr('Processador: {n} núcleo(s) ... OK', { n: navigator.hardwareConcurrency || 1 }), false],
+    [pontos(tr('Memória'), '640K OK'), false],
+    [pontos(tr('Disco C:'), estado.raizDisco ? 'OK' : '?'), false],
+    [pontos(tr('Programas instalados'), String(estado.instalados.length)), false],
     ['', false],
-    ['Iniciando o Retro Computer...', true],
+    [tr('Iniciando o Retro Computer...'), true],
   ];
   const pre = h('div.bios');
   boot.replaceChildren(pre);
@@ -47,7 +53,7 @@ async function telaBios() {
 
 async function telaAbertura() {
   const abertura = h('div.abertura',
-    h('div.marca', img('logo', 32), h('div.nome', h('b', 'Retro Computer'), h('span', 'para produtividade'))),
+    h('div.marca', img('logo', 32), h('div.nome', h('b', 'Retro Computer'), h('span', tr('para produtividade')))),
     h('div.barra-carga'));
   boot.replaceChildren(abertura);
   await esperar(1500);
@@ -89,6 +95,8 @@ function dicas() {
 
 async function iniciar() {
   await carregarConfig();
+  // O idioma vem antes de qualquer texto na tela.
+  await carregarIdioma(estado.config.idiomaEfetivo || 'pt-BR');
   estado.raizDisco = await retro.disco.raiz();
   await atualizarProgramas().catch(() => { });
   aplicarFundo(estado.config.papel);
@@ -108,7 +116,7 @@ async function iniciar() {
   retro.sistema.aoPedidoDesligar(() => abrir('desligar'));
   retro.sistema.aoRecebido((rel) => avisarRecebido(rel));
   retro.sistema.aoLink(async (url) => {
-    if (await confirmar(`Abrir este endereço no navegador do computador principal?\n\n${url}`, { titulo: 'Abrir endereço' })) retro.sistema.abrirLink(url);
+    if (await confirmar(tr('Abrir este endereço no navegador do computador principal?\n\n{url}', { url }), { titulo: tr('Abrir endereço') })) retro.sistema.abrirLink(url);
   });
   document.addEventListener('retro-disco-trocado', async () => {
     estado.raizDisco = await retro.disco.raiz();
@@ -123,8 +131,23 @@ async function iniciar() {
   if (estado.config.primeiraVez) {
     await definirConfig({ primeiraVez: false });
     abrir('ajuda', { topico: 'inicio' });
-    setTimeout(() => avisar('Bem-vindo!', 'Clique em Iniciar para começar. O disco C: é uma pasta do seu computador.', { icone: 'logo', som: null, ms: 9000 }), 1200);
+    setTimeout(() => avisar(tr('Bem-vindo!'), tr('Clique em Iniciar para começar. O disco C: é uma pasta do seu computador.'), { icone: 'logo', som: null, ms: 9000 }), 1200);
   }
+
+  // As atualizações: os programas (sem mexer nos que estão abertos) e o próprio Retro Computer.
+  setTimeout(() => {
+    atualizarEmSegundoPlano(() => programasAbertos().map((p) => p.id)).catch(() => { });
+    if (estado.config.atualizacoes !== 'nunca') avisarNovaVersao().catch(() => { });
+  }, 20000);
+}
+
+async function avisarNovaVersao() {
+  const v = await retro.sistema.novaVersao();
+  if (!v || !v.temAtualizacao || estado.config.versaoAvisada === v.nova) return;
+  avisar(tr('Há uma versão nova do Retro Computer'), tr('A versão {nova} está disponível (esta é a {atual}). Clique para abrir a página de download.', v), {
+    icone: 'logo', ms: 15000, aoClicar: () => retro.sistema.abrirLink(v.pagina),
+  });
+  definirConfig({ versaoAvisada: v.nova }).catch(() => { });
 }
 
 // Para os testes e as capturas.
@@ -133,5 +156,5 @@ window.__retro = { abrir, estado, janelas };
 iniciar().catch((e) => {
   console.error(e);
   boot.classList.add('visivel');
-  boot.replaceChildren(h('div.bios', `Erro ao iniciar o Retro Computer:\n\n${e && e.stack || e}`));
+  boot.replaceChildren(h('div.bios', `${tr('Erro ao iniciar o Retro Computer:')}\n\n${e && e.stack || e}`));
 });

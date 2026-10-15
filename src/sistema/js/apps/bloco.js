@@ -1,10 +1,11 @@
 /* O Bloco de notas: textos simples, gravados no disco em UTF-8. */
 import { h, nomeDe, paiDe } from '../util.js';
 import { Janela } from '../janelas.js';
-import { registrarApp, adicionarRecente, avisar, estado, definirConfig } from '../sistema.js';
+import { registrarApp, adicionarRecente, avisar, estado, definirConfig, pastaDocs } from '../sistema.js';
 import { caixaArquivo, simNaoCancelar, erro, entrada, info } from '../dialogos.js';
+import { tr, marcar } from '../idioma.js';
 
-const TIPOS = [{ rotulo: 'Documentos de texto (*.txt)', exts: ['txt'] }, { rotulo: 'Markdown (*.md)', exts: ['md'] }];
+const TIPOS = [{ rotulo: marcar('Documentos de texto (*.txt)'), exts: ['txt'] }, { rotulo: marcar('Markdown (*.md)'), exts: ['md'] }];
 
 class Bloco {
   constructor({ arquivo } = {}) {
@@ -17,7 +18,7 @@ class Bloco {
     this.texto = h('textarea.quebra', { spellcheck: false, wrap: 'soft' });
     this.texto.classList.toggle('proporcional', !this.fixa);
     this.j = new Janela({
-      titulo: 'Sem título - Bloco de notas',
+      titulo: `${tr('Sem título')} - ${tr('Bloco de notas')}`,
       icone: 'bloco',
       largura: 520,
       altura: 360,
@@ -36,45 +37,45 @@ class Bloco {
   menus() {
     return [
       {
-        rotulo: '&Arquivo', itens: [
-          { rotulo: '&Novo', atalho: 'Ctrl+N', acao: () => this.novo() },
-          { rotulo: '&Abrir…', atalho: 'Ctrl+O', acao: () => this.abrir() },
-          { rotulo: '&Salvar', atalho: 'Ctrl+S', acao: () => this.salvar() },
-          { rotulo: 'Salvar &como…', acao: () => this.salvar(true) },
+        rotulo: tr('&Arquivo'), itens: [
+          { rotulo: tr('&Novo'), atalho: 'Ctrl+N', acao: () => this.novo() },
+          { rotulo: tr('&Abrir…'), atalho: 'Ctrl+O', acao: () => this.abrir() },
+          { rotulo: tr('&Salvar'), atalho: 'Ctrl+S', acao: () => this.salvar() },
+          { rotulo: tr('Salvar &como…'), acao: () => this.salvar(true) },
           { separador: true },
-          { rotulo: 'Sai&r', acao: () => this.j.fechar() },
+          { rotulo: tr('Sai&r'), acao: () => this.j.fechar() },
         ],
       },
       {
-        rotulo: '&Editar', itens: () => [
-          { rotulo: '&Desfazer', atalho: 'Ctrl+Z', acao: () => document.execCommand('undo') },
+        rotulo: tr('&Editar'), itens: () => [
+          { rotulo: tr('&Desfazer'), atalho: 'Ctrl+Z', acao: () => document.execCommand('undo') },
           { separador: true },
-          { rotulo: 'Recor&tar', atalho: 'Ctrl+X', acao: () => { this.texto.focus(); document.execCommand('cut'); } },
-          { rotulo: '&Copiar', atalho: 'Ctrl+C', acao: () => { this.texto.focus(); document.execCommand('copy'); } },
-          { rotulo: 'C&olar', atalho: 'Ctrl+V', acao: () => this.colar() },
-          { rotulo: '&Excluir', atalho: 'Del', acao: () => { this.texto.focus(); document.execCommand('delete'); } },
+          { rotulo: tr('Recor&tar'), atalho: 'Ctrl+X', acao: () => { this.texto.focus(); document.execCommand('cut'); } },
+          { rotulo: tr('&Copiar'), atalho: 'Ctrl+C', acao: () => { this.texto.focus(); document.execCommand('copy'); } },
+          { rotulo: tr('C&olar'), atalho: 'Ctrl+V', acao: () => this.colar() },
+          { rotulo: tr('&Excluir'), atalho: 'Del', acao: () => { this.texto.focus(); document.execCommand('delete'); } },
           { separador: true },
-          { rotulo: 'Selecionar &tudo', atalho: 'Ctrl+A', acao: () => { this.texto.focus(); this.texto.select(); } },
-          { rotulo: '&Hora/data', atalho: 'F5', acao: () => this.horaData() },
+          { rotulo: tr('Selecionar &tudo'), atalho: 'Ctrl+A', acao: () => { this.texto.focus(); this.texto.select(); } },
+          { rotulo: tr('&Hora/data'), atalho: 'F5', acao: () => this.horaData() },
         ],
       },
       {
-        rotulo: 'F&ormatar', itens: () => [
-          { rotulo: '&Quebra automática de linha', marcado: this.quebra, acao: () => this.alternarQuebra() },
+        rotulo: tr('F&ormatar'), itens: () => [
+          { rotulo: tr('&Quebra automática de linha'), marcado: this.quebra, acao: () => this.alternarQuebra() },
           { separador: true },
-          { rotulo: 'Letra &proporcional', radio: true, marcado: !this.fixa, acao: () => this.definirFonte(false) },
-          { rotulo: 'Letra de largura &fixa', radio: true, marcado: this.fixa, acao: () => this.definirFonte(true) },
+          { rotulo: tr('Letra &proporcional'), radio: true, marcado: !this.fixa, acao: () => this.definirFonte(false) },
+          { rotulo: tr('Letra de largura &fixa'), radio: true, marcado: this.fixa, acao: () => this.definirFonte(true) },
         ],
       },
       {
-        rotulo: '&Pesquisar', itens: [
-          { rotulo: '&Localizar…', atalho: 'Ctrl+F', acao: () => this.localizar(true) },
-          { rotulo: 'Localizar &próxima', atalho: 'F3', acao: () => this.localizar(false) },
+        rotulo: tr('&Pesquisar'), itens: [
+          { rotulo: tr('&Localizar…'), atalho: 'Ctrl+F', acao: () => this.localizar(true) },
+          { rotulo: tr('Localizar &próxima'), atalho: 'F3', acao: () => this.localizar(false) },
         ],
       },
       {
-        rotulo: 'A&juda', itens: [
-          { rotulo: '&Sobre o Bloco de notas', acao: () => info('Bloco de notas\n\nTextos simples, gravados em UTF-8 no disco C:.\nAs versões anteriores ficam guardadas (botão direito no arquivo › Versões anteriores).', 'Sobre o Bloco de notas') },
+        rotulo: tr('A&juda'), itens: [
+          { rotulo: tr('&Sobre o Bloco de notas'), acao: () => info(tr('Bloco de notas') + '\n\n' + tr('Textos simples, gravados em UTF-8 no disco C:.\nAs versões anteriores ficam guardadas (botão direito no arquivo › Versões anteriores).'), tr('Sobre o Bloco de notas')) },
         ],
       },
     ];
@@ -86,8 +87,8 @@ class Bloco {
   }
 
   atualizarTitulo() {
-    const nome = this.rel ? nomeDe(this.rel) : 'Sem título';
-    this.j.definirTitulo(`${this.sujo ? '*' : ''}${nome} - Bloco de notas`);
+    const nome = this.rel ? nomeDe(this.rel) : tr('Sem título');
+    this.j.definirTitulo(`${this.sujo ? '*' : ''}${nome} - ${tr('Bloco de notas')}`);
   }
 
   teclas(e) {
@@ -107,7 +108,7 @@ class Bloco {
 
   async podeFechar() {
     if (!this.sujo) return true;
-    const r = await simNaoCancelar(`O texto do arquivo ${this.rel ? nomeDe(this.rel) : 'Sem título'} foi alterado.\n\nDeseja salvar as alterações?`, 'Bloco de notas');
+    const r = await simNaoCancelar(tr('O texto do arquivo {nome} foi alterado.\n\nDeseja salvar as alterações?', { nome: this.rel ? nomeDe(this.rel) : tr('Sem título') }), tr('Bloco de notas'));
     if (r === null) return false;
     if (r === 'sim') return this.salvar();
     return true;
@@ -123,7 +124,7 @@ class Bloco {
 
   async abrir() {
     if (!(await this.podeFechar())) return;
-    const rel = await caixaArquivo({ modo: 'abrir', pasta: this.rel ? paiDe(this.rel) : 'Meus documentos', tipos: TIPOS });
+    const rel = await caixaArquivo({ modo: 'abrir', pasta: this.rel ? paiDe(this.rel) : pastaDocs(), tipos: TIPOS });
     if (rel) this.abrirRel(rel);
   }
 
@@ -139,14 +140,14 @@ class Bloco {
       this.texto.focus();
       adicionarRecente(rel);
     } catch (e) {
-      erro(`Não foi possível abrir ${nomeDe(rel)}: ${e.message}`, 'Bloco de notas');
+      erro(tr('Não foi possível abrir {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }), tr('Bloco de notas'));
     }
   }
 
   async salvar(como = false) {
     let rel = this.rel;
     if (!rel || como) {
-      rel = await caixaArquivo({ modo: 'salvar', pasta: this.rel ? paiDe(this.rel) : 'Meus documentos', nome: this.rel ? nomeDe(this.rel) : 'Sem título.txt', tipos: TIPOS });
+      rel = await caixaArquivo({ modo: 'salvar', pasta: this.rel ? paiDe(this.rel) : pastaDocs(), nome: this.rel ? nomeDe(this.rel) : tr('Sem título') + '.txt', tipos: TIPOS });
       if (!rel) return false;
     }
     try {
@@ -158,7 +159,7 @@ class Bloco {
       adicionarRecente(rel);
       return true;
     } catch (e) {
-      erro(`Não foi possível salvar ${nomeDe(rel)}: ${e.message}`, 'Bloco de notas');
+      erro(tr('Não foi possível salvar {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }), tr('Bloco de notas'));
       return false;
     }
   }
@@ -194,7 +195,7 @@ class Bloco {
 
   async localizar(perguntar) {
     if (perguntar || !this.busca) {
-      const t = await entrada({ titulo: 'Localizar', texto: 'Localizar:', valor: this.busca || this.texto.value.slice(this.texto.selectionStart, this.texto.selectionEnd) });
+      const t = await entrada({ titulo: tr('Localizar'), texto: tr('Localizar:'), valor: this.busca || this.texto.value.slice(this.texto.selectionStart, this.texto.selectionEnd) });
       if (!t) return;
       this.busca = t;
     }
@@ -203,7 +204,7 @@ class Bloco {
     let i = v.indexOf(alvo, this.texto.selectionEnd);
     if (i < 0) i = v.indexOf(alvo);
     if (i < 0) {
-      info(`Não foi possível localizar "${this.busca}".`, 'Bloco de notas');
+      info(tr('Não foi possível localizar "{texto}".', { texto: this.busca }), tr('Bloco de notas'));
       return;
     }
     this.texto.focus();

@@ -64,9 +64,11 @@ contextBridge.exposeInMainWorld('retro', {
   programas: {
     catalogo: () => chamar('programas:catalogo'),
     instalados: () => chamar('programas:instalados'),
-    instalar: (id) => chamar('programas:instalar', id),
+    instalar: (id, opcoes) => chamar('programas:instalar', id, opcoes),
     instalarArquivo: () => chamar('programas:instalarArquivo'),
     remover: (id) => chamar('programas:remover', id),
+    verificar: (id, o) => chamar('programas:verificar', id, o),
+    verificarTodos: (o) => chamar('programas:verificarTodos', o),
     aoProgresso: ouvir('programas:progresso'),
   },
   terminal: {
@@ -85,6 +87,8 @@ contextBridge.exposeInMainWorld('retro', {
     abrirLink: (url) => chamar('sistema:abrirLink', url),
     desligar: () => chamar('sistema:desligar'),
     reiniciar: () => chamar('sistema:reiniciar'),
+    reabrir: () => chamar('sistema:reabrir'),
+    novaVersao: (forcar) => chamar('sistema:novaVersao', forcar),
     escalaTela: () => chamar('sistema:escalaTela'),
     zoom: (f) => chamar('sistema:zoom', f),
     aoTelaCheia: ouvir('sistema:telaCheia'),

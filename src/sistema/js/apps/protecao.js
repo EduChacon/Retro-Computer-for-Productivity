@@ -5,6 +5,7 @@
  */
 import { h } from '../util.js';
 import { registrarApp, estado } from '../sistema.js';
+import { localidade } from '../idioma.js';
 
 let ultima = Date.now();
 let ativa = null;
@@ -129,7 +130,7 @@ function relogio(ctx, c) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, c.width, c.height);
     const d = new Date();
-    const texto = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const texto = d.toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
     ctx.font = 'bold 60px Katica';
     const w = ctx.measureText(texto).width;
     x += vx; y += vy;
@@ -139,7 +140,7 @@ function relogio(ctx, c) {
     ctx.fillText(texto, x, y);
     ctx.font = '20px Katica';
     ctx.fillStyle = '#808080';
-    ctx.fillText(d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }), x, y + 30);
+    ctx.fillText(d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long' }), x, y + 30);
   };
 }
 

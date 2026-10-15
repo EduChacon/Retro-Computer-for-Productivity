@@ -1,11 +1,19 @@
 {
-  "sobre": "Programas que o Retro Computer sabe instalar. Cada um é baixado do lançamento oficial no GitHub (a versão para navegador, nome-web-versão.zip). Os Craft são do ArtCraft Team, código aberto (MIT ou Apache-2.0); os nomes e logotipos são marcas deles.",
+  "sobre": "Programas que o Retro Computer sabe instalar. Cada um é baixado do lançamento oficial no GitHub (a versão para navegador, nome-web-versão.zip). Os Craft são do ArtCraft Team, código aberto (MIT ou Apache-2.0); os nomes e logotipos são marcas deles. A categoria e a descrição de cada programa vêm nos três idiomas (pt-BR, en, es).",
   "programas": [
     {
       "id": "wordcraft",
       "nome": "WordCraft",
-      "categoria": "Escritório",
-      "descricao": "Processador de texto: lê e grava .docx, com estilos, tabelas, revisão e exportação em PDF.",
+      "categoria": {
+        "pt-BR": "Escritório",
+        "en": "Office",
+        "es": "Oficina"
+      },
+      "descricao": {
+        "pt-BR": "Processador de texto: lê e grava .docx, com estilos, tabelas, revisão e exportação em PDF.",
+        "en": "Word processor: reads and writes .docx, with styles, tables, track changes and PDF export.",
+        "es": "Procesador de textos: lee y guarda .docx, con estilos, tablas, revisión y exportación a PDF."
+      },
       "repo": "storytold/wordcraft",
       "versaoConhecida": "0.7.0",
       "tamanho": "15 MB",
@@ -15,8 +23,16 @@
     {
       "id": "gridcraft",
       "nome": "GridCraft",
-      "categoria": "Escritório",
-      "descricao": "Planilha: fórmulas, gráficos e arquivos .xlsx e .csv.",
+      "categoria": {
+        "pt-BR": "Escritório",
+        "en": "Office",
+        "es": "Oficina"
+      },
+      "descricao": {
+        "pt-BR": "Planilha: fórmulas, gráficos e arquivos .xlsx e .csv.",
+        "en": "Spreadsheet: formulas, charts and .xlsx and .csv files.",
+        "es": "Hoja de cálculo: fórmulas, gráficos y archivos .xlsx y .csv."
+      },
       "repo": "storytold/gridcraft",
       "versaoConhecida": "0.7.0",
       "icone": "gridcraft",
@@ -25,8 +41,16 @@
     {
       "id": "deckcraft",
       "nome": "DeckCraft",
-      "categoria": "Escritório",
-      "descricao": "Apresentações: slides em .pptx, com temas e modo de apresentação.",
+      "categoria": {
+        "pt-BR": "Escritório",
+        "en": "Office",
+        "es": "Oficina"
+      },
+      "descricao": {
+        "pt-BR": "Apresentações: slides em .pptx, com temas e modo de apresentação.",
+        "en": "Presentations: .pptx slides, with themes and presenter mode.",
+        "es": "Presentaciones: diapositivas en .pptx, con temas y modo de presentación."
+      },
       "repo": "storytold/deckcraft",
       "versaoConhecida": "0.7.0",
       "icone": "deckcraft",
@@ -35,8 +59,16 @@
     {
       "id": "pdfcraft",
       "nome": "PdfCraft",
-      "categoria": "Escritório",
-      "descricao": "Leitor e editor de PDF: anotar, preencher, assinar e organizar páginas.",
+      "categoria": {
+        "pt-BR": "Escritório",
+        "en": "Office",
+        "es": "Oficina"
+      },
+      "descricao": {
+        "pt-BR": "Leitor e editor de PDF: anotar, preencher, assinar e organizar páginas.",
+        "en": "PDF reader and editor: annotate, fill in, sign and organize pages.",
+        "es": "Lector y editor de PDF: anotar, rellenar, firmar y organizar páginas."
+      },
       "repo": "storytold/pdfcraft",
       "versaoConhecida": "0.8.0",
       "icone": "pdfcraft",
@@ -45,8 +77,16 @@
     {
       "id": "photocraft",
       "nome": "PhotoCraft",
-      "categoria": "Imagem",
-      "descricao": "Editor de imagens com camadas, que abre arquivos .psd.",
+      "categoria": {
+        "pt-BR": "Imagem",
+        "en": "Graphics",
+        "es": "Imagen"
+      },
+      "descricao": {
+        "pt-BR": "Editor de imagens com camadas, que abre arquivos .psd.",
+        "en": "Image editor with layers that opens .psd files.",
+        "es": "Editor de imágenes con capas, que abre archivos .psd."
+      },
       "repo": "storytold/photocraft",
       "versaoConhecida": "0.9.0",
       "icone": "photocraft",
@@ -55,8 +95,16 @@
     {
       "id": "lightcraft",
       "nome": "LightCraft",
-      "categoria": "Imagem",
-      "descricao": "Revelação de fotos sem alterar o original (ajustes de luz e cor).",
+      "categoria": {
+        "pt-BR": "Imagem",
+        "en": "Graphics",
+        "es": "Imagen"
+      },
+      "descricao": {
+        "pt-BR": "Revelação de fotos sem alterar o original (ajustes de luz e cor).",
+        "en": "Photo development without changing the original (light and color adjustments).",
+        "es": "Revelado de fotos sin alterar el original (ajustes de luz y color)."
+      },
       "repo": "storytold/lightcraft",
       "versaoConhecida": "0.8.0",
       "icone": "lightcraft",
@@ -65,8 +113,16 @@
     {
       "id": "vectorcraft",
       "nome": "VectorCraft",
-      "categoria": "Imagem",
-      "descricao": "Desenho vetorial: curvas, formas e arquivos .svg.",
+      "categoria": {
+        "pt-BR": "Imagem",
+        "en": "Graphics",
+        "es": "Imagen"
+      },
+      "descricao": {
+        "pt-BR": "Desenho vetorial: curvas, formas e arquivos .svg.",
+        "en": "Vector drawing: curves, shapes and .svg files.",
+        "es": "Dibujo vectorial: curvas, formas y archivos .svg."
+      },
       "repo": "storytold/vectorcraft",
       "versaoConhecida": "0.11.0",
       "icone": "vectorcraft",
@@ -75,8 +131,16 @@
     {
       "id": "figcraft",
       "nome": "FigCraft",
-      "categoria": "Imagem",
-      "descricao": "Desenho de interfaces e protótipos.",
+      "categoria": {
+        "pt-BR": "Imagem",
+        "en": "Graphics",
+        "es": "Imagen"
+      },
+      "descricao": {
+        "pt-BR": "Desenho de interfaces e protótipos.",
+        "en": "Interface design and prototypes.",
+        "es": "Diseño de interfaces y prototipos."
+      },
       "repo": "storytold/figcraft",
       "versaoConhecida": "0.6.0",
       "icone": "figcraft",
@@ -85,8 +149,16 @@
     {
       "id": "designcraft",
       "nome": "DesignCraft",
-      "categoria": "Imagem",
-      "descricao": "Diagramação de páginas: livros, revistas e folhetos.",
+      "categoria": {
+        "pt-BR": "Imagem",
+        "en": "Graphics",
+        "es": "Imagen"
+      },
+      "descricao": {
+        "pt-BR": "Diagramação de páginas: livros, revistas e folhetos.",
+        "en": "Page layout: books, magazines and leaflets.",
+        "es": "Maquetación de páginas: libros, revistas y folletos."
+      },
       "repo": "storytold/designcraft",
       "versaoConhecida": "0.8.0",
       "icone": "designcraft",
@@ -95,8 +167,16 @@
     {
       "id": "filmcraft",
       "nome": "FilmCraft",
-      "categoria": "Vídeo e som",
-      "descricao": "Edição de vídeo em linha do tempo. É pesado: prefira o computador principal para projetos longos.",
+      "categoria": {
+        "pt-BR": "Vídeo e som",
+        "en": "Video and audio",
+        "es": "Video y sonido"
+      },
+      "descricao": {
+        "pt-BR": "Edição de vídeo em linha do tempo. É pesado: prefira o computador principal para projetos longos.",
+        "en": "Timeline video editing. It is heavy: prefer the main computer for long projects.",
+        "es": "Edición de video en línea de tiempo. Es pesado: para proyectos largos, prefiere la computadora principal."
+      },
       "repo": "storytold/filmcraft",
       "versaoConhecida": "0.8.0",
       "icone": "filmcraft",
@@ -105,8 +185,16 @@
     {
       "id": "effectcraft",
       "nome": "EffectCraft",
-      "categoria": "Vídeo e som",
-      "descricao": "Animação e composição de efeitos.",
+      "categoria": {
+        "pt-BR": "Vídeo e som",
+        "en": "Video and audio",
+        "es": "Video y sonido"
+      },
+      "descricao": {
+        "pt-BR": "Animação e composição de efeitos.",
+        "en": "Animation and effects compositing.",
+        "es": "Animación y composición de efectos."
+      },
       "repo": "storytold/effectcraft",
       "versaoConhecida": "0.10.0",
       "icone": "effectcraft",
@@ -115,8 +203,16 @@
     {
       "id": "soundcraft",
       "nome": "SoundCraft",
-      "categoria": "Vídeo e som",
-      "descricao": "Gravação e edição de áudio em várias pistas.",
+      "categoria": {
+        "pt-BR": "Vídeo e som",
+        "en": "Video and audio",
+        "es": "Video y sonido"
+      },
+      "descricao": {
+        "pt-BR": "Gravação e edição de áudio em várias pistas.",
+        "en": "Multitrack audio recording and editing.",
+        "es": "Grabación y edición de audio en varias pistas."
+      },
       "repo": "storytold/soundcraft",
       "versaoConhecida": "0.7.0",
       "icone": "soundcraft",
@@ -125,8 +221,16 @@
     {
       "id": "cadcraft",
       "nome": "CADCraft",
-      "categoria": "Engenharia",
-      "descricao": "Desenho técnico (CAD) com arquivos .dxf.",
+      "categoria": {
+        "pt-BR": "Engenharia",
+        "en": "Engineering",
+        "es": "Ingeniería"
+      },
+      "descricao": {
+        "pt-BR": "Desenho técnico (CAD) com arquivos .dxf.",
+        "en": "Technical drawing (CAD) with .dxf files.",
+        "es": "Dibujo técnico (CAD) con archivos .dxf."
+      },
       "repo": "storytold/cadcraft",
       "versaoConhecida": "0.7.0",
       "icone": "cadcraft",

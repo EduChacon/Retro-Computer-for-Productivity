@@ -110,7 +110,8 @@
   window.showSaveFilePicker = function (opcoes) {
     opcoes = opcoes || {};
     var exts = extensoesDe(opcoes.types);
-    return perguntar({ tipo: 'escolherSalvar', nome: opcoes.suggestedName || 'Documento', exts: exts }).then(function (r) {
+    // Sem nome sugerido, a área de trabalho usa o do idioma ("Documento", "Document"…).
+    return perguntar({ tipo: 'escolherSalvar', nome: opcoes.suggestedName || '', exts: exts }).then(function (r) {
       if (!r || !r.ok) throw erroAbortar();
       return alcaSalvar(r.nome, r.caminho);
     });

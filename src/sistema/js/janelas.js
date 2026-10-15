@@ -4,6 +4,7 @@
  */
 import { h, img, Eventos, limitar } from './util.js';
 import { barraDeMenus, fecharMenus } from './menus.js';
+import { tr } from './idioma.js';
 
 const area = () => document.getElementById('janelas');
 export const eventos = new Eventos();
@@ -50,10 +51,10 @@ export class Janela {
     this.icoEl = this.icone ? img(this.icone, 16, { className: 'ico' }) : null;
     this.textoEl = h('span.texto', this.titulo);
     const botoes = h('div.botoes');
-    if (o.ajuda) botoes.append(h('button.b-ajuda', { title: 'Ajuda', tabIndex: -1, on: { click: () => o.ajuda() } }));
-    if (min) botoes.append(this.bMin = h('button.b-min', { title: 'Minimizar', tabIndex: -1, on: { click: () => this.minimizar() } }));
-    if (max) botoes.append(this.bMax = h('button.b-max', { title: 'Maximizar', tabIndex: -1, on: { click: () => this.alternarMaximizar() } }));
-    botoes.append(h('button.b-fechar', { title: 'Fechar', tabIndex: -1, on: { click: () => this.fechar() } }));
+    if (o.ajuda) botoes.append(h('button.b-ajuda', { title: tr('Ajuda'), tabIndex: -1, on: { click: () => o.ajuda() } }));
+    if (min) botoes.append(this.bMin = h('button.b-min', { title: tr('Minimizar'), tabIndex: -1, on: { click: () => this.minimizar() } }));
+    if (max) botoes.append(this.bMax = h('button.b-max', { title: tr('Maximizar'), tabIndex: -1, on: { click: () => this.alternarMaximizar() } }));
+    botoes.append(h('button.b-fechar', { title: tr('Fechar'), tabIndex: -1, on: { click: () => this.fechar() } }));
     for (const b of botoes.children) b.addEventListener('mousedown', (e) => e.stopPropagation());
     this.barraTitulo = h('div.titulo', this.icoEl, this.textoEl, botoes);
     this.el.append(this.barraTitulo);
@@ -207,7 +208,7 @@ export class Janela {
     this.retAntes = { ...this.ret };
     this.el.classList.add('maximizada');
     Object.assign(this.el.style, { left: '0px', top: '0px', width: '100%', height: '100%' });
-    if (this.bMax) { this.bMax.className = 'b-restaurar'; this.bMax.title = 'Restaurar'; }
+    if (this.bMax) { this.bMax.className = 'b-restaurar'; this.bMax.dataset.dica = tr('Restaurar'); }
     this.ev.emit('tamanho');
   }
 
@@ -217,7 +218,7 @@ export class Janela {
     this.el.classList.remove('maximizada');
     this.ret = this.retAntes || this.ret;
     this.aplicarRet();
-    if (this.bMax) { this.bMax.className = 'b-max'; this.bMax.title = 'Maximizar'; }
+    if (this.bMax) { this.bMax.className = 'b-max'; this.bMax.dataset.dica = tr('Maximizar'); }
     this.ev.emit('tamanho');
   }
 

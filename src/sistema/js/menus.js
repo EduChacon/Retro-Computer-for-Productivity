@@ -6,6 +6,7 @@
  *         separador, desativado, marcado, radio, negrito, atalho }
  */
 import { h, img, rotulo, letraAtalho, limitar } from './util.js';
+import { tr } from './idioma.js';
 
 const camada = () => document.getElementById('camada-menus');
 let cadeia = [];          // menus abertos, do primeiro ao último submenu
@@ -73,7 +74,7 @@ export async function abrirMenu(itens, o = {}) {
   const registro = { el, itens: lista, opcoes: [], ativo: -1, nivel, subTimer: null };
   cadeia.push(registro);
 
-  if (!lista.length) corpo.append(h('div.vazio', '(Vazio)'));
+  if (!lista.length) corpo.append(h('div.vazio', tr('(Vazio)')));
   lista.forEach((item) => {
     if (!item) return;
     if (item.separador) {

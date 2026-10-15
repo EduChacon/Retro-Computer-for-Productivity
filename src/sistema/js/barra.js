@@ -5,8 +5,9 @@
 import { h, img, caminhoTela, nomeDe, tipoDe } from './util.js';
 import { abrirMenu, fecharMenus } from './menus.js';
 import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, minimizarTodas } from './janelas.js';
-import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig } from './sistema.js';
+import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pastaDocs } from './sistema.js';
 import { tocar } from './sons.js';
+import { tr, localidade } from './idioma.js';
 
 let btIniciar;
 let tarefas;
@@ -16,7 +17,7 @@ let focoEl;
 
 export function montarBarra() {
   const barra = document.getElementById('barra');
-  btIniciar = h('button#iniciar', { dataset: { abreMenu: '1' }, title: 'Clique aqui para começar.' }, img('logo', 16), h('span', 'Iniciar'));
+  btIniciar = h('button#iniciar', { dataset: { abreMenu: '1' }, title: tr('Clique aqui para começar.') }, img('logo', 16), h('span', tr('Iniciar')));
   btIniciar.addEventListener('mousedown', (e) => {
     e.preventDefault();
     if (btIniciar.classList.contains('apertado')) fecharMenus();
@@ -24,9 +25,9 @@ export function montarBarra() {
   });
   tarefas = h('div#tarefas');
   relogio = h('span.relogio');
-  somIco = img('sons', 16, { title: 'Volume' });
-  focoEl = h('span.foco-tempo', { hidden: true, title: 'Foco' });
-  const focoIco = img('foco', 16, { title: 'Foco (Pomodoro)' });
+  somIco = img('sons', 16, { title: tr('Volume') });
+  focoEl = h('span.foco-tempo', { hidden: true, title: tr('Foco') });
+  const focoIco = img('foco', 16, { title: tr('Foco (Pomodoro)') });
   focoIco.hidden = true;
   focoIco.style.cursor = 'pointer';
   focoIco.addEventListener('click', () => abrir('foco'));
@@ -40,13 +41,13 @@ export function montarBarra() {
     if (e.target.closest('#tarefas button')) return;
     e.preventDefault();
     abrirMenu([
-      { rotulo: '&Em cascata', acao: emCascata },
-      { rotulo: 'Lado a lado &horizontal', acao: () => lado(false) },
-      { rotulo: 'Lado a lado &vertical', acao: () => lado(true) },
+      { rotulo: tr('&Em cascata'), acao: emCascata },
+      { rotulo: tr('Lado a lado &horizontal'), acao: () => lado(false) },
+      { rotulo: tr('Lado a lado &vertical'), acao: () => lado(true) },
       { separador: true },
-      { rotulo: '&Minimizar todas as janelas', acao: minimizarTodas },
+      { rotulo: tr('&Minimizar todas as janelas'), acao: minimizarTodas },
       { separador: true },
-      { rotulo: 'P&ropriedades', acao: () => abrir('painel') },
+      { rotulo: tr('P&ropriedades'), acao: () => abrir('painel') },
     ], { x: e.clientX, y: e.clientY, acima: true });
   });
 
@@ -56,7 +57,7 @@ export function montarBarra() {
     focoIco.hidden = !f.ativo;
     focoEl.hidden = !f.ativo;
     focoEl.textContent = f.texto || '';
-    focoEl.title = f.fase || 'Foco';
+    focoEl.dataset.dica = f.fase || tr('Foco');
   });
   atualizarSom();
   tique();
@@ -65,9 +66,9 @@ export function montarBarra() {
 
 function tique() {
   const d = new Date();
-  const t = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const t = d.toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
   if (relogio.textContent !== t) relogio.textContent = t;
-  relogio.title = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  relogio.dataset.dica = d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function atualizarSom() {
@@ -75,7 +76,7 @@ function atualizarSom() {
   const mudo = !c.sons || !c.volume;
   somIco.src = mudo ? 'icones/16/sons.png' : 'icones/16/sons.png';
   somIco.style.opacity = mudo ? '0.45' : '1';
-  somIco.title = mudo ? 'Sons desligados (clique para ligar)' : 'Sons ligados (clique para desligar)';
+  somIco.dataset.dica = mudo ? tr('Sons desligados (clique para ligar)') : tr('Sons ligados (clique para desligar)');
 }
 
 async function alternarSom() {
@@ -97,11 +98,11 @@ function desenharTarefas() {
     b.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       abrirMenu([
-        { rotulo: '&Restaurar', desativado: !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
-        { rotulo: 'Mi&nimizar', desativado: j.minimizada, acao: () => j.minimizar() },
-        { rotulo: 'Ma&ximizar', desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } },
+        { rotulo: tr('&Restaurar'), desativado: !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
+        { rotulo: tr('Mi&nimizar'), desativado: j.minimizada, acao: () => j.minimizar() },
+        { rotulo: tr('Ma&ximizar'), desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } },
         { separador: true },
-        { rotulo: '&Fechar', negrito: true, atalho: 'Alt+F4', acao: () => j.fechar() },
+        { rotulo: tr('&Fechar'), negrito: true, atalho: 'Alt+F4', acao: () => j.fechar() },
       ], { x: e.clientX, y: e.clientY, acima: true });
     });
     return b;
@@ -117,18 +118,18 @@ function itensProgramas() {
     .map((p) => ({ rotulo: p.nome, icone: p.icone || 'programa', acao: () => abrir('craft:' + p.id) }));
   return [
     {
-      rotulo: 'Acessórios', icone: 'pasta-programas', sub: () => [
-        { rotulo: 'Bloco de notas', icone: 'bloco', acao: () => abrir('bloco') },
-        { rotulo: 'Foco (Pomodoro)', icone: 'foco', acao: () => abrir('foco') },
-        { rotulo: 'Prompt de comando', icone: 'prompt', acao: () => abrir('prompt') },
+      rotulo: tr('Acessórios'), icone: 'pasta-programas', sub: () => [
+        { rotulo: tr('Bloco de notas'), icone: 'bloco', acao: () => abrir('bloco') },
+        { rotulo: tr('Foco (Pomodoro)'), icone: 'foco', acao: () => abrir('foco') },
+        { rotulo: tr('Prompt de comando'), icone: 'prompt', acao: () => abrir('prompt') },
       ],
     },
     { separador: true },
     ...craft,
     ...(craft.length ? [{ separador: true }] : []),
-    { rotulo: 'Claude', icone: 'claude', acao: () => abrir('claude') },
-    { rotulo: 'Explorador de arquivos', icone: 'computador', acao: () => abrir('explorador', { pasta: 'Meus documentos' }) },
-    ...(craft.length ? [] : [{ rotulo: 'Instalar programas…', icone: 'programas-caixa', acao: () => abrir('programas') }]),
+    { rotulo: tr('Claude'), icone: 'claude', acao: () => abrir('claude') },
+    { rotulo: tr('Explorador de arquivos'), icone: 'computador', acao: () => abrir('explorador', { pasta: pastaDocs() }) },
+    ...(craft.length ? [] : [{ rotulo: tr('Instalar programas…'), icone: 'programas-caixa', acao: () => abrir('programas') }]),
   ];
 }
 
@@ -139,9 +140,9 @@ function itensDocumentos() {
     acao: () => abrirArquivo(rel),
   }));
   return [
-    { rotulo: 'Meus documentos', icone: 'documentos', acao: () => abrir('explorador', { pasta: 'Meus documentos' }) },
+    { rotulo: tr('Meus documentos'), icone: 'documentos', acao: () => abrir('explorador', { pasta: pastaDocs() }) },
     { separador: true },
-    ...(recentes.length ? recentes : [{ rotulo: '(Vazio)', desativado: true }]),
+    ...(recentes.length ? recentes : [{ rotulo: tr('(Vazio)'), desativado: true }]),
   ];
 }
 
@@ -152,20 +153,20 @@ export async function abrirIniciar() {
   el.append(h('div.faixa', h('span', h('b', 'Retro'), ' Computer')), itens);
   btIniciar.classList.add('apertado');
   await abrirMenu([
-    { rotulo: '&Programas', icone: 'pasta-programas', sub: itensProgramas },
-    { rotulo: '&Documentos', icone: 'documentos', sub: itensDocumentos },
+    { rotulo: tr('&Programas'), icone: 'pasta-programas', sub: itensProgramas },
+    { rotulo: tr('&Documentos'), icone: 'documentos', sub: itensDocumentos },
     {
-      rotulo: '&Configurações', icone: 'configuracoes', sub: () => [
-        { rotulo: '&Painel de controle', icone: 'painel', acao: () => abrir('painel') },
-        { rotulo: '&Adicionar ou remover programas', icone: 'programas-caixa', acao: () => abrir('programas') },
-        { rotulo: 'A&parência', icone: 'aparencia', acao: () => abrir('painel', { secao: 'aparencia' }) },
+      rotulo: tr('&Configurações'), icone: 'configuracoes', sub: () => [
+        { rotulo: tr('&Painel de controle'), icone: 'painel', acao: () => abrir('painel') },
+        { rotulo: tr('&Adicionar ou remover programas'), icone: 'programas-caixa', acao: () => abrir('programas') },
+        { rotulo: tr('A&parência'), icone: 'aparencia', acao: () => abrir('painel', { secao: 'aparencia' }) },
       ],
     },
-    { rotulo: '&Localizar', icone: 'localizar', acao: () => abrir('localizar') },
-    { rotulo: '&Ajuda', icone: 'ajuda', acao: () => abrir('ajuda') },
-    { rotulo: '&Executar…', icone: 'executar', acao: () => abrir('executar') },
+    { rotulo: tr('&Localizar'), icone: 'localizar', acao: () => abrir('localizar') },
+    { rotulo: tr('&Ajuda'), icone: 'ajuda', acao: () => abrir('ajuda') },
+    { rotulo: tr('&Executar…'), icone: 'executar', acao: () => abrir('executar') },
     { separador: true },
-    { rotulo: '&Desligar…', icone: 'desligar', acao: () => abrir('desligar') },
+    { rotulo: tr('&Desligar…'), icone: 'desligar', acao: () => abrir('desligar') },
   ], {
     x: r.left,
     y: r.top + 1,

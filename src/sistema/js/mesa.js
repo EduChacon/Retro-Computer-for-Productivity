@@ -6,24 +6,24 @@
 import { tipoDe, juntar } from './util.js';
 import { VistaIcones } from './vista.js';
 import { abrirMenu } from './menus.js';
-import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado } from './sistema.js';
+import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado, pastaMesa, pastaDocs } from './sistema.js';
 import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir } from './arquivos.js';
 import { confirmar } from './dialogos.js';
 import { tocar } from './sons.js';
+import { tr, marcar } from './idioma.js';
 
-const PASTA_MESA = 'Área de trabalho';
 let vista;
 let lixeiraCheia = false;
 
 const ATALHOS = {
-  'meu-computador': { rotulo: 'Meu computador', icone: 'computador', abrir: () => abrir('explorador', { pasta: '::computador' }) },
-  'meus-documentos': { rotulo: 'Meus documentos', icone: 'documentos', alvo: 'Meus documentos', abrir: () => abrir('explorador', { pasta: 'Meus documentos' }) },
-  lixeira: { rotulo: 'Lixeira', icone: 'lixeira', alvo: '::lixeira', abrir: () => abrir('lixeira') },
-  claude: { rotulo: 'Claude', icone: 'claude', abrir: () => abrir('claude') },
-  prompt: { rotulo: 'Prompt de comando', icone: 'prompt', abrir: () => abrir('prompt') },
-  bloco: { rotulo: 'Bloco de notas', icone: 'bloco', abrir: () => abrir('bloco') },
-  foco: { rotulo: 'Foco', icone: 'foco', abrir: () => abrir('foco') },
-  programas: { rotulo: 'Adicionar programas', icone: 'programas-caixa', abrir: () => abrir('programas') },
+  'meu-computador': { rotulo: marcar('Meu computador'), icone: 'computador', abrir: () => abrir('explorador', { pasta: '::computador' }) },
+  'meus-documentos': { rotulo: marcar('Meus documentos'), icone: 'documentos', get alvo() { return pastaDocs(); }, abrir: () => abrir('explorador', { pasta: pastaDocs() }) },
+  lixeira: { rotulo: marcar('Lixeira'), icone: 'lixeira', alvo: '::lixeira', abrir: () => abrir('lixeira') },
+  claude: { rotulo: marcar('Claude'), icone: 'claude', abrir: () => abrir('claude') },
+  prompt: { rotulo: marcar('Prompt de comando'), icone: 'prompt', abrir: () => abrir('prompt') },
+  bloco: { rotulo: marcar('Bloco de notas'), icone: 'bloco', abrir: () => abrir('bloco') },
+  foco: { rotulo: marcar('Foco'), icone: 'foco', abrir: () => abrir('foco') },
+  programas: { rotulo: marcar('Adicionar programas'), icone: 'programas-caixa', abrir: () => abrir('programas') },
 };
 
 function atalhoDe(chave) {
@@ -40,7 +40,7 @@ export async function montarMesa() {
   const raiz = document.getElementById('mesa');
   vista = new VistaIcones(raiz, {
     modo: 'mesa',
-    pastaSoltar: PASTA_MESA,
+    pastaSoltar: pastaMesa(),
     aoAbrir: (it) => {
       if (it.sistema) return atalhoDe(it.chave).abrir();
       if (it.pasta) return abrir('explorador', { pasta: it.rel });
@@ -59,7 +59,7 @@ export async function montarMesa() {
   });
   await atualizar();
   retro.disco.aoMudar((pastas) => {
-    if (pastas.includes(PASTA_MESA) || pastas.includes('')) atualizar();
+    if (pastas.includes(pastaMesa()) || pastas.includes('')) atualizar();
     if (pastas.includes('::lixeira')) atualizarLixeira();
   });
   eventos.on('programas', () => atualizar());
@@ -83,11 +83,11 @@ export async function atualizar(selecionarChaves) {
   const posicoes = (c.mesa && c.mesa.posicoes) || {};
   const atalhos = ((c.mesa && c.mesa.atalhos) || []).map((k) => ({ k, a: atalhoDe(k) })).filter((x) => x.a);
   const itens = atalhos.map(({ k, a }) => ({
-    chave: k, rotulo: a.rotulo, icone: a.icone, sistema: true, alvo: a.alvo, atalho: a.atalhoSeta,
+    chave: k, rotulo: tr(a.rotulo), icone: a.icone, sistema: true, alvo: a.alvo, atalho: a.atalhoSeta,
     pos: posicoes[k], arrastavel: true,
   }));
   let arquivos = [];
-  try { arquivos = await retro.disco.listar(PASTA_MESA); } catch { }
+  try { arquivos = await retro.disco.listar(pastaMesa()); } catch { }
   for (const f of arquivos) {
     const t = tipoDe(f.nome, f.pasta);
     const chave = 'arq:' + f.nome;
@@ -120,14 +120,14 @@ function menu(sel, e) {
   if (!sel.length) {
     return abrirMenu([
       {
-        rotulo: '&Organizar ícones', sub: () => [
-          { rotulo: 'Por &nome', acao: () => organizar('nome') },
-          { rotulo: 'Por &tipo', acao: () => organizar('tipo') },
+        rotulo: tr('&Organizar ícones'), sub: () => [
+          { rotulo: tr('Por &nome'), acao: () => organizar('nome') },
+          { rotulo: tr('Por &tipo'), acao: () => organizar('tipo') },
         ],
       },
-      { rotulo: 'A&linhar ícones', acao: () => organizar('alinhar') },
-      { rotulo: '&Atualizar', acao: () => atualizar() },
-      ...menuDoFundo(PASTA_MESA, {
+      { rotulo: tr('A&linhar ícones'), acao: () => organizar('alinhar') },
+      { rotulo: tr('&Atualizar'), acao: () => atualizar() },
+      ...menuDoFundo(pastaMesa(), {
         aoNovo: async (rel) => {
           const chave = 'arq:' + rel.split('/').pop();
           await atualizar([chave]);
@@ -136,26 +136,26 @@ function menu(sel, e) {
         },
       }).slice(1),
       { separador: true },
-      { rotulo: 'P&ropriedades', acao: () => abrir('painel', { secao: 'aparencia' }) },
+      { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'aparencia' }) },
     ], pos);
   }
   if (sel.length === 1 && sel[0].sistema) {
     const it = sel[0];
     const a = atalhoDe(it.chave);
-    const itens = [{ rotulo: '&Abrir', negrito: true, acao: a.abrir }];
+    const itens = [{ rotulo: tr('&Abrir'), negrito: true, acao: a.abrir }];
     if (it.chave === 'meu-computador' || it.chave === 'meus-documentos') {
-      itens.push({ rotulo: '&Explorar', acao: a.abrir });
-      itens.push({ rotulo: '&Mostrar no computador principal', acao: () => retro.disco.mostrar(it.chave === 'meus-documentos' ? 'Meus documentos' : '') });
+      itens.push({ rotulo: tr('&Explorar'), acao: a.abrir });
+      itens.push({ rotulo: tr('&Mostrar no computador principal'), acao: () => retro.disco.mostrar(it.chave === 'meus-documentos' ? pastaDocs() : '') });
     }
     if (it.chave === 'lixeira') {
-      itens.push({ rotulo: '&Esvaziar Lixeira', desativado: !lixeiraCheia, acao: esvaziarLixeira });
+      itens.push({ rotulo: tr('&Esvaziar Lixeira'), desativado: !lixeiraCheia, acao: esvaziarLixeira });
     }
     if (it.chave === 'claude') {
-      itens.push({ rotulo: 'Configurar a &chave de API…', acao: () => abrir('painel', { secao: 'claude' }) });
+      itens.push({ rotulo: tr('Configurar a &chave de API…'), acao: () => abrir('painel', { secao: 'claude' }) });
     }
     itens.push({ separador: true });
-    itens.push({ rotulo: 'Remover da área de &trabalho', desativado: it.chave === 'meu-computador' || it.chave === 'lixeira', acao: () => removerAtalho(it.chave) });
-    if (it.chave === 'meu-computador') itens.push({ separador: true }, { rotulo: 'P&ropriedades', acao: () => abrir('painel', { secao: 'disco' }) });
+    itens.push({ rotulo: tr('Remover da área de &trabalho'), desativado: it.chave === 'meu-computador' || it.chave === 'lixeira', acao: () => removerAtalho(it.chave) });
+    if (it.chave === 'meu-computador') itens.push({ separador: true }, { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'disco' }) });
     return abrirMenu(itens, pos);
   }
   const arquivos = sel.filter((s) => !s.sistema);
@@ -165,7 +165,8 @@ function menu(sel, e) {
 export async function esvaziarLixeira() {
   const itens = await retro.disco.lixeira();
   if (!itens.length) return;
-  const ok = await confirmar(`Deseja mesmo apagar definitivamente ${itens.length === 1 ? `"${itens[0].nome}"` : `estes ${itens.length} itens`}?\n\nDepois de apagados, eles não podem ser recuperados.`, { titulo: 'Esvaziar Lixeira', tipo: 'aviso' });
+  const texto = itens.length === 1 ? tr('Deseja mesmo apagar definitivamente "{nome}"?', { nome: itens[0].nome }) : tr('Deseja mesmo apagar definitivamente estes {n} itens?', { n: itens.length });
+  const ok = await confirmar(texto + '\n\n' + tr('Depois de apagados, eles não podem ser recuperados.'), { titulo: tr('Esvaziar Lixeira'), tipo: 'aviso' });
   if (!ok) return;
   await retro.disco.esvaziarLixeira();
   tocar('lixeira');

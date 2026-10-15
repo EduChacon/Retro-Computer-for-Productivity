@@ -4,6 +4,7 @@
  */
 import { h, img, extensao, nomeDe, ehTexto, Eventos, caminhoTela } from './util.js';
 import { configurar as configurarSons, tocar } from './sons.js';
+import { tr } from './idioma.js';
 
 export const eventos = new Eventos();
 export const estado = {
@@ -50,6 +51,10 @@ export async function atualizarProgramas() {
   return estado.instalados;
 }
 
+/** Os nomes das pastas do disco (no idioma em que o disco foi criado). */
+export const pastaDocs = () => (estado.config && estado.config.pastas && estado.config.pastas.documentos) || 'Meus documentos';
+export const pastaMesa = () => (estado.config && estado.config.pastas && estado.config.pastas.mesa) || 'Área de trabalho';
+
 export function instalado(id) {
   return estado.instalados.find((p) => p.id === id) || null;
 }
@@ -74,11 +79,11 @@ export function abrir(id, args = {}) {
 export function programasPara(nome) {
   const ext = extensao(nome);
   const r = [];
-  if (['txt', 'log', 'ini'].includes(ext)) r.push({ id: 'bloco', nome: 'Bloco de notas', icone: 'bloco' });
+  if (['txt', 'log', 'ini'].includes(ext)) r.push({ id: 'bloco', nome: tr('Bloco de notas'), icone: 'bloco' });
   for (const p of estado.instalados) {
     if ((p.tipos || []).includes(ext)) r.push({ id: 'craft:' + p.id, nome: p.nome, icone: p.icone || 'programa' });
   }
-  if (ehTexto(nome) && !r.some((x) => x.id === 'bloco')) r.push({ id: 'bloco', nome: 'Bloco de notas', icone: 'bloco' });
+  if (ehTexto(nome) && !r.some((x) => x.id === 'bloco')) r.push({ id: 'bloco', nome: tr('Bloco de notas'), icone: 'bloco' });
   return r;
 }
 
@@ -97,13 +102,13 @@ export async function abrirArquivo(rel, { com } = {}) {
   const { mensagem } = await import('./dialogos.js');
   const sug = sugestoesPara(nome);
   const botoes = [];
-  if (sug.length) botoes.push({ texto: `Instalar o ${sug[0].nome}`, valor: 'instalar', padrao: true });
-  botoes.push({ texto: 'Abrir no computador principal', valor: 'fora', padrao: !sug.length });
-  botoes.push({ texto: 'Cancelar', valor: null });
+  if (sug.length) botoes.push({ texto: tr('Instalar o {programa}', { programa: sug[0].nome }), valor: 'instalar', padrao: true });
+  botoes.push({ texto: tr('Abrir no computador principal'), valor: 'fora', padrao: !sug.length });
+  botoes.push({ texto: tr('Cancelar'), valor: null });
   const v = await mensagem({
-    titulo: 'Abrir com',
+    titulo: tr('Abrir com'),
     tipo: 'pergunta',
-    texto: `Nenhum programa do Retro Computer abre arquivos "${nome}".` + (sug.length ? `\n\nO ${sug[0].nome} abre esse tipo de arquivo e pode ser instalado agora.` : '\n\nVocê pode abri-lo com um programa do computador principal.'),
+    texto: tr('Nenhum programa do Retro Computer abre o arquivo "{nome}".', { nome }) + '\n\n' + (sug.length ? tr('O {programa} abre esse tipo de arquivo e pode ser instalado agora.', { programa: sug[0].nome }) : tr('Você pode abri-lo com um programa do computador principal.')),
     botoes,
   });
   if (v === 'instalar') abrir('programas', { instalar: sug[0].id, depois: rel });
@@ -122,7 +127,8 @@ export function adicionarRecente(rel) {
 let balao = null;
 export function avisar(titulo, texto, { icone = 'msg-info', ms = 6000, som = 'info', aoClicar } = {}) {
   if (balao) balao.remove();
-  balao = h('div.aviso-balao', img(icone, 16), h('div', h('b', titulo), texto));
+  // Os ícones das caixas de mensagem só existem em 32 pontos; os outros vão no tamanho da bandeja.
+  balao = h('div.aviso-balao', img(icone, icone.startsWith('msg-') ? 32 : 16), h('div', h('b', titulo), texto));
   if (aoClicar) {
     balao.style.cursor = 'pointer';
     balao.addEventListener('click', () => { balao.remove(); aoClicar(); });
@@ -134,5 +140,5 @@ export function avisar(titulo, texto, { icone = 'msg-info', ms = 6000, som = 'in
 }
 
 export function avisarRecebido(rel) {
-  avisar('Arquivo recebido', `${caminhoTela(rel)}`, { aoClicar: () => abrir('explorador', { pasta: rel.split('/').slice(0, -1).join('/'), selecionar: rel }) });
+  avisar(tr('Arquivo recebido'), `${caminhoTela(rel)}`, { aoClicar: () => abrir('explorador', { pasta: rel.split('/').slice(0, -1).join('/'), selecionar: rel }) });
 }

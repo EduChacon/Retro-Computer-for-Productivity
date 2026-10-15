@@ -5,8 +5,9 @@
  */
 import { h, img, nomeDe, paiDe, juntar, caminhoTela, extensao } from '../util.js';
 import { Janela } from '../janelas.js';
-import { registrarApp, instalado, adicionarRecente, avisar, abrir } from '../sistema.js';
+import { registrarApp, instalado, adicionarRecente, avisar, abrir, estado, atualizarProgramas, pastaDocs } from '../sistema.js';
 import { caixaArquivo, confirmar, erro } from '../dialogos.js';
+import { tr } from '../idioma.js';
 
 const ORIGEM = (id) => `programa://${id}`;
 const abertos = new Set();
@@ -29,14 +30,13 @@ class ProgramaCraft {
       aoFechar: () => this.podeFechar(),
     });
     this.iframe = h('iframe', {
-      src: `${ORIGEM(id)}/index.html`,
       allow: 'clipboard-read; clipboard-write; fullscreen; local-fonts',
       'aria-label': this.info.nome,
     });
     this.barra = h('div.progresso', h('div'));
-    this.carregando = h('div.carregando', img(this.info.icone || 'programa', 32), h('div', `Carregando o ${this.info.nome}…`), this.barra);
+    this.textoCarga = h('div', tr('Carregando o {programa}…', { programa: this.info.nome }));
+    this.carregando = h('div.carregando', img(this.info.icone || 'programa', 32), this.textoCarga, this.barra);
     this.j.corpo.append(this.iframe, this.carregando);
-    this.animarCarga();
     this.ouvinte = (e) => this.mensagem(e);
     window.addEventListener('message', this.ouvinte);
     this.j.ev.on('fechada', () => {
@@ -44,7 +44,54 @@ class ProgramaCraft {
       abertos.delete(this);
     });
     this.j.ev.on('ativada', () => this.focarPrograma());
+    const outraJanela = [...abertos].some((p) => p.id === id);
     abertos.add(this);
+    this.preparar(outraJanela);
+  }
+
+  /**
+   * Antes de carregar: procura uma versão nova do programa e, conforme a
+   * escolha em Adicionar ou remover programas, atualiza (automático), pergunta
+   * ou não faz nada. Sem internet, ou se demorar, abre a versão instalada.
+   */
+  async preparar(outraJanela) {
+    const modo = (estado.config && estado.config.atualizacoes) || 'automatico';
+    if (modo !== 'nunca' && !outraJanela) {
+      this.textoCarga.textContent = tr('Procurando atualizações do {programa}…', { programa: this.info.nome });
+      let v = null;
+      try { v = await retro.programas.verificar(this.id, { limite: 5000 }); } catch { }
+      if (v && v.temAtualizacao && !this.j.fechada) {
+        let atualizar = modo === 'automatico';
+        if (modo === 'perguntar') {
+          atualizar = await confirmar(tr('Há uma versão nova do {programa} ({nova}); a instalada é a {atual}.\n\nDeseja atualizar agora?', { programa: this.info.nome, nova: v.nova, atual: v.atual }), { titulo: tr('Atualização disponível') });
+        }
+        if (atualizar) await this.atualizar(v);
+      }
+    }
+    if (this.j.fechada) return;
+    this.textoCarga.textContent = tr('Carregando o {programa}…', { programa: this.info.nome });
+    this.barra.firstChild.style.width = '0%';
+    this.animarCarga();
+    this.iframe.src = `${ORIGEM(this.id)}/index.html`;
+  }
+
+  async atualizar(v) {
+    const barra = this.barra.firstChild;
+    this.textoCarga.textContent = tr('Atualizando o {programa} para a versão {nova}…', { programa: this.info.nome, nova: v.nova });
+    const parar = retro.programas.aoProgresso((id, p) => {
+      if (id !== this.id || p.etapa !== 'baixando' || !p.total) return;
+      barra.style.width = Math.round((p.recebido / p.total) * 95) + '%';
+    });
+    try {
+      const novo = await retro.programas.instalar(this.id, { atualizar: true });
+      await atualizarProgramas();
+      this.info = instalado(this.id) || this.info;
+      avisar(tr('Programa atualizado'), tr('{programa} {versao}', { programa: novo.nome, versao: novo.versao }), { som: null, icone: this.info.icone || 'programa' });
+    } catch (e) {
+      avisar(tr('Atualização não concluída'), tr('O {programa} abre na versão instalada ({atual}).', { programa: this.info.nome, atual: v.atual }), { som: null, icone: 'msg-aviso' });
+    } finally {
+      parar();
+    }
   }
 
   animarCarga() {
@@ -133,9 +180,9 @@ class ProgramaCraft {
     this.carregando.remove();
     const gpu = /webgl|webgpu|surface|adapter/i.test(texto || '');
     erro(
-      `O ${this.info.nome} não conseguiu iniciar.\n\n` +
-      (gpu ? 'Ele precisa de aceleração gráfica (WebGPU ou WebGL2), que não está disponível neste computador agora. Atualizar o driver da placa de vídeo costuma resolver.\n\n' : '') +
-      `Detalhe técnico: ${texto}`,
+      tr('O {programa} não conseguiu iniciar.', { programa: this.info.nome }) + '\n\n' +
+      (gpu ? tr('Ele precisa de aceleração gráfica (WebGPU ou WebGL2), que não está disponível neste computador agora. Atualizar o driver da placa de vídeo costuma resolver.') + '\n\n' : '') +
+      tr('Detalhe técnico: {texto}', { texto }),
       this.info.nome,
     );
   }
@@ -154,19 +201,19 @@ class ProgramaCraft {
       adicionarRecente(rel);
       this.j.focar();
     } catch (e) {
-      erro(`Não foi possível abrir ${nomeDe(rel)}: ${e.message}`, this.info.nome);
+      erro(tr('Não foi possível abrir {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }), this.info.nome);
     }
   }
 
   tiposDe(exts) {
     const lista = [...new Set((exts || []).map((x) => String(x).replace(/^\./, '').toLowerCase()).filter((x) => x && !x.includes('/') && x !== '*'))];
     if (!lista.length) return [];
-    return [{ rotulo: `Arquivos do ${this.info.nome} (${lista.map((x) => '*.' + x).join(';')})`.slice(0, 90), exts: lista }];
+    return [{ rotulo: tr('Arquivos do {programa} ({tipos})', { programa: this.info.nome, tipos: lista.map((x) => '*.' + x).join(';') }).slice(0, 90), exts: lista }];
   }
 
   async pedirAbrir(m) {
-    const pasta = this.ultimaPasta || 'Meus documentos';
-    const escolha = await caixaArquivo({ modo: 'abrir', pasta, tipos: this.tiposDe(m.aceitar), varios: !!m.varios, titulo: `Abrir - ${this.info.nome}` });
+    const pasta = this.ultimaPasta || pastaDocs();
+    const escolha = await caixaArquivo({ modo: 'abrir', pasta, tipos: this.tiposDe(m.aceitar), varios: !!m.varios, titulo: `${tr('Abrir')} - ${this.info.nome}` });
     if (!escolha) return this.responder(m.pedido, { ok: false });
     const rels = [].concat(escolha);
     const arquivos = [];
@@ -181,7 +228,7 @@ class ProgramaCraft {
         this.ultimaPasta = paiDe(rel);
         adicionarRecente(rel);
       } catch (e) {
-        await erro(`Não foi possível ler ${nomeDe(rel)}: ${e.message}`, this.info.nome);
+        await erro(tr('Não foi possível ler {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }), this.info.nome);
       }
     }
     this.responder(m.pedido, { ok: arquivos.length > 0, arquivos }, transferir);
@@ -189,17 +236,17 @@ class ProgramaCraft {
   }
 
   async pedirSalvar(m) {
-    const nome = String(m.nome || 'Documento');
+    const nome = String(m.nome || tr('Documento'));
     // "Salvar" de um arquivo que veio do disco grava no mesmo lugar, sem perguntar.
     const conhecido = this.arquivos.get(nome);
     if (conhecido) return this.responder(m.pedido, { ok: true, nome, caminho: conhecido });
     const exts = (m.exts && m.exts.length) ? m.exts : (extensao(nome) ? ['.' + extensao(nome)] : []);
     const rel = await caixaArquivo({
       modo: 'salvar',
-      pasta: this.ultimaPasta || 'Meus documentos',
+      pasta: this.ultimaPasta || pastaDocs(),
       nome,
       tipos: this.tiposDe(exts),
-      titulo: `Salvar como - ${this.info.nome}`,
+      titulo: `${tr('Salvar como')} - ${this.info.nome}`,
     });
     this.j.focar();
     if (!rel) return this.responder(m.pedido, { ok: false });
@@ -209,16 +256,16 @@ class ProgramaCraft {
   }
 
   async gravar(m) {
-    const rel = m.caminho || juntar(this.ultimaPasta || 'Meus documentos', nomeDe(m.nome || 'Documento'));
+    const rel = m.caminho || juntar(this.ultimaPasta || pastaDocs(), nomeDe(m.nome || tr('Documento')));
     try {
       await retro.disco.gravar(rel, new Uint8Array(m.dados));
       this.arquivos.set(nomeDe(rel), rel);
       adicionarRecente(rel);
       this.responder(m.pedido, { ok: true, nome: nomeDe(rel) });
-      avisar('Salvo', caminhoTela(rel), { som: null, ms: 2500, icone: this.info.icone || 'programa' });
+      avisar(tr('Salvo'), caminhoTela(rel), { som: null, ms: 2500, icone: this.info.icone || 'programa' });
     } catch (e) {
       this.responder(m.pedido, { ok: false, erro: e.message });
-      erro(`Não foi possível salvar ${nomeDe(rel)}: ${e.message}`, this.info.nome);
+      erro(tr('Não foi possível salvar {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }), this.info.nome);
     }
   }
 
@@ -236,7 +283,7 @@ class ProgramaCraft {
     const r = await this.perguntar({ tipo: 'podeFechar' });
     if (!r || !r.sujo) return true;
     this.j.focar();
-    return confirmar(`Há alterações não salvas no ${this.info.nome}.\n\nDeseja fechar mesmo assim? (Para salvar, escolha Não e use o comando Salvar do programa.)`, { titulo: this.info.nome, tipo: 'aviso' });
+    return confirmar(tr('Há alterações não salvas no {programa}.\n\nDeseja fechar mesmo assim? (Para salvar, escolha Não e use o comando Salvar do programa.)', { programa: this.info.nome }), { titulo: this.info.nome, tipo: 'aviso' });
   }
 }
 
@@ -244,7 +291,7 @@ class ProgramaCraft {
 function abrirCraft(args = {}) {
   const id = args.programa;
   if (!instalado(id)) {
-    erro('Este programa não está instalado. Use Adicionar ou remover programas.', 'Programa não encontrado').then(() => abrir('programas'));
+    erro(tr('Este programa não está instalado. Use Adicionar ou remover programas.'), tr('Programa não encontrado')).then(() => abrir('programas'));
     return null;
   }
   return new ProgramaCraft({ programa: id, arquivo: args.arquivo });

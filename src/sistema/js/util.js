@@ -1,4 +1,5 @@
 /* Utilidades da área de trabalho: criar elementos, caminhos, formatos e tipos de arquivo. */
+import { tr, marcar, localidade } from './idioma.js';
 
 /** Cria um elemento: h('div.classe#id', { atributos, on: { click } }, filhos…) */
 export function h(seletor, props, ...filhos) {
@@ -71,52 +72,53 @@ export function semExtensao(nome) {
 
 export function tamanho(bytes) {
   if (bytes == null) return '';
-  if (bytes < 1024) return `${bytes} bytes`;
+  const loc = localidade();
+  if (bytes < 1024) return tr('{n} bytes', { n: bytes.toLocaleString(loc) });
   const kb = bytes / 1024;
-  if (kb < 1024) return `${Math.ceil(kb).toLocaleString('pt-BR')} KB`;
+  if (kb < 1024) return `${Math.ceil(kb).toLocaleString(loc)} KB`;
   const mb = kb / 1024;
-  if (mb < 1024) return `${mb.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
-  return `${(mb / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} GB`;
+  if (mb < 1024) return `${mb.toLocaleString(loc, { maximumFractionDigits: 1 })} MB`;
+  return `${(mb / 1024).toLocaleString(loc, { maximumFractionDigits: 1 })} GB`;
 }
 
 export function dataHora(ms) {
   if (!ms) return '';
   const d = new Date(ms);
-  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(localidade()) + ' ' + d.toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
 }
 
 /* ---------- Tipos de arquivo ---------- */
 
 const TIPOS = {
-  txt: ['texto', 'Documento de texto'], log: ['texto', 'Documento de texto'], ini: ['texto', 'Configurações'],
-  md: ['markdown', 'Texto Markdown'], markdown: ['markdown', 'Texto Markdown'],
-  doc: ['documento', 'Documento'], docx: ['documento', 'Documento'], dotx: ['documento', 'Modelo de documento'],
-  odt: ['documento', 'Documento OpenDocument'], rtf: ['documento', 'Rich Text'],
-  xls: ['planilha', 'Planilha'], xlsx: ['planilha', 'Planilha'], xlsm: ['planilha', 'Planilha'], ods: ['planilha', 'Planilha OpenDocument'],
-  csv: ['planilha', 'Valores separados por vírgula'], tsv: ['planilha', 'Valores separados por tabulação'],
-  ppt: ['apresentacao', 'Apresentação'], pptx: ['apresentacao', 'Apresentação'], odp: ['apresentacao', 'Apresentação OpenDocument'],
-  pdf: ['pdf', 'Documento PDF'],
-  png: ['imagem', 'Imagem PNG'], jpg: ['imagem', 'Imagem JPEG'], jpeg: ['imagem', 'Imagem JPEG'], gif: ['imagem', 'Imagem GIF'],
-  webp: ['imagem', 'Imagem WebP'], bmp: ['imagem', 'Imagem de bitmap'], tif: ['imagem', 'Imagem TIFF'], tiff: ['imagem', 'Imagem TIFF'],
-  svg: ['imagem', 'Desenho vetorial'], psd: ['imagem', 'Imagem com camadas'], ico: ['imagem', 'Ícone'],
-  dng: ['imagem', 'Foto RAW'], cr2: ['imagem', 'Foto RAW'], nef: ['imagem', 'Foto RAW'], arw: ['imagem', 'Foto RAW'],
-  mp3: ['som', 'Som MP3'], wav: ['som', 'Som WAV'], flac: ['som', 'Som FLAC'], ogg: ['som', 'Som OGG'], m4a: ['som', 'Som'], aiff: ['som', 'Som AIFF'],
-  mp4: ['video', 'Vídeo'], mov: ['video', 'Vídeo'], mkv: ['video', 'Vídeo'], webm: ['video', 'Vídeo'], avi: ['video', 'Vídeo'],
-  zip: ['compactado', 'Pasta compactada'], rar: ['compactado', 'Arquivo compactado'], '7z': ['compactado', 'Arquivo compactado'], gz: ['compactado', 'Arquivo compactado'],
-  htm: ['html', 'Página da internet'], html: ['html', 'Página da internet'], url: ['html', 'Atalho da internet'],
-  js: ['codigo', 'Código JavaScript'], ts: ['codigo', 'Código TypeScript'], json: ['json', 'Dados JSON'], py: ['python', 'Código Python'],
-  sh: ['shell', 'Roteiro do shell'], bat: ['shell', 'Arquivo de lote'], ps1: ['shell', 'Roteiro do PowerShell'],
-  ttf: ['fonte', 'Fonte TrueType'], otf: ['fonte', 'Fonte OpenType'], woff2: ['fonte', 'Fonte da web'],
-  exe: ['executavel', 'Programa'], msi: ['executavel', 'Instalador'], dmg: ['executavel', 'Imagem de disco'], app: ['executavel', 'Programa'],
-  ics: ['calendario-arq', 'Calendário'], dxf: ['arquivo', 'Desenho CAD'], dwg: ['arquivo', 'Desenho CAD'],
+  txt: ['texto', marcar('Documento de texto')], log: ['texto', marcar('Documento de texto')], ini: ['texto', marcar('Configurações')],
+  md: ['markdown', marcar('Texto Markdown')], markdown: ['markdown', marcar('Texto Markdown')],
+  doc: ['documento', marcar('Documento')], docx: ['documento', marcar('Documento')], dotx: ['documento', marcar('Modelo de documento')],
+  odt: ['documento', marcar('Documento OpenDocument')], rtf: ['documento', marcar('Rich Text')],
+  xls: ['planilha', marcar('Planilha')], xlsx: ['planilha', marcar('Planilha')], xlsm: ['planilha', marcar('Planilha')], ods: ['planilha', marcar('Planilha OpenDocument')],
+  csv: ['planilha', marcar('Valores separados por vírgula')], tsv: ['planilha', marcar('Valores separados por tabulação')],
+  ppt: ['apresentacao', marcar('Apresentação')], pptx: ['apresentacao', marcar('Apresentação')], odp: ['apresentacao', marcar('Apresentação OpenDocument')],
+  pdf: ['pdf', marcar('Documento PDF')],
+  png: ['imagem', marcar('Imagem PNG')], jpg: ['imagem', marcar('Imagem JPEG')], jpeg: ['imagem', marcar('Imagem JPEG')], gif: ['imagem', marcar('Imagem GIF')],
+  webp: ['imagem', marcar('Imagem WebP')], bmp: ['imagem', marcar('Imagem de bitmap')], tif: ['imagem', marcar('Imagem TIFF')], tiff: ['imagem', marcar('Imagem TIFF')],
+  svg: ['imagem', marcar('Desenho vetorial')], psd: ['imagem', marcar('Imagem com camadas')], ico: ['imagem', marcar('Ícone')],
+  dng: ['imagem', marcar('Foto RAW')], cr2: ['imagem', marcar('Foto RAW')], nef: ['imagem', marcar('Foto RAW')], arw: ['imagem', marcar('Foto RAW')],
+  mp3: ['som', marcar('Som MP3')], wav: ['som', marcar('Som WAV')], flac: ['som', marcar('Som FLAC')], ogg: ['som', marcar('Som OGG')], m4a: ['som', marcar('Som')], aiff: ['som', marcar('Som AIFF')],
+  mp4: ['video', marcar('Vídeo')], mov: ['video', marcar('Vídeo')], mkv: ['video', marcar('Vídeo')], webm: ['video', marcar('Vídeo')], avi: ['video', marcar('Vídeo')],
+  zip: ['compactado', marcar('Pasta compactada')], rar: ['compactado', marcar('Arquivo compactado')], '7z': ['compactado', marcar('Arquivo compactado')], gz: ['compactado', marcar('Arquivo compactado')],
+  htm: ['html', marcar('Página da internet')], html: ['html', marcar('Página da internet')], url: ['html', marcar('Atalho da internet')],
+  js: ['codigo', marcar('Código JavaScript')], ts: ['codigo', marcar('Código TypeScript')], json: ['json', marcar('Dados JSON')], py: ['python', marcar('Código Python')],
+  sh: ['shell', marcar('Roteiro do shell')], bat: ['shell', marcar('Arquivo de lote')], ps1: ['shell', marcar('Roteiro do PowerShell')],
+  ttf: ['fonte', marcar('Fonte TrueType')], otf: ['fonte', marcar('Fonte OpenType')], woff2: ['fonte', marcar('Fonte da web')],
+  exe: ['executavel', marcar('Programa')], msi: ['executavel', marcar('Instalador')], dmg: ['executavel', marcar('Imagem de disco')], app: ['executavel', marcar('Programa')],
+  ics: ['calendario-arq', marcar('Calendário')], dxf: ['arquivo', marcar('Desenho CAD')], dwg: ['arquivo', marcar('Desenho CAD')],
 };
 
 export function tipoDe(nome, pasta) {
-  if (pasta) return { icone: 'pasta', descricao: 'Pasta de arquivos' };
+  if (pasta) return { icone: 'pasta', descricao: tr('Pasta de arquivos') };
   const ext = extensao(nome);
   const t = TIPOS[ext];
-  if (t) return { icone: t[0], descricao: t[1], ext };
-  return { icone: 'arquivo', descricao: ext ? `Arquivo ${ext.toUpperCase()}` : 'Arquivo', ext };
+  if (t) return { icone: t[0], descricao: tr(t[1]), ext };
+  return { icone: 'arquivo', descricao: ext ? tr('Arquivo {ext}', { ext: ext.toUpperCase() }) : tr('Arquivo'), ext };
 }
 
 export const ehTexto = (nome) => ['txt', 'log', 'ini', 'md', 'markdown', 'csv', 'tsv', 'json', 'js', 'ts', 'py', 'sh', 'bat', 'ps1', 'css', 'xml', 'yml', 'yaml', 'toml', 'html', 'htm', 'url'].includes(extensao(nome));

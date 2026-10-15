@@ -15,6 +15,7 @@ const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { tr } = require('./idioma');
 
 const LIXEIRA = '.lixeira';
 const VERSOES = '.versoes';
@@ -44,10 +45,10 @@ class Disco {
     this.raiz = path.resolve(raiz);
   }
 
-  /** Prepara a pasta na primeira vez (as pastas iniciais e o Leia-me). */
-  async preparar() {
+  /** Prepara a pasta na primeira vez (as pastas iniciais, no idioma escolhido). */
+  async preparar(pastas = PASTAS_INICIAIS) {
     await fsp.mkdir(this.raiz, { recursive: true });
-    for (const p of PASTAS_INICIAIS) await fsp.mkdir(path.join(this.raiz, p), { recursive: true });
+    for (const p of pastas) await fsp.mkdir(path.join(this.raiz, p), { recursive: true });
     await fsp.mkdir(path.join(this.raiz, LIXEIRA), { recursive: true });
     await fsp.mkdir(path.join(this.raiz, VERSOES), { recursive: true });
     if (process.platform === 'win32') {
@@ -60,15 +61,15 @@ class Disco {
   /** Normaliza um caminho interno e recusa o que sair da raiz. */
   normalizar(rel, { sistema = false } = {}) {
     if (rel == null) rel = '';
-    if (typeof rel !== 'string') throw new ErroDisco('Caminho inválido.', 'invalido');
+    if (typeof rel !== 'string') throw new ErroDisco(tr('Caminho inválido.'), 'invalido');
     const partes = [];
     for (const p of rel.replace(/\\/g, '/').split('/')) {
       if (!p || p === '.') continue;
-      if (p === '..') throw new ErroDisco('Caminho fora do disco.', 'fora');
+      if (p === '..') throw new ErroDisco(tr('Caminho fora do disco.'), 'fora');
       partes.push(p);
     }
     if (!sistema && partes.length && (partes[0] === LIXEIRA || partes[0] === VERSOES)) {
-      throw new ErroDisco('Pasta reservada do sistema.', 'reservado');
+      throw new ErroDisco(tr('Pasta reservada do sistema.'), 'reservado');
     }
     return partes.join('/');
   }
@@ -76,7 +77,7 @@ class Disco {
   real(rel, opcoes) {
     const n = this.normalizar(rel, opcoes);
     const r = path.resolve(this.raiz, n);
-    if (r !== this.raiz && !r.startsWith(this.raiz + path.sep)) throw new ErroDisco('Caminho fora do disco.', 'fora');
+    if (r !== this.raiz && !r.startsWith(this.raiz + path.sep)) throw new ErroDisco(tr('Caminho fora do disco.'), 'fora');
     return r;
   }
 
@@ -115,14 +116,14 @@ class Disco {
   /** Grava o arquivo; se ele já existir, a versão anterior vai para .versoes/. */
   async gravar(rel, dados, { versao = true } = {}) {
     const n = this.normalizar(rel);
-    if (!n) throw new ErroDisco('Nome de arquivo vazio.', 'invalido');
+    if (!n) throw new ErroDisco(tr('Nome de arquivo vazio.'), 'invalido');
     const nome = path.posix.basename(n);
-    if (!nomeValido(nome)) throw new ErroDisco(`O nome "${nome}" não é válido.`, 'nome');
+    if (!nomeValido(nome)) throw new ErroDisco(tr('O nome "{nome}" não é válido.', { nome }), 'nome');
     const destino = this.real(n);
     await fsp.mkdir(path.dirname(destino), { recursive: true });
     let anterior = null;
     try { anterior = await fsp.stat(destino); } catch { }
-    if (anterior && anterior.isDirectory()) throw new ErroDisco('Já existe uma pasta com esse nome.', 'existe');
+    if (anterior && anterior.isDirectory()) throw new ErroDisco(tr('Já existe uma pasta com esse nome.'), 'existe');
     if (anterior && versao) await this.guardarVersao(n);
     const tmp = path.join(path.dirname(destino), `.~${nome}.${process.pid}.${Date.now()}.tmp`);
     await fsp.writeFile(tmp, Buffer.from(dados));
@@ -131,10 +132,10 @@ class Disco {
   }
 
   async criarPasta(relPai, nome) {
-    if (!nomeValido(nome)) throw new ErroDisco(`O nome "${nome}" não é válido.`, 'nome');
+    if (!nomeValido(nome)) throw new ErroDisco(tr('O nome "{nome}" não é válido.', { nome }), 'nome');
     const pai = this.normalizar(relPai);
     const n = pai ? `${pai}/${nome.trim()}` : nome.trim();
-    if (await this.existe(n)) throw new ErroDisco(`Já existe "${nome}" nesta pasta.`, 'existe');
+    if (await this.existe(n)) throw new ErroDisco(tr('Já existe "{nome}" nesta pasta.', { nome }), 'existe');
     await fsp.mkdir(this.real(n));
     return this.info(n);
   }
@@ -149,19 +150,19 @@ class Disco {
       const tent = i === 1 ? nome : `${base} (${i})${usar}`;
       if (!(await this.existe(pai ? `${pai}/${tent}` : tent))) return tent;
     }
-    throw new ErroDisco('Não foi possível achar um nome livre.', 'existe');
+    throw new ErroDisco(tr('Não foi possível achar um nome livre.'), 'existe');
   }
 
   async renomear(rel, novoNome) {
     const n = this.normalizar(rel);
-    if (!n) throw new ErroDisco('Não dá para renomear o disco.', 'invalido');
-    if (!nomeValido(novoNome)) throw new ErroDisco(`O nome "${novoNome}" não é válido.`, 'nome');
+    if (!n) throw new ErroDisco(tr('Não dá para renomear o disco.'), 'invalido');
+    if (!nomeValido(novoNome)) throw new ErroDisco(tr('O nome "{nome}" não é válido.', { nome: novoNome }), 'nome');
     const pai = path.posix.dirname(n) === '.' ? '' : path.posix.dirname(n);
     const novo = pai ? `${pai}/${novoNome.trim()}` : novoNome.trim();
     if (novo === n) return this.info(n);
     // Trocar só maiúsculas e minúsculas é permitido (o sistema pode não distinguir).
     if (novo.toLowerCase() !== n.toLowerCase() && await this.existe(novo)) {
-      throw new ErroDisco(`Já existe "${novoNome}" nesta pasta.`, 'existe');
+      throw new ErroDisco(tr('Já existe "{nome}" nesta pasta.', { nome: novoNome }), 'existe');
     }
     await fsp.rename(this.real(n), this.real(novo));
     await this.moverVersoes(n, novo);
@@ -171,8 +172,8 @@ class Disco {
   async mover(rel, relDestino) {
     const n = this.normalizar(rel);
     const d = this.normalizar(relDestino);
-    if (!n) throw new ErroDisco('Não dá para mover o disco.', 'invalido');
-    if (d === n || d.startsWith(n + '/')) throw new ErroDisco('Não dá para mover uma pasta para dentro dela mesma.', 'invalido');
+    if (!n) throw new ErroDisco(tr('Não dá para mover o disco.'), 'invalido');
+    if (d === n || d.startsWith(n + '/')) throw new ErroDisco(tr('Não dá para mover uma pasta para dentro dela mesma.'), 'invalido');
     const nome = await this.nomeLivre(d, path.posix.basename(n));
     const novo = d ? `${d}/${nome}` : nome;
     await fsp.rename(this.real(n), this.real(novo));
@@ -183,7 +184,7 @@ class Disco {
   async copiar(rel, relDestino) {
     const n = this.normalizar(rel);
     const d = this.normalizar(relDestino);
-    if (d === n || d.startsWith(n + '/')) throw new ErroDisco('Não dá para copiar uma pasta para dentro dela mesma.', 'invalido');
+    if (d === n || d.startsWith(n + '/')) throw new ErroDisco(tr('Não dá para copiar uma pasta para dentro dela mesma.'), 'invalido');
     const nome = await this.nomeLivre(d, path.posix.basename(n));
     const novo = d ? `${d}/${nome}` : nome;
     await fsp.cp(this.real(n), this.real(novo), { recursive: true, errorOnExist: true, force: false });
@@ -252,7 +253,7 @@ class Disco {
 
   async paraLixeira(rel) {
     const n = this.normalizar(rel);
-    if (!n) throw new ErroDisco('Não dá para excluir o disco.', 'invalido');
+    if (!n) throw new ErroDisco(tr('Não dá para excluir o disco.'), 'invalido');
     const id = `${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
     const pasta = path.join(this.raiz, LIXEIRA, id);
     await fsp.mkdir(pasta, { recursive: true });
@@ -281,7 +282,7 @@ class Disco {
   }
 
   async restaurar(id) {
-    if (!/^[a-z0-9-]+$/.test(id)) throw new ErroDisco('Item inválido.', 'invalido');
+    if (!/^[a-z0-9-]+$/.test(id)) throw new ErroDisco(tr('Item inválido.'), 'invalido');
     const pasta = path.join(this.raiz, LIXEIRA);
     const meta = JSON.parse(await fsp.readFile(path.join(pasta, `${id}.json`), 'utf8'));
     let pai = path.posix.dirname(meta.origem);
@@ -297,7 +298,7 @@ class Disco {
 
   /** Apaga de vez (só a pedido do usuário: "Esvaziar Lixeira" ou "Excluir" dentro dela). */
   async apagarDaLixeira(id) {
-    if (!/^[a-z0-9-]+$/.test(id)) throw new ErroDisco('Item inválido.', 'invalido');
+    if (!/^[a-z0-9-]+$/.test(id)) throw new ErroDisco(tr('Item inválido.'), 'invalido');
     const pasta = path.join(this.raiz, LIXEIRA);
     await fsp.rm(path.join(pasta, id), { recursive: true, force: true });
     await fsp.rm(path.join(pasta, `${id}.json`), { force: true });
@@ -342,7 +343,7 @@ class Disco {
 
   async restaurarVersao(rel, id) {
     const n = this.normalizar(rel);
-    if (!/^[\w.-]+$/.test(id)) throw new ErroDisco('Versão inválida.', 'invalido');
+    if (!/^[\w.-]+$/.test(id)) throw new ErroDisco(tr('Versão inválida.'), 'invalido');
     const origem = path.join(this.pastaVersoes(n), id);
     const dados = await fsp.readFile(origem);
     return this.gravar(n, dados, { versao: true });

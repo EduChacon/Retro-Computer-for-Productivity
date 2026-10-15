@@ -6,10 +6,13 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const { tr } = require('./idioma');
 
 const PADRAO = {
   versao: 1,
   disco: null,
+  idioma: 'auto',
+  atualizacoes: 'automatico',
   telaCheia: true,
   escala: 'auto',
   papel: { cor: '#008080', padrao: 'nenhum' },
@@ -85,7 +88,7 @@ class Config {
       try { fs.rmSync(this.arquivoChave, { force: true }); } catch { }
       return false;
     }
-    if (!this.cofreDisponivel()) throw new Error('O cofre de senhas do sistema não está disponível; a chave não foi guardada.');
+    if (!this.cofreDisponivel()) throw new Error(tr('O cofre de senhas do sistema não está disponível; a chave não foi guardada.'));
     fs.mkdirSync(path.dirname(this.arquivoChave), { recursive: true });
     fs.writeFileSync(this.arquivoChave, this.cofre.encryptString(limpa), { mode: 0o600 });
     return true;

@@ -1,0 +1,49 @@
+# Publica uma versão: ao enviar uma etiqueta "vX.Y.Z", compila os instaladores dos três sistemas
+# (com o fluxo "Compilar") e cria o lançamento no GitHub com eles e com as notas de
+# docs/lancamentos/vX.Y.Z.md (em inglês, a língua da página do projeto).
+name: Publicar
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    uses: ./.github/workflows/compilar.yml
+
+  publicar:
+    needs: compilar
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Conferir a versão
+        run: |
+          versao="$(node -p "require('./package.json').version")"
+          if [ "v$versao" != "$GITHUB_REF_NAME" ]; then
+            echo "A etiqueta $GITHUB_REF_NAME não bate com a versão do package.json ($versao)." >&2
+            exit 1
+          fi
+          test -f "docs/lancamentos/$GITHUB_REF_NAME.md"
+
+      - name: Baixar os instaladores
+        uses: actions/download-artifact@v4
+        with:
+          pattern: retro-computer-*
+          path: instaladores
+          merge-multiple: true
+
+      - name: Criar o lançamento
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls -la instaladores
+          gh release create "$GITHUB_REF_NAME" instaladores/* \
+            --title "Retro Computer ${GITHUB_REF_NAME#v}" \
+            --notes-file "docs/lancamentos/$GITHUB_REF_NAME.md" \
+            --verify-tag

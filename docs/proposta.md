@@ -21,9 +21,11 @@ Retro Computer (Electron)
 │   ├── programas.js   baixa e instala os Craft; serve programa://<id>/
 │   ├── terminal.js    o Prompt de comando (node-pty)
 │   ├── config.js      as configurações e a chave de API (cofre do sistema)
+│   ├── idioma.js      os textos do processo principal e os nomes das pastas em cada idioma
 │   └── main.js        a janela, os protocolos e a ponte com a área de trabalho
 ├── a área de trabalho (página)        src/sistema/  → sistema://retro/
 │   ├── janelas, menus, barra de tarefas, ícones, diálogos
+│   ├── idiomas/       en.json e es.json (o português é a chave)
 │   └── apps/          Meu computador, Lixeira, Bloco de notas, Painel de controle,
 │                      Adicionar ou remover programas, Prompt, Claude, Foco, Ajuda…
 └── o adaptador                        src/adaptador/adaptador.js
@@ -52,6 +54,19 @@ Os Craft para navegador abrem arquivos por um `<input type=file>` e salvam pelo 
 - **Fechar com alterações não salvas**: o adaptador pergunta aos ouvintes de `beforeunload` da página, e a janela avisa antes de fechar.
 
 Testado com o WordCraft 0.7.0: abrir um `.md` do disco, salvar como `.docx` (a caixa do disco), salvar de novo (grava direto e guarda a versão anterior) e abrir pela caixa "Abrir".
+
+### As atualizações
+
+- **Os programas**: ao abrir um Craft, a janela procura a versão nova (a consulta fica guardada por 6 horas em `programas/atualizacoes.json`, com 5 segundos de espera no máximo) e, conforme a escolha do usuário, instala antes de abrir, pergunta ou não procura. Uns 20 segundos depois de ligar, a mesma busca roda para todos os instalados, sem mexer nos abertos.
+- **Uma atualização nunca volta atrás**: `instalar(id, …, { atualizar: true })` só aceita uma versão maior que a instalada e não usa a versão conhecida do catálogo quando a internet falha. O programa instalado de um `.zip` (versão `local`) não é trocado sozinho.
+- **O próprio Retro Computer**: o último lançamento de `EduChacon/Retro-Computer-for-Productivity` é consultado uma vez por dia; havendo versão nova, um aviso abre a página de download (uma vez por versão). A atualização automática do aplicativo exigiria instaladores assinados, por isso fica para depois.
+
+### Os idiomas
+
+- O texto em português é a chave: `tr('Abrir {nome}', { nome })` na área de trabalho e no processo principal, com os catálogos `src/sistema/idiomas/en.json` e `es.json`. `marcar('…')` marca os textos de tabelas que são traduzidos na hora de mostrar.
+- `ferramentas/textos.js` acha todos os `tr()` e `marcar()` do código, e o teste `testes/idiomas.test.js` falha se faltar uma tradução, sobrar uma ou as `{variáveis}` não baterem.
+- O idioma vem da configuração (`idioma`: automático, pt-BR, en ou es). Escolhido um idioma, o Electron abre com a opção `--lang`, e os Craft que têm tradução (o WordCraft, por exemplo) seguem o mesmo idioma. Trocar o idioma reinicia o aplicativo.
+- As pastas do disco são criadas com os nomes do idioma da primeira vez e guardadas na configuração (`pastas`); trocar o idioma não renomeia nada.
 
 ### O disco C:
 
@@ -83,7 +98,8 @@ O Prompt de comando é um terminal de verdade (node-pty e xterm.js) com o shell 
 | 3. Prompt de comando e Claude Code (chave no cofre do sistema) | Feita |
 | 4. Foco, proteção de tela, Ajuda, Executar, Localizar, Desligar | Feita |
 | 5. Instaladores para os três sistemas (GitHub Actions) | Feita, sem assinatura digital |
-| 6. Tema Mac clássico, navegador focado, modo foco completo | Sugestões ([uso.md](uso.md), seção 6) |
+| 6. Inglês e espanhol; atualizações ao abrir; lançamentos no GitHub; Linux ARM64 (Raspberry Pi) | Feita (0.2.0) |
+| 7. Tema Mac clássico, navegador focado, modo foco completo, modo sistema no Linux | Sugestões ([uso.md](uso.md), seção 8) |
 
 ## Riscos conhecidos
 

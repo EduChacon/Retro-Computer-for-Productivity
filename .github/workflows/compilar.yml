@@ -1,11 +1,14 @@
-# Compila o Retro Computer para Windows, macOS e Linux a cada push.
+# Compila o Retro Computer para Windows, macOS e Linux (PC e ARM64, como o Raspberry Pi) a cada push.
 # Os instaladores ficam nos "Artifacts" da execução (aba Actions do GitHub).
+# O fluxo "Publicar" (publicar.yml) chama este mesmo fluxo e põe os instaladores num lançamento.
 name: Compilar
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -15,7 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # ubuntu-24.04-arm: os pacotes do Linux para ARM64 (Raspberry Pi 3, 4 e 5, com o sistema de 64 bits).
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -28,21 +32,22 @@ jobs:
       - name: Instalar as dependências
         run: npm ci
 
-      - name: Testes do disco
+      - name: Testes (disco, idiomas e atualizações)
         run: npm test
 
       - name: Teste da área de trabalho (com capturas)
-        if: runner.os == 'Linux'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update && sudo apt-get install -y xvfb
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas geral
+          RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en geral
 
       - name: Guardar as capturas
-        if: runner.os == 'Linux' && always()
+        if: matrix.os == 'ubuntu-latest' && always()
         uses: actions/upload-artifact@v4
         with:
           name: capturas
-          path: capturas/*.png
+          path: capturas/**/*.png
           if-no-files-found: ignore
 
       - name: Gerar os instaladores
@@ -54,7 +59,7 @@ jobs:
       - name: Guardar os instaladores
         uses: actions/upload-artifact@v4
         with:
-          name: retro-computer-${{ runner.os }}
+          name: retro-computer-${{ runner.os }}-${{ runner.arch }}
           path: |
             dist/*.exe
             dist/*.dmg

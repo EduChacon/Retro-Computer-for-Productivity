@@ -8,6 +8,7 @@
  * o PATH do terminal, e o comando "claude" não seria achado.
  */
 const os = require('node:os');
+const { tr } = require('./idioma');
 const { execFile } = require('node:child_process');
 
 let pty = null;
@@ -47,7 +48,7 @@ class Terminais {
    * @returns {number} o número do terminal
    */
   criar(o) {
-    if (!pty) throw new Error('O terminal não está disponível nesta instalação (node-pty não carregou).');
+    if (!pty) throw new Error(tr('O terminal não está disponível nesta instalação (node-pty não carregou).'));
     const { arquivo, args } = shellPadrao();
     const env = { ...process.env, ...o.env, TERM: 'xterm-256color', COLORTERM: 'truecolor', RETRO_COMPUTER: '1' };
     if (!env.LANG && process.platform !== 'win32') env.LANG = 'pt_BR.UTF-8';

@@ -1,8 +1,8 @@
 {
   "name": "retro-computer",
   "productName": "Retro Computer",
-  "version": "0.1.0",
-  "description": "Um computador retrô para produtividade: área de trabalho no estilo dos anos 90, programas Craft, o disco na sua pasta e o Claude Code no Prompt de comando.",
+  "version": "0.2.0",
+  "description": "A retro computer for productivity: a 1990s-style desktop with the Craft apps, your files in an ordinary folder and Claude Code in the Command Prompt. In English, Portuguese and Spanish.",
   "main": "src/principal/main.js",
   "license": "MIT",
   "author": "EduChacon",
@@ -30,6 +30,7 @@
   "build": {
     "appId": "io.github.educhacon.retrocomputer",
     "productName": "Retro Computer",
+    "artifactName": "Retro-Computer-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "dist",
       "buildResources": "recursos"

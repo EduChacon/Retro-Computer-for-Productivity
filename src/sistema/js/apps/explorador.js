@@ -8,19 +8,20 @@ import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, da
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, abrir, abrirArquivo, estado, definirConfig } from '../sistema.js';
+import { registrarApp, abrir, abrirArquivo, estado, definirConfig, pastaDocs, pastaMesa } from '../sistema.js';
 import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir, novaPasta, novoTexto, copiarItens, colar, transferencia } from '../arquivos.js';
 import { erro, confirmar, propriedades, mensagem } from '../dialogos.js';
 import { esvaziarLixeira } from '../mesa.js';
 import { tocar } from '../sons.js';
+import { tr, marcar } from '../idioma.js';
 
 const ESPECIAIS = {
-  '::computador': { titulo: 'Meu computador', icone: 'computador' },
-  '::lixeira': { titulo: 'Lixeira', icone: 'lixeira' },
+  '::computador': { titulo: marcar('Meu computador'), icone: 'computador' },
+  '::lixeira': { titulo: marcar('Lixeira'), icone: 'lixeira' },
 };
 
 function tituloDe(pasta) {
-  if (ESPECIAIS[pasta]) return ESPECIAIS[pasta].titulo;
+  if (ESPECIAIS[pasta]) return tr(ESPECIAIS[pasta].titulo);
   if (!pasta) return 'C:\\';
   return nomeDe(pasta);
 }
@@ -29,7 +30,7 @@ function iconeDe(pasta, cheia) {
   if (pasta === '::lixeira') return cheia ? 'lixeira-cheia' : 'lixeira';
   if (ESPECIAIS[pasta]) return ESPECIAIS[pasta].icone;
   if (!pasta) return 'disco';
-  if (pasta === 'Meus documentos') return 'documentos';
+  if (pasta === pastaDocs()) return 'documentos';
   return 'pasta-aberta';
 }
 
@@ -54,21 +55,21 @@ class Explorador {
     this.endereco.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); this.irPara(this.endereco.value); }
     });
-    this.btVoltar = h('button.ferramenta', { title: 'Voltar (Backspace)', on: { click: () => this.voltar() } }, img('pasta-aberta', 16), 'Voltar');
-    this.btAcima = h('button.ferramenta', { title: 'Subir um nível', on: { click: () => this.subir() } }, h('span', { style: { fontWeight: 'bold' } }, '↑'), 'Acima');
-    const btVista = h('button.ferramenta', { title: 'Exibir', dataset: { abreMenu: '1' } }, img('imagens', 16), 'Exibir');
+    this.btVoltar = h('button.ferramenta', { title: tr('Voltar (Backspace)'), on: { click: () => this.voltar() } }, img('pasta-aberta', 16), tr('Voltar'));
+    this.btAcima = h('button.ferramenta', { title: tr('Subir um nível'), on: { click: () => this.subir() } }, h('span', { style: { fontWeight: 'bold' } }, '↑'), tr('Acima'));
+    const btVista = h('button.ferramenta', { title: tr('Exibir'), dataset: { abreMenu: '1' } }, img('imagens', 16), tr('Exibir'));
     btVista.addEventListener('click', () => {
       const r = btVista.getBoundingClientRect();
       abrirMenu(this.itensExibir(), { x: r.left, y: r.bottom });
     });
     const ferramentas = h('div.barra-ferramentas',
       this.btVoltar, this.btAcima, h('div.sep'),
-      h('span', 'Endereço'), this.endereco, h('div.sep'), btVista);
+      h('span', tr('Endereço')), this.endereco, h('div.sep'), btVista);
     this.area = h('div.lista-arquivos', { style: { flex: '1' } });
     this.j.corpo.append(ferramentas, this.area);
     this.vista = new VistaIcones(this.area, {
       modo: this.modo,
-      colunas: ['Nome', 'Tamanho', 'Tipo', 'Modificado'],
+      colunas: [tr('Nome'), tr('Tamanho'), tr('Tipo'), tr('Modificado')],
       aoAbrir: (it) => this.abrirItem(it),
       aoMenu: (sel, e) => this.menu(sel, e),
       aoRenomear: (it) => this.renomearItem(it),
@@ -87,59 +88,59 @@ class Explorador {
   menus() {
     return [
       {
-        rotulo: '&Arquivo', itens: () => {
+        rotulo: tr('&Arquivo'), itens: () => {
           const sel = this.vista ? this.vista.selecionados() : [];
           const doDisco = !this.pasta.startsWith('::');
           const itens = [];
           if (this.pasta === '::lixeira') {
-            itens.push({ rotulo: '&Restaurar', desativado: !sel.length, acao: () => this.restaurar(sel) });
-            itens.push({ rotulo: '&Esvaziar Lixeira', acao: esvaziarLixeira });
+            itens.push({ rotulo: tr('&Restaurar'), desativado: !sel.length, acao: () => this.restaurar(sel) });
+            itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
             itens.push({ separador: true });
           } else if (doDisco) {
             if (sel.length) itens.push(...menuDeItens(sel.filter((s) => s.rel), { aoRenomear: (it) => this.renomearItem(it) }), { separador: true });
-            itens.push({ rotulo: '&Novo', sub: [
-              { rotulo: '&Pasta', icone: 'pasta', acao: () => this.criar('pasta') },
+            itens.push({ rotulo: tr('&Novo'), sub: [
+              { rotulo: tr('&Pasta'), icone: 'pasta', acao: () => this.criar('pasta') },
               { separador: true },
-              { rotulo: '&Documento de texto', icone: 'texto', acao: () => this.criar('texto') },
+              { rotulo: tr('&Documento de texto'), icone: 'texto', acao: () => this.criar('texto') },
             ] });
-            itens.push({ rotulo: '&Trazer do computador principal…', acao: () => retro.disco.importarEscolhendo(this.pasta).catch((e) => erro(e.message)) });
+            itens.push({ rotulo: tr('&Trazer do computador principal…'), acao: () => retro.disco.importarEscolhendo(this.pasta).catch((e) => erro(e.message)) });
             itens.push({ separador: true });
           }
-          itens.push({ rotulo: '&Fechar', acao: () => this.j.fechar() });
+          itens.push({ rotulo: tr('&Fechar'), acao: () => this.j.fechar() });
           return itens;
         },
       },
       {
-        rotulo: '&Editar', itens: () => {
+        rotulo: tr('&Editar'), itens: () => {
           const sel = this.vista ? this.vista.selecionados().filter((s) => s.rel) : [];
           const doDisco = !this.pasta.startsWith('::');
           return [
-            { rotulo: 'Recor&tar', atalho: 'Ctrl+X', desativado: !doDisco || !sel.length, acao: () => copiarItens(sel.map((s) => s.rel), true) },
-            { rotulo: '&Copiar', atalho: 'Ctrl+C', desativado: !doDisco || !sel.length, acao: () => copiarItens(sel.map((s) => s.rel), false) },
-            { rotulo: 'C&olar', atalho: 'Ctrl+V', desativado: !doDisco || !transferencia.rels.length, acao: () => colar(this.pasta) },
+            { rotulo: tr('Recor&tar'), atalho: 'Ctrl+X', desativado: !doDisco || !sel.length, acao: () => copiarItens(sel.map((s) => s.rel), true) },
+            { rotulo: tr('&Copiar'), atalho: 'Ctrl+C', desativado: !doDisco || !sel.length, acao: () => copiarItens(sel.map((s) => s.rel), false) },
+            { rotulo: tr('C&olar'), atalho: 'Ctrl+V', desativado: !doDisco || !transferencia.rels.length, acao: () => colar(this.pasta) },
             { separador: true },
-            { rotulo: 'Selecionar &tudo', atalho: 'Ctrl+A', acao: () => this.vista.selecionar(this.vista.itens.map((_, i) => i)) },
-            { rotulo: '&Inverter seleção', acao: () => this.vista.selecionar(this.vista.itens.map((_, i) => i).filter((i) => !this.vista.sel.has(i))) },
+            { rotulo: tr('Selecionar &tudo'), atalho: 'Ctrl+A', acao: () => this.vista.selecionar(this.vista.itens.map((_, i) => i)) },
+            { rotulo: tr('&Inverter seleção'), acao: () => this.vista.selecionar(this.vista.itens.map((_, i) => i).filter((i) => !this.vista.sel.has(i))) },
           ];
         },
       },
-      { rotulo: '&Exibir', itens: () => this.itensExibir() },
+      { rotulo: tr('&Exibir'), itens: () => this.itensExibir() },
       {
-        rotulo: '&Ir', itens: () => [
-          { rotulo: '&Voltar', atalho: 'Backspace', desativado: !this.historico.length, acao: () => this.voltar() },
-          { rotulo: '&Avançar', desativado: !this.adiante.length, acao: () => this.avancar() },
-          { rotulo: 'A&cima', desativado: this.pasta === '::computador', acao: () => this.subir() },
+        rotulo: tr('&Ir'), itens: () => [
+          { rotulo: tr('&Voltar'), atalho: 'Backspace', desativado: !this.historico.length, acao: () => this.voltar() },
+          { rotulo: tr('&Avançar'), desativado: !this.adiante.length, acao: () => this.avancar() },
+          { rotulo: tr('A&cima'), desativado: this.pasta === '::computador', acao: () => this.subir() },
           { separador: true },
-          { rotulo: '&Meu computador', icone: 'computador', acao: () => this.navegar('::computador') },
-          { rotulo: '&Disco C:', icone: 'disco', acao: () => this.navegar('') },
-          { rotulo: 'Meus &documentos', icone: 'documentos', acao: () => this.navegar('Meus documentos') },
-          { rotulo: 'Á&rea de trabalho', icone: 'pasta', acao: () => this.navegar('Área de trabalho') },
-          { rotulo: '&Lixeira', icone: 'lixeira', acao: () => this.navegar('::lixeira') },
+          { rotulo: tr('&Meu computador'), icone: 'computador', acao: () => this.navegar('::computador') },
+          { rotulo: tr('&Disco C:'), icone: 'disco', acao: () => this.navegar('') },
+          { rotulo: tr('Meus &documentos'), icone: 'documentos', acao: () => this.navegar(pastaDocs()) },
+          { rotulo: tr('Á&rea de trabalho'), icone: 'pasta', acao: () => this.navegar(pastaMesa()) },
+          { rotulo: tr('&Lixeira'), icone: 'lixeira', acao: () => this.navegar('::lixeira') },
         ],
       },
       {
-        rotulo: 'A&juda', itens: () => [
-          { rotulo: '&Tópicos da Ajuda', icone: 'ajuda', acao: () => abrir('ajuda', { topico: 'arquivos' }) },
+        rotulo: tr('A&juda'), itens: () => [
+          { rotulo: tr('&Tópicos da Ajuda'), icone: 'ajuda', acao: () => abrir('ajuda', { topico: 'arquivos' }) },
         ],
       },
     ];
@@ -149,13 +150,13 @@ class Explorador {
     const m = (modo, r) => ({ rotulo: r, radio: true, marcado: this.modo === modo, acao: () => this.definirModo(modo) });
     const o = (ordem, r) => ({ rotulo: r, radio: true, marcado: this.ordem === ordem, acao: () => { this.ordem = ordem; this.carregar(); } });
     return [
-      m('icones', 'Ícones &grandes'), m('lista', '&Lista'), m('detalhes', '&Detalhes'),
+      m('icones', tr('Ícones &grandes')), m('lista', tr('&Lista')), m('detalhes', tr('&Detalhes')),
       { separador: true },
-      { rotulo: '&Organizar ícones', sub: () => [o('nome', 'Por &nome'), o('tipo', 'Por &tipo'), o('tamanho', 'Por &tamanho'), o('data', 'Por &data')] },
+      { rotulo: tr('&Organizar ícones'), sub: () => [o('nome', 'Por &nome'), o('tipo', 'Por &tipo'), o('tamanho', 'Por &tamanho'), o('data', 'Por &data')] },
       { separador: true },
-      { rotulo: '&Atualizar', atalho: 'F5', acao: () => this.carregar() },
+      { rotulo: tr('&Atualizar'), atalho: 'F5', acao: () => this.carregar() },
       { separador: true },
-      { rotulo: 'Mostrar no &computador principal', desativado: this.pasta.startsWith('::'), acao: () => retro.disco.mostrar(this.pasta) },
+      { rotulo: tr('Mostrar no &computador principal'), desativado: this.pasta.startsWith('::'), acao: () => retro.disco.mostrar(this.pasta) },
     ];
   }
 
@@ -199,22 +200,22 @@ class Explorador {
 
   async irPara(texto) {
     const t = texto.trim();
-    if (/^meu computador$/i.test(t)) return this.navegar('::computador');
-    if (/^lixeira$/i.test(t)) return this.navegar('::lixeira');
+    if (t.toLowerCase() === tr('Meu computador').toLowerCase()) return this.navegar('::computador');
+    if (t.toLowerCase() === tr('Lixeira').toLowerCase()) return this.navegar('::lixeira');
     const rel = caminhoInterno(t);
     try {
       const info = await retro.disco.info(rel);
       if (info.pasta) this.navegar(rel);
       else abrirArquivo(rel);
     } catch {
-      erro(`Não foi possível encontrar "${t}". Verifique a ortografia e tente novamente.`, tituloDe(this.pasta));
+      erro(tr('Não foi possível encontrar "{nome}". Verifique a ortografia e tente novamente.', { nome: t }), tituloDe(this.pasta));
     }
   }
 
   async carregar(selecionar) {
     const pasta = this.pasta;
     this.j.definirTitulo(tituloDe(pasta));
-    this.endereco.value = ESPECIAIS[pasta] ? ESPECIAIS[pasta].titulo : caminhoTela(pasta);
+    this.endereco.value = ESPECIAIS[pasta] ? tr(ESPECIAIS[pasta].titulo) : caminhoTela(pasta);
     this.btVoltar.disabled = !this.historico.length;
     this.btAcima.disabled = pasta === '::computador';
     let itens = [];
@@ -224,7 +225,7 @@ class Explorador {
       else itens = await this.itensPasta(pasta);
     } catch (e) {
       if (pasta !== this.pasta) return;
-      await erro(`${caminhoTela(pasta)} não está acessível.\n\n${e.message}`, 'Meu computador');
+      await erro(tr('{pasta} não está acessível.', { pasta: caminhoTela(pasta) }) + '\n\n' + e.message, tr('Meu computador'));
       if (this.historico.length) this.voltar(); else this.navegar('::computador');
       return;
     }
@@ -239,11 +240,11 @@ class Explorador {
   async itensComputador() {
     const esp = await retro.disco.espaco().catch(() => ({ livre: 0, total: 0 }));
     return [
-      { chave: 'disco', rotulo: 'Disco local (C:)', icone: 'disco', alvo: '', especial: () => this.navegar(''), dica: `Espaço livre: ${tamanho(esp.livre)}\nCapacidade: ${tamanho(esp.total)}`, colunas: ['', 'Disco local', ''] },
-      { chave: 'documentos', rotulo: 'Meus documentos', icone: 'documentos', alvo: 'Meus documentos', especial: () => this.navegar('Meus documentos'), colunas: ['', 'Pasta de arquivos', ''] },
-      { chave: 'painel', rotulo: 'Painel de controle', icone: 'painel', especial: () => abrir('painel'), arrastavel: false, colunas: ['', 'Pasta do sistema', ''] },
-      { chave: 'programas', rotulo: 'Adicionar ou remover programas', icone: 'programas-caixa', especial: () => abrir('programas'), arrastavel: false, colunas: ['', 'Programa do sistema', ''] },
-      { chave: 'lixeira', rotulo: 'Lixeira', icone: 'lixeira', alvo: '::lixeira', especial: () => this.navegar('::lixeira'), arrastavel: false, colunas: ['', 'Lixeira', ''] },
+      { chave: 'disco', rotulo: tr('Disco local (C:)'), icone: 'disco', alvo: '', especial: () => this.navegar(''), dica: tr('Espaço livre: {livre}\nCapacidade: {total}', { livre: tamanho(esp.livre), total: tamanho(esp.total) }), colunas: ['', tr('Disco local'), ''] },
+      { chave: 'documentos', rotulo: tr('Meus documentos'), icone: 'documentos', alvo: pastaDocs(), especial: () => this.navegar(pastaDocs()), colunas: ['', tr('Pasta de arquivos'), ''] },
+      { chave: 'painel', rotulo: tr('Painel de controle'), icone: 'painel', especial: () => abrir('painel'), arrastavel: false, colunas: ['', tr('Pasta do sistema'), ''] },
+      { chave: 'programas', rotulo: tr('Adicionar ou remover programas'), icone: 'programas-caixa', especial: () => abrir('programas'), arrastavel: false, colunas: ['', tr('Programa do sistema'), ''] },
+      { chave: 'lixeira', rotulo: tr('Lixeira'), icone: 'lixeira', alvo: '::lixeira', especial: () => this.navegar('::lixeira'), arrastavel: false, colunas: ['', tr('Lixeira'), ''] },
     ];
   }
 
@@ -253,7 +254,7 @@ class Explorador {
       const t = tipoDe(m.nome, m.pasta);
       return {
         chave: 'lixo:' + m.id, rotulo: m.nome, icone: t.icone, lixo: m, arrastavel: false,
-        dica: `Local original: ${caminhoTela(paiDe(m.origem))}\nExcluído em: ${dataHora(m.apagadoEm)}`,
+        dica: tr('Local original: {local}\nExcluído em: {data}', { local: caminhoTela(paiDe(m.origem)), data: dataHora(m.apagadoEm) }),
         colunas: [m.pasta ? '' : tamanho(m.tamanho), caminhoTela(paiDe(m.origem)), dataHora(m.apagadoEm)],
       };
     });
@@ -274,7 +275,7 @@ class Explorador {
       return {
         chave: 'arq:' + f.rel, rotulo: f.nome, icone: t.icone, rel: f.rel, nome: f.nome, pasta: f.pasta,
         alvo: f.pasta ? f.rel : null, recortado: recortados.has(f.rel),
-        dica: f.pasta ? '' : `Tipo: ${t.descricao}\nTamanho: ${tamanho(f.tamanho)}\nModificado em: ${dataHora(f.modificado)}`,
+        dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
         tamanho: f.tamanho,
       };
@@ -288,13 +289,13 @@ class Explorador {
     let a;
     let b;
     if (this.pasta === '::computador') {
-      a = `${itens.length} objeto(s)`;
+      a = tr('{n} objeto(s)', { n: itens.length });
       b = sel.length === 1 && sel[0].dica ? sel[0].dica.split('\n')[0] : '';
     } else if (sel.length) {
-      a = `${sel.length} objeto(s) selecionado(s)`;
+      a = tr('{n} objeto(s) selecionado(s)', { n: sel.length });
       b = tamanho(soma(sel));
     } else {
-      a = `${itens.length} objeto(s)`;
+      a = tr('{n} objeto(s)', { n: itens.length });
       b = tamanho(soma(itens));
     }
     this.j.definirStatus([{ texto: a, largura: 160, fixo: true }, b]);
@@ -312,24 +313,24 @@ class Explorador {
   menu(sel, e) {
     const pos = { x: e.clientX, y: e.clientY };
     if (this.pasta === '::lixeira') {
-      if (!sel.length) return abrirMenu([{ rotulo: '&Esvaziar Lixeira', acao: esvaziarLixeira }, { rotulo: '&Atualizar', acao: () => this.carregar() }], pos);
+      if (!sel.length) return abrirMenu([{ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira }, { rotulo: tr('&Atualizar'), acao: () => this.carregar() }], pos);
       return abrirMenu([
-        { rotulo: '&Restaurar', negrito: true, acao: () => this.restaurar(sel) },
+        { rotulo: tr('&Restaurar'), negrito: true, acao: () => this.restaurar(sel) },
         { separador: true },
-        { rotulo: 'E&xcluir definitivamente', acao: () => this.apagarDeVez(sel) },
+        { rotulo: tr('E&xcluir definitivamente'), acao: () => this.apagarDeVez(sel) },
         { separador: true },
-        { rotulo: 'P&ropriedades', desativado: sel.length !== 1, acao: () => propriedadesLixo(sel[0].lixo) },
+        { rotulo: tr('P&ropriedades'), desativado: sel.length !== 1, acao: () => propriedadesLixo(sel[0].lixo) },
       ], pos);
     }
     if (this.pasta === '::computador') {
       if (!sel.length) return abrirMenu(this.itensExibir(), pos);
       const it = sel[0];
-      const itens = [{ rotulo: '&Abrir', negrito: true, acao: () => this.abrirItem(it) }];
+      const itens = [{ rotulo: tr('&Abrir'), negrito: true, acao: () => this.abrirItem(it) }];
       if (it.chave === 'disco' || it.chave === 'documentos') {
-        itens.push({ rotulo: '&Mostrar no computador principal', acao: () => retro.disco.mostrar(it.chave === 'disco' ? '' : 'Meus documentos') });
-        itens.push({ separador: true }, { rotulo: 'P&ropriedades', acao: () => (it.chave === 'disco' ? abrir('painel', { secao: 'disco' }) : propriedades('Meus documentos')) });
+        itens.push({ rotulo: tr('&Mostrar no computador principal'), acao: () => retro.disco.mostrar(it.chave === 'disco' ? '' : pastaDocs()) });
+        itens.push({ separador: true }, { rotulo: tr('P&ropriedades'), acao: () => (it.chave === 'disco' ? abrir('painel', { secao: 'disco' }) : propriedades(pastaDocs())) });
       }
-      if (it.chave === 'lixeira') itens.push({ rotulo: '&Esvaziar Lixeira', acao: esvaziarLixeira });
+      if (it.chave === 'lixeira') itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
       return abrirMenu(itens, pos);
     }
     if (!sel.length) {
@@ -394,7 +395,8 @@ class Explorador {
   }
 
   async apagarDeVez(sel) {
-    const ok = await confirmar(sel.length === 1 ? `Deseja mesmo apagar definitivamente "${sel[0].rotulo}"?\n\nEle não poderá ser recuperado.` : `Deseja mesmo apagar definitivamente estes ${sel.length} itens?\n\nEles não poderão ser recuperados.`, { titulo: 'Confirmar exclusão', tipo: 'aviso' });
+    const texto = sel.length === 1 ? tr('Deseja mesmo apagar definitivamente "{nome}"?', { nome: sel[0].rotulo }) : tr('Deseja mesmo apagar definitivamente estes {n} itens?', { n: sel.length });
+    const ok = await confirmar(texto + '\n\n' + tr('Depois de apagados, eles não podem ser recuperados.'), { titulo: tr('Confirmar exclusão'), tipo: 'aviso' });
     if (!ok) return;
     for (const it of sel) await retro.disco.apagarDaLixeira(it.lixo.id).catch(() => { });
     tocar('lixeira');
@@ -404,9 +406,9 @@ class Explorador {
 
 function propriedadesLixo(m) {
   mensagem({
-    titulo: `Propriedades de ${m.nome}`,
+    titulo: tr('Propriedades de {nome}', { nome: m.nome }),
     tipo: 'info',
-    texto: `${m.nome}\n\nLocal original: ${caminhoTela(paiDe(m.origem))}\nExcluído em: ${dataHora(m.apagadoEm)}\nTamanho: ${m.pasta ? 'pasta' : tamanho(m.tamanho)}\n\nPara usar este item, restaure-o (botão direito › Restaurar).`,
+    texto: `${m.nome}\n\n` + tr('Local original: {local}\nExcluído em: {data}', { local: caminhoTela(paiDe(m.origem)), data: dataHora(m.apagadoEm) }) + `\n${tr('Tamanho:')} ${m.pasta ? tr('pasta') : tamanho(m.tamanho)}\n\n` + tr('Para usar este item, restaure-o (botão direito › Restaurar).'),
   });
 }
 

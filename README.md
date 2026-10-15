@@ -1,43 +1,65 @@
 # Retro Computer
 
-Um computador retrô para produtividade: a área de trabalho de um PC dos anos 90, com os programas de trabalho, os seus arquivos e o Claude Code, sem as distrações do computador de hoje. Funciona no Windows, no macOS e no Linux. Código aberto (licença MIT).
+**English** · [Português](README.pt-BR.md) · [Español](README.es.md)
 
-- **Versão:** 0.1.0 (primeira versão de teste)
-- **Como usar:** [docs/uso.md](docs/uso.md) · **Arquitetura e decisões:** [docs/proposta.md](docs/proposta.md)
+A retro computer for productivity: the desktop of a 1990s PC, with your work programs, your files and Claude Code, without the distractions of today's computer. It runs on Windows, macOS and Linux (including the Raspberry Pi). Open source (MIT license).
 
-![A área de trabalho e o menu Iniciar](docs/img/iniciar.png)
+- **Version:** 0.2.0 · [Download](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Languages:** English, Portuguese and Spanish (Control Panel › Language)
 
-## O que ele faz
+![The desktop and the Start menu](docs/img/en/start.png)
 
-- **Área de trabalho dos anos 90**: botão Iniciar, barra de tarefas, janelas que se arrastam e redimensionam, ícones, menus, a Lixeira e a caixa de Desligar, com letras e ícones nítidos em qualquer monitor.
-- **O disco C: é uma pasta do seu computador** (`Documentos/Retro Computer`): o que você salva fica visível também fora do programa. Para trazer arquivos, arraste-os para uma janela; para levar, use "Enviar para".
-- **Nada se perde**: excluir manda para a Lixeira, e cada gravação guarda a versão anterior do arquivo.
-- **Programas de trabalho**: os [Craft](https://artcraft.run/) de código aberto (WordCraft para textos `.docx`, GridCraft para planilhas, DeckCraft para apresentações, PdfCraft, PhotoCraft e outros), instalados da versão oficial para navegador e rodando dentro das janelas. As caixas "Abrir" e "Salvar" deles usam o disco C:.
-- **Claude Code** no Prompt de comando, nos seus arquivos, com a conta da assinatura ou com uma chave de API guardada no cofre de senhas do sistema.
-- **Foco (Pomodoro)**, Bloco de notas, Localizar, Executar, Painel de controle, proteção de tela e Ajuda.
+## What it does
+
+- **A 1990s desktop**: Start button, taskbar, windows you can drag and resize, icons, menus, the Trash and the Shut Down dialog, with sharp letters and icons on any monitor.
+- **Drive C: is a folder on your computer** (`Documents/Retro Computer`): what you save is also visible outside the program. To bring files in, drag them onto a window; to take them out, use "Send to".
+- **Nothing gets lost**: deleting sends items to the Trash, and every save keeps the previous version of the file.
+- **Work programs**: the open source [Craft](https://artcraft.run/) apps (WordCraft for `.docx` documents, GridCraft for spreadsheets, DeckCraft for presentations, PdfCraft, PhotoCraft and more), installed from their official browser builds and running inside the windows. Their Open and Save dialogs use drive C:.
+- **Always up to date**: when you open a program, Retro Computer checks for a new version and installs it first (or asks, or never checks: your choice). It also tells you when a new version of Retro Computer itself is out.
+- **Claude Code** in the Command Prompt, working on your files, with your Claude subscription or an API key kept in the system's password vault.
+- **Focus (Pomodoro)**, Notepad, Find, Run, Control Panel, screen saver and Help.
 
 | | |
 |---|---|
-| ![WordCraft numa janela](docs/img/wordcraft.png) | ![A caixa Salvar como, no disco C:](docs/img/salvar-como.png) |
-| ![O Claude Code no Prompt de comando](docs/img/claude.png) | ![O menu do botão direito](docs/img/menu-arquivo.png) |
-| ![Adicionar ou remover programas](docs/img/programas.png) | ![Desligar o computador](docs/img/desligar.png) |
+| ![WordCraft in a window](docs/img/en/wordcraft.png) | ![The Save As dialog, on drive C:](docs/img/en/save-as.png) |
+| ![Claude Code in the Command Prompt](docs/img/en/claude.png) | ![The right-click menu](docs/img/en/file-menu.png) |
+| ![Add or Remove Programs](docs/img/en/programs.png) | ![Choosing the language](docs/img/en/language.png) |
 
-## Instalar
+## Install
 
-Os instaladores de cada sistema são gerados a cada atualização, na aba **Actions** do GitHub (execução "Compilar" › Artifacts): `.exe` (Windows), `.dmg` (macOS, Intel e Apple Silicon), `.AppImage` e `.deb` (Linux). Eles ainda não têm assinatura digital: na primeira abertura, o sistema pede uma confirmação (veja [docs/uso.md](docs/uso.md)).
+Download the installer for your system from the [latest release](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest):
 
-## Desenvolver
+| System | File |
+|---|---|
+| Windows | `Retro-Computer-…-win-x64.exe` (installer) or `…-win-x64.zip` |
+| macOS | `…-mac-arm64.dmg` (Apple Silicon) or `…-mac-x64.dmg` (Intel) |
+| Linux (PC) | `…-linux-amd64.deb` or `…-linux-x86_64.AppImage` |
+| Linux (Raspberry Pi, 64-bit) | `…-linux-arm64.deb` or `…-linux-arm64.AppImage` |
+
+The installers are not digitally signed yet, so the system asks for confirmation the first time:
+
+- **macOS**: right-click the app › Open › Open (or System Settings › Privacy & Security › Open Anyway).
+- **Windows**: on the SmartScreen screen, "More info" › "Run anyway".
+
+### On a Raspberry Pi or a mini PC
+
+Retro Computer can start by itself when the device is turned on, full screen, like a dedicated retro computer: see [the usage guide (in Portuguese), section 7](docs/uso.md#7-num-mini-computador-raspberry-pi-e-como-o-sistema-do-linux). In short:
+
+- **Raspberry Pi 4 or 5 (4 GB or more)**: everything works, including the Craft apps and Claude Code.
+- **Raspberry Pi 3 (1 GB)**: the desktop, Notepad, Focus and the Command Prompt work; the Craft apps need WebGL2, which the Pi 3's graphics chip lacks (they run in software, very slowly), and Claude Code officially needs 4 GB of memory.
+
+## Develop
 
 ```
-npm install      # instala as dependências (e compila o terminal para o Electron)
-npm start        # abre o Retro Computer
-npm test         # testes do disco
+npm install      # installs the dependencies (and builds the terminal for Electron)
+npm start        # opens Retro Computer
+npm test         # tests: disk, languages and updates
 ```
 
-O guia para quem programa (pessoas ou agentes de IA) está em [AGENTS.md](AGENTS.md).
+The code and the developer guide are written in Portuguese; see [AGENTS.md](AGENTS.md) (for people and AI agents). Translations live in [`src/sistema/idiomas/`](src/sistema/idiomas/), and `node ferramentas/textos.js` lists any missing ones.
 
-## Créditos
+## Credits
 
-Ícones e fontes de sistema do [SerenityOS](https://github.com/SerenityOS/serenity) (BSD-2-Clause), com desenhos próprios do projeto; terminal com xterm.js e node-pty; aplicativo em Electron. Os Craft são do ArtCraft Team e são baixados dos lançamentos oficiais. Detalhes em [ATRIBUICOES.md](ATRIBUICOES.md).
+System icons and fonts from [SerenityOS](https://github.com/SerenityOS/serenity) (BSD-2-Clause), plus the project's own drawings; terminal by xterm.js and node-pty; application built with Electron. The Craft apps are by the ArtCraft Team and are downloaded from their official releases. Details in [ATRIBUICOES.md](ATRIBUICOES.md).
 
-O visual homenageia os computadores pessoais dos anos 90; nenhum ícone, fonte, som ou imagem da Microsoft ou da Apple é usado.
+The look pays tribute to the personal computers of the 1990s; no icon, font, sound or image from Microsoft or Apple is used.
