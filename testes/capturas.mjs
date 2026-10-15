@@ -637,6 +637,37 @@ const ROTEIROS = {
     await pagina.waitForTimeout(400);
     await foto('sistema-desligar');
     console.log('suspender:', JSON.stringify(await pagina.evaluate(() => retro.sistema.energia('suspender'))));
+    await pagina.keyboard.press('Escape');
+    await pagina.waitForTimeout(300);
+    // As teclas: a do logotipo sozinha abre o Iniciar; as de volume e de brilho mostram o indicador.
+    // (As teclas do Playwright não passam pelo before-input-event; as do sendInputEvent, sim, como as de verdade.)
+    await app.evaluate(({ BrowserWindow }) => { const wc = BrowserWindow.getAllWindows()[0].webContents; wc.sendInputEvent({ type: 'keyDown', keyCode: 'Meta' }); wc.sendInputEvent({ type: 'keyUp', keyCode: 'Meta' }); });
+    await pagina.waitForTimeout(500);
+    console.log('Iniciar pela tecla do logotipo:', await pagina.evaluate(() => document.getElementById('iniciar').classList.contains('apertado')));
+    await foto('sistema-tecla-logotipo');
+    await pagina.keyboard.press('Escape');
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send('sistema:tecla', 'volume+'));
+    await pagina.waitForTimeout(500);
+    console.log('indicador:', await pagina.evaluate(() => (document.querySelector('.indicador-bandeja:not([hidden])') || {}).textContent || '(nenhum)'));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send('sistema:tecla', 'brilho+'));
+    await pagina.waitForTimeout(500);
+    await foto('sistema-tecla-brilho');
+    console.log('indicador:', await pagina.evaluate(() => (document.querySelector('.indicador-bandeja:not([hidden])') || {}).textContent || '(nenhum)'));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send('sistema:tecla', 'calculadora'));
+    await pagina.waitForTimeout(500);
+    console.log('calculadora aberta:', await pagina.evaluate(() => window.__retro.janelas.lista.some((j) => j.programa === 'calculadora')));
+    await fecharTudo();
+    await pagina.click('#bandeja .bandeja-ico >> nth=2');
+    await pagina.waitForTimeout(500);
+    await foto('sistema-bateria-mouse');
+    await pagina.keyboard.press('Escape');
+    await abrir('painel', { secao: 'teclado' });
+    await pagina.waitForTimeout(600);
+    await foto('sistema-teclado');
+    await fecharTudo();
+    // Reabre a caixa Desligar (as teclas a fecharam).
+    await abrir('desligar');
+    await pagina.waitForTimeout(400);
     await pagina.click('.janela.dialogo input[value=reiniciar]');
     await pagina.click('.janela.dialogo .acoes button.padrao');
     await pagina.waitForTimeout(1500);

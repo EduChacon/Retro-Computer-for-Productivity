@@ -37,7 +37,8 @@ export class VistaIcones {
     this.ancora = -1;
     raiz.tabIndex = 0;
     raiz.addEventListener('keydown', (e) => this.teclado(e));
-    raiz.addEventListener('mousedown', (e) => this.fundoMousedown(e));
+    // O fundo pelo ponteiro (mouse, caneta e dedo): o laço funciona também no toque.
+    raiz.addEventListener('pointerdown', (e) => this.fundoMousedown(e));
     raiz.addEventListener('contextmenu', (e) => {
       if (e.target.closest('.item') || e.target.closest('.rotulo-editor')) return;
       e.preventDefault();
@@ -306,11 +307,14 @@ export class VistaIcones {
     };
     const soltar = () => {
       caixa.remove();
-      window.removeEventListener('mousemove', mover);
-      window.removeEventListener('mouseup', soltar);
+      window.removeEventListener('pointermove', mover);
+      window.removeEventListener('pointerup', soltar);
+      window.removeEventListener('pointercancel', soltar);
     };
-    window.addEventListener('mousemove', mover);
-    window.addEventListener('mouseup', soltar);
+    window.addEventListener('pointermove', mover);
+    window.addEventListener('pointerup', soltar);
+    // Rolar a lista com o dedo cancela o laço.
+    window.addEventListener('pointercancel', soltar);
   }
 
   /* ---------- Teclado ---------- */

@@ -387,7 +387,10 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 .barra-ferramentas label { gap: 4px; }
 
 /* As alças de redimensionar. */
-.alca { position: absolute; z-index: 2; }
+.alca { position: absolute; z-index: 2; touch-action: none; }
+/* No toque: a barra de título arrasta a janela, e a área de trabalho não rola (o dedo faz o laço). */
+.titulo { touch-action: none; }
+#mesa { touch-action: none; }
 .alca.n { top: -2px; left: 6px; right: 6px; height: 6px; cursor: ns-resize; }
 .alca.s { bottom: -2px; left: 6px; right: 6px; height: 6px; cursor: ns-resize; }
 .alca.l { right: -2px; top: 6px; bottom: 6px; width: 6px; cursor: ew-resize; }

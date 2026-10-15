@@ -197,6 +197,10 @@ function caixaVolume() {
 
 let bat = null; // { nivel (0 a 1), carregando, restante (s), cheiaEm (s) }
 let batIco;
+let aparelhos = []; // as baterias do mouse, do teclado e dos fones sem fio: { nome, nivel (0 a 100), carregando }
+const avisadosAparelhos = new Set();
+const iconeDoNivel = (pct, carregando) => (carregando ? 'bateria-carga-' : 'bateria-') + (pct <= 10 ? 0 : pct <= 35 ? 1 : pct <= 60 ? 2 : pct <= 85 ? 3 : 4);
+const textoAparelho = (a) => (a.nivel == null ? a.nome : tr('{aparelho}: {pct}%', { aparelho: a.nome, pct: a.nivel }));
 let avisouBateria = 1;
 
 function tempoTexto(seg) {
@@ -222,7 +226,18 @@ function iconeBateria() {
 }
 
 function atualizarBateria() {
-  if (!batIco || !bat) return;
+  if (!batIco) return;
+  avisarAparelhos();
+  if (!bat) {
+    // Sem a bateria do computador (os de mesa), o ícone mostra a dos aparelhos sem fio, se houver.
+    const comNivel = aparelhos.filter((a) => a.nivel != null);
+    batIco.hidden = !aparelhos.length;
+    if (!aparelhos.length) return;
+    const menor = comNivel.length ? Math.min(...comNivel.map((a) => a.nivel)) : 100;
+    trocarIcone(batIco, iconeDoNivel(menor, false));
+    batIco.dataset.dica = aparelhos.map(textoAparelho).join(' · ');
+    return;
+  }
   batIco.hidden = false;
   trocarIcone(batIco, iconeBateria());
   batIco.dataset.dica = tr('Bateria: {texto}', { texto: textoBateria() });
@@ -235,6 +250,23 @@ function atualizarBateria() {
       tr('Restam {pct}%. Ligue o carregador para não perder o que está aberto.', { pct: Math.round(bat.nivel * 100) }),
       { icone: 'bateria-0', som: 'aviso', ms: 12000 });
   }
+}
+
+/** A bateria fraca de um aparelho sem fio: um aviso aos 10% (de novo só depois de carregar). */
+function avisarAparelhos() {
+  for (const a of aparelhos) {
+    if (a.nivel == null) continue;
+    if (a.carregando || a.nivel > 20) { avisadosAparelhos.delete(a.nome); continue; }
+    if (a.nivel <= 10 && !avisadosAparelhos.has(a.nome)) {
+      avisadosAparelhos.add(a.nome);
+      avisar(tr('Bateria fraca: {aparelho}', { aparelho: a.nome }), tr('Restam {pct}%. Carregue o aparelho quando puder.', { pct: a.nivel }), { icone: 'bateria-0', som: 'aviso', ms: 10000 });
+    }
+  }
+}
+
+async function lerAparelhos() {
+  aparelhos = await retro.bandeja.aparelhos().catch(() => []);
+  atualizarBateria();
 }
 
 async function iniciarBateria() {
@@ -265,11 +297,20 @@ export async function mudarBrilho(passo) {
 }
 
 function caixaBateria() {
-  const pct = Math.round(bat.nivel * 100);
-  const corpo = caixa('bateria',
-    cabecalho(tr('Bateria')),
-    h('div.bat-linha', img(iconeBateria(), 16), h('div.bat-medida', h('div', { class: bat.nivel <= 0.1 ? 'fraca' : null, style: { width: pct + '%' } })), h('span', pct + '%')),
-    h('div.cxb-texto', textoBateria()));
+  const corpo = caixa('bateria', cabecalho(tr('Bateria')));
+  if (bat) {
+    const pct = Math.round(bat.nivel * 100);
+    corpo.append(
+      h('div.bat-linha', img(iconeBateria(), 16), h('div.bat-medida', h('div', { class: bat.nivel <= 0.1 ? 'fraca' : null, style: { width: pct + '%' } })), h('span', pct + '%')),
+      h('div.cxb-texto', textoBateria()));
+  }
+  // O mouse, o teclado e os fones sem fio.
+  if (aparelhos.length) {
+    if (bat) corpo.append(h('hr.sulco'));
+    corpo.append(h('div.cxb-titulo', h('span', tr('Aparelhos sem fio'))),
+      ...aparelhos.map((a) => h('div.cxb-linha', img(a.nivel == null ? 'bateria-4' : iconeDoNivel(a.nivel, a.carregando), 16), h('span', textoAparelho(a)))));
+  }
+  if (!bat) return corpo;
   const lugarBrilho = h('div');
   corpo.append(lugarBrilho);
   retro.bandeja.brilho().then((b) => {
@@ -471,7 +512,7 @@ export function montarBandeja() {
   const ao = (el, montar) => el.addEventListener('mousedown', (e) => { if (e.button === 0) { e.preventDefault(); alternarFlutuante(el, montar); } });
   ao(redeIco, caixaRede);
   ao(somIco, caixaVolume);
-  ao(batIco, () => (bat ? caixaBateria() : caixa('')));
+  ao(batIco, () => (bat || aparelhos.length ? caixaBateria() : caixa('')));
   ao(sino, caixaNotificacoes);
   somIco.addEventListener('wheel', (e) => { e.preventDefault(); mudarVolume(e.deltaY < 0 ? 5 : -5); }, { passive: false });
 
@@ -482,8 +523,21 @@ export function montarBandeja() {
   lerVolume();
   lerRede();
   iniciarBateria().catch(() => { });
+  // As baterias do mouse e do teclado mudam devagar: uma olhada a cada 5 minutos.
+  lerAparelhos();
+  setInterval(lerAparelhos, 5 * 60 * 1000);
   atualizarSino();
   // O volume e a rede mudam também por fora (as teclas do computador, o cabo tirado).
   setInterval(() => { if (!document.hidden) { lerVolume(); lerRede(); } }, 20000);
+  // As teclas do computador no modo sistema (main.js, teclasDoSistema).
+  retro.sistema.aoTecla((acao) => {
+    if (acao === 'volume+') mudarVolume(5);
+    else if (acao === 'volume-') mudarVolume(-5);
+    else if (acao === 'mudo') mudarVolume(0);
+    else if (acao === 'brilho+') mudarBrilho(10);
+    else if (acao === 'brilho-') mudarBrilho(-10);
+    else if (acao === 'iniciar') import('./barra.js').then((m) => m.alternarIniciar());
+    else if (acao === 'calculadora') abrir('calculadora');
+  });
   return { antes: [redeIco, somIco, batIco], depois: [sino] };
 }

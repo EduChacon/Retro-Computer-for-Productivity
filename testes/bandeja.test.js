@@ -61,3 +61,21 @@ test('volume no Windows: o PowerShell compila a interface de áudio e responde',
   else assert.notStrictEqual(r.erro, 'fechado');
   v.fechar();
 });
+
+test('aparelhos sem fio: a bateria do mouse (com a porcentagem ou só o nível)', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-power-'));
+  const poe = (n, dados) => { fs.mkdirSync(path.join(raiz, n)); for (const [k, v] of Object.entries(dados)) fs.writeFileSync(path.join(raiz, n, k), v + '\n'); };
+  poe('BAT0', { type: 'Battery', scope: 'System', capacity: '57' });
+  poe('hidpp_battery_0', { type: 'Battery', scope: 'Device', model_name: 'MX Master 3S', capacity: '80', status: 'Discharging' });
+  poe('hidpp_battery_1', { type: 'Battery', scope: 'Device', model_name: 'MX Keys', capacity_level: 'Low', status: 'Charging' });
+  poe('AC', { type: 'Mains' });
+  const l = b.lerAparelhos(raiz).sort((x, y) => x.nome.localeCompare(y.nome));
+  assert.deepStrictEqual(l, [
+    { nome: 'MX Keys', nivel: 20, carregando: true },
+    { nome: 'MX Master 3S', nivel: 80, carregando: false },
+  ]);
+  fs.rmSync(raiz, { recursive: true, force: true });
+});

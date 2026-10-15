@@ -93,6 +93,8 @@ DO_SERENITY = {
     'atualizar': (None, 'reload'),
     'inicio': (None, 'go-home'),
     'favoritos': (None, 'bookmark-filled'),
+    # 1.0: o Painel de controle › Teclado.
+    'teclado': ('app-keyboard-settings', 'app-keyboard-settings'),
 }
 
 PASTAS = {'pasta', 'pasta-aberta'}

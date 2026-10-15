@@ -92,6 +92,8 @@ contextBridge.exposeInMainWorld('retro', {
     abrirAoEntrar: (ligar) => chamar('sistema:abrirAoEntrar', ligar),
     sessao: () => chamar('sistema:sessao'),
     entrarDireto: (ligar, senha) => chamar('sistema:entrarDireto', ligar, senha),
+    aoTecla: ouvir('sistema:tecla'),
+    teclado: (layout, variante) => chamar('sistema:teclado', layout, variante),
     reabrir: () => chamar('sistema:reabrir'),
     novaVersao: (forcar) => chamar('sistema:novaVersao', forcar),
     escalaTela: () => chamar('sistema:escalaTela'),
@@ -131,6 +133,7 @@ contextBridge.exposeInMainWorld('retro', {
   // A bandeja: o volume, o brilho e a rede do computador.
   bandeja: {
     bateria: () => chamar('bandeja:bateria'),
+    aparelhos: () => chamar('bandeja:aparelhos'),
     volume: () => chamar('bandeja:volume'),
     definirVolume: (o) => chamar('bandeja:definirVolume', o),
     brilho: () => chamar('bandeja:brilho'),

@@ -51,6 +51,11 @@ class Explorador {
       status: [{ texto: '', largura: 160, fixo: true }, ''],
       menus: this.menus(),
     });
+    // Os botões laterais do mouse: voltar e avançar.
+    this.j.el.addEventListener('mouseup', (e) => {
+      if (e.button === 3) { e.preventDefault(); this.voltar(); }
+      else if (e.button === 4) { e.preventDefault(); this.avancar(); }
+    });
     this.endereco = h('input', { type: 'text', spellcheck: false, style: { flex: '1' } });
     this.endereco.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); this.irPara(this.endereco.value); }

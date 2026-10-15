@@ -435,6 +435,23 @@ async function temBateria(plataforma = process.platform, volume = null) {
   return false;
 }
 
+/**
+ * As baterias dos aparelhos sem fio (o mouse, o teclado, os fones), que o Linux lê sozinho
+ * (o MX Master da Logitech, por exemplo, pelo hid-logitech-hidpp): o nome e a carga.
+ */
+const NIVEIS = { Full: 100, High: 80, Normal: 55, Low: 20, Critical: 5 };
+function lerAparelhos(raiz = '/sys/class/power_supply') {
+  let nomes = [];
+  try { nomes = fs.readdirSync(raiz); } catch { return []; }
+  return nomes.map((n) => {
+    const ler = (a) => { try { return fs.readFileSync(path.join(raiz, n, a), 'utf8').trim(); } catch { return ''; } };
+    if (ler('type') !== 'Battery' || ler('scope') !== 'Device') return null;
+    const cap = ler('capacity');
+    const nivel = cap !== '' ? Number(cap) : (NIVEIS[ler('capacity_level')] ?? null);
+    return { nome: ler('model_name') || n, nivel: Number.isFinite(nivel) ? nivel : null, carregando: ler('status') === 'Charging' };
+  }).filter(Boolean);
+}
+
 /* ---------- A rede ---------- */
 
 class Rede {
@@ -589,8 +606,9 @@ function bandejaFalsa() {
   ];
   const estado = () => ({ como: 'nmcli', wifi: { existe: true, ligado, dispositivo: 'wlan0', ssid: ligado ? atual : null, sinal: ligado && atual ? (redes.find((r) => r.ssid === atual) || {}).sinal : null }, cabo: false, conexao: ligado ? atual : null });
   return {
-    // A bateria de mentira: 42%, sem carregar, umas 2 horas.
+    // A bateria de mentira: 42%, sem carregar, umas 2 horas; e um mouse sem fio.
     bateria: async () => ({ existe: true, falsa: { nivel: 0.42, carregando: false, restante: 7800 } }),
+    aparelhos: async () => [{ nome: 'MX Master 3S', nivel: 80, carregando: false }],
     volume: { ler: async () => vol, definir: async (o) => { vol = { ...vol, ...(o.nivel != null ? { nivel: Math.round(o.nivel) } : {}), ...(o.mudo != null ? { mudo: !!o.mudo } : {}) }; return vol; }, fechar() { } },
     brilho: { ler: async () => luz, definir: async (n) => { luz = { disponivel: true, nivel: Math.max(5, Math.min(100, Math.round(n))) }; return luz; } },
     rede: {
@@ -612,4 +630,4 @@ function bandejaFalsa() {
   };
 }
 
-module.exports = { Volume, Brilho, Rede, temBateria, bandejaFalsa, escolherLuz, lerWpctl, lerPactl, lerAmixer, lerMac, camposNmcli, lerDispositivos, lerRedesWifi, lerNetsh, erroCurto, VOLUME_WINDOWS, VolumeWindows };
+module.exports = { Volume, Brilho, Rede, temBateria, lerAparelhos, bandejaFalsa, escolherLuz, lerWpctl, lerPactl, lerAmixer, lerMac, camposNmcli, lerDispositivos, lerRedesWifi, lerNetsh, erroCurto, VOLUME_WINDOWS, VolumeWindows };

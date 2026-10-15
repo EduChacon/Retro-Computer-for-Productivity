@@ -51,3 +51,10 @@ test('abrir ao entrar (Windows e macOS): pelo início automático do sistema', a
   assert.strictEqual(await s.definirAbrirAoEntrar(app, true, 'win32'), true);
   assert.strictEqual(s.abrirAoEntrar(app, 'darwin'), true);
 });
+
+test('teclado: o layout lido do setxkbmap e os nomes aceitos', async () => {
+  assert.deepStrictEqual(s.lerQuery('rules:      evdev\nmodel:      pc105\nlayout:     us,br\nvariant:    intl,abnt2\n'), { layout: 'us', variante: 'intl' });
+  assert.deepStrictEqual(s.lerQuery('layout:     br\n'), { layout: 'br', variante: '' });
+  assert.deepStrictEqual(await s.aplicarTeclado('us; rm -rf ~', ''), { ok: false, erro: 'layout' });
+  assert.deepStrictEqual(await s.aplicarTeclado('br', '-x'), { ok: false, erro: 'layout' });
+});

@@ -175,6 +175,7 @@ function desenharTarefas() {
     const b = h('button.prog.rapido', { title: p.nome }, iconeDe(p));
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('click', () => p.abrir());
+    b.addEventListener('auxclick', (e) => { if (e.button === 1) p.abrir(); });
     b.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -194,6 +195,8 @@ function desenharTarefas() {
       if (j === janelaAtiva() && !j.minimizada) j.minimizar();
       else j.focar();
     });
+    // O clique da roda abre outra janela do mesmo programa (como no Windows).
+    b.addEventListener('auxclick', (e) => { const p = e.button === 1 && programaDe(j.programa); if (p) p.abrir(); });
     b.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const p = programaDe(j.programa);
@@ -237,6 +240,7 @@ function desenharGrupos(visiveis, ativa) {
     if (js.length > 1) b.classList.add('varias');
     if (js.some((j) => j === ativa && !j.minimizada)) b.classList.add('apertado');
     b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('auxclick', (e) => { if (e.button === 1 && g.p.abrir) g.p.abrir(); });
     b.addEventListener('click', () => {
       if (!js.length) return g.p.abrir && g.p.abrir();
       if (js.length === 1) {
@@ -312,6 +316,12 @@ function itensDocumentos() {
     { separador: true },
     ...(recentes.length ? recentes : [{ rotulo: tr('(Vazio)'), desativado: true }]),
   ];
+}
+
+/** A tecla do logotipo: abre o Iniciar, ou fecha se já estiver aberto. */
+export function alternarIniciar() {
+  if (btIniciar.classList.contains('apertado')) fecharMenus();
+  else abrirIniciar();
 }
 
 export async function abrirIniciar() {

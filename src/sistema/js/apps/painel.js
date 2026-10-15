@@ -22,6 +22,7 @@ const ITENS = [
   { chave: 'claude', rotulo: marcar('Claude'), icone: 'claude', descricao: marcar('Instala o Claude Code e guarda a chave de API.'), abrir: () => dialogoClaude() },
   { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e onde abrir os links.'), abrir: () => dialogoInternet() },
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
+  { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('Mostra a data e a hora do computador.'), abrir: () => dialogoData() },
   { chave: 'programas', rotulo: marcar('Adicionar ou remover programas'), icone: 'programas-caixa', descricao: marcar('Instala, atualiza e remove programas.'), abrir: () => abrir('programas') },
@@ -219,6 +220,50 @@ function inicioComComputador() {
     lugar.replaceChildren(...partes);
   }).catch(() => { });
   return caixa;
+}
+
+/* Teclado */
+
+// Os layouts mais comuns (o do Linux: layout e variante do setxkbmap).
+const LAYOUTS = [
+  ['br', 'abnt2', marcar('Português (Brasil, ABNT2)')],
+  ['us', 'intl', marcar('Inglês (EUA, internacional com teclas mortas)')],
+  ['us', '', marcar('Inglês (EUA)')],
+  ['pt', '', marcar('Português (Portugal)')],
+  ['es', '', marcar('Espanhol (Espanha)')],
+  ['latam', '', marcar('Espanhol (América Latina)')],
+  ['gb', '', marcar('Inglês (Reino Unido)')],
+];
+
+function dialogoTeclado() {
+  const c = estado.config;
+  const sistema = !!c.modoSistema;
+  const sel = h('select', { style: { width: '100%' }, disabled: !sistema }, ...LAYOUTS.map(([l, v, rot]) => h('option', { value: l + ':' + v }, tr(rot))));
+  const teste = h('input', { type: 'text', spellcheck: false, placeholder: tr('Digite aqui para testar: ação, você, ñ…'), style: { width: '100%' } });
+  retro.sistema.teclado().then((q) => {
+    if (!q || !q.layout) return;
+    const valor = q.layout + ':' + (q.variante || '');
+    // Um layout fora da lista aparece também, com o nome do Linux.
+    if (![...sel.options].some((o) => o.value === valor)) sel.append(h('option', { value: valor }, q.variante ? `${q.layout} (${q.variante})` : q.layout));
+    sel.value = valor;
+  }).catch(() => { });
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('teclado', 32),
+      h('div', { style: { lineHeight: '13px' } }, sistema
+        ? tr('O layout diz o que cada tecla escreve. Para os teclados americanos com acentos por teclas mortas (´ + a = á), escolha "Inglês (EUA, internacional com teclas mortas)".')
+        : tr('O layout do teclado é o do computador principal: troque-o nas configurações do sistema dele.'))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Layout do teclado')), h('div.select-caixa', { style: { width: '100%' } }, sel)),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Testar')), teste));
+  dialogoBase({
+    titulo: tr('Propriedades de Teclado'), icone: 'teclado', larg: 400,
+    abas: [{ titulo: tr('Idioma do teclado'), conteudo }],
+    aoAplicar: sistema ? async () => {
+      const [l, v] = sel.value.split(':');
+      const r = await retro.sistema.teclado(l, v).catch((e) => ({ ok: false, erro: e.message }));
+      if (!r.ok) erro(tr('Não foi possível trocar o layout do teclado: {erro}', { erro: r.erro || '?' }));
+      teste.focus();
+    } : null,
+  });
 }
 
 /* Disco */

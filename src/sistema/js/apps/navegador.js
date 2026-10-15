@@ -88,6 +88,11 @@ class Navegador {
     });
     abertos.add(this);
     this.j.ev.on('fechada', () => abertos.delete(this));
+    // Os botões laterais do mouse sobre a moldura (sobre a página, quem avisa é o navegador-preload.js).
+    this.j.el.addEventListener('mouseup', (e) => {
+      if (e.button === 3) { e.preventDefault(); this.voltar(); }
+      else if (e.button === 4) { e.preventDefault(); this.avancar(); }
+    });
 
     const bt = (icone, texto, acao, dica) => h('button.ferramenta.grande', { title: dica || texto, on: { click: acao } }, img(icone, 16), h('span', texto));
     this.btVoltar = bt('voltar', tr('Voltar'), () => this.voltar(), tr('Voltar (Alt+Esquerda)'));

@@ -9,7 +9,7 @@
  * A área de trabalho fala com este processo só pela ponte do preload
  * (window.retro); os programas, só pela área de trabalho (postMessage).
  */
-const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -385,6 +385,40 @@ function pedirAoUsuario(canal, dados) {
   });
 }
 
+/**
+ * As teclas do computador no modo sistema (sem a área de trabalho do Linux, ninguém mais
+ * cuida delas): a tecla do logotipo sozinha abre o Iniciar; as de volume e de brilho do
+ * teclado mudam o som e a tela. As de volume valem mesmo com um programa do Linux na frente.
+ */
+function teclasDoSistema() {
+  if (!MODO_SISTEMA) return;
+  const globais = new Set();
+  for (const [tecla, acao] of [['VolumeUp', 'volume+'], ['VolumeDown', 'volume-'], ['VolumeMute', 'mudo']]) {
+    try { if (globalShortcut.register(tecla, () => enviar('sistema:tecla', acao))) globais.add(acao); } catch { }
+  }
+  const DO_TECLADO = { AudioVolumeUp: 'volume+', AudioVolumeDown: 'volume-', AudioVolumeMute: 'mudo', BrightnessUp: 'brilho+', BrightnessDown: 'brilho-', LaunchCalculator: 'calculadora', LaunchApplication2: 'calculadora' };
+  // O layout escolhido em Painel › Teclado (por cima do da instalação do Linux).
+  const t = config.obter().teclado;
+  if (t && t.layout) sistemaLinux.aplicarTeclado(t.layout, t.variante).catch(() => { });
+  let logotipoSozinho = false;
+  app.on('web-contents-created', (_e, wc) => {
+    wc.on('before-input-event', (e, input) => {
+      if (input.type === 'keyDown') {
+        logotipoSozinho = input.key === 'Meta' && !input.isAutoRepeat;
+        const acao = DO_TECLADO[input.key];
+        if (acao && !globais.has(acao)) {
+          e.preventDefault();
+          enviar('sistema:tecla', acao);
+        }
+      } else if (input.type === 'keyUp' && input.key === 'Meta' && logotipoSozinho) {
+        logotipoSozinho = false;
+        enviar('sistema:tecla', 'iniciar');
+      }
+    });
+  });
+  app.on('will-quit', () => globalShortcut.unregisterAll());
+}
+
 function configurarSessao() {
   const s = session.defaultSession;
   const permitidas = new Set(['clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'local-fonts']);
@@ -556,6 +590,7 @@ function registrarPonte() {
   tratar('loja:abrir', (id) => loja.abrir(String(id)));
   // A bandeja: o volume, o brilho e a rede do computador (bandeja.js).
   tratar('bandeja:bateria', () => sistemaBandeja.bateria());
+  tratar('bandeja:aparelhos', () => sistemaBandeja.aparelhos());
   tratar('bandeja:volume', () => sistemaBandeja.volume.ler());
   tratar('bandeja:definirVolume', (o) => sistemaBandeja.volume.definir(o || {}));
   tratar('bandeja:brilho', () => sistemaBandeja.brilho.ler());
@@ -587,6 +622,13 @@ function registrarPonte() {
   });
   tratar('sistema:abrirAoEntrar', (ligar) => (ligar == null ? sistemaLinux.abrirAoEntrar(app) : sistemaLinux.definirAbrirAoEntrar(app, !!ligar)));
   tratar('sistema:sessao', () => sistemaLinux.infoSessao());
+  tratar('sistema:teclado', async (layout, variante) => {
+    if (layout == null) return sistemaLinux.lerTeclado();
+    if (!MODO_SISTEMA) throw new Error('modo sistema');
+    const r = await sistemaLinux.aplicarTeclado(String(layout), String(variante || ''));
+    if (r.ok) config.definir({ teclado: { layout: String(layout), variante: String(variante || '') } });
+    return r;
+  });
   tratar('sistema:entrarDireto', (ligar, senha) => sistemaLinux.definirEntrarDireto(!!ligar, String(senha || '')));
   tratar('sistema:desligar', () => {
     terminais.fecharTodos();
@@ -648,6 +690,7 @@ app.whenReady().then(async () => {
       volume, brilho: new bandeja.Brilho({ volume }), rede: new bandeja.Rede({ shell }),
       // A bateria não aparece nem some com o computador ligado: basta perguntar uma vez.
       bateria: async () => (bateria = bateria || bandeja.temBateria(process.platform, volume).then((existe) => ({ existe }))),
+      aparelhos: async () => (process.platform === 'linux' ? bandeja.lerAparelhos() : []),
     };
   }
   await abrirDisco();
@@ -656,6 +699,7 @@ app.whenReady().then(async () => {
   configurarNavegador();
   registrarProtocolos();
   registrarPonte();
+  teclasDoSistema();
   criarJanela();
 });
 

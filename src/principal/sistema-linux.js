@@ -159,4 +159,28 @@ async function definirEntrarDireto(ligar, senha) {
   }
 }
 
-module.exports = { ehModoSistema, energia, abrirAoEntrar, definirAbrirAoEntrar, comoAdmin, infoSessao, definirEntrarDireto, comandoDoApp };
+/* ---------- O layout do teclado (modo sistema) ---------- */
+
+/** "layout: us\nvariant: intl" (setxkbmap -query) → { layout, variante } */
+function lerQuery(s) {
+  const campo = (n) => { const m = new RegExp('^' + n + ':\\s*(\\S+)', 'm').exec(s); return m ? m[1] : ''; };
+  return { layout: campo('layout').split(',')[0], variante: campo('variant').split(',')[0] };
+}
+
+async function lerTeclado() {
+  try { return lerQuery(await rodar('setxkbmap', ['-query'], { timeout: 4000 })); } catch { return null; }
+}
+
+/** Troca o layout na hora (setxkbmap, sem senha: vale para a sessão). */
+async function aplicarTeclado(layout, variante = '') {
+  if (!/^[a-z]{2,8}$/.test(layout || '') || !/^[a-z0-9_]{0,24}$/.test(variante || '')) return { ok: false, erro: 'layout' };
+  if (process.env.RETRO_ENERGIA_FALSA) return { ok: true, falso: true };
+  try {
+    await rodar('setxkbmap', ['-layout', layout, ...(variante ? ['-variant', variante] : [])], { timeout: 4000 });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: String(e.saida || e.message).split('\n')[0] };
+  }
+}
+
+module.exports = { lerQuery, lerTeclado, aplicarTeclado, ehModoSistema, energia, abrirAoEntrar, definirAbrirAoEntrar, comoAdmin, infoSessao, definirEntrarDireto, comandoDoApp };
