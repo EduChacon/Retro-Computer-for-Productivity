@@ -74,7 +74,10 @@
         "deb"
       ],
       "category": "Office",
-      "icon": "recursos/icone.png"
+      "icon": "recursos/icone.png",
+      "maintainer": "EduChacon <213981293+EduChacon@users.noreply.github.com>",
+      "syncDesktopName": true
     }
-  }
+  },
+  "desktopName": "retro-computer.desktop"
 }
