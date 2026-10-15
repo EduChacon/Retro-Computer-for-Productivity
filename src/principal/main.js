@@ -9,7 +9,7 @@
  * A área de trabalho fala com este processo só pela ponte do preload
  * (window.retro); os programas, só pela área de trabalho (postMessage).
  */
-const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -50,6 +50,8 @@ if (idioma.CODIGOS.includes(idiomaEscolhido)) app.commandLine.appendSwitch('lang
 // Sem placa de vídeo utilizável (máquinas virtuais, computadores antigos), os Craft
 // ainda desenham com o WebGL2 por software. Só roda conteúdo local e confiável aqui.
 app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+// Para os testes: câmera e microfone de mentira (o Chromium os gera).
+if (process.env.RETRO_MIDIA_FALSA) app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'sistema', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
@@ -70,7 +72,9 @@ let atualizador = null;
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
-  if (janela && !janela.isDestroyed()) janela.webContents.send(canal, ...args);
+  if (!janela || janela.isDestroyed()) return false;
+  janela.webContents.send(canal, ...args);
+  return true;
 }
 
 /** Os nomes das pastas do disco: os que já existem nele ou os do idioma atual. */
@@ -272,22 +276,102 @@ function receberDownloads(s) {
  * por exemplo, recusa navegadores "embutidos"); câmera, microfone, localização e notificações
  * ficam recusados.
  */
+// As respostas às permissões dadas sem "lembrar": valem até o Retro Computer fechar.
+let destaVez = {};
+
 function configurarNavegador() {
   const s = session.fromPartition(SESSAO_NAVEGADOR);
   s.setUserAgent(s.getUserAgent().replace(/\s(Electron|Retro-?Computer)\/\S+/gi, ''));
-  const permitidas = new Set(['clipboard-sanitized-write', 'fullscreen']);
-  s.setPermissionRequestHandler((_wc, permissao, responder) => responder(permitidas.has(permissao)));
-  s.setPermissionCheckHandler((_wc, permissao) => permitidas.has(permissao));
+  // Sempre: copiar e a tela cheia. Perguntando ao usuário (e lembrando por site): a câmera e o
+  // microfone, as notificações, ler a área de transferência e a localização. O resto, nunca.
+  const sempre = new Set(['clipboard-sanitized-write', 'fullscreen']);
+  const perguntar = new Set(['media', 'notifications', 'clipboard-read', 'geolocation']);
+  const lembradas = () => (config.obter().navegador || {}).permissoes || {};
+  const resposta = (origem, k) => {
+    const salva = (lembradas()[origem] || {})[k];
+    return typeof salva === 'boolean' ? salva : (destaVez[origem] || {})[k];
+  };
+  const chave = (permissao, tipos) => (permissao === 'media' ? `media:${[...(tipos || [])].sort().join('+') || 'audio+video'}` : permissao);
+  s.setPermissionRequestHandler((_wc, permissao, responder, detalhes) => {
+    if (sempre.has(permissao)) return responder(true);
+    if (!perguntar.has(permissao)) return responder(false);
+    let origem;
+    try { origem = new URL(detalhes.requestingUrl).origin; } catch { return responder(false); }
+    const k = chave(permissao, detalhes.mediaTypes);
+    const ja = resposta(origem, k);
+    if (typeof ja === 'boolean') return responder(ja);
+    pedirAoUsuario('navegador:permissao', { origem, permissao: k }).then((r) => {
+      // Sem resposta (a caixa fechada, o tempo esgotado): "não", sem guardar.
+      if (r && r.lembrar) config.definir({ navegador: { permissoes: { [origem]: { [k]: !!r.permitir } } } });
+      else if (r) (destaVez[origem] = destaVez[origem] || {})[k] = !!r.permitir;
+      responder(!!(r && r.permitir));
+    });
+  });
+  s.setPermissionCheckHandler((_wc, permissao, origem, detalhes) => {
+    if (sempre.has(permissao)) return true;
+    let o;
+    try { o = new URL(origem).origin; } catch { return false; }
+    const salvas = { ...(destaVez[o] || {}), ...(lembradas()[o] || {}) };
+    if (permissao === 'media') return Object.keys(salvas).some((k) => k.startsWith('media:') && k.includes(detalhes.mediaType || '') && salvas[k]);
+    return salvas[permissao] === true;
+  });
+  // Compartilhar a tela: o usuário escolhe a tela ou a janela numa caixa da área de trabalho.
+  s.setDisplayMediaRequestHandler(async (pedido, responder) => {
+    try {
+      const buscar = () => desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 160, height: 100 } });
+      // A primeira consulta às vezes volta vazia (o X11 ainda preparando a captura): mais uma tentativa.
+      let fontes = await buscar();
+      if (!fontes.length) fontes = await new Promise((r) => setTimeout(r, 400)).then(buscar);
+      let origem = '';
+      try { origem = new URL(pedido.frame.url).origin; } catch { }
+      const lista = fontes.map((f) => ({ id: f.id, nome: f.name, miniatura: f.thumbnail.isEmpty() ? null : f.thumbnail.toDataURL(), tela: f.id.startsWith('screen:') }));
+      const r = await pedirAoUsuario('navegador:tela', { origem, fontes: lista });
+      const escolhida = r && fontes.find((f) => f.id === r.id);
+      responder(escolhida ? { video: escolhida } : {});
+    } catch {
+      responder({});
+    }
+  });
   receberDownloads(s);
+  // As páginas do Navegador (os webview e as janelinhas de login que eles abrem) seguem as mesmas regras.
   app.on('web-contents-created', (_e, wc) => {
-    if (wc.getType() !== 'webview') return;
-    // As janelas novas (window.open, links com target) abrem noutra janela do Navegador.
-    wc.setWindowOpenHandler(({ url }) => {
-      if (/^https?:\/\//i.test(url)) enviar('navegador:janela', url);
+    if (wc.session !== s) return;
+    // Os links com target abrem noutra janela do Navegador. As janelinhas do window.open (os
+    // logins "Entrar com Google/Microsoft") precisam continuar ligadas ao site que as abriu
+    // (window.opener): elas abrem numa janela própria, presa à do Retro Computer.
+    wc.setWindowOpenHandler(({ url, disposition, features }) => {
+      if (!enderecoDaWeb(url)) return { action: 'deny' };
+      if (disposition === 'new-window') {
+        const medida = (nome, padrao) => { const m = new RegExp(`${nome}=(\\d+)`).exec(features || ''); return m ? Math.min(Math.max(Number(m[1]), 320), 1400) : padrao; };
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            parent: janela, width: medida('width', 520), height: medida('height', 680), center: true,
+            autoHideMenuBar: true, backgroundColor: '#ffffff', title: 'Retro Computer',
+            webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false },
+          },
+        };
+      }
+      enviar('navegador:janela', url);
       return { action: 'deny' };
     });
     wc.on('will-navigate', (e, url) => { if (!enderecoDaWeb(url)) e.preventDefault(); });
     wc.on('will-redirect', (e, url) => { if (!enderecoDaWeb(url)) e.preventDefault(); });
+  });
+}
+
+/**
+ * Uma pergunta à área de trabalho, com resposta (as permissões e a escolha da tela do Navegador).
+ * Sem resposta em 2 minutos, vale "não".
+ */
+const perguntas = new Map();
+let numeroPergunta = 0;
+function pedirAoUsuario(canal, dados) {
+  return new Promise((resolve) => {
+    const id = ++numeroPergunta;
+    const t = setTimeout(() => { perguntas.delete(id); resolve(null); }, 120000);
+    perguntas.set(id, (r) => { clearTimeout(t); perguntas.delete(id); resolve(r); });
+    if (!enviar(canal, { id, ...dados })) { perguntas.get(id)(null); }
   });
 }
 
@@ -429,6 +513,12 @@ function registrarPonte() {
   tratar('nativos:listar', (atualizar) => aplicativos.listar(!!atualizar));
   tratar('nativos:icone', (id) => aplicativos.icone(String(id)));
   tratar('nativos:abrir', (id) => aplicativos.abrir(String(id)));
+  tratar('navegador:responder', (id, resposta) => { const f = perguntas.get(id); if (f) f(resposta); return !!f; });
+  tratar('navegador:esquecerPermissoes', () => {
+    destaVez = {};
+    config.definir({ navegador: { permissoes: null } });
+    return true;
+  });
   tratar('navegador:limparDados', () => session.fromPartition(SESSAO_NAVEGADOR).clearStorageData().then(() => session.fromPartition(SESSAO_NAVEGADOR).clearCache()));
   tratar('sistema:telaCheia', (v) => {
     if (v == null) alternarTelaCheia();

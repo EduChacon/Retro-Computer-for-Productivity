@@ -1,10 +1,40 @@
 'use strict';
 /*
  * Entra em cada página do Navegador (isolado da página, sem acesso a ela).
- * Só repassa à janela do Navegador os botões laterais do mouse (voltar e
- * avançar) e as teclas de atalho, que de outro modo ficariam com a página.
+ * Repassa à janela do Navegador os botões laterais do mouse (voltar e avançar),
+ * as teclas de atalho, que de outro modo ficariam com a página, e as
+ * notificações do site (que viram o balão da barra de tarefas).
  */
-const { ipcRenderer } = require('electron');
+const { ipcRenderer, webFrame } = require('electron');
+
+// As notificações (window.Notification) do site: a página pede como sempre, e o aviso vai para a
+// área de trabalho, se o usuário permitiu as notificações desse site.
+try {
+  webFrame.executeJavaScript(`(() => {
+    const Original = window.Notification;
+    if (!Original) return;
+    class Notificacao extends EventTarget {
+      constructor(titulo, opcoes = {}) {
+        super();
+        Object.assign(this, { title: String(titulo), body: String(opcoes.body || ''), tag: opcoes.tag || '', data: opcoes.data, onclick: null, onclose: null, onshow: null, onerror: null });
+        const disparar = (tipo) => setTimeout(() => { const ev = new Event(tipo); this.dispatchEvent(ev); if (this['on' + tipo]) this['on' + tipo](ev); });
+        if (Original.permission !== 'granted') { disparar('error'); return; }
+        window.postMessage({ __retroNotificacao: { titulo: this.title, corpo: this.body } }, '*');
+        disparar('show');
+      }
+      close() { }
+      static get permission() { return Original.permission; }
+      static requestPermission(f) { return Original.requestPermission(f); }
+      static get maxActions() { return 0; }
+    }
+    window.Notification = Notificacao;
+  })()`);
+} catch { }
+
+window.addEventListener('message', (e) => {
+  const n = e.source === window && e.data && e.data.__retroNotificacao;
+  if (n && Notification.permission === 'granted') ipcRenderer.sendToHost('navegador', 'notificacao', String(n.titulo).slice(0, 200), String(n.corpo).slice(0, 500));
+});
 
 const avisar = (acao) => ipcRenderer.sendToHost('navegador', acao);
 

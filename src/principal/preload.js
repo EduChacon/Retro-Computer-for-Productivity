@@ -111,5 +111,9 @@ contextBridge.exposeInMainWorld('retro', {
   navegador: {
     aoJanela: ouvir('navegador:janela'),
     limparDados: () => chamar('navegador:limparDados'),
+    aoPermissao: ouvir('navegador:permissao'),
+    aoTela: ouvir('navegador:tela'),
+    responder: (id, resposta) => chamar('navegador:responder', id, resposta),
+    esquecerPermissoes: () => chamar('navegador:esquecerPermissoes'),
   },
 });

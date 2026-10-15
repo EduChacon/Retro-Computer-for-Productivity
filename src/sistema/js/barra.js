@@ -9,12 +9,15 @@ import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pasta
 import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
 import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './nativos.js';
+import { alternarCalendario, montarBusca } from './barra-extras.js';
 
 let btIniciar;
 let tarefas;
 let relogio;
 let somIco;
 let focoEl;
+let busca;
+const mostrarBusca = () => !(estado.config.barra && estado.config.barra.busca === false);
 
 export function montarBarra() {
   const barra = document.getElementById('barra');
@@ -34,9 +37,12 @@ export function montarBarra() {
   focoIco.addEventListener('click', () => abrir('foco'));
   focoEl.addEventListener('click', () => abrir('foco'));
   somIco.addEventListener('click', alternarSom);
-  relogio.addEventListener('dblclick', () => abrir('painel', { secao: 'data' }));
+  relogio.addEventListener('mousedown', (e) => { e.preventDefault(); alternarCalendario(relogio); });
+  relogio.style.cursor = 'pointer';
   const bandeja = h('div#bandeja', focoIco, focoEl, somIco, relogio);
-  barra.append(btIniciar, h('div.sep-barra'), tarefas, bandeja);
+  busca = montarBusca();
+  busca.hidden = !mostrarBusca();
+  barra.append(btIniciar, h('div.sep-barra'), tarefas, busca, bandeja);
 
   barra.addEventListener('contextmenu', (e) => {
     if (e.target.closest('#tarefas button')) return;
@@ -47,6 +53,8 @@ export function montarBarra() {
       { rotulo: tr('Lado a lado &vertical'), acao: () => lado(true) },
       { separador: true },
       { rotulo: tr('&Minimizar todas as janelas'), acao: minimizarTodas },
+      { separador: true },
+      { rotulo: tr('Mostrar a caixa de &busca'), marcado: mostrarBusca(), acao: () => definirConfig({ barra: { busca: !mostrarBusca() } }).then(() => { busca.hidden = !mostrarBusca(); }) },
       { separador: true },
       { rotulo: tr('P&ropriedades'), acao: () => abrir('painel') },
     ], { x: e.clientX, y: e.clientY, acima: true });

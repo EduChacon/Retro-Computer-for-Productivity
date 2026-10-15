@@ -352,7 +352,14 @@ function dialogoInternet() {
           if (!(await confirmar(tr('Apagar os dados de navegação? Você vai sair das contas abertas nos sites (o e-mail, por exemplo).'), { titulo: tr('Internet') }))) return;
           await retro.navegador.limparDados().catch(() => { });
           avisar(tr('Internet'), tr('Dados de navegação apagados.'), { icone: 'navegador', som: null });
-        } } }, tr('Apagar…')))),
+        } } }, tr('Apagar…'))),
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } },
+        h('span', { style: { flex: '1' } }, tr('As permissões dadas aos sites: a câmera, o microfone, as notificações e a localização.')),
+        h('button', { on: { click: async () => {
+          if (!(await confirmar(tr('Esquecer as permissões dadas aos sites? Eles vão perguntar de novo.'), { titulo: tr('Internet') }))) return;
+          await retro.navegador.esquecerPermissoes().catch(() => { });
+          avisar(tr('Internet'), tr('Os sites vão pedir as permissões de novo.'), { icone: 'navegador', som: null });
+        } } }, tr('Esquecer…')))),
   );
   dialogoBase({
     titulo: tr('Propriedades de Internet'), icone: 'navegador', larg: 420,
@@ -446,4 +453,4 @@ function dialogoSobre() {
 }
 
 registrarApp('painel', { nome: 'Painel de controle', icone: 'painel', abrir: abrirPainel });
-export { info, caminhoTela };
+export { info, caminhoTela, ITENS };

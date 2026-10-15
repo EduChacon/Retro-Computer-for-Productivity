@@ -409,6 +409,106 @@ const ROTEIROS = {
     servidor.close();
   },
 
+  // As permissões dos sites (com RETRO_MIDIA_FALSA=1: a câmera e o microfone de mentira do Chromium):
+  // a câmera e o microfone, as notificações (que viram o balão) e o compartilhamento da tela.
+  async permissoes() {
+    const http = await import('node:http');
+    const PAGINA = `<!doctype html><meta charset="utf-8"><title>Reunião de teste</title>
+      <body style="font-family:sans-serif;padding:20px">
+      <h1>Reunião de teste</h1>
+      <p><button id="camera">Ligar a câmera e o microfone</button> <button id="aviso">Avisar</button> <button id="tela">Compartilhar a tela</button> <button id="login">Entrar com a conta</button></p>
+      <video id="v" autoplay muted style="width:240px;height:160px;background:#000"></video>
+      <pre id="saida"></pre>
+      <script>
+        const saida = (t) => { document.getElementById('saida').textContent += t + '\\n'; };
+        document.getElementById('camera').onclick = () => navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+          .then((s) => { document.getElementById('v').srcObject = s; saida('câmera: ' + s.getTracks().map((x) => x.kind).join('+')); })
+          .catch((e) => saida('câmera: ' + e.name));
+        document.getElementById('aviso').onclick = () => Notification.requestPermission().then((p) => {
+          saida('notificações: ' + p + ' / ' + Notification.permission);
+          if (p === 'granted') new Notification('Reunião começando', { body: 'A reunião de teste começa em 5 minutos.' });
+        });
+        // O login numa janelinha (como o "Entrar com Google"): a resposta volta pelo window.opener.
+        window.addEventListener('message', (e) => { if (e.data && e.data.login) saida('login: ' + e.data.login); });
+        document.getElementById('login').onclick = () => window.open('/login', 'login', 'width=480,height=560');
+        document.getElementById('tela').onclick = () => navigator.mediaDevices.getDisplayMedia({ video: true })
+          .then((s) => { document.getElementById('v').srcObject = s; saida('tela: ' + s.getVideoTracks()[0].label); })
+          .catch((e) => saida('tela: ' + e.name));
+      </script></body>`;
+    const LOGIN = `<!doctype html><meta charset="utf-8"><title>Entrar</title><body style="font-family:sans-serif;padding:20px">
+      <h2>Entrar</h2><button id="entrar" onclick="window.opener.postMessage({ login: 'ok, com opener' }, '*'); window.close()">Entrar</button></body>`;
+    const servidor = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(req.url === '/login' ? LOGIN : PAGINA);
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    servidor.unref();
+    const base = `http://127.0.0.1:${servidor.address().port}`;
+    await fecharTudo();
+    await abrir('navegador', { url: base + '/' });
+    await pagina.waitForTimeout(2500);
+    const wvSel = '.janela.navegador webview';
+    const wv = async (js) => pagina.evaluate(([c, s]) => document.querySelector(s).executeJavaScript(c), [js, wvSel]);
+    const clicar = async (id) => {
+      const r = await pagina.evaluate((s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.left, y: b.top }; }, wvSel);
+      const p = await wv(`(() => { const b = document.getElementById('${id}').getBoundingClientRect(); return { x: b.left + 10, y: b.top + b.height / 2 }; })()`);
+      await pagina.mouse.click(r.x + p.x, r.y + p.y);
+    };
+    // A câmera e o microfone: a pergunta; "Permitir" sem lembrar.
+    await clicar('camera');
+    await pagina.waitForSelector('.janela.dialogo .nav-lembrar', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    await foto('permissao-camera');
+    await pagina.click('.janela.dialogo .acoes button.padrao');
+    await pagina.waitForTimeout(1500);
+    // As notificações: "Permitir" e lembrar.
+    await clicar('aviso');
+    await pagina.waitForSelector('.janela.dialogo .nav-lembrar', { timeout: 5000 });
+    await pagina.check('.janela.dialogo .nav-lembrar input');
+    await foto('permissao-notificacoes');
+    await pagina.click('.janela.dialogo .acoes button.padrao');
+    await pagina.waitForSelector('.aviso-balao', { timeout: 5000 }).catch(() => console.log('sem balão da notificação'));
+    await pagina.waitForTimeout(400);
+    await foto('permissao-balao');
+    console.log('balão:', await pagina.evaluate(() => (document.querySelector('.aviso-balao') || {}).textContent || '(nenhum)'));
+    // A tela: a escolha, com as miniaturas.
+    await clicar('tela');
+    await pagina.waitForSelector('.janela.dialogo .nav-fontes-caixa', { timeout: 8000 }).catch(() => console.log('sem a caixa da tela'));
+    await pagina.waitForTimeout(500);
+    const primeira = pagina.locator('.janela.dialogo button.nav-fonte').first();
+    if (await primeira.count()) await primeira.click();
+    await foto('permissao-tela');
+    // Sem nada para compartilhar (o xvfb às vezes não dá a tela), Cancelar.
+    await pagina.click(`.janela.dialogo .acoes button${(await primeira.count()) ? '.padrao' : ':not(.padrao)'}`);
+    await pagina.waitForTimeout(2000);
+    await foto('permissao-compartilhando');
+    // A janelinha do login: uma janela própria, ligada à página que a abriu.
+    await clicar('login');
+    let popup = null;
+    for (let i = 0; i < 30 && !popup; i++) { await pagina.waitForTimeout(200); popup = app.windows().find((w) => w.url().endsWith('/login')); }
+    if (popup) {
+      await popup.waitForLoadState();
+      await popup.screenshot({ path: path.join(SAIDA, 'permissao-login.png') });
+      console.log('janelinha do login:', popup.url(), await popup.evaluate(() => [innerWidth, innerHeight, !!window.opener].join(' ')));
+      await popup.click('#entrar');
+      await pagina.waitForTimeout(800);
+    } else console.log('a janelinha do login não abriu');
+    console.log('página:', JSON.stringify(await wv("document.getElementById('saida').textContent")));
+    const cfg = await pagina.evaluate(() => retro.config.obter());
+    console.log('lembradas:', JSON.stringify((cfg.navegador || {}).permissoes || {}));
+    // De novo na mesma sessão: nada é perguntado (a câmera desta vez, as notificações lembradas).
+    await clicar('camera');
+    await pagina.waitForTimeout(1200);
+    console.log('perguntou de novo?', await pagina.evaluate(() => !!document.querySelector('.janela.dialogo .nav-lembrar')));
+    // Esquecer, pelo Painel de controle › Internet.
+    await pagina.evaluate(() => retro.navegador.esquecerPermissoes());
+    console.log('depois de esquecer:', JSON.stringify(((await pagina.evaluate(() => retro.config.obter())).navegador || {}).permissoes || {}));
+    await abrir('painel', { secao: 'internet' });
+    await pagina.waitForTimeout(500);
+    await foto('internet-permissoes');
+    servidor.close();
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();
@@ -536,6 +636,29 @@ const ROTEIROS = {
     await pagina.waitForTimeout(800);
     console.log('depois de baixar:', JSON.stringify(await pagina.evaluate(() => retro.sistema.atualizacao.info())));
     await foto('autoatualizar-pronta');
+  },
+
+  // O calendário do relógio e a caixa de busca da barra de tarefas.
+  async barra() {
+    await fecharTudo();
+    await pagina.click('#bandeja .relogio');
+    await pagina.waitForTimeout(400);
+    console.log('calendário:', await pagina.textContent('.calendario .cal-titulo'), '| hoje:', await pagina.textContent('.calendario .cal-dia.hoje'));
+    await foto('calendario');
+    await pagina.keyboard.press('Escape');
+    await pagina.click('#busca-barra input');
+    await pagina.keyboard.type('calc');
+    await pagina.waitForTimeout(900);
+    console.log('busca "calc":', await pagina.$$eval('.busca-resultados .busca-item', (els) => els.map((e) => e.textContent).join(' | ')));
+    await foto('busca');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(600);
+    console.log('Enter abriu:', await pagina.textContent('.janela.ativa .titulo .texto'));
+    await pagina.click('#busca-barra input');
+    await pagina.keyboard.type('Teste');
+    await pagina.waitForTimeout(900);
+    console.log('busca "Teste":', await pagina.$$eval('.busca-resultados .busca-item', (els) => els.map((e) => e.textContent).join(' | ')));
+    await pagina.keyboard.press('Escape');
   },
 
   async geral() {

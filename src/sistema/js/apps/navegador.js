@@ -11,6 +11,7 @@ import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, avisar } from '../sistema.js';
 import { entrada, confirmar, ajustarAoConteudo } from '../dialogos.js';
+import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
 
 const SESSAO = 'persist:navegador';
@@ -243,7 +244,7 @@ class Navegador {
       this.mostrarErro(e.validatedURL || this.url, e.errorDescription);
     });
     wv.addEventListener('context-menu', (e) => this.menuDaPagina(e.params));
-    wv.addEventListener('ipc-message', (e) => { if (e.channel === 'navegador') this.acao(e.args[0]); });
+    wv.addEventListener('ipc-message', (e) => { if (e.channel === 'navegador') this.acao(...e.args); });
     wv.addEventListener('found-in-page', (e) => {
       const r = e.result || {};
       if (r.finalUpdate) this.j.definirStatus([r.matches ? tr('{n} de {total}', { n: r.activeMatchOrdinal, total: r.matches }) : tr('Não foi possível localizar "{texto}".', { texto: this.busca }), this.textoZoom()]);
@@ -323,9 +324,10 @@ class Navegador {
     this.atualizarBotoes();
   }
 
-  /** As teclas e os botões do mouse que a página repassa (navegador-preload.js). */
-  acao(a) {
+  /** As teclas, os botões do mouse e as notificações que a página repassa (navegador-preload.js). */
+  acao(a, ...args) {
     switch (a) {
+      case 'notificacao': return this.notificar(...args);
       case 'voltar': return this.voltar();
       case 'avancar': return this.avancar();
       case 'atualizar': return this.atualizar();
@@ -344,6 +346,14 @@ class Navegador {
       case 'iniciar': return import('../barra.js').then((m) => m.abrirIniciar());
       default:
     }
+  }
+
+  /** A notificação do site vira o balão da barra de tarefas; o clique traz a janela. */
+  notificar(titulo, corpo) {
+    avisar(String(titulo || nomeDoSite(this.url)), String(corpo || ''), {
+      icone: this.correio ? 'correio' : 'navegador', ms: 8000,
+      aoClicar: () => { if (!this.j.fechada) this.j.focar(); },
+    });
   }
 
   /* ---------- Zoom e localizar ---------- */
@@ -534,5 +544,104 @@ registrarApp('correio', { nome: 'E-mail', icone: 'correio', abrir: () => abrirCo
 
 // As janelas novas pedidas pelas páginas (window.open, links com target).
 retro.navegador.aoJanela((url) => abrirNavegador({ url }));
+
+/* ---------- As permissões dos sites e a escolha da tela ---------- */
+
+// Cada pedido numa frase inteira (a ordem das palavras muda de um idioma para outro).
+const PEDIDOS = {
+  'media:audio': marcar('O site {site} quer usar o microfone.'),
+  'media:video': marcar('O site {site} quer usar a câmera.'),
+  'media:audio+video': marcar('O site {site} quer usar a câmera e o microfone.'),
+  notifications: marcar('O site {site} quer mostrar notificações.'),
+  'clipboard-read': marcar('O site {site} quer ler o que você copiou (a área de transferência).'),
+  geolocation: marcar('O site {site} quer saber a sua localização.'),
+  outra: marcar('O site {site} pede uma permissão.'),
+};
+
+function nomeDoSite(endereco) {
+  try { return new URL(endereco).host || endereco; } catch { return endereco || '?'; }
+}
+
+/** Traz para a frente a janela do Navegador que mostra o site (a pergunta é sobre ela). */
+function focarSite(origem) {
+  const nav = [...abertos].reverse().find((n) => {
+    if (n.j.fechada) return false;
+    try { return new URL(n.url).origin === origem; } catch { return false; }
+  });
+  if (nav) nav.j.focar();
+}
+
+// Uma pergunta de cada vez, na ordem em que chegam.
+let filaPerguntas = Promise.resolve();
+const naFila = (f) => { filaPerguntas = filaPerguntas.then(f, f); return filaPerguntas; };
+
+function perguntarPermissao({ origem, permissao }) {
+  focarSite(origem);
+  return new Promise((resolve) => {
+    let feito = false;
+    const fim = (v) => { if (!feito) { feito = true; j.fechar(true); resolve(v); } };
+    const j = new Janela({ titulo: tr('Permissão do site'), icone: 'navegador', dialogo: true, largura: 380, altura: 160, aoFechar: () => { if (!feito) { feito = true; resolve(null); } } });
+    const lembrar = h('input', { type: 'checkbox' });
+    const permitir = h('button.padrao', { type: 'button', on: { click: () => fim({ permitir: true, lembrar: lembrar.checked }) } }, tr('Permitir'));
+    j.corpo.append(
+      h('div.mensagem', img('msg-pergunta', 32), h('div',
+        h('div.texto', tr(PEDIDOS[permissao] || PEDIDOS.outra, { site: nomeDoSite(origem) })),
+        h('label.nav-lembrar', lembrar, h('span', tr('Lembrar a resposta para este site'))))),
+      h('div.acoes', permitir, h('button', { type: 'button', on: { click: () => fim({ permitir: false, lembrar: lembrar.checked }) } }, tr('Bloquear'))),
+    );
+    ajustarAoConteudo(j, { minLarg: 380 });
+    tocar('pergunta');
+    permitir.focus();
+  });
+}
+
+/** O site quer ver a tela: o usuário escolhe uma tela inteira ou uma janela. */
+function escolherTela({ origem, fontes }) {
+  focarSite(origem);
+  return new Promise((resolve) => {
+    let feito = false;
+    let escolhida = null;
+    const fim = (v) => { if (!feito) { feito = true; j.fechar(true); resolve(v); } };
+    const j = new Janela({ titulo: tr('Compartilhar a tela'), icone: 'navegador', dialogo: true, largura: 520, altura: 360, aoFechar: () => { if (!feito) { feito = true; resolve(null); } } });
+    const ok = h('button.padrao', { type: 'button', disabled: true, on: { click: () => escolhida && fim({ id: escolhida }) } }, tr('Compartilhar'));
+    const itens = [];
+    const opcao = (f) => {
+      const el = h('button.nav-fonte', { type: 'button', title: f.nome },
+        f.miniatura ? h('img', { src: f.miniatura, alt: '' }) : h('div.nav-fonte-vazia', img(f.tela ? 'computador' : 'programa', 32)),
+        h('span', f.nome));
+      el.addEventListener('click', () => {
+        escolhida = f.id;
+        itens.forEach((x) => x.classList.toggle('escolhida', x === el));
+        ok.disabled = false;
+      });
+      el.addEventListener('dblclick', () => fim({ id: f.id }));
+      itens.push(el);
+      return el;
+    };
+    const telas = fontes.filter((f) => f.tela);
+    const janelasFonte = fontes.filter((f) => !f.tela);
+    const grupo = (titulo, lista) => (lista.length ? h('fieldset', h('legend', titulo), h('div.nav-fontes', lista.map(opcao))) : null);
+    j.corpo.append(
+      h('div.mensagem', img('msg-pergunta', 32), h('div.texto', tr('O site {site} quer ver a sua tela. Escolha o que compartilhar:', { site: nomeDoSite(origem) }))),
+      h('div.nav-fontes-caixa',
+        grupo(tr('Telas inteiras'), telas),
+        grupo(tr('Janelas'), janelasFonte),
+        fontes.length ? null : h('div', { style: { padding: '8px' } }, tr('Não há nada para compartilhar.'))),
+      h('div.acoes', ok, h('button', { type: 'button', on: { click: () => fim(null) } }, tr('Cancelar'))),
+    );
+    ajustarAoConteudo(j, { largura: 520 });
+    tocar('pergunta');
+    (itens[0] || ok).focus();
+  });
+}
+
+retro.navegador.aoPermissao((p) => naFila(async () => {
+  const r = await perguntarPermissao(p);
+  await retro.navegador.responder(p.id, r).catch(() => { });
+}));
+retro.navegador.aoTela((p) => naFila(async () => {
+  const r = await escolherTela(p);
+  await retro.navegador.responder(p.id, r).catch(() => { });
+}));
 
 export { marcar };
