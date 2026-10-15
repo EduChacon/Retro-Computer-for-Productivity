@@ -622,6 +622,28 @@ const ROTEIROS = {
     await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'nomes' } }));
   },
 
+  // O modo sistema (com RETRO_SISTEMA=1 e RETRO_ENERGIA_FALSA=1: a energia só é anotada, nunca desliga).
+  async sistema() {
+    if (!process.env.RETRO_ENERGIA_FALSA) throw new Error('rode com RETRO_ENERGIA_FALSA=1');
+    await fecharTudo();
+    console.log('modo sistema:', await pagina.evaluate(() => window.__retro.estado.config.modoSistema), '| tela cheia:', await pagina.evaluate(() => retro.sistema.telaCheia(false)));
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(400);
+    await pagina.click('.janela.ativa .abas > div >> nth=2');
+    await pagina.waitForTimeout(600);
+    await foto('sistema-inicializacao');
+    await fecharTudo();
+    await abrir('desligar');
+    await pagina.waitForTimeout(400);
+    await foto('sistema-desligar');
+    console.log('suspender:', JSON.stringify(await pagina.evaluate(() => retro.sistema.energia('suspender'))));
+    await pagina.click('.janela.dialogo input[value=reiniciar]');
+    await pagina.click('.janela.dialogo .acoes button.padrao');
+    await pagina.waitForTimeout(1500);
+    await foto('sistema-reiniciando');
+    console.log('tela:', await pagina.evaluate(() => document.getElementById('boot').innerText));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

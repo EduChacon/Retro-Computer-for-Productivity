@@ -87,6 +87,11 @@ contextBridge.exposeInMainWorld('retro', {
     abrirLink: (url) => chamar('sistema:abrirLink', url),
     desligar: () => chamar('sistema:desligar'),
     reiniciar: () => chamar('sistema:reiniciar'),
+    // O computador inteiro (modo sistema) e a abertura junto com ele.
+    energia: (acao) => chamar('sistema:energia', acao),
+    abrirAoEntrar: (ligar) => chamar('sistema:abrirAoEntrar', ligar),
+    sessao: () => chamar('sistema:sessao'),
+    entrarDireto: (ligar, senha) => chamar('sistema:entrarDireto', ligar, senha),
     reabrir: () => chamar('sistema:reabrir'),
     novaVersao: (forcar) => chamar('sistema:novaVersao', forcar),
     escalaTela: () => chamar('sistema:escalaTela'),

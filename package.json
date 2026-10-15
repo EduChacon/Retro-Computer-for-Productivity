@@ -85,7 +85,33 @@
       "category": "Office",
       "icon": "recursos/icone.png",
       "maintainer": "EduChacon <213981293+EduChacon@users.noreply.github.com>",
-      "syncDesktopName": true
+      "syncDesktopName": true,
+      "extraResources": [
+        {
+          "from": "recursos/linux",
+          "to": "linux",
+          "filter": [
+            "**/*",
+            "!depois-de-*.sh"
+          ]
+        }
+      ]
+    },
+    "deb": {
+      "afterInstall": "recursos/linux/depois-de-instalar.sh",
+      "afterRemove": "recursos/linux/depois-de-remover.sh",
+      "recommends": [
+        "openbox",
+        "x11-xserver-utils",
+        "xinput",
+        "network-manager",
+        "pipewire-pulse | pulseaudio-utils | alsa-utils",
+        "flatpak",
+        "lxpolkit",
+        "wmctrl",
+        "bluez",
+        "cups"
+      ]
     }
   },
   "desktopName": "retro-computer.desktop"

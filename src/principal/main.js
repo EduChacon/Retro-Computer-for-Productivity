@@ -22,6 +22,10 @@ const { Aplicativos } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
+const sistemaLinux = require('./sistema-linux');
+
+// O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
+const MODO_SISTEMA = sistemaLinux.ehModoSistema();
 const idioma = require('./idioma');
 const { tr } = idioma;
 
@@ -167,7 +171,7 @@ function criarJanela() {
     height: Math.min(800, area.height),
     minWidth: 640,
     minHeight: 480,
-    fullscreen: !!c.telaCheia && !process.env.RETRO_JANELA,
+    fullscreen: MODO_SISTEMA || (!!c.telaCheia && !process.env.RETRO_JANELA),
     backgroundColor: '#000000',
     title: 'Retro Computer',
     autoHideMenuBar: true,
@@ -183,6 +187,8 @@ function criarJanela() {
     },
   });
   janela.once('ready-to-show', () => janela.show());
+  // No modo sistema, o Retro Computer é a tela inteira: não há para onde sair.
+  if (MODO_SISTEMA) janela.on('leave-full-screen', () => setImmediate(() => janela && !janela.isDestroyed() && janela.setFullScreen(true)));
   janela.loadURL('sistema://retro/index.html' + (process.env.RETRO_RAPIDO ? '?rapido' : ''));
 
   const wc = janela.webContents;
@@ -226,7 +232,7 @@ function criarJanela() {
 }
 
 function alternarTelaCheia() {
-  if (!janela) return;
+  if (!janela || MODO_SISTEMA) return;
   const nova = !janela.isFullScreen();
   janela.setFullScreen(nova);
   config.definir({ telaCheia: nova });
@@ -411,6 +417,7 @@ function registrarPonte() {
   tratar('config:obter', () => ({
     ...config.obter(),
     plataforma: process.platform,
+    modoSistema: MODO_SISTEMA,
     versaoApp: app.getVersion(),
     temChave: config.temChave(),
     cofre: config.cofreDisponivel(),
@@ -525,6 +532,7 @@ function registrarPonte() {
   });
   tratar('navegador:limparDados', () => session.fromPartition(SESSAO_NAVEGADOR).clearStorageData().then(() => session.fromPartition(SESSAO_NAVEGADOR).clearCache()));
   tratar('sistema:telaCheia', (v) => {
+    if (MODO_SISTEMA) return true;
     if (v == null) alternarTelaCheia();
     else if (janela) { janela.setFullScreen(!!v); config.definir({ telaCheia: !!v }); }
     return janela ? janela.isFullScreen() : false;
@@ -563,6 +571,23 @@ function registrarPonte() {
   tratar('atualizacao:verificar', () => atualizador.verificar());
   tratar('atualizacao:baixar', () => atualizador.baixar());
   tratar('atualizacao:instalar', () => atualizador.instalar());
+  // O computador inteiro (só no modo sistema): desligar, reiniciar, suspender e sair da sessão.
+  tratar('sistema:energia', async (acao) => {
+    if (!MODO_SISTEMA) throw new Error('modo sistema');
+    if (acao === 'suspender') return sistemaLinux.energia('suspender');
+    terminais.fecharTodos();
+    if (acao === 'sair') {
+      if (janela) janela.__podeFechar = true;
+      setTimeout(() => app.exit(0), 50);
+      return { ok: true };
+    }
+    const r = await sistemaLinux.energia(acao);
+    if (r.ok && janela) janela.__podeFechar = true;
+    return r;
+  });
+  tratar('sistema:abrirAoEntrar', (ligar) => (ligar == null ? sistemaLinux.abrirAoEntrar(app) : sistemaLinux.definirAbrirAoEntrar(app, !!ligar)));
+  tratar('sistema:sessao', () => sistemaLinux.infoSessao());
+  tratar('sistema:entrarDireto', (ligar, senha) => sistemaLinux.definirEntrarDireto(!!ligar, String(senha || '')));
   tratar('sistema:desligar', () => {
     terminais.fecharTodos();
     if (janela) janela.__podeFechar = true;

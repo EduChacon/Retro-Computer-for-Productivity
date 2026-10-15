@@ -14,6 +14,7 @@ import { esvaziarLixeira } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
 import { BUSCAS, CORREIOS, paraEndereco } from './navegador.js';
 import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
+import { comSenhaAdmin } from '../admin.js';
 
 const ITENS = [
   { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: () => dialogoAparencia() },
@@ -143,13 +144,16 @@ function dialogoAparencia() {
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tela')),
       h('div', h('label', radioCheia, h('span', tr('Tela cheia (recomendado para o foco)')))),
       h('div', { style: { marginTop: '6px' } }, h('label', radioJanela, h('span', tr('Numa janela do computador principal')))),
-      h('div', { style: { marginTop: '6px', color: '#808080' } }, tr('A tecla F11 alterna a qualquer momento.'))),
+      c.modoSistema ? null : h('div', { style: { marginTop: '6px', color: '#808080' } }, tr('A tecla F11 alterna a qualquer momento.'))),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tamanho dos pixels')),
       h('div.linha', h('div.select-caixa', { style: { flex: '1' } }, selEscala)),
       h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Cada pixel da interface usa um número inteiro de pixels da tela, para as letras e os ícones ficarem nítidos.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Inicialização')),
-      h('label', chkRapido, h('span', tr('Pular a tela de abertura')))),
+      h('label', chkRapido, h('span', tr('Pular a tela de abertura'))),
+      inicioComComputador()),
   );
+  // No modo sistema, o Retro Computer é a tela inteira.
+  if (c.modoSistema) { radioCheia.disabled = true; radioJanela.disabled = true; }
 
   dialogoBase({
     titulo: tr('Propriedades de Aparência'),
@@ -160,6 +164,7 @@ function dialogoAparencia() {
       aplicarProt();
       escala = selEscala.value;
       await definirConfig({ papel, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked });
+      if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);
       await aplicarEscala(escala);
       if (radioCheia.checked !== telaCheia) {
@@ -168,6 +173,52 @@ function dialogoAparencia() {
       }
     },
   });
+}
+
+/* Abrir junto com o computador e, no Linux, ser o sistema dele */
+
+let chkAbrirAoEntrar = null;
+
+function inicioComComputador() {
+  const c = estado.config;
+  const caixa = h('div', { style: { marginTop: '6px' } });
+  chkAbrirAoEntrar = null;
+  if (!c.modoSistema) {
+    chkAbrirAoEntrar = h('input', { type: 'checkbox', disabled: true });
+    retro.sistema.abrirAoEntrar().then((v) => { chkAbrirAoEntrar.checked = !!v; chkAbrirAoEntrar.disabled = false; }).catch(() => { });
+    caixa.append(h('div', h('label', chkAbrirAoEntrar, h('span', tr('Abrir o Retro Computer ao entrar no computador')))));
+  }
+  if (c.plataforma !== 'linux') return caixa;
+  // No Linux: a sessão "Retro Computer", escolhida na tela de entrada (instalada pelo pacote .deb).
+  const lugar = h('div', { style: { marginTop: '8px', lineHeight: '13px' } });
+  caixa.append(lugar);
+  retro.sistema.sessao().then((s) => {
+    if (!s.instalada) {
+      lugar.replaceChildren(h('div', { style: { color: '#808080' } }, tr('Para usar o Retro Computer como o sistema do computador, instale o pacote .deb: ele acrescenta a sessão "Retro Computer" à tela de entrada do Linux.')));
+      return;
+    }
+    const partes = [h('div', { style: { color: '#808080', marginBottom: '6px' } }, c.modoSistema
+      ? tr('O Retro Computer está como o sistema do computador (a sessão "Retro Computer"). Para voltar à área de trabalho do Linux, use Desligar › Sair da sessão.')
+      : tr('Para usar o Retro Computer como o sistema do computador, escolha a sessão "Retro Computer" na tela de entrada do Linux.'))];
+    if (s.lightdm) {
+      const chk = h('input', { type: 'checkbox', checked: s.entrarDireto });
+      chk.addEventListener('change', async () => {
+        const querer = chk.checked;
+        chk.disabled = true;
+        const r = await comSenhaAdmin(querer
+          ? tr('Para o computador entrar direto no Retro Computer ao ligar, digite a senha de administrador do Linux (a mesma da entrada no computador):')
+          : tr('Para o computador voltar a mostrar a tela de entrada, digite a senha de administrador do Linux:'), (senha) => retro.sistema.entrarDireto(querer, senha));
+        chk.disabled = false;
+        if (!r || !r.ok) {
+          chk.checked = !querer;
+          if (r && !r.senhaErrada && !r.naoPode) erro(tr('Não foi possível mudar a entrada do computador: {erro}', { erro: r.erro || '?' }));
+        }
+      });
+      partes.push(h('label', chk, h('span', tr('Entrar direto no Retro Computer ao ligar (sem a tela de entrada)'))));
+    }
+    lugar.replaceChildren(...partes);
+  }).catch(() => { });
+  return caixa;
 }
 
 /* Disco */

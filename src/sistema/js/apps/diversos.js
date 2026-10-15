@@ -137,25 +137,29 @@ async function abrirDesligar() {
   const escuro = h('div.escurecer');
   document.getElementById('camada-modal').append(escuro);
   const j = new Janela({ titulo: tr('Desligar o computador'), dialogo: true, largura: 380, altura: 200, aoFechar: () => escuro.remove() });
-  const r1 = h('input', { type: 'radio', name: 'desligar', checked: true });
-  const r2 = h('input', { type: 'radio', name: 'desligar' });
-  const r3 = h('input', { type: 'radio', name: 'desligar' });
+  // No modo sistema (a sessão "Retro Computer" do Linux), as opções valem para o computador inteiro.
+  const sistema = !!(estado.config && estado.config.modoSistema);
+  const opcoes = sistema
+    ? [['desligar', tr('&Desligar o computador?')], ['reiniciar', tr('&Reiniciar o computador?')], ['suspender', tr('&Suspender o computador?')], ['sair', tr('Sair da s&essão (voltar à tela de entrada)?')]]
+    : [['desligar', tr('&Desligar o computador?')], ['reiniciar', tr('&Reiniciar o computador?')], ['janela', tr('Sair da &tela cheia?')]];
+  const radios = opcoes.map(([v], i) => h('input', { type: 'radio', name: 'desligar', checked: i === 0, value: v }));
   const sim = h('button.padrao', rotulo(tr('&Sim')));
   j.corpo.append(
     h('div.mensagem', img('desligar', 32), h('div', { style: { paddingTop: '4px' } },
       h('div', { style: { marginBottom: '10px' } }, tr('Deseja:')),
-      h('div', { style: { marginBottom: '6px' } }, h('label', r1, h('span', rotulo(tr('&Desligar o computador?'))))),
-      h('div', { style: { marginBottom: '6px' } }, h('label', r2, h('span', rotulo(tr('&Reiniciar o computador?'))))),
-      h('div', h('label', r3, h('span', rotulo(tr('Sair da &tela cheia?'))))),
+      ...opcoes.map(([, texto], i) => h('div', { style: { marginBottom: i < opcoes.length - 1 ? '6px' : '0' } }, h('label', radios[i], h('span', rotulo(texto))))),
     )),
     h('div.acoes', sim, h('button', { on: { click: () => j.fechar() } }, rotulo(tr('&Não'))), h('button', { on: { click: () => { j.fechar(); abrir('ajuda', { topico: 'desligar' }); } } }, rotulo(tr('&Ajuda')))),
   );
   sim.addEventListener('click', async () => {
+    const escolha = (radios.find((r) => r.checked) || radios[0]).value;
     j.fechar(true);
     escuro.remove();
-    if (r3.checked) return retro.sistema.telaCheia(false);
+    if (escolha === 'janela') return retro.sistema.telaCheia(false);
+    if (escolha === 'suspender') return suspender();
     if (!(await fecharTudo())) return;
-    if (r2.checked) return reiniciar();
+    if (sistema) return energia(escolha);
+    if (escolha === 'reiniciar') return reiniciar();
     desligar();
   });
   ajustarAoConteudo(j, { minLarg: 360 });
@@ -182,6 +186,27 @@ async function desligar() {
   boot.replaceChildren(h('div.desligado', h('div', tr('Agora você pode desligar'), h('br'), tr('o computador com segurança.'))));
   await new Promise((r) => setTimeout(r, 1400));
   retro.sistema.desligar();
+}
+
+/** Suspende o computador (modo sistema): nada se fecha; a tela de bloqueio aparece na volta. */
+async function suspender() {
+  const r = await retro.sistema.energia('suspender').catch((e) => ({ ok: false, erro: e.message }));
+  if (!r.ok) erro(tr('Não foi possível suspender o computador: {erro}', { erro: r.erro || '?' }));
+}
+
+/** Desliga, reinicia ou sai da sessão do Linux (modo sistema), com as telas da época no meio. */
+async function energia(acao) {
+  const boot = document.getElementById('boot');
+  const texto = acao === 'reiniciar' ? tr('Reiniciando…') : acao === 'sair' ? tr('Saindo da sessão…') : tr('Aguarde enquanto o computador é desligado…');
+  boot.replaceChildren(h('div.aguarde', h('div', texto)));
+  boot.classList.add('visivel');
+  if (acao === 'desligar') tocar('desligar');
+  await new Promise((r) => setTimeout(r, acao === 'desligar' ? 1800 : 900));
+  const r = await retro.sistema.energia(acao).catch((e) => ({ ok: false, erro: e.message }));
+  if (r.ok) return;
+  boot.classList.remove('visivel');
+  boot.replaceChildren();
+  erro(tr('O computador não respondeu ao pedido: {erro}', { erro: r.erro || '?' }));
 }
 
 async function reiniciar() {

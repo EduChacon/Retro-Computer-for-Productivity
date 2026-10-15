@@ -1,0 +1,82 @@
+# O tema "Retro" das janelas dos programas do Linux na sessão "Retro Computer":
+# as cores da área de trabalho do Retro Computer (cinza, barra de título azul-marinho).
+border.width: 1
+padding.width: 2
+padding.height: 2
+window.handle.width: 3
+window.client.padding.width: 1
+window.client.padding.height: 1
+border.color: #000000
+window.active.border.color: #000000
+window.inactive.border.color: #000000
+window.active.client.color: #c0c0c0
+window.inactive.client.color: #c0c0c0
+window.active.title.bg: Flat Solid
+window.active.title.bg.color: #000080
+window.inactive.title.bg: Flat Solid
+window.inactive.title.bg.color: #808080
+window.active.label.bg: Parentrelative
+window.inactive.label.bg: Parentrelative
+window.active.label.text.color: #ffffff
+window.inactive.label.text.color: #c0c0c0
+window.label.text.justify: left
+window.active.handle.bg: Raised Solid
+window.active.handle.bg.color: #c0c0c0
+window.inactive.handle.bg: Raised Solid
+window.inactive.handle.bg.color: #c0c0c0
+window.active.grip.bg: Raised Solid
+window.active.grip.bg.color: #c0c0c0
+window.inactive.grip.bg: Raised Solid
+window.inactive.grip.bg.color: #c0c0c0
+window.active.button.unpressed.bg: Raised Solid
+window.active.button.unpressed.bg.color: #c0c0c0
+window.active.button.unpressed.image.color: #000000
+window.active.button.pressed.bg: Sunken Solid
+window.active.button.pressed.bg.color: #c0c0c0
+window.active.button.pressed.image.color: #000000
+window.active.button.hover.bg: Raised Solid
+window.active.button.hover.bg.color: #c0c0c0
+window.active.button.hover.image.color: #000000
+window.active.button.disabled.bg: Raised Solid
+window.active.button.disabled.bg.color: #c0c0c0
+window.active.button.disabled.image.color: #808080
+window.active.button.toggled.bg: Sunken Solid
+window.active.button.toggled.bg.color: #c0c0c0
+window.active.button.toggled.image.color: #000000
+window.inactive.button.unpressed.bg: Raised Solid
+window.inactive.button.unpressed.bg.color: #c0c0c0
+window.inactive.button.unpressed.image.color: #000000
+window.inactive.button.pressed.bg: Sunken Solid
+window.inactive.button.pressed.bg.color: #c0c0c0
+window.inactive.button.pressed.image.color: #000000
+window.inactive.button.hover.bg: Raised Solid
+window.inactive.button.hover.bg.color: #c0c0c0
+window.inactive.button.hover.image.color: #000000
+window.inactive.button.disabled.bg: Raised Solid
+window.inactive.button.disabled.bg.color: #c0c0c0
+window.inactive.button.disabled.image.color: #808080
+window.inactive.button.toggled.bg: Sunken Solid
+window.inactive.button.toggled.bg.color: #c0c0c0
+window.inactive.button.toggled.image.color: #000000
+menu.border.width: 1
+menu.border.color: #000000
+menu.title.bg: Flat Solid
+menu.title.bg.color: #000080
+menu.title.text.color: #ffffff
+menu.items.bg: Raised Solid
+menu.items.bg.color: #c0c0c0
+menu.items.text.color: #000000
+menu.items.disabled.text.color: #808080
+menu.items.active.bg: Flat Solid
+menu.items.active.bg.color: #000080
+menu.items.active.text.color: #ffffff
+menu.separator.color: #808080
+osd.border.width: 1
+osd.border.color: #000000
+osd.bg: Raised Solid
+osd.bg.color: #c0c0c0
+osd.label.text.color: #000000
+osd.hilight.bg: Flat Solid
+osd.hilight.bg.color: #000080
+osd.unhilight.bg: Flat Solid
+osd.unhilight.bg.color: #808080

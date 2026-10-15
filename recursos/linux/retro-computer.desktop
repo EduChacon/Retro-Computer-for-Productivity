@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Retro Computer
+Comment=The Retro Computer as the computer's system (a 1990s-style desktop)
+Comment[pt_BR]=O Retro Computer como o sistema do computador (a área de trabalho dos anos 90)
+Comment[es]=Retro Computer como el sistema de la computadora (el escritorio de los años 90)
+Exec=/usr/bin/retro-computer-sessao
+TryExec=/usr/bin/retro-computer-sessao
+Type=Application
+DesktopNames=RetroComputer
