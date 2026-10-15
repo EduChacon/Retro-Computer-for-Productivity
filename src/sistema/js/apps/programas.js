@@ -72,11 +72,11 @@ class Programas {
         h('div', { style: { flex: '1', color: '#808080', lineHeight: '12px' } }, tr('Para instalar um pacote "nome-web-versão.zip" já baixado.')),
         h('button', { on: { click: () => this.j.fechar() } }, tr('Fechar'))),
     );
-    // As abas (só no Linux, onde há a loja): os programas do Retro Computer e os do Linux.
+    // As abas (só no Linux, onde há a loja): os programas recomendados (os Craft) e os do Linux.
     this.linux = new AbaLinux();
     this.abasEl = h('div.abas', { hidden: true });
     this.painelEl = h('div.programas-painel', abaRetro, this.linux.el);
-    const abas = [tr('Programas do Retro Computer'), tr('Programas do Linux')];
+    const abas = [tr('Programas recomendados'), tr('Programas do Linux')];
     this.mostrarAba = (i) => {
       this.aba = i;
       this.abasEl.replaceChildren(...abas.map((t, k) => {

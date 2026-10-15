@@ -12,6 +12,7 @@ import { confirmar } from './dialogos.js';
 import { tocar } from './sons.js';
 import { tr, marcar } from './idioma.js';
 import { nomeNativo, iconeNativo, iconeNativoJa, abrirNativo } from './nativos.js';
+import { estaFixado, fixar, desafixar } from './barra.js';
 
 let vista;
 let lixeiraCheia = false;
@@ -162,6 +163,13 @@ function menu(sel, e) {
     }
     if (it.chave === 'claude') {
       itens.push({ rotulo: tr('Configurar a &chave de API…'), acao: () => abrir('painel', { secao: 'claude' }) });
+    }
+    // O mesmo programa na barra de tarefas (Meu computador é o Explorador de arquivos).
+    const naBarra = it.chave === 'meu-computador' ? 'explorador' : it.chave === 'meus-documentos' ? null : it.chave;
+    if (naBarra) {
+      itens.push({ separador: true }, estaFixado(naBarra)
+        ? { rotulo: tr('Desafixar da &barra de tarefas'), acao: () => desafixar(naBarra) }
+        : { rotulo: tr('Fixar na &barra de tarefas'), acao: () => fixar(naBarra) });
     }
     itens.push({ separador: true });
     itens.push({ rotulo: tr('Remover da área de &trabalho'), desativado: it.chave === 'meu-computador' || it.chave === 'lixeira', acao: () => removerAtalho(it.chave) });

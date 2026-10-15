@@ -12,6 +12,15 @@ export const lista = [];
 let zTopo = 10;
 let cascata = 0;
 let ativa = null;
+// O programa que está abrindo agora (sistema.abrir): as janelas criadas nesse instante são dele,
+// para a barra de tarefas agrupar e fixar.
+let programaAbrindo = null;
+
+export function comPrograma(id, fn) {
+  const antes = programaAbrindo;
+  programaAbrindo = id;
+  try { return fn(); } finally { programaAbrindo = antes; }
+}
 
 export function janelaAtiva() {
   return ativa;
@@ -35,6 +44,7 @@ export class Janela {
     this.titulo = o.titulo || '';
     this.icone = o.icone || null;
     this.dialogo = !!o.dialogo;
+    this.programa = o.programa || programaAbrindo || null;
     this.minimizada = false;
     this.maximizada = false;
     this.fechada = false;

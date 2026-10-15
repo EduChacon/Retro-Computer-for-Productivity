@@ -5,6 +5,7 @@
 import { h, img, extensao, nomeDe, ehTexto, Eventos, caminhoTela } from './util.js';
 import { configurar as configurarSons, tocar } from './sons.js';
 import { tr } from './idioma.js';
+import { comPrograma } from './janelas.js';
 
 export const eventos = new Eventos();
 export const estado = {
@@ -73,14 +74,14 @@ export function instalado(id) {
 export function abrir(id, args = {}) {
   if (id.startsWith('craft:')) {
     const a = apps.get('craft');
-    return a && a.abrir({ ...args, programa: id.slice(6) });
+    return a && comPrograma(id, () => a.abrir({ ...args, programa: id.slice(6) }));
   }
   const a = apps.get(id);
   if (!a) {
     console.warn('programa desconhecido', id);
     return null;
   }
-  return a.abrir(args);
+  return comPrograma(id, () => a.abrir(args));
 }
 
 /* ---------- Abrir arquivos ---------- */

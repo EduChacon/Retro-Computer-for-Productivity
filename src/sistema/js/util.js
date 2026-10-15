@@ -20,6 +20,7 @@ export function h(seletor, props, ...filhos) {
     if (k === 'on') for (const [ev, fn] of Object.entries(v)) el.addEventListener(ev, fn);
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
     else if (k === 'dataset') Object.assign(el.dataset, v);
+    else if (k === 'className' || k === 'class') el.className = v;
     else if (k in el && typeof v !== 'string') el[k] = v;
     else if (k === 'text') el.textContent = v;
     else if (k === 'html') el.innerHTML = v;

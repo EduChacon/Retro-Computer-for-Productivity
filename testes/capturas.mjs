@@ -591,6 +591,37 @@ const ROTEIROS = {
     await foto('loja-aba-retro');
   },
 
+  // A barra de tarefas: a busca ao lado do Iniciar, os programas fixados e os dois jeitos dos botões.
+  async fixados() {
+    await fecharTudo();
+    await abrir('bloco');
+    await abrir('navegador');
+    await abrir('navegador');
+    await abrir('calculadora');
+    await pagina.waitForTimeout(800);
+    await foto('barra-nomes');
+    // Fixar a calculadora pelo botão direito no botão dela.
+    await pagina.click('#tarefas button >> nth=3', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('barra-menu-fixar');
+    await pagina.click('.menu .opcao >> text=' + T('Fixar na &barra de tarefas'));
+    await pagina.waitForTimeout(300);
+    console.log('fixados:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.barra.fixados)));
+    // Só os ícones, agrupados por programa.
+    await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'icones' } }).then(() => window.__retro.abrir('bloco')));
+    await pagina.evaluate(async () => { const s = await import('./js/sistema.js'); await s.definirConfig({}); });
+    await pagina.waitForTimeout(600);
+    await foto('barra-icones');
+    // Duas janelas do Navegador: o clique mostra a lista.
+    await pagina.click('#tarefas button.prog.varias >> nth=0');
+    await pagina.waitForTimeout(300);
+    await foto('barra-icones-lista');
+    await pagina.keyboard.press('Escape');
+    const barra = await pagina.locator('#barra').boundingBox();
+    console.log('botões:', await pagina.locator('#tarefas button.prog').count(), '| abertos:', await pagina.locator('#tarefas button.prog.aberto').count(), '| barra:', JSON.stringify(barra));
+    await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'nomes' } }));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

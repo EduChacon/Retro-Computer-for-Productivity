@@ -559,6 +559,27 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
   padding: 2px 5px 0 4px;
 }
 #tarefas button img { width: 16px; height: 16px; flex: none; }
+/* Os programas fixados (a Inicialização rápida) e, só com ícones, um botão por programa. */
+#fixados { flex: none; display: flex; gap: 1px; }
+#fixados[hidden], .sep-barra[hidden] { display: none; }
+button.prog, #tarefas button.prog {
+  flex: none; min-width: 0; width: 24px; height: 22px; min-height: 22px; padding: 0;
+  display: flex; align-items: center; justify-content: center; position: relative;
+}
+button.prog img { width: 16px; height: 16px; flex: none; }
+button.prog.rapido { box-shadow: none; background: transparent; }
+button.prog.rapido:hover { box-shadow: var(--raso-alto); }
+button.prog.rapido:not(:disabled):active { box-shadow: var(--raso); padding: 1px 0 0 1px; }
+#tarefas.so-icones { gap: 2px; }
+#tarefas.so-icones button.prog { width: 32px; }
+/* Fixado e fechado: plano, como na Inicialização rápida; aberto: botão. */
+#tarefas.so-icones button.prog:not(.aberto) { box-shadow: none; background: transparent; }
+#tarefas.so-icones button.prog:not(.aberto):hover { box-shadow: var(--raso-alto); }
+#tarefas.so-icones button.prog:not(.aberto):not(:disabled):active { box-shadow: var(--raso); }
+#tarefas button.prog.apertado { padding: 1px 0 0 1px; font-weight: normal; }
+/* A marca do programa aberto (duas, com mais de uma janela), embaixo do ícone. */
+button.prog.aberto::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: 2px; height: 2px; background: var(--titulo); }
+button.prog.varias::after { left: 8px; right: 8px; background: linear-gradient(90deg, var(--titulo) 0 6px, transparent 6px 10px, var(--titulo) 10px); }
 #tarefas button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Com a data no relógio, a barra cresce um pouco (como a barra dupla da época). */
 body.barra-alta { --altura-barra: 34px; }

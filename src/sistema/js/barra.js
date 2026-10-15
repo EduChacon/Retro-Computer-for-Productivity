@@ -1,18 +1,22 @@
 /*
- * A barra de tarefas: o botão Iniciar com o menu, os botões das janelas
- * abertas e a bandeja (o foco, a rede, o volume, a bateria, o relógio e as notificações).
+ * A barra de tarefas: o botão Iniciar com o menu, a busca, os programas fixados,
+ * os botões das janelas abertas (com o nome, como na época, ou só os ícones,
+ * agrupados por programa) e a bandeja (o foco, a rede, o volume, a bateria, o
+ * relógio e as notificações).
  */
 import { h, img, caminhoTela, nomeDe, tipoDe } from './util.js';
 import { abrirMenu, fecharMenus } from './menus.js';
 import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, minimizarTodas } from './janelas.js';
-import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pastaDocs } from './sistema.js';
-import { tr, localidade } from './idioma.js';
+import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pastaDocs, app, instalado } from './sistema.js';
+import { tr, marcar, localidade } from './idioma.js';
 import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './nativos.js';
 import { alternarCalendario, montarBusca } from './barra-extras.js';
 import { montarBandeja } from './bandeja.js';
 
 let btIniciar;
 let tarefas;
+let fixadosEl;
+let sepFixados;
 let relogio;
 let focoEl;
 let busca;
@@ -28,6 +32,8 @@ export function montarBarra() {
     else abrirIniciar();
   });
   tarefas = h('div#tarefas');
+  fixadosEl = h('div#fixados');
+  sepFixados = h('div.sep-barra');
   relogio = h('span.relogio');
   focoEl = h('span.foco-tempo', { hidden: true, title: tr('Foco') });
   const focoIco = img('foco', 16, { title: tr('Foco (Pomodoro)') });
@@ -41,7 +47,8 @@ export function montarBarra() {
   const bandeja = h('div#bandeja', focoIco, focoEl, ...itens.antes, relogio, ...itens.depois);
   busca = montarBusca();
   busca.hidden = !mostrarBusca();
-  barra.append(btIniciar, h('div.sep-barra'), tarefas, busca, bandeja);
+  // Como no Windows de hoje: o Iniciar, a busca e os programas fixados à esquerda.
+  barra.append(btIniciar, h('div.sep-barra'), busca, fixadosEl, sepFixados, tarefas, bandeja);
 
   barra.addEventListener('contextmenu', (e) => {
     if (e.target.closest('#tarefas button')) return;
@@ -60,13 +67,21 @@ export function montarBarra() {
       { rotulo: tr('&Minimizar todas as janelas'), acao: minimizarTodas },
       { separador: true },
       { rotulo: tr('Mostrar a caixa de &busca'), marcado: mostrarBusca(), acao: () => definirConfig({ barra: { busca: !mostrarBusca() } }).then(() => { busca.hidden = !mostrarBusca(); }) },
+      {
+        rotulo: tr('Botões das &janelas'), sub: () => [
+          { rotulo: tr('Com o &nome'), radio: true, marcado: modoBotoes() === 'nomes', acao: () => definirConfig({ barra: { botoes: 'nomes' } }) },
+          { rotulo: tr('Só os &ícones, agrupados por programa'), radio: true, marcado: modoBotoes() === 'icones', acao: () => definirConfig({ barra: { botoes: 'icones' } }) },
+        ],
+      },
       { separador: true },
       { rotulo: tr('P&ropriedades'), acao: () => abrir('painel') },
     ], { x: e.clientX, y: e.clientY, acima: true });
   });
 
   evJanelas.on('mudou', desenharTarefas);
-  evSistema.on('config', tique);
+  evSistema.on('config', () => { tique(); desenharTarefas(); });
+  evSistema.on('programas', desenharTarefas);
+  desenharTarefas();
   evSistema.on('foco', (f) => {
     focoIco.hidden = !f.ativo;
     focoEl.hidden = !f.ativo;
@@ -96,9 +111,81 @@ export function alternarData() {
   return definirConfig({ barra: { data: !mostrarData() } }).then(tique);
 }
 
+/* ---------- Os programas fixados ---------- */
+
+// Os nomes que a barra mostra para alguns programas embutidos.
+const NOMES_FIXADOS = { explorador: marcar('Explorador de arquivos') };
+const fixados = () => ((estado.config.barra || {}).fixados || []);
+const modoBotoes = () => ((estado.config.barra || {}).botoes === 'icones' ? 'icones' : 'nomes');
+const iconesPedidos = new Set();
+
+/**
+ * O que a barra precisa de um programa (pela chave: "navegador", "craft:wordcraft",
+ * "nativo:org.exemplo.desktop"): o nome, o ícone e como abrir. Null se ele não existe mais.
+ */
+export function programaDe(chave) {
+  if (!chave) return null;
+  if (chave.startsWith('craft:')) {
+    const p = instalado(chave.slice(6));
+    return p ? { chave, nome: p.nome, icone: p.icone || 'programa', abrir: () => abrir(chave) } : null;
+  }
+  if (chave.startsWith('nativo:')) {
+    const id = chave.slice(7);
+    if (!iconeNativoJa(id) && !iconesPedidos.has(id)) {
+      iconesPedidos.add(id);
+      iconeNativo(id).then((u) => { if (u) desenharTarefas(); });
+    }
+    return { chave, nome: nomeNativo(id), icone: 'programa', iconeUrl: iconeNativoJa(id), abrir: () => abrirNativo(id) };
+  }
+  const a = app(chave);
+  if (!a || a.id === 'craft') return null;
+  return { chave, nome: tr(NOMES_FIXADOS[chave] || a.nome), icone: a.icone || 'programa', abrir: () => abrir(chave) };
+}
+
+export const estaFixado = (chave) => fixados().includes(chave);
+
+export function fixar(chave) {
+  if (estaFixado(chave) || !programaDe(chave)) return Promise.resolve();
+  return definirConfig({ barra: { fixados: [...fixados(), chave] } });
+}
+
+export function desafixar(chave) {
+  return definirConfig({ barra: { fixados: fixados().filter((k) => k !== chave) } });
+}
+
+const iconeDe = (p) => (p.iconeUrl ? h('img.de-fora', { src: p.iconeUrl, width: 16, height: 16, alt: '' }) : img(p.icone, 16));
+const fixarOuDesafixar = (chave) => (estaFixado(chave)
+  ? { rotulo: tr('Desafixar da &barra de tarefas'), acao: () => desafixar(chave) }
+  : { rotulo: tr('Fixar na &barra de tarefas'), acao: () => fixar(chave) });
+
+async function fecharTodas(js) {
+  for (const j of js.slice()) if (!(await j.fechar())) break;
+}
+
+/* ---------- Os botões das janelas ---------- */
+
 function desenharTarefas() {
+  if (!tarefas || !estado.config) return;
   const ativa = janelaAtiva();
   const visiveis = lista.filter((j) => !j.dialogo);
+  const icones = modoBotoes() === 'icones';
+  // Com o nome: os fixados ficam à parte, como a Inicialização rápida da época.
+  const rapidos = icones ? [] : fixados().map(programaDe).filter(Boolean);
+  fixadosEl.replaceChildren(...rapidos.map((p) => {
+    const b = h('button.prog.rapido', { title: p.nome }, iconeDe(p));
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => p.abrir());
+    b.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      abrirMenu([{ rotulo: tr('&Abrir'), negrito: true, acao: p.abrir }, fixarOuDesafixar(p.chave)], { x: e.clientX, y: e.clientY, acima: true });
+    });
+    return b;
+  }));
+  fixadosEl.hidden = !rapidos.length;
+  sepFixados.hidden = !rapidos.length;
+  tarefas.classList.toggle('so-icones', icones);
+  if (icones) return desenharGrupos(visiveis, ativa);
   tarefas.replaceChildren(...visiveis.map((j) => {
     const b = h('button', { title: j.titulo }, j.icone ? img(j.icone, 16) : null, h('span', j.titulo));
     if (j === ativa && !j.minimizada) b.classList.add('apertado');
@@ -109,13 +196,67 @@ function desenharTarefas() {
     });
     b.addEventListener('contextmenu', (e) => {
       e.preventDefault();
+      const p = programaDe(j.programa);
       abrirMenu([
         { rotulo: tr('&Restaurar'), desativado: !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
         { rotulo: tr('Mi&nimizar'), desativado: j.minimizada, acao: () => j.minimizar() },
         { rotulo: tr('Ma&ximizar'), desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } },
+        ...(p ? [{ separador: true }, fixarOuDesafixar(p.chave)] : []),
         { separador: true },
         { rotulo: tr('&Fechar'), negrito: true, atalho: 'Alt+F4', acao: () => j.fechar() },
       ], { x: e.clientX, y: e.clientY, acima: true });
+    });
+    return b;
+  }));
+}
+
+/**
+ * Só os ícones, como no Windows de hoje: um botão por programa (os fixados primeiro, na ordem
+ * deles), com uma marca embaixo quando há janela aberta. Com várias janelas, o clique mostra a lista.
+ */
+function desenharGrupos(visiveis, ativa) {
+  const grupos = new Map();
+  for (const k of fixados()) {
+    const p = programaDe(k);
+    if (p) grupos.set(k, { p, janelas: [] });
+  }
+  for (const j of visiveis) {
+    const p = j.programa ? (grupos.get(j.programa) || {}).p || programaDe(j.programa) : null;
+    if (p) {
+      if (!grupos.has(p.chave)) grupos.set(p.chave, { p, janelas: [] });
+      grupos.get(p.chave).janelas.push(j);
+    } else {
+      // Uma janela sem programa conhecido fica sozinha, com o ícone dela.
+      grupos.set(Symbol('janela'), { p: { nome: j.titulo, icone: j.icone || 'programa' }, janelas: [j] });
+    }
+  }
+  tarefas.replaceChildren(...[...grupos.values()].map((g) => {
+    const js = g.janelas;
+    const b = h('button.prog', { title: js.length === 1 ? js[0].titulo : g.p.nome }, iconeDe(g.p));
+    if (js.length) b.classList.add('aberto');
+    if (js.length > 1) b.classList.add('varias');
+    if (js.some((j) => j === ativa && !j.minimizada)) b.classList.add('apertado');
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => {
+      if (!js.length) return g.p.abrir && g.p.abrir();
+      if (js.length === 1) {
+        const j = js[0];
+        return j === janelaAtiva() && !j.minimizada ? j.minimizar() : j.focar();
+      }
+      const r = b.getBoundingClientRect();
+      abrirMenu([
+        ...js.map((j) => ({ rotulo: j.titulo.replace(/&/g, '&&'), icone: j.icone || g.p.icone, negrito: j === janelaAtiva(), acao: () => j.focar() })),
+        ...(g.p.abrir ? [{ separador: true }, { rotulo: tr('&Nova janela'), acao: g.p.abrir }] : []),
+      ], { x: r.left, y: r.top, acima: true });
+    });
+    b.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const itens = [];
+      if (g.p.abrir) itens.push({ rotulo: js.length ? tr('&Nova janela') : tr('&Abrir'), negrito: !js.length, acao: g.p.abrir });
+      if (g.p.chave) itens.push(fixarOuDesafixar(g.p.chave));
+      if (js.length) itens.push({ separador: true }, { rotulo: js.length > 1 ? tr('Fechar todas as &janelas') : tr('&Fechar a janela'), acao: () => fecharTodas(js) });
+      abrirMenu(itens, { x: e.clientX, y: e.clientY, acima: true });
     });
     return b;
   }));

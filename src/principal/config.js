@@ -21,6 +21,8 @@ const PADRAO = {
   inicioRapido: false,
   protecaoTela: { ligada: true, minutos: 10, tipo: 'estrelas' },
   mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt'] },
+  // A barra de tarefas: os programas fixados (ao lado da busca) e os botões das janelas ('nomes' ou 'icones').
+  barra: { fixados: ['explorador', 'navegador', 'correio', 'bloco'], botoes: 'nomes' },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,
