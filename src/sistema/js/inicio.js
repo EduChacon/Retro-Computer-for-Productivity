@@ -2,7 +2,7 @@
  * A abertura: a tela do BIOS, a marca do Retro Computer e a área de trabalho.
  */
 import { h, img, esperar } from './util.js';
-import { carregarConfig, atualizarProgramas, estado, abrir, avisar, avisarRecebido, definirConfig } from './sistema.js';
+import { carregarConfig, atualizarProgramas, estado, abrir, avisar, avisarRecebido, definirConfig, abrirEndereco } from './sistema.js';
 import { aplicarFundo, aplicarEscala } from './aparencia.js';
 import { montarBarra } from './barra.js';
 import { montarMesa, atualizar as atualizarMesa } from './mesa.js';
@@ -12,6 +12,7 @@ import * as janelas from './janelas.js';
 import { carregarIdioma, tr } from './idioma.js';
 import { atualizarEmSegundoPlano } from './apps/programas.js';
 import { programasAbertos } from './apps/craft.js';
+import { procurarAtualizacao } from './atualizacao.js';
 
 import './apps/explorador.js';
 import './apps/bloco.js';
@@ -23,6 +24,12 @@ import './apps/diversos.js';
 import './apps/foco.js';
 import './apps/protecao.js';
 import './apps/ajuda.js';
+import './apps/calculadora.js';
+import './apps/navegador.js';
+import './apps/campominado.js';
+import './apps/paciencia.js';
+import './apps/breakout.js';
+import './apps/nativos.js';
 
 const boot = document.getElementById('boot');
 
@@ -116,6 +123,8 @@ async function iniciar() {
   retro.sistema.aoPedidoDesligar(() => abrir('desligar'));
   retro.sistema.aoRecebido((rel) => avisarRecebido(rel));
   retro.sistema.aoLink(async (url) => {
+    // Os links dos programas abrem no Navegador; no do computador principal, só com a confirmação.
+    if ((estado.config.navegador || {}).links !== 'principal' || estado.config.modoSistema) return abrirEndereco(url);
     if (await confirmar(tr('Abrir este endereço no navegador do computador principal?\n\n{url}', { url }), { titulo: tr('Abrir endereço') })) retro.sistema.abrirLink(url);
   });
   document.addEventListener('retro-disco-trocado', async () => {
@@ -137,17 +146,8 @@ async function iniciar() {
   // As atualizações: os programas (sem mexer nos que estão abertos) e o próprio Retro Computer.
   setTimeout(() => {
     atualizarEmSegundoPlano(() => programasAbertos().map((p) => p.id)).catch(() => { });
-    if (estado.config.atualizacoes !== 'nunca') avisarNovaVersao().catch(() => { });
+    if (estado.config.atualizacoes !== 'nunca') procurarAtualizacao().catch(() => { });
   }, 20000);
-}
-
-async function avisarNovaVersao() {
-  const v = await retro.sistema.novaVersao();
-  if (!v || !v.temAtualizacao || estado.config.versaoAvisada === v.nova) return;
-  avisar(tr('Há uma versão nova do Retro Computer'), tr('A versão {nova} está disponível (esta é a {atual}). Clique para abrir a página de download.', v), {
-    icone: 'logo', ms: 15000, aoClicar: () => retro.sistema.abrirLink(v.pagina),
-  });
-  definirConfig({ versaoAvisada: v.nova }).catch(() => { });
 }
 
 // Para os testes e as capturas.

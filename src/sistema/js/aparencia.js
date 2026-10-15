@@ -57,9 +57,14 @@ export function aplicarFundo(papel, el = document.getElementById('tela')) {
  * O tamanho dos pixels: a tela usa um número inteiro de pixels físicos por
  * pixel da interface, para a fonte e os ícones ficarem nítidos.
  */
+let zoomAtual = 1;
+/** O zoom da área de trabalho (pixels da interface por pixel da tela, sobre a escala do monitor). */
+export const zoomInterface = () => zoomAtual;
+
 export async function aplicarEscala(escala) {
   const dpr = await retro.sistema.escalaTela().catch(() => window.devicePixelRatio || 1);
   const n = escala === 'auto' || !escala ? Math.max(1, Math.round(dpr)) : Number(escala);
-  await retro.sistema.zoom(n / dpr);
+  zoomAtual = n / dpr;
+  await retro.sistema.zoom(zoomAtual);
   return n;
 }

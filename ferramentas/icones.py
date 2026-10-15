@@ -82,6 +82,17 @@ DO_SERENITY = {
     'soundcraft': ('app-piano', 'app-piano'),
     'cadcraft': ('app-3d-file-viewer', 'app-3d-file-viewer'),
     'programa': ('filetype-executable', 'filetype-executable'),
+    # 0.3.0: e-mail, jogos e a barra do Navegador (só em 16 pontos).
+    'correio': ('app-mail', 'app-mail'),
+    'jogos': ('games', 'games'),
+    'paciencia': ('app-solitaire', 'app-solitaire'),
+    'campo-minado': ('app-minesweeper', 'app-minesweeper'),
+    'voltar': (None, 'go-back'),
+    'avancar': (None, 'go-forward'),
+    'parar': (None, 'stop'),
+    'atualizar': (None, 'reload'),
+    'inicio': (None, 'go-home'),
+    'favoritos': (None, 'bookmark-filled'),
 }
 
 PASTAS = {'pasta', 'pasta-aberta'}
@@ -97,6 +108,117 @@ P = {
     'Y': (250, 220, 40), 'y': (190, 150, 0), 'O': (240, 140, 30), 'M': (200, 160, 110),
     'm': (150, 110, 70), 'n': (110, 75, 40), 'N': (230, 200, 150),
 }
+
+
+# O Breakout: as fileiras de tijolos, a bola e a raquete.
+BREAKOUT_32 = [
+    "................................",
+    "................................",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKK..",
+    "..KRRRRRKRRRRRKRRRRRKRRRRRKRRK..",
+    "..KRrrrrKRrrrrKRrrrrKRrrrrKRrK..",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKK..",
+    "..KOOOKOOOOOKOOOOOKOOOOOKOOOOK..",
+    "..KOyyKOyyyyKOyyyyKOyyyyKOyyyK..",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKK..",
+    "..KYYYYYKYYYYYKYYYYYK......KYK..",
+    "..KYyyyyKYyyyyKYyyyyK......KyK..",
+    "..KKKKKKKKKKKKKKKKKKK......KKK..",
+    "..KVVVKVVVVVK..................",
+    "..KVvvKVvvvvK..................",
+    "..KKKKKKKKKKK..................",
+    "................................",
+    "................................",
+    "................KKKK............",
+    "...............KWWLGK...........",
+    "...............KWLLGK...........",
+    "...............KLLGGK...........",
+    "................KKKK............",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "............KKKKKKKKKKKK........",
+    "...........KWWWWWWWWWWWLK.......",
+    "...........KWLLLLLLLLLLGK.......",
+    "............KKKKKKKKKKKK........",
+    "................................",
+    "................................",
+]
+
+BREAKOUT_16 = [
+    "................",
+    "KKKKKKKKKKKKKKKK",
+    "KRRRKRRRKRRRKRRK",
+    "KKKKKKKKKKKKKKKK",
+    "KOOKOOOKOOOK..KK",
+    "KKKKKKKKKKKK....",
+    "KYYYKYYYK.......",
+    "KKKKKKKKK.......",
+    "................",
+    "........KK......",
+    ".......KWLK.....",
+    "........KK......",
+    "................",
+    "....KKKKKKKK....",
+    "...KWWWWWWLLK...",
+    "....KKKKKKKK....",
+]
+
+# O pendrive (disco removível): o conector de metal e o corpo azul.
+PENDRIVE_32 = [
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "...........KKKKKKKKKKKKKKKKKKK..",
+    "..KKKKKKKKKKccccccccccccccccbK..",
+    "..KWWWWWWWWKcbbbbbbbbbbbbbbbBK..",
+    "..KWLLLLLLGKcbbbbbbbbbbbbbbbBK..",
+    "..KWLKKLKKGKcbbbWWWWWWbbbbbbBK..",
+    "..KWLKKLKKGKcbbbWbbbbbbbbbbbBK..",
+    "..KWLLLLLLGKcbbbWWWWbbbbbbbbBK..",
+    "..KWLKKLKKGKcbbbbbbbbbbbbbbbBK..",
+    "..KWLKKLKKGKcbbbbbbbbbbbbbbbBK..",
+    "..KWLLLLLLGKcbbbbbbbbbbbbbbbBK..",
+    "..KGGGGGGGGKbBBBBBBBBBBBBBBBBK..",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKK..",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+]
+
+PENDRIVE_16 = [
+    "................",
+    "................",
+    "................",
+    "................",
+    "......KKKKKKKKK.",
+    "KKKKKKcccccccbK.",
+    "KWWWWKcbbbbbbBK.",
+    "KWKLKKcbWWbbbBK.",
+    "KWLLLKcbWbbbbBK.",
+    "KWKLKKcbbbbbbBK.",
+    "KGGGGKbBBBBBBBK.",
+    "KKKKKKKKKKKKKKK.",
+    "................",
+    "................",
+    "................",
+    "................",
+]
 
 
 def grade(linhas):
@@ -435,6 +557,12 @@ def gerar(serenity):
     # Página da internet: a folha com o globo.
     feitos[32]['html'] = colar(abrir_serenity(serenity, 32, 'filetype-unknown'), abrir_serenity(serenity, 16, 'internet'), 13, 13)
     feitos[16]['html'] = abrir_serenity(serenity, 16, 'internet')
+
+    # Desenhos próprios da 0.3.0: o Breakout e o pendrive (disco removível).
+    feitos[32]['breakout'] = grade(BREAKOUT_32)
+    feitos[16]['breakout'] = grade(BREAKOUT_16)
+    feitos[32]['removivel'] = grade(PENDRIVE_32)
+    feitos[16]['removivel'] = grade(PENDRIVE_16)
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

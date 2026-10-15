@@ -95,5 +95,21 @@ contextBridge.exposeInMainWorld('retro', {
     aoPedidoDesligar: ouvir('sistema:pedidoDesligar'),
     aoRecebido: ouvir('sistema:recebido'),
     aoLink: ouvir('sistema:link'),
+    atualizacao: {
+      info: () => chamar('atualizacao:info'),
+      verificar: () => chamar('atualizacao:verificar'),
+      baixar: () => chamar('atualizacao:baixar'),
+      instalar: () => chamar('atualizacao:instalar'),
+      aoMudar: ouvir('sistema:atualizacao'),
+    },
+  },
+  nativos: {
+    listar: (atualizar) => chamar('nativos:listar', atualizar),
+    icone: (id) => chamar('nativos:icone', id),
+    abrir: (id) => chamar('nativos:abrir', id),
+  },
+  navegador: {
+    aoJanela: ouvir('navegador:janela'),
+    limparDados: () => chamar('navegador:limparDados'),
   },
 });

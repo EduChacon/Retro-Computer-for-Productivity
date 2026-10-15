@@ -8,6 +8,7 @@ import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, minimizarTod
 import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pastaDocs } from './sistema.js';
 import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
+import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './nativos.js';
 
 let btIniciar;
 let tarefas;
@@ -111,7 +112,8 @@ function desenharTarefas() {
 
 /* ---------- O menu Iniciar ---------- */
 
-function itensProgramas() {
+async function itensProgramas() {
+  await Promise.all(noMenu().map((id) => iconeNativo(id)));
   const craft = estado.instalados
     .slice()
     .sort((a, b) => a.nome.localeCompare(b.nome))
@@ -120,13 +122,27 @@ function itensProgramas() {
     {
       rotulo: tr('Acessórios'), icone: 'pasta-programas', sub: () => [
         { rotulo: tr('Bloco de notas'), icone: 'bloco', acao: () => abrir('bloco') },
+        { rotulo: tr('Calculadora'), icone: 'calculadora', acao: () => abrir('calculadora') },
         { rotulo: tr('Foco (Pomodoro)'), icone: 'foco', acao: () => abrir('foco') },
         { rotulo: tr('Prompt de comando'), icone: 'prompt', acao: () => abrir('prompt') },
+        {
+          rotulo: tr('Jogos'), icone: 'jogos', sub: () => [
+            { rotulo: tr('Paciência'), icone: 'paciencia', acao: () => abrir('paciencia') },
+            { rotulo: tr('Campo Minado'), icone: 'campo-minado', acao: () => abrir('campo-minado') },
+            { rotulo: 'Breakout', icone: 'breakout', acao: () => abrir('breakout') },
+          ],
+        },
       ],
     },
     { separador: true },
     ...craft,
     ...(craft.length ? [{ separador: true }] : []),
+    // Os programas do computador principal que o usuário pôs no menu, e a janela com todos.
+    ...noMenu().map((id) => ({ rotulo: nomeNativo(id).replace(/&/g, '&&'), icone: 'programa', iconeUrl: iconeNativoJa(id), acao: () => abrirNativo(id) })),
+    { rotulo: tr('Programas do computador…'), icone: 'computador', acao: () => abrir('nativos') },
+    { separador: true },
+    { rotulo: tr('Navegador'), icone: 'navegador', acao: () => abrir('navegador') },
+    { rotulo: tr('E-mail'), icone: 'correio', acao: () => abrir('correio') },
     { rotulo: tr('Claude'), icone: 'claude', acao: () => abrir('claude') },
     { rotulo: tr('Explorador de arquivos'), icone: 'computador', acao: () => abrir('explorador', { pasta: pastaDocs() }) },
     ...(craft.length ? [] : [{ rotulo: tr('Instalar programas…'), icone: 'programas-caixa', acao: () => abrir('programas') }]),

@@ -11,6 +11,7 @@ import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir } from './arq
 import { confirmar } from './dialogos.js';
 import { tocar } from './sons.js';
 import { tr, marcar } from './idioma.js';
+import { nomeNativo, iconeNativo, iconeNativoJa, abrirNativo } from './nativos.js';
 
 let vista;
 let lixeiraCheia = false;
@@ -19,6 +20,8 @@ const ATALHOS = {
   'meu-computador': { rotulo: marcar('Meu computador'), icone: 'computador', abrir: () => abrir('explorador', { pasta: '::computador' }) },
   'meus-documentos': { rotulo: marcar('Meus documentos'), icone: 'documentos', get alvo() { return pastaDocs(); }, abrir: () => abrir('explorador', { pasta: pastaDocs() }) },
   lixeira: { rotulo: marcar('Lixeira'), icone: 'lixeira', alvo: '::lixeira', abrir: () => abrir('lixeira') },
+  navegador: { rotulo: marcar('Navegador'), icone: 'navegador', abrir: () => abrir('navegador') },
+  correio: { rotulo: marcar('E-mail'), icone: 'correio', abrir: () => abrir('correio') },
   claude: { rotulo: marcar('Claude'), icone: 'claude', abrir: () => abrir('claude') },
   prompt: { rotulo: marcar('Prompt de comando'), icone: 'prompt', abrir: () => abrir('prompt') },
   bloco: { rotulo: marcar('Bloco de notas'), icone: 'bloco', abrir: () => abrir('bloco') },
@@ -28,6 +31,10 @@ const ATALHOS = {
 
 function atalhoDe(chave) {
   if (ATALHOS[chave]) return ATALHOS[chave];
+  if (chave.startsWith('nativo:')) {
+    const id = chave.slice(7);
+    return { rotulo: nomeNativo(id), semTraducao: true, icone: 'programa', iconeUrl: iconeNativoJa(id), abrir: () => abrirNativo(id), atalhoSeta: true };
+  }
   if (chave.startsWith('craft:')) {
     const p = instalado(chave.slice(6));
     if (!p) return null;
@@ -58,6 +65,9 @@ export async function montarMesa() {
     },
   });
   await atualizar();
+  // Os ícones dos programas do computador principal chegam depois (o processo principal os procura).
+  const nativos = ((estado.config.mesa && estado.config.mesa.atalhos) || []).filter((k) => k.startsWith('nativo:'));
+  if (nativos.length) Promise.all(nativos.map((k) => iconeNativo(k.slice(7)))).then(() => atualizar());
   retro.disco.aoMudar((pastas) => {
     if (pastas.includes(pastaMesa()) || pastas.includes('')) atualizar();
     if (pastas.includes('::lixeira')) atualizarLixeira();
@@ -83,7 +93,7 @@ export async function atualizar(selecionarChaves) {
   const posicoes = (c.mesa && c.mesa.posicoes) || {};
   const atalhos = ((c.mesa && c.mesa.atalhos) || []).map((k) => ({ k, a: atalhoDe(k) })).filter((x) => x.a);
   const itens = atalhos.map(({ k, a }) => ({
-    chave: k, rotulo: tr(a.rotulo), icone: a.icone, sistema: true, alvo: a.alvo, atalho: a.atalhoSeta,
+    chave: k, rotulo: a.semTraducao ? a.rotulo : tr(a.rotulo), icone: a.icone, iconeUrl: a.iconeUrl, sistema: true, alvo: a.alvo, atalho: a.atalhoSeta,
     pos: posicoes[k], arrastavel: true,
   }));
   let arquivos = [];
@@ -179,9 +189,10 @@ function removerAtalho(chave) {
   definirConfig({ mesa: { atalhos } }).then(() => atualizar());
 }
 
-export function adicionarAtalho(chave) {
+export async function adicionarAtalho(chave) {
   const atalhos = estado.config.mesa.atalhos || [];
   if (atalhos.includes(chave)) return;
+  if (chave.startsWith('nativo:')) await iconeNativo(chave.slice(7));
   estado.config.mesa.atalhos = [...atalhos, chave];
   definirConfig({ mesa: { atalhos: estado.config.mesa.atalhos } }).then(() => atualizar());
 }

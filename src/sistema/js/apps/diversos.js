@@ -3,7 +3,7 @@ import { h, img, caminhoTela, caminhoInterno, tipoDe, nomeDe, paiDe, tamanho, da
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, estado, abrir, abrirArquivo, definirConfig, pastaDocs } from '../sistema.js';
+import { registrarApp, estado, abrir, abrirArquivo, definirConfig, pastaDocs, abrirEndereco } from '../sistema.js';
 import { ajustarAoConteudo, erro } from '../dialogos.js';
 import { menuDeItens } from '../arquivos.js';
 import { tocar } from '../sons.js';
@@ -20,6 +20,10 @@ const NOMES = {
   explorer: 'explorador', explorador: 'explorador', 'meu computador': 'explorador', computer: 'explorador', 'mi computadora': 'explorador',
   programas: 'programas', programs: 'programas', foco: 'foco', focus: 'foco', pomodoro: 'foco', ajuda: 'ajuda', help: 'ajuda', ayuda: 'ajuda',
   lixeira: 'lixeira', trash: 'lixeira', papelera: 'lixeira', localizar: 'localizar', find: 'localizar', buscar: 'localizar',
+  calc: 'calculadora', calculadora: 'calculadora', calculator: 'calculadora',
+  paciencia: 'paciencia', 'paciência': 'paciencia', solitaire: 'paciencia', solitario: 'paciencia', 'solitário': 'paciencia',
+  'campo minado': 'campo-minado', minesweeper: 'campo-minado', buscaminas: 'campo-minado', winmine: 'campo-minado', breakout: 'breakout',
+  navegador: 'navegador', browser: 'navegador', internet: 'navegador', iexplore: 'navegador', 'e-mail': 'correio', email: 'correio', correo: 'correio',
 };
 
 function abrirExecutar() {
@@ -59,7 +63,7 @@ async function rodar(texto) {
   const t = texto.trim();
   const baixo = t.toLowerCase().replace(/\.exe$/, '');
   if (/^https?:\/\//i.test(t) || /^www\./i.test(t)) {
-    await retro.sistema.abrirLink(/^www\./i.test(t) ? 'https://' + t : t);
+    await abrirEndereco(/^www\./i.test(t) ? 'https://' + t : t);
     return true;
   }
   if (NOMES[baixo]) { abrir(NOMES[baixo]); return true; }

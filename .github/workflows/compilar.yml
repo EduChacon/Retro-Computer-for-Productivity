@@ -66,4 +66,6 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.zip
+            dist/latest*.yml
+            dist/*.blockmap
           if-no-files-found: warn

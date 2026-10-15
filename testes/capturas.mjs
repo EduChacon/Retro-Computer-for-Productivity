@@ -43,6 +43,29 @@ if (process.env.RETRO_FALSA_VERSAO) {
   for (const id of fs.readdirSync(pasta)) buscas[id] = { verificadoEm: Date.now(), versao: process.env.RETRO_FALSA_VERSAO };
   fs.writeFileSync(path.join(pasta, 'atualizacoes.json'), JSON.stringify(buscas));
 }
+// Roteiro "autoatualizar" (com RETRO_EXECUTAVEL do pacote .deb desempacotado): um servidor local
+// finge a versão 0.0.1 a mais, com o próprio .deb de dist/, e o roteiro procura e baixa.
+let servidorAtualizacao = null;
+if (ROTEIRO === 'autoatualizar') {
+  const http = await import('node:http');
+  const dist = path.join(RAIZ, 'dist');
+  const yml = fs.readFileSync(path.join(dist, 'latest-linux.yml'), 'utf8');
+  const versao = require('../package.json').version.split('.').map(Number);
+  const nova = `${versao[0]}.${versao[1]}.${versao[2] + 1}`;
+  const falso = yml.replace(/^version: .*$/m, `version: ${nova}`);
+  servidorAtualizacao = http.createServer((req, res) => {
+    const nome = decodeURIComponent(req.url.split('?')[0].slice(1));
+    if (nome === 'latest-linux.yml') { res.writeHead(200, { 'Content-Type': 'text/yaml' }); return res.end(falso); }
+    const arq = path.join(dist, path.basename(nome));
+    if (!fs.existsSync(arq)) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'Content-Length': fs.statSync(arq).size });
+    fs.createReadStream(arq).pipe(res);
+  });
+  await new Promise((r) => servidorAtualizacao.listen(0, '127.0.0.1', r));
+  servidorAtualizacao.unref();
+  process.env.RETRO_ATUALIZACAO_URL = `http://127.0.0.1:${servidorAtualizacao.address().port}/`;
+  console.log('versão falsa:', nova);
+}
 // RETRO_SEM_BOAS_VINDAS=1: abre como se não fosse a primeira vez (sem a Ajuda e o balão).
 if (process.env.RETRO_SEM_BOAS_VINDAS) {
   fs.mkdirSync(dados, { recursive: true });
@@ -248,6 +271,271 @@ const ROTEIROS = {
     await abrir('painel', { secao: 'sobre' });
     await pagina.waitForTimeout(4000);
     await foto('sobre');
+  },
+
+  // A Calculadora: as contas (conferidas aqui) e a janela.
+  async calculadora() {
+    await fecharTudo();
+    const r = await pagina.evaluate(async () => {
+      const { Conta } = await import('./js/apps/calculadora.js');
+      // Cada passo: um dígito, '.', + - * /, '=', '%', 'r' (raiz), 'i' (1/x), 's' (±), 'MS', 'MR', 'M+'.
+      const fazer = (passos) => {
+        const c = new Conta();
+        for (const p of passos.split(' ')) {
+          if (/^[0-9]+$/.test(p)) for (const d of p) c.digito(d);
+          else if (p === '.') c.virgula();
+          else if ('+-*/'.includes(p)) c.operacao(p);
+          else if (p === '=') c.igual();
+          else if (p === '%') c.porcento();
+          else if (p === 'r') c.raiz();
+          else if (p === 'i') c.inverso();
+          else if (p === 's') c.sinal();
+          else if (p === 'MS') c.memoriaGuardar();
+          else if (p === 'MR') c.memoriaLer();
+          else if (p === 'M+') c.memoriaSomar();
+        }
+        return c.visor;
+      };
+      return {
+        soma: fazer('0 . 1 + 0 . 2 ='),
+        porcento: fazer('200 + 10 % ='),
+        repetir: fazer('3 + 4 = ='),
+        encadear: fazer('2 + 3 * 4 ='),
+        zero: fazer('7 / 0 ='),
+        raiz: fazer('2 r'),
+        inverso: fazer('4 i'),
+        sinal: fazer('5 s + 2 ='),
+        memoria: fazer('9 MS 1 + MR ='),
+        grande: fazer('99999999 * 99999999 * 99999999 ='),
+      };
+    });
+    console.log('contas:', JSON.stringify(r));
+    await abrir('calculadora');
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.type('125*4');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(200);
+    console.log('pelo teclado:', await pagina.textContent('.calc-visor'));
+    await pagina.keyboard.type('+10%');
+    await pagina.waitForTimeout(200);
+    await foto('calculadora');
+  },
+
+  // O Navegador: a página inicial, uma página local (link, janela nova, download, link proibido) e o E-mail.
+  async navegador() {
+    const http = await import('node:http');
+    const PAGINA = `<!doctype html><meta charset="utf-8"><title>Página de teste</title>
+      <body style="font-family:sans-serif;padding:20px">
+      <h1>Página de teste do Navegador</h1>
+      <p><a id="link" href="/segunda">Ir para a segunda página</a></p>
+      <p><a id="nova" href="/segunda" target="_blank">Abrir numa janela nova</a></p>
+      <p><a id="baixar" href="/arquivo.txt" download>Baixar um arquivo</a></p>
+      <p><a id="proibido" href="file:///etc/hostname">Um arquivo do computador (proibido)</a></p>
+      <p><input id="campo" value="texto para editar"></p></body>`;
+    const servidor = http.createServer((req, res) => {
+      if (req.url === '/arquivo.txt') { res.writeHead(200, { 'Content-Type': 'text/plain', 'Content-Disposition': 'attachment; filename="baixado.txt"' }); return res.end('conteúdo baixado'); }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(req.url === '/segunda' ? '<!doctype html><meta charset="utf-8"><title>Segunda página</title><h1>Segunda página</h1>' : PAGINA);
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    servidor.unref(); // o servidor não segura o roteiro se algo falhar
+    const base = `http://127.0.0.1:${servidor.address().port}`;
+    await fecharTudo();
+    await abrir('navegador');
+    await pagina.waitForTimeout(600);
+    await foto('navegador-inicio');
+    // Digitar o endereço na barra.
+    await pagina.fill('.janela.ativa .nav-endereco', base + '/');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2500);
+    await foto('navegador-pagina');
+    const wv = async (js) => pagina.evaluate(([c]) => document.querySelector('.janela.ativa webview').executeJavaScript(c), [js]);
+    console.log('título:', await pagina.textContent('.janela.ativa .titulo .texto'));
+    // Um clique de verdade (o Chromium não guarda no histórico a página anterior a um clique feito por código).
+    const clicar = async (id) => {
+      const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa webview').getBoundingClientRect(); return { x: b.left, y: b.top }; });
+      const p = await wv(`(() => { const b = document.getElementById('${id}').getBoundingClientRect(); return { x: b.left + 10, y: b.top + b.height / 2 }; })()`);
+      await pagina.mouse.click(r.x + p.x, r.y + p.y);
+    };
+    await clicar('link');
+    await pagina.waitForTimeout(1500);
+    console.log('depois do link:', await pagina.inputValue('.janela.ativa .nav-endereco'), '| voltar ativo:', !(await pagina.isDisabled('.janela.ativa .nav-botoes button >> nth=0')),
+      '| canGoBack:', await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa webview'); try { return [w.canGoBack(), w.getURL(), w.hidden]; } catch (e) { return String(e); } }));
+    await pagina.click('.janela.ativa .nav-botoes button >> nth=0');
+    await pagina.waitForTimeout(1500);
+    console.log('depois de voltar:', await pagina.inputValue('.janela.ativa .nav-endereco'));
+    const antes = await pagina.evaluate(() => document.querySelectorAll('.janela.navegador').length);
+    await clicar('nova');
+    await pagina.waitForTimeout(2500);
+    console.log('janelas do Navegador:', antes, '→', await pagina.evaluate(() => document.querySelectorAll('.janela.navegador').length));
+    await pagina.evaluate(() => { const j = window.__retro.janelas.lista.filter((x) => x.el.classList.contains('navegador')); j[j.length - 1].fechar(true); });
+    await pagina.waitForTimeout(500);
+    await clicar('proibido');
+    await pagina.waitForTimeout(1200);
+    console.log('depois do link proibido:', await wv('location.href'));
+    await clicar('baixar');
+    await pagina.waitForTimeout(2500);
+    const recebidos = path.join(disco, DOCS, PASTAS[IDIOMA].recebidos);
+    console.log('recebidos:', fs.existsSync(recebidos) ? fs.readdirSync(recebidos).join(', ') : '(nenhum)');
+    await foto('navegador-baixado');
+    // O agente da página não diz "Electron".
+    console.log('agente:', await wv('navigator.userAgent'));
+    console.log('node na página?', await wv('typeof require + "/" + typeof process'));
+    // O menu do botão direito no campo de texto.
+    const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa webview').getBoundingClientRect(); return { x: b.left, y: b.top }; });
+    const campo = await wv("(() => { const b = document.getElementById('campo').getBoundingClientRect(); return { x: b.left + 20, y: b.top + 8 }; })()");
+    await pagina.mouse.click(r.x + campo.x, r.y + campo.y, { button: 'right' });
+    await pagina.waitForTimeout(800);
+    await foto('navegador-menu');
+    await pagina.keyboard.press('Escape');
+    // Um site de verdade (se a rede deixar).
+    await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa webview'); window.__falhas = []; w.addEventListener('did-fail-load', (e) => window.__falhas.push([e.errorCode, e.errorDescription, e.validatedURL])); });
+    // Um clique de verdade no campo (o foco do teclado sai da página).
+    await pagina.click('.janela.ativa .nav-endereco');
+    await pagina.keyboard.press('Control+a');
+    await pagina.keyboard.type('example.com');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(3000);
+    console.log('example.com, depois de 3 s:', JSON.stringify(await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa webview'); return { url: w.getURL(), carregando: w.isLoading(), falhas: window.__falhas, campo: document.querySelector('.janela.ativa .nav-endereco').value }; })));
+    await pagina.waitForFunction(() => !document.querySelector('.janela.ativa').classList.contains('carregando-pagina'), null, { timeout: 20000 }).catch(() => console.log('example.com ainda carregando'));
+    await pagina.waitForTimeout(1000);
+    console.log('example.com:', await pagina.textContent('.janela.ativa .titulo .texto'), '|', await pagina.evaluate(() => !document.querySelector('.janela.ativa .nav-erro').hidden ? 'erro' : 'ok'));
+    await foto('navegador-site');
+    // O E-mail: a primeira vez pergunta qual.
+    await fecharTudo();
+    await pagina.evaluate(() => { window.__retro.abrir('correio'); }); // não espera: a caixa aguarda a escolha
+    await pagina.waitForTimeout(700);
+    await foto('correio-escolher');
+    servidor.close();
+  },
+
+  // Os jogos: as regras (conferidas aqui) e as janelas.
+  async jogos() {
+    await fecharTudo();
+    const regras = await pagina.evaluate(async () => {
+      const { Campo } = await import('./js/apps/campominado.js');
+      const { Jogo } = await import('./js/apps/paciencia.js');
+      // Um sorteio fixo, para o teste se repetir.
+      let s = 42;
+      const fixo = () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+      const c = new Campo(9, 9, 10, fixo);
+      const primeira = c.abrir(40);
+      const r = { minas: c.mina.reduce((a, b) => a + b, 0), primeiraSemMina: !c.mina[40] && c.vizinhosDe(40).every((v) => !c.mina[v]), abriuVarias: primeira.length > 1 };
+      // Abrir todas as casas sem mina ganha o jogo.
+      for (let i = 0; i < c.n; i++) if (!c.mina[i]) c.abrir(i);
+      r.campoGanhou = c.fim;
+      const c2 = new Campo(9, 9, 10, fixo);
+      c2.abrir(0);
+      const minada = [...c2.mina].indexOf(1);
+      c2.marcar(minada);
+      r.bandeiraProtege = c2.abrir(minada).length === 0;
+      c2.marcar(minada);
+      c2.abrir(minada);
+      r.campoPerdeu = c2.fim;
+      const j = new Jogo({ sorteio: fixo });
+      r.colunas = j.colunas.map((p) => p.length).join(',');
+      r.estoque = j.estoque.length;
+      r.topoAberto = j.colunas.every((p) => p[p.length - 1].aberta);
+      // Ás na pilha de cima; um 2 não vai para a pilha vazia.
+      const as = { naipe: 1, valor: 1, aberta: true, id: 14 };
+      const dois = { naipe: 1, valor: 2, aberta: true, id: 15 };
+      r.asVai = j.podeNaFundacao(as, 0) && !j.podeNaFundacao(dois, 0);
+      // Vermelho sobre preto, um a menos; só o Rei na coluna vazia.
+      j.colunas[0] = [{ naipe: 0, valor: 8, aberta: true, id: 8 }];
+      r.alternaCor = j.podeNaColuna({ naipe: 1, valor: 7 }, 0) && !j.podeNaColuna({ naipe: 3, valor: 7 }, 0) && !j.podeNaColuna({ naipe: 1, valor: 6 }, 0);
+      j.colunas[1] = [];
+      r.reiNaVazia = j.podeNaColuna({ naipe: 2, valor: 13 }, 1) && !j.podeNaColuna({ naipe: 2, valor: 12 }, 1);
+      const antes = j.jogadas;
+      j.comprar();
+      r.desfazer = j.desfazer() && j.jogadas === antes;
+      return r;
+    });
+    console.log('regras:', JSON.stringify(regras));
+    await abrir('campo-minado');
+    await pagina.waitForTimeout(400);
+    const casa = pagina.locator('.janela.ativa .cm-c').nth(40);
+    await casa.click();
+    await pagina.locator('.janela.ativa .cm-c:not(.aberta)').first().click({ button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('campo-minado');
+    await fecharTudo();
+    await abrir('paciencia');
+    await pagina.waitForTimeout(500);
+    await pagina.click('.janela.ativa .pac-vaga.estoque', { force: true });
+    await pagina.waitForTimeout(400);
+    await foto('paciencia');
+    // Quase ganho: só falta o Rei de copas; arrastá-lo para a pilha dispara a cascata da vitória.
+    await pagina.evaluate(() => {
+      const p = window.__retro.abrir('paciencia');
+      const jg = p.jogo;
+      const todas = [];
+      for (let n = 0; n < 4; n++) for (let v = 1; v <= 13; v++) todas.push({ id: n * 13 + v, naipe: n, valor: v, aberta: true });
+      jg.fundacoes = [0, 1, 2, 3].map((n) => todas.filter((c) => c.naipe === n && !(n === 1 && c.valor === 13)));
+      jg.colunas = [[todas[25]], [], [], [], [], [], []];
+      jg.estoque = [];
+      jg.descarte = [];
+      p.desenhar(false);
+    });
+    await pagina.waitForTimeout(400);
+    await foto('paciencia-quase');
+    await pagina.locator('.janela.ativa .pac-carta[data-pilha="c0"]').dblclick();
+    await pagina.waitForTimeout(2500);
+    await foto('paciencia-vitoria');
+    await fecharTudo();
+    await abrir('breakout');
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.press('Space');
+    await pagina.waitForTimeout(2500);
+    await foto('breakout');
+  },
+
+  // Os programas do computador principal: a janela, o atalho na área de trabalho e um de terminal no Prompt.
+  async nativos() {
+    await fecharTudo();
+    await abrir('nativos');
+    await pagina.waitForTimeout(2500);
+    await foto('nativos');
+    const nomes = await pagina.$$eval('.janela.ativa .item .rotulo', (els) => els.map((e) => e.textContent));
+    console.log('programas:', nomes.join(' | '));
+    const writer = pagina.locator('.janela.ativa .item', { hasText: 'Writer' }).first();
+    if (await writer.count()) {
+      await writer.click({ button: 'right' });
+      await pagina.waitForTimeout(300);
+      await pagina.click(`.menu .opcao:has-text("${T('Criar atalho na área de &trabalho')}")`);
+      await pagina.waitForTimeout(1500);
+      console.log('atalho na área de trabalho:', await pagina.locator('#mesa .item', { hasText: 'Writer' }).count());
+    }
+    const vim = pagina.locator('.janela.ativa .item', { hasText: 'Vim' }).first();
+    if (await vim.count()) {
+      await vim.dblclick();
+      await pagina.waitForTimeout(3000);
+      console.log('janela do Vim:', await pagina.textContent('.janela.ativa .titulo .texto'));
+      await foto('nativos-vim');
+    }
+    await fecharTudo();
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(300);
+    await pagina.hover('.menu.iniciar .opcao >> nth=0');
+    await pagina.waitForTimeout(700);
+    await foto('nativos-mesa-e-menu');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+  },
+
+  // A atualização do próprio aplicativo (veja o servidor no começo do roteiro).
+  async autoatualizar() {
+    await fecharTudo();
+    console.log('instalação:', JSON.stringify(await pagina.evaluate(() => retro.sistema.atualizacao.info())));
+    const v = await pagina.evaluate(() => retro.sistema.atualizacao.verificar());
+    console.log('verificar:', JSON.stringify(v));
+    await abrir('painel', { secao: 'sobre' });
+    await pagina.waitForTimeout(1500);
+    await foto('autoatualizar-sobre');
+    await pagina.click('.janela.ativa a:has-text("' + T('Atualizar agora') + '")');
+    await pagina.waitForFunction(() => retro.sistema.atualizacao.info().then((i) => i.etapa === 'baixada' || i.etapa === 'erro'), null, { timeout: 120000 }).catch(() => { });
+    await pagina.waitForTimeout(800);
+    console.log('depois de baixar:', JSON.stringify(await pagina.evaluate(() => retro.sistema.atualizacao.info())));
+    await foto('autoatualizar-pronta');
   },
 
   async geral() {

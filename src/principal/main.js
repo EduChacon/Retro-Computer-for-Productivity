@@ -9,7 +9,7 @@
  * A área de trabalho fala com este processo só pela ponte do preload
  * (window.retro); os programas, só pela área de trabalho (postMessage).
  */
-const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -18,6 +18,8 @@ const { Disco } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
 const { Terminais, acharClaude, comandoInstalarClaude } = require('./terminal');
+const { Aplicativos } = require('./aplicativos');
+const { Atualizador } = require('./atualizador');
 const idioma = require('./idioma');
 const { tr } = idioma;
 
@@ -63,6 +65,8 @@ let config = null;
 let disco = null;
 let programas = null;
 let terminais = null;
+let aplicativos = null;
+let atualizador = null;
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -167,6 +171,7 @@ function criarJanela() {
       sandbox: true,
       nodeIntegration: false,
       spellcheck: false,
+      webviewTag: true, // o Navegador (ver "O Navegador" abaixo)
     },
   });
   janela.once('ready-to-show', () => janela.show());
@@ -180,6 +185,18 @@ function criarJanela() {
   wc.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) enviar('sistema:link', url);
     return { action: 'deny' };
+  });
+  // O Navegador: só a sessão dele, só páginas da internet, sem Node e com o preload próprio.
+  wc.on('will-attach-webview', (e, prefs, params) => {
+    delete prefs.preloadURL;
+    prefs.preload = path.join(__dirname, 'navegador-preload.js');
+    prefs.nodeIntegration = false;
+    prefs.nodeIntegrationInSubFrames = false;
+    prefs.contextIsolation = true;
+    prefs.sandbox = true;
+    prefs.webSecurity = true;
+    prefs.spellcheck = false;
+    if (params.partition !== SESSAO_NAVEGADOR || !enderecoDaWeb(params.src || 'about:blank')) e.preventDefault();
   });
   // F11 alterna a tela cheia (também dentro dos programas).
   wc.on('before-input-event', (e, entrada) => {
@@ -222,17 +239,11 @@ function menuDoSistema() {
 
 /* ---------- Permissões e downloads ---------- */
 
-function configurarSessao() {
-  const s = session.defaultSession;
-  const permitidas = new Set(['clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'local-fonts']);
-  s.setPermissionRequestHandler((_wc, permissao, responder, detalhes) => {
-    const origem = String(detalhes.requestingUrl || '');
-    responder(permitidas.has(permissao) && /^(sistema|programa):\/\//.test(origem));
-  });
-  s.setPermissionCheckHandler((_wc, permissao, origem) => {
-    return permitidas.has(permissao) && /^(sistema|programa):\/\//.test(String(origem || ''));
-  });
-  // Um download que escapar do adaptador vai para "Meus documentos/Recebidos".
+const SESSAO_NAVEGADOR = 'persist:navegador';
+const enderecoDaWeb = (url) => /^https?:\/\//i.test(url) || url === 'about:blank';
+
+/** Os downloads vão para "Meus documentos/Recebidos" (com um nome livre) e avisam a área de trabalho. */
+function receberDownloads(s) {
   s.on('will-download', (_e, item) => {
     try {
       const p = config.obter().pastas || idioma.PASTAS[idioma.idioma()];
@@ -253,6 +264,45 @@ function configurarSessao() {
       item.cancel();
     }
   });
+}
+
+/**
+ * O Navegador: uma sessão separada da área de trabalho e dos programas.
+ * Ele se apresenta como o Chrome, sem os nomes do Electron e do aplicativo (o login do Google,
+ * por exemplo, recusa navegadores "embutidos"); câmera, microfone, localização e notificações
+ * ficam recusados.
+ */
+function configurarNavegador() {
+  const s = session.fromPartition(SESSAO_NAVEGADOR);
+  s.setUserAgent(s.getUserAgent().replace(/\s(Electron|Retro-?Computer)\/\S+/gi, ''));
+  const permitidas = new Set(['clipboard-sanitized-write', 'fullscreen']);
+  s.setPermissionRequestHandler((_wc, permissao, responder) => responder(permitidas.has(permissao)));
+  s.setPermissionCheckHandler((_wc, permissao) => permitidas.has(permissao));
+  receberDownloads(s);
+  app.on('web-contents-created', (_e, wc) => {
+    if (wc.getType() !== 'webview') return;
+    // As janelas novas (window.open, links com target) abrem noutra janela do Navegador.
+    wc.setWindowOpenHandler(({ url }) => {
+      if (/^https?:\/\//i.test(url)) enviar('navegador:janela', url);
+      return { action: 'deny' };
+    });
+    wc.on('will-navigate', (e, url) => { if (!enderecoDaWeb(url)) e.preventDefault(); });
+    wc.on('will-redirect', (e, url) => { if (!enderecoDaWeb(url)) e.preventDefault(); });
+  });
+}
+
+function configurarSessao() {
+  const s = session.defaultSession;
+  const permitidas = new Set(['clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'local-fonts']);
+  s.setPermissionRequestHandler((_wc, permissao, responder, detalhes) => {
+    const origem = String(detalhes.requestingUrl || '');
+    responder(permitidas.has(permissao) && /^(sistema|programa):\/\//.test(origem));
+  });
+  s.setPermissionCheckHandler((_wc, permissao, origem) => {
+    return permitidas.has(permissao) && /^(sistema|programa):\/\//.test(String(origem || ''));
+  });
+  // Um download que escapar do adaptador vai para "Meus documentos/Recebidos".
+  receberDownloads(s);
 }
 
 /* ---------- Ponte com a área de trabalho ---------- */
@@ -375,6 +425,11 @@ function registrarPonte() {
   tratar('terminal:instalarClaude', () => comandoInstalarClaude());
 
   // Sistema
+  // Os programas instalados no computador principal (abrir só pelo identificador da lista).
+  tratar('nativos:listar', (atualizar) => aplicativos.listar(!!atualizar));
+  tratar('nativos:icone', (id) => aplicativos.icone(String(id)));
+  tratar('nativos:abrir', (id) => aplicativos.abrir(String(id)));
+  tratar('navegador:limparDados', () => session.fromPartition(SESSAO_NAVEGADOR).clearStorageData().then(() => session.fromPartition(SESSAO_NAVEGADOR).clearCache()));
   tratar('sistema:telaCheia', (v) => {
     if (v == null) alternarTelaCheia();
     else if (janela) { janela.setFullScreen(!!v); config.definir({ telaCheia: !!v }); }
@@ -384,6 +439,11 @@ function registrarPonte() {
     if (!/^https?:\/\//i.test(String(url))) throw new Error(tr('Endereço inválido.'));
     return shell.openExternal(url);
   });
+  // A atualização do próprio Retro Computer (atualizador.js).
+  tratar('atualizacao:info', () => atualizador.info());
+  tratar('atualizacao:verificar', () => atualizador.verificar());
+  tratar('atualizacao:baixar', () => atualizador.baixar());
+  tratar('atualizacao:instalar', () => atualizador.instalar());
   tratar('sistema:desligar', () => {
     terminais.fecharTodos();
     if (janela) janela.__podeFechar = true;
@@ -431,9 +491,12 @@ app.whenReady().then(async () => {
   idioma.definir(idioma.resolver(idiomaEscolhido, app.getLocale()));
   programas = new Programas(path.join(app.getPath('userData'), 'programas'), (url, o) => net.fetch(url, o));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
+  aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
+  atualizador = new Atualizador({ app, enviar, antesDeSair: () => { terminais.fecharTodos(); if (janela) janela.__podeFechar = true; } });
   await abrirDisco();
   menuDoSistema();
   configurarSessao();
+  configurarNavegador();
   registrarProtocolos();
   registrarPonte();
   criarJanela();

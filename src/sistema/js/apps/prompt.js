@@ -218,7 +218,7 @@ async function abrirClaude(args = {}) {
   return null;
 }
 
-registrarApp('prompt', { nome: 'Prompt de comando', icone: 'prompt', abrir: (args = {}) => new Prompt({ pasta: args.pasta }) });
+registrarApp('prompt', { nome: 'Prompt de comando', icone: 'prompt', abrir: (args = {}) => new Prompt({ pasta: args.pasta, comando: args.comando, titulo: args.titulo }) });
 registrarApp('claude', { nome: 'Claude', icone: 'claude', abrir: abrirClaude });
 
 export { caminhoTela, erro };

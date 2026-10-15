@@ -9,7 +9,7 @@ const path = require('node:path');
 const { tr } = require('./idioma');
 
 const PADRAO = {
-  versao: 1,
+  versao: 2,
   disco: null,
   idioma: 'auto',
   atualizacoes: 'automatico',
@@ -20,7 +20,7 @@ const PADRAO = {
   volume: 0.5,
   inicioRapido: false,
   protecaoTela: { ligada: true, minutos: 10, tipo: 'estrelas' },
-  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'claude', 'prompt'] },
+  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt'] },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,
@@ -43,6 +43,23 @@ function mesclar(base, extra) {
   return r;
 }
 
+/**
+ * Leva as configurações de uma versão anterior para a atual, sem perder as escolhas do usuário.
+ * 1 → 2 (0.3.0): os ícones do Navegador e do E-mail na área de trabalho, depois da Lixeira.
+ */
+function migrar(dados) {
+  const d = JSON.parse(JSON.stringify(dados));
+  if ((d.versao || 1) < 2) {
+    const at = (d.mesa && Array.isArray(d.mesa.atalhos)) ? d.mesa.atalhos : [];
+    const novos = ['navegador', 'correio'].filter((k) => !at.includes(k));
+    const i = at.indexOf('lixeira');
+    at.splice(i >= 0 ? i + 1 : at.length, 0, ...novos);
+    d.mesa = { ...(d.mesa || {}), atalhos: at };
+    d.versao = 2;
+  }
+  return d;
+}
+
 class Config {
   constructor(pasta, cofre) {
     this.arquivo = path.join(pasta, 'config.json');
@@ -50,7 +67,7 @@ class Config {
     this.cofre = cofre;
     this.dados = mesclar(PADRAO, {});
     try {
-      this.dados = mesclar(PADRAO, JSON.parse(fs.readFileSync(this.arquivo, 'utf8')));
+      this.dados = migrar(mesclar(PADRAO, { versao: 1, ...JSON.parse(fs.readFileSync(this.arquivo, 'utf8')) }));
     } catch { }
   }
 
@@ -100,4 +117,4 @@ class Config {
   }
 }
 
-module.exports = { Config, PADRAO, mesclar };
+module.exports = { Config, PADRAO, mesclar, migrar };

@@ -55,6 +55,16 @@ export async function atualizarProgramas() {
 export const pastaDocs = () => (estado.config && estado.config.pastas && estado.config.pastas.documentos) || 'Meus documentos';
 export const pastaMesa = () => (estado.config && estado.config.pastas && estado.config.pastas.mesa) || 'Área de trabalho';
 
+/**
+ * Abre um endereço da internet: no Navegador do Retro Computer (numa janela já
+ * aberta, se houver) ou, se o usuário preferir, no navegador do computador principal.
+ */
+export async function abrirEndereco(url) {
+  const n = (estado.config && estado.config.navegador) || {};
+  if (n.links === 'principal' && !estado.config.modoSistema) return retro.sistema.abrirLink(url);
+  return abrir('navegador', { url, reaproveitar: true });
+}
+
 export function instalado(id) {
   return estado.instalados.find((p) => p.id === id) || null;
 }

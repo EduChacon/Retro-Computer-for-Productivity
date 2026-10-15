@@ -1,6 +1,6 @@
 /*
  * Os sons do sistema, sintetizados na hora (nenhum arquivo de som de terceiros):
- * a abertura, o desligar, o erro, o aviso, a pergunta, a lixeira e o fim do foco.
+ * a abertura, o desligar, o erro, o aviso, a pergunta, a lixeira, o fim do foco e os jogos.
  */
 let ctx = null;
 let ligado = true;
@@ -122,7 +122,61 @@ const SONS = {
       nota(hz(93), t + dt + 0.08, 0.4, { tipo: 'sine', vol: 0.1, soltura: 0.35, destino: s });
     });
   },
+  // Os sons dos jogos: curtos, sem eco (são frequentes).
+  raquete() {
+    const t = contexto().currentTime + 0.005;
+    nota(hz(72), t, 0.07, { tipo: 'square', vol: 0.05, soltura: 0.05, destino: saidaSeca() });
+  },
+  tijolo() {
+    const t = contexto().currentTime + 0.005;
+    nota(hz(84), t, 0.06, { tipo: 'square', vol: 0.045, soltura: 0.04, destino: saidaSeca() });
+  },
+  parede() {
+    const t = contexto().currentTime + 0.005;
+    nota(hz(60), t, 0.05, { tipo: 'square', vol: 0.035, soltura: 0.04, destino: saidaSeca() });
+  },
+  carta() {
+    const t = contexto().currentTime + 0.005;
+    nota(hz(91), t, 0.04, { tipo: 'triangle', vol: 0.06, soltura: 0.03, destino: saidaSeca() });
+  },
+  perdeu() {
+    const t = contexto().currentTime + 0.01;
+    const s = saida();
+    [67, 63, 60, 55].forEach((n, i) => nota(hz(n), t + i * 0.12, 0.2, { tipo: 'square', vol: 0.06, soltura: 0.12, destino: s }));
+  },
+  explosao() {
+    const c = contexto();
+    const t = c.currentTime + 0.01;
+    const n = Math.floor(c.sampleRate * 0.6);
+    const buf = c.createBuffer(1, n, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const f = c.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 900;
+    const g = c.createGain();
+    g.gain.value = 0.9;
+    src.connect(f).connect(g).connect(saida());
+    src.start(t);
+  },
+  vitoria() {
+    const t = contexto().currentTime + 0.02;
+    const s = saida();
+    [60, 64, 67, 72, 67, 72, 76].forEach((n, i) => nota(hz(n), t + i * 0.1, 0.22, { tipo: 'square', vol: 0.05, soltura: 0.15, destino: s }));
+    [48, 55, 60, 64].forEach((n) => nota(hz(n), t + 0.7, 1.2, { tipo: 'triangle', vol: 0.06, ataque: 0.05, soltura: 0.9, destino: s }));
+  },
 };
+
+/** A saída sem eco, para os bipes rápidos dos jogos. */
+function saidaSeca() {
+  const c = contexto();
+  const g = c.createGain();
+  g.gain.value = volume;
+  g.connect(c.destination);
+  return g;
+}
 
 export function tocar(nome) {
   if (!ligado || volume <= 0 || !SONS[nome]) return;

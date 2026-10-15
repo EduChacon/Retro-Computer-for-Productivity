@@ -96,7 +96,10 @@ export class VistaIcones {
 
   criarItem(it, i) {
     const tam = this.modo === 'lista' || this.modo === 'detalhes' ? 16 : 32;
-    const icone = h('div.icone', { style: { '--ico': `url(icones/${tam}/${it.icone}.png)` } }, img(it.icone, tam));
+    // iconeUrl: o ícone de fora (um programa do computador principal), no lugar dos do sistema.
+    const icone = it.iconeUrl
+      ? h('div.icone', { style: { '--ico': `url("${it.iconeUrl}")` } }, h('img.de-fora', { src: it.iconeUrl, width: tam, height: tam, alt: '', draggable: 'false' }))
+      : h('div.icone', { style: { '--ico': `url(icones/${tam}/${it.icone}.png)` } }, img(it.icone, tam));
     if (it.atalho && tam === 32) icone.append(h('div.atalho-seta'));
     let el;
     if (this.modo === 'detalhes') {

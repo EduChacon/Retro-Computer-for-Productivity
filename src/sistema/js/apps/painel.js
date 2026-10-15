@@ -6,17 +6,20 @@ import { h, img, tamanho, caminhoTela, rotulo } from '../util.js';
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar } from '../sistema.js';
+import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco } from '../sistema.js';
 import { ajustarAoConteudo, confirmar, erro, info } from '../dialogos.js';
 import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparencia.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
+import { BUSCAS, CORREIOS, paraEndereco } from './navegador.js';
+import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
 
 const ITENS = [
   { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: () => dialogoAparencia() },
   { chave: 'disco', rotulo: marcar('Disco C:'), icone: 'disco', descricao: marcar('Mostra a pasta do disco C: no computador principal e permite trocá-la.'), abrir: () => dialogoDisco() },
   { chave: 'claude', rotulo: marcar('Claude'), icone: 'claude', descricao: marcar('Instala o Claude Code e guarda a chave de API.'), abrir: () => dialogoClaude() },
+  { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e onde abrir os links.'), abrir: () => dialogoInternet() },
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('Mostra a data e a hora do computador.'), abrir: () => dialogoData() },
@@ -235,7 +238,7 @@ async function dialogoClaude() {
       h('div', { style: { display: 'flex', gap: '6px', marginTop: '8px' } },
         h('button', { disabled: !c.cofre, on: { click: guardar } }, tr('Guardar')),
         h('button', { disabled: !c.temChave, on: { click: apagar } }, tr('Apagar a chave')),
-        h('button', { on: { click: () => retro.sistema.abrirLink('https://console.anthropic.com/settings/keys') } }, tr('Obter uma chave…')))),
+        h('button', { on: { click: () => abrirEndereco('https://console.anthropic.com/settings/keys') } }, tr('Obter uma chave…')))),
     h('p', { style: { color: '#808080' } }, tr('A chave só é entregue ao Prompt de comando (variável ANTHROPIC_API_KEY); ela não aparece na tela nem vai para o disco C:.')),
   );
   async function guardar() {
@@ -318,6 +321,49 @@ function dialogoSons() {
   });
 }
 
+/* Internet */
+
+function dialogoInternet() {
+  const n = estado.config.navegador || {};
+  const selCorreio = h('select', { style: { width: '100%' } },
+    h('option', { value: '' }, tr('(Perguntar na primeira vez)')),
+    ...CORREIOS.map((c) => h('option', { value: c.url }, c.nome)));
+  const outro = h('input', { type: 'text', spellcheck: false, placeholder: 'https://', value: n.correio && !CORREIOS.some((c) => c.url === n.correio) ? n.correio : '' });
+  selCorreio.value = n.correio && CORREIOS.some((c) => c.url === n.correio) ? n.correio : '';
+  const selBusca = h('select', { style: { width: '100%' } }, ...Object.entries(BUSCAS).map(([k, b]) => h('option', { value: k }, b.nome)));
+  selBusca.value = BUSCAS[n.busca] ? n.busca : 'duckduckgo';
+  const rRetro = h('input', { type: 'radio', name: 'links', checked: n.links !== 'principal' });
+  const rPrincipal = h('input', { type: 'radio', name: 'links', checked: n.links === 'principal', disabled: !!estado.config.modoSistema });
+  const linha = (rot, campo) => h('div', { style: { display: 'grid', gridTemplateColumns: '110px 1fr', alignItems: 'center', gap: '6px', marginBottom: '6px' } }, h('span', rot), campo);
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('navegador', 32), h('div', tr('O Navegador abre páginas da internet em janelas do Retro Computer. O E-mail é o Navegador aberto no seu e-mail da web.'))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('E-mail')),
+      linha(tr('Serviço:'), h('div.select-caixa', { style: { width: '100%' } }, selCorreio)),
+      linha(tr('Ou o endereço:'), outro)),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Pesquisa')),
+      linha(tr('Pesquisar com:'), h('div.select-caixa', { style: { width: '100%' } }, selBusca))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Links dos programas')),
+      h('div', { style: { marginBottom: '4px' } }, h('label', rRetro, h('span', tr('Abrir no Navegador do Retro Computer')))),
+      h('div', h('label', rPrincipal, h('span', tr('Abrir no navegador do computador principal'))))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Dados de navegação')),
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
+        h('span', { style: { flex: '1' } }, tr('Os cookies, as senhas lembradas pelos sites e os arquivos temporários do Navegador.')),
+        h('button', { on: { click: async () => {
+          if (!(await confirmar(tr('Apagar os dados de navegação? Você vai sair das contas abertas nos sites (o e-mail, por exemplo).'), { titulo: tr('Internet') }))) return;
+          await retro.navegador.limparDados().catch(() => { });
+          avisar(tr('Internet'), tr('Dados de navegação apagados.'), { icone: 'navegador', som: null });
+        } } }, tr('Apagar…')))),
+  );
+  dialogoBase({
+    titulo: tr('Propriedades de Internet'), icone: 'navegador', larg: 420,
+    abas: [{ titulo: tr('Geral'), conteudo }],
+    aoAplicar: () => {
+      const correio = outro.value.trim() ? paraEndereco(outro.value) : (selCorreio.value || null);
+      return definirConfig({ navegador: { correio, busca: selBusca.value, links: rPrincipal.checked ? 'principal' : 'retro' } });
+    },
+  });
+}
+
 /* Data e hora */
 
 function dialogoData() {
@@ -362,9 +408,26 @@ function dialogoSobre() {
   const sistema = ({ win32: 'Windows', darwin: 'macOS', linux: 'Linux' })[c.plataforma] || c.plataforma;
   const versaoEl = h('div', tr('Versão {versao} · {sistema}', { versao: c.versaoApp, sistema }));
   const novidade = h('div', { style: { color: '#808080' } }, tr('Procurando versões novas…'));
-  retro.sistema.novaVersao(true).then((v) => {
+  const link = (texto, acao) => h('a', { href: '#', on: { click: (e) => { e.preventDefault(); acao(); } } }, texto);
+  // Onde a cópia se atualiza sozinha: baixar, acompanhar e reiniciar; nas outras, a página de download.
+  const mostrar = (e) => {
+    novidade.style.color = '#008000';
+    if (e.etapa === 'disponivel') novidade.replaceChildren(tr('Há uma versão nova: {versao}.', { versao: e.versao }) + ' ', link(tr('Atualizar agora'), () => retro.sistema.atualizacao.baixar().catch(() => { })));
+    else if (e.etapa === 'baixando') novidade.textContent = tr('Baixando a versão {versao}… {n}%', { versao: e.versao || '', n: e.progresso || 0 });
+    else if (e.etapa === 'baixada') novidade.replaceChildren(tr('A versão {versao} está pronta.', { versao: e.versao }) + ' ', link(tr('Reiniciar e instalar'), () => reiniciarParaAtualizar()));
+    else if (e.etapa === 'atual') { novidade.style.color = '#808080'; novidade.textContent = tr('Esta é a versão mais recente.'); }
+    else if (e.etapa === 'erro') { novidade.style.color = '#800000'; novidade.textContent = tr('Não foi possível atualizar: {erro}', { erro: e.erro || '?' }); }
+  };
+  retro.sistema.atualizacao.info().then(async (inf) => {
+    if (inf.sozinho) {
+      // O aviso acompanha a atualização enquanto a janela do Sobre estiver aberta.
+      const parar = aoMudarAtualizacao((e) => (novidade.isConnected ? mostrar(e) : parar()));
+      mostrar(['disponivel', 'baixando', 'baixada'].includes(inf.etapa) ? inf : await retro.sistema.atualizacao.verificar());
+      return;
+    }
+    const v = await retro.sistema.novaVersao(true);
     if (v && v.temAtualizacao) {
-      novidade.replaceChildren(tr('Há uma versão nova: {versao}.', { versao: v.nova }) + ' ', h('a', { href: '#', on: { click: (e) => { e.preventDefault(); retro.sistema.abrirLink(v.pagina); } } }, tr('Baixar')));
+      novidade.replaceChildren(tr('Há uma versão nova: {versao}.', { versao: v.nova }) + ' ', link(tr('Baixar'), () => abrirEndereco(v.pagina)));
       novidade.style.color = '#008000';
     } else novidade.textContent = tr('Esta é a versão mais recente.');
   }).catch(() => { novidade.textContent = tr('Não foi possível procurar versões novas.'); });

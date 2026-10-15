@@ -1,0 +1,52 @@
+'use strict';
+/* Os programas do computador principal (Linux: os .desktop) e a migração das configurações. */
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { lerDesktop, limparExec } = require('../src/principal/aplicativos.js');
+const { migrar, mesclar, PADRAO } = require('../src/principal/config.js');
+
+const WRITER = `[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LibreOffice Writer
+Name[pt_BR]=Editor de textos
+Name[es]=Procesador de textos
+Exec=libreoffice --writer %U
+Icon=libreoffice-writer
+Categories=Office;WordProcessor;
+
+[Desktop Action NewDocument]
+Name=Novo documento
+Exec=libreoffice --writer --new
+`;
+
+test('lê um .desktop no idioma pedido', () => {
+  assert.equal(lerDesktop(WRITER, 'pt-BR').nome, 'Editor de textos');
+  assert.equal(lerDesktop(WRITER, 'es').nome, 'Procesador de textos');
+  assert.equal(lerDesktop(WRITER, 'en').nome, 'LibreOffice Writer');
+  // A ação [Desktop Action] não troca o comando principal.
+  assert.equal(lerDesktop(WRITER).exec, 'libreoffice --writer %U');
+  assert.equal(lerDesktop(WRITER).icone, 'libreoffice-writer');
+});
+
+test('pula o que não é programa ou está escondido', () => {
+  assert.equal(lerDesktop('[Desktop Entry]\nType=Link\nName=X\nURL=https://x'), null);
+  assert.equal(lerDesktop('[Desktop Entry]\nType=Application\nName=X\nExec=x\nNoDisplay=true'), null);
+  assert.equal(lerDesktop('[Desktop Entry]\nType=Application\nName=X\nExec=x\nHidden=true'), null);
+  assert.equal(lerDesktop('[Desktop Entry]\nType=Application\nName=Vim\nExec=vim %F\nTerminal=true').terminal, true);
+});
+
+test('tira os códigos de campo do Exec', () => {
+  assert.equal(limparExec('libreoffice --writer %U'), 'libreoffice --writer');
+  assert.equal(limparExec('app %f --x %i %c %k'), 'app --x');
+  assert.equal(limparExec('echo 100%%'), 'echo 100%');
+});
+
+test('a 0.3.0 põe o Navegador e o E-mail na área de trabalho de quem já usava', () => {
+  const antigo = mesclar(PADRAO, { versao: 1, mesa: { atalhos: ['meu-computador', 'lixeira', 'craft:wordcraft'] } });
+  const d = migrar(antigo);
+  assert.deepEqual(d.mesa.atalhos, ['meu-computador', 'lixeira', 'navegador', 'correio', 'craft:wordcraft']);
+  assert.equal(d.versao, 2);
+  // Quem já está na versão 2 não muda (nem se tirou os ícones).
+  assert.deepEqual(migrar({ ...d, mesa: { atalhos: ['lixeira'] } }).mesa.atalhos, ['lixeira']);
+});

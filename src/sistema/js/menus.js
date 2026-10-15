@@ -86,7 +86,10 @@ export async function abrirMenu(itens, o = {}) {
     if (item.desativado) op.classList.add('desativada');
     if (item.marcado) op.classList.add(item.radio ? 'radio' : 'marcada');
     if (item.negrito) op.classList.add('negrito');
-    if (comIcones) op.append(item.icone ? img(item.icone, o.tamIcone || 16) : h('span.vazio-ico'));
+    if (comIcones) {
+      const t = o.tamIcone || 16;
+      op.append(item.iconeUrl ? h('img.de-fora', { src: item.iconeUrl, width: t, height: t, alt: '' }) : item.icone ? img(item.icone, t) : h('span.vazio-ico'));
+    }
     op.append(rotulo(item.rotulo));
     if (item.atalho) op.append(h('span.atalho-tecla', item.atalho));
     const idx = registro.opcoes.length;
