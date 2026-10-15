@@ -21,6 +21,7 @@ const { Terminais, acharClaude, comandoInstalarClaude } = require('./terminal');
 const { Aplicativos } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
+const { Loja, LojaFalsa } = require('./loja');
 const idioma = require('./idioma');
 const { tr } = idioma;
 
@@ -71,6 +72,7 @@ let terminais = null;
 let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
+let loja = null; // os programas do Linux pelo Flathub (loja.js)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -531,6 +533,19 @@ function registrarPonte() {
     if (!/^https?:\/\//i.test(String(url))) throw new Error(tr('Endereço inválido.'));
     return shell.openExternal(url);
   });
+  // A loja dos programas do Linux (loja.js).
+  tratar('loja:info', () => loja.info());
+  tratar('loja:buscar', (o) => loja.buscar(o || {}));
+  tratar('loja:detalhes', (id, idioma) => loja.detalhes(String(id), String(idioma || 'en')));
+  tratar('loja:imagem', (url) => loja.imagem(url));
+  tratar('loja:instalados', () => loja.instalados());
+  tratar('loja:atualizacoes', () => loja.atualizacoes());
+  const andamento = (id) => (a) => enviar('loja:andamento', id, a);
+  tratar('loja:instalar', (id) => loja.instalar(String(id), andamento(id)));
+  tratar('loja:atualizar', (id) => loja.atualizar(id ? String(id) : '', andamento(id)));
+  tratar('loja:remover', (id) => loja.remover(String(id), andamento(id)));
+  tratar('loja:cancelar', () => loja.cancelar());
+  tratar('loja:abrir', (id) => loja.abrir(String(id)));
   // A bandeja: o volume, o brilho e a rede do computador (bandeja.js).
   tratar('bandeja:bateria', () => sistemaBandeja.bateria());
   tratar('bandeja:volume', () => sistemaBandeja.volume.ler());
@@ -596,6 +611,8 @@ app.whenReady().then(async () => {
   programas = new Programas(path.join(app.getPath('userData'), 'programas'), (url, o) => net.fetch(url, o));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
+  // Depois de instalar ou remover um programa do Linux, a lista dos programas do computador é refeita.
+  loja = new (process.env.RETRO_LOJA_FALSA ? LojaFalsa : Loja)({ fetch: (u, o) => net.fetch(u, o), aoInstalar: () => { try { aplicativos.listar(true); } catch { } } });
   atualizador = new Atualizador({ app, enviar, antesDeSair: () => { terminais.fecharTodos(); if (janela) janela.__podeFechar = true; } });
   if (process.env.RETRO_BANDEJA_FALSA) {
     sistemaBandeja = bandeja.bandejaFalsa();

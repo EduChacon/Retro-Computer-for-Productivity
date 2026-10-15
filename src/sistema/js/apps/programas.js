@@ -1,7 +1,8 @@
 /*
  * Adicionar ou remover programas: o catálogo (os Craft), com instalar,
  * atualizar, remover e abrir; a instalação a partir de um .zip baixado; e
- * a escolha de como os programas se atualizam ao abrir.
+ * a escolha de como os programas se atualizam ao abrir. No Linux, a segunda
+ * aba é a loja dos programas do Linux (o Flathub, em loja.js).
  */
 import { h, img, tamanho, rotulo } from '../util.js';
 import { Janela, lista as janelas } from '../janelas.js';
@@ -9,6 +10,7 @@ import { registrarApp, estado, atualizarProgramas, abrir, abrirArquivo, avisar, 
 import { confirmar, erro } from '../dialogos.js';
 import { adicionarAtalho } from '../mesa.js';
 import { tr, idiomaAtual } from '../idioma.js';
+import { AbaLinux } from './loja.js';
 
 /** Um texto do catálogo no idioma atual ({ "pt-BR": …, "en": …, "es": … } ou texto simples). */
 export function doCatalogo(v) {
@@ -46,7 +48,8 @@ class Programas {
     this.selModo.addEventListener('change', () => definirConfig({ atualizacoes: this.selModo.value }));
     this.btProcurar = h('button', { on: { click: () => this.procurar(true) } }, tr('Procurar atualizações'));
     this.j.corpo.style.padding = '8px';
-    this.j.corpo.append(
+    const abaRetro = h('div.aba-programas');
+    abaRetro.append(
       h('div', { style: { display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '8px' } },
         img('programas-caixa', 32),
         h('div', { style: { lineHeight: '14px' } },
@@ -69,8 +72,32 @@ class Programas {
         h('div', { style: { flex: '1', color: '#808080', lineHeight: '12px' } }, tr('Para instalar um pacote "nome-web-versão.zip" já baixado.')),
         h('button', { on: { click: () => this.j.fechar() } }, tr('Fechar'))),
     );
+    // As abas (só no Linux, onde há a loja): os programas do Retro Computer e os do Linux.
+    this.linux = new AbaLinux();
+    this.abasEl = h('div.abas', { hidden: true });
+    this.painelEl = h('div.programas-painel', abaRetro, this.linux.el);
+    const abas = [tr('Programas do Retro Computer'), tr('Programas do Linux')];
+    this.mostrarAba = (i) => {
+      this.aba = i;
+      this.abasEl.replaceChildren(...abas.map((t, k) => {
+        const el = h('div' + (k === i ? '.ativa' : ''), t);
+        el.addEventListener('mousedown', () => this.mostrarAba(k));
+        return el;
+      }));
+      abaRetro.hidden = i !== 0;
+      this.linux.el.hidden = i !== 1;
+      if (i === 1) this.linux.mostrar();
+    };
+    this.linux.el.hidden = true;
+    this.j.corpo.append(this.abasEl, this.painelEl);
+    retro.loja.info().then((info) => {
+      if (info.plataforma !== 'linux') return;
+      this.abasEl.hidden = false;
+      this.painelEl.classList.add('com-abas');
+      this.mostrarAba(args.aba === 'linux' ? 1 : 0);
+    }).catch(() => { });
     this.paraDeOuvir = retro.programas.aoProgresso((id, p) => this.progresso(id, p));
-    this.j.ev.on('fechada', () => this.paraDeOuvir());
+    this.j.ev.on('fechada', () => { this.paraDeOuvir(); this.linux.fechar(); });
     this.carregar(args.instalar).then(() => this.procurar(false));
   }
 
@@ -249,6 +276,7 @@ function abrirProgramas(args = {}) {
   if (aberta) {
     aberta.focar();
     if (args.instalar && aberta.programas) aberta.programas.carregar(args.instalar);
+    if (args.aba === 'linux' && aberta.programas && !aberta.programas.abasEl.hidden) aberta.programas.mostrarAba(1);
     return aberta.programas;
   }
   const p = new Programas(args);

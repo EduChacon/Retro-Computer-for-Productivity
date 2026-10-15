@@ -108,6 +108,21 @@ contextBridge.exposeInMainWorld('retro', {
     icone: (id) => chamar('nativos:icone', id),
     abrir: (id) => chamar('nativos:abrir', id),
   },
+  // A loja dos programas do Linux (o Flathub).
+  loja: {
+    info: () => chamar('loja:info'),
+    buscar: (o) => chamar('loja:buscar', o),
+    detalhes: (id, idioma) => chamar('loja:detalhes', id, idioma),
+    imagem: (url) => chamar('loja:imagem', url),
+    instalados: () => chamar('loja:instalados'),
+    atualizacoes: () => chamar('loja:atualizacoes'),
+    instalar: (id) => chamar('loja:instalar', id),
+    atualizar: (id) => chamar('loja:atualizar', id),
+    remover: (id) => chamar('loja:remover', id),
+    cancelar: () => chamar('loja:cancelar'),
+    abrir: (id) => chamar('loja:abrir', id),
+    aoAndamento: ouvir('loja:andamento'),
+  },
   // A bandeja: o volume, o brilho e a rede do computador.
   bandeja: {
     bateria: () => chamar('bandeja:bateria'),

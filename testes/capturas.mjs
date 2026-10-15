@@ -560,6 +560,37 @@ const ROTEIROS = {
     console.log('relógio:', await pagina.evaluate(() => document.querySelector('#bandeja .relogio').innerText.replace(/\n/g, ' | ')));
   },
 
+  // A loja dos programas do Linux (com RETRO_LOJA_FALSA=1: o Flathub de verdade, o flatpak de mentira).
+  async loja() {
+    await fecharTudo();
+    await abrir('programas', { aba: 'linux' });
+    await pagina.waitForSelector('.janela.ativa .loja-item', { timeout: 30000 }).catch(() => console.log('a lista não carregou'));
+    await pagina.waitForTimeout(2500);
+    await foto('loja-mais-usados');
+    console.log('itens:', await pagina.locator('.janela.ativa .loja-item').count());
+    await pagina.fill('.janela.ativa .loja-topo input', 'libreoffice');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForSelector('.janela.ativa .loja-item.sel', { timeout: 20000 });
+    await pagina.waitForSelector('.janela.ativa .ficha-dados', { timeout: 20000 }).catch(() => console.log('a ficha não carregou'));
+    await pagina.waitForTimeout(2500);
+    await foto('loja-ficha');
+    console.log('ficha:', (await pagina.textContent('.janela.ativa .loja-ficha')).slice(0, 200));
+    await pagina.click('.janela.ativa .loja-botoes button >> text=' + T('Instalar'));
+    await pagina.waitForTimeout(900);
+    await foto('loja-instalando');
+    await pagina.waitForFunction(() => !document.querySelector('.janela.ativa .loja-botoes button[hidden]') === false, null, { timeout: 15000 }).catch(() => { });
+    await pagina.waitForTimeout(2500);
+    console.log('estado:', await pagina.textContent('.janela.ativa .loja-estado'));
+    console.log('no menu:', JSON.stringify(await pagina.evaluate(() => (window.__retro.estado.config.nativos || {}).menu || [])));
+    await pagina.selectOption('.janela.ativa .loja-topo select', ':instalados');
+    await pagina.waitForTimeout(2500);
+    await foto('loja-instalados');
+    // A primeira aba continua a dos programas do Retro Computer.
+    await pagina.click('.janela.ativa .abas > div >> nth=0');
+    await pagina.waitForTimeout(500);
+    await foto('loja-aba-retro');
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

@@ -765,6 +765,40 @@ body.barra-alta { --altura-barra: 34px; }
 .linha-programa .info .det { color: var(--sombra); }
 .linha-programa.sel { background: var(--selecao); color: #fff; }
 .linha-programa.sel .info .desc, .linha-programa.sel .info .det { color: #fff; }
+/* As abas de Adicionar ou remover programas (no Linux, a loja). */
+.programas-painel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.programas-painel.com-abas { box-shadow: var(--relevo-janela); padding: 10px; margin-top: -2px; }
+.aba-programas, .aba-linux { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.aba-programas[hidden], .aba-linux[hidden] { display: none; }
+.loja-topo { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.loja-topo input { flex: 1; min-width: 0; }
+.loja-topo .select-caixa { width: 160px; }
+.loja-topo .select-caixa select { width: 100%; }
+.loja-meio { flex: 1; min-height: 0; display: flex; gap: 8px; }
+.loja-lista { flex: 0 0 46%; min-width: 0; background: #fff; box-shadow: var(--campo); padding: 2px; overflow-y: auto; outline: none; }
+.loja-item { display: flex; gap: 8px; align-items: center; padding: 4px 5px; cursor: default; }
+.loja-item img { flex: none; }
+.loja-item .info { flex: 1; min-width: 0; }
+.loja-item .nome { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.loja-item .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.loja-item .det { color: var(--sombra); }
+.loja-item .det.nova { color: #008000; }
+.loja-item.sel { background: var(--selecao); color: var(--selecao-texto); }
+.loja-item.sel .det { color: #c0c0ff; }
+.loja-lista:focus .loja-item.sel { outline: 1px dotted #fff; outline-offset: -1px; }
+.loja-ficha { flex: 1; min-width: 0; background: #fff; box-shadow: var(--campo); padding: 8px; overflow-y: auto; line-height: 13px; }
+.loja-ficha p { margin: 8px 0 0; white-space: pre-line; overflow-wrap: anywhere; }
+.ficha-topo { display: flex; gap: 8px; align-items: center; }
+.ficha-topo img { flex: none; }
+.ficha-dados { margin-top: 8px; color: #404040; }
+.ficha-captura { margin-top: 8px; box-shadow: var(--raso); padding: 1px; background: var(--face); }
+.ficha-captura img { display: block; width: 100%; height: auto; }
+.loja-vazia { padding: 8px; color: #808080; }
+.loja-estado { min-height: 13px; margin-top: 6px; }
+.loja-botoes { display: flex; gap: 6px; margin-top: 6px; }
+.loja-nota { margin-top: 8px; color: #808080; line-height: 12px; }
+.loja-sem { display: flex; gap: 12px; align-items: flex-start; padding: 8px; }
+.loja-sem p { margin: 6px 0 10px; line-height: 14px; }
 .grupo-cat { padding: 6px 6px 2px; font-weight: bold; color: var(--titulo); border-bottom: 1px solid var(--sombra); margin: 0 4px 2px; }
 
 .amostra-cor { width: 18px; height: 18px; box-shadow: var(--campo); padding: 2px; }
