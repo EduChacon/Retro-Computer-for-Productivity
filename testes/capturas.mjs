@@ -1077,6 +1077,20 @@ const ROTEIROS = {
     await foto('bluetooth-pareado');
   },
 
+  // As atualizações do Linux (com RETRO_ATUALIZACOES_FALSAS=1; a senha de teste é "certa").
+  async atualizacoesLinux() {
+    await fecharTudo();
+    await abrir('atualizacoes');
+    await pagina.waitForTimeout(800);
+    await foto('atualizacoes-lista');
+    await pagina.click(`.janela.ativa button:has-text("${T('Instalar as atualizações')}")`);
+    await pagina.waitForSelector('.janela.dialogo input[type=password]');
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1200);
+    await foto('atualizacoes-instaladas');
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

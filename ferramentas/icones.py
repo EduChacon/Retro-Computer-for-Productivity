@@ -794,6 +794,9 @@ def gerar(serenity):
     feitos[32]['lightcraft'] = colar(abrir_serenity(serenity, 32, 'app-image-viewer'), grade(SOL_16), 16, 15)
     feitos[16]['lightcraft'] = colar(abrir_serenity(serenity, 16, 'app-image-viewer'), grade(SOL_16).resize((9, 9), Image.NEAREST), 7, 7)
 
+    # As atualizações do Linux: o computador com as setas verdes (SerenityOS); em 16, o disco com a seta.
+    feitos[32]['atualizacoes'] = colar(grade(COMPUTADOR_32), abrir_serenity(serenity, 16, 'reload'), 16, 16)
+    feitos[16]['atualizacoes'] = abrir_serenity(serenity, 16, 'download')
     feitos[32]['impressora'] = grade(IMPRESSORA_32)
     feitos[16]['impressora'] = grade(IMPRESSORA_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)

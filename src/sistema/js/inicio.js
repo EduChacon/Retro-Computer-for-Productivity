@@ -35,6 +35,7 @@ import './apps/imagens.js';
 import './apps/midia.js';
 import './apps/captura.js';
 import './apps/monitor.js';
+import './apps/atualizacoes.js';
 
 const boot = document.getElementById('boot');
 

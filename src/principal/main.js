@@ -30,6 +30,7 @@ const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
 const { Impressoras, ImpressorasFalsas } = require('./impressoras');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
+const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -802,6 +803,12 @@ function registrarPonte() {
   tratar('bluetooth:responder', (r) => { bluetooth.responder(String(r).slice(0, 16)); return true; });
   tratar('bluetooth:cancelar', () => { bluetooth.cancelar(); return true; });
   tratar('bluetooth:configuracoesDoSistema', () => shell.openExternal(process.platform === 'win32' ? 'ms-settings:bluetooth' : 'x-apple.systempreferences:com.apple.BluetoothSettings'));
+  // As atualizações do Linux (o apt e o Flathub); o andamento vai para a janela, linha a linha.
+  const atualizacoesLinux = new (process.env.RETRO_ATUALIZACOES_FALSAS ? AtualizacoesFalsas : AtualizacoesLinux)({ aoAndar: (s) => enviar('atualizacoesLinux:andamento', String(s).slice(-4000)) });
+  tratar('atualizacoesLinux:listar', () => atualizacoesLinux.listar());
+  tratar('atualizacoesLinux:procurar', (senha) => atualizacoesLinux.procurar(String(senha || '')));
+  tratar('atualizacoesLinux:instalar', (senha) => atualizacoesLinux.instalar(String(senha || '')));
+  tratar('atualizacoesLinux:automaticas', (ligar, senha) => atualizacoesLinux.definirAutomaticas(!!ligar, String(senha || '')));
   // O Monitor do sistema.
   const monitor = new Monitor({ app });
   tratar('monitor:amostra', () => monitor.amostra());

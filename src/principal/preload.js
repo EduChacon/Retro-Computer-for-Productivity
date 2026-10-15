@@ -61,6 +61,13 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  atualizacoesLinux: {
+    listar: () => chamar('atualizacoesLinux:listar'),
+    procurar: (senha) => chamar('atualizacoesLinux:procurar', senha),
+    instalar: (senha) => chamar('atualizacoesLinux:instalar', senha),
+    automaticas: (ligar, senha) => chamar('atualizacoesLinux:automaticas', ligar, senha),
+    aoAndamento: ouvir('atualizacoesLinux:andamento'),
+  },
   bluetooth: {
     estado: () => chamar('bluetooth:estado'),
     ligar: (v) => chamar('bluetooth:ligar', v),

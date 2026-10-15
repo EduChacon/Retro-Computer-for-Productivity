@@ -24,6 +24,7 @@ const ITENS = [
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
   { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
   { chave: 'bluetooth', rotulo: marcar('Bluetooth'), icone: 'bluetooth', descricao: marcar('Os mouses, os teclados e os fones sem fio: parear, conectar e esquecer.'), abrir: () => import('../bluetooth.js').then((m) => m.abrirBluetooth()) },
+  { chave: 'atualizacoes', rotulo: marcar('Atualizações do Linux'), icone: 'atualizacoes', descricao: marcar('As atualizações de segurança do Linux e dos programas da Loja.'), abrir: () => abrir('atualizacoes'), mostrar: () => estado.config.plataforma === 'linux' },
   { chave: 'impressoras', rotulo: marcar('Impressoras'), icone: 'impressora', descricao: marcar('As impressoras, a padrão, a fila de impressão e a página de teste.'), abrir: () => dialogoImpressoras() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },
@@ -33,6 +34,9 @@ const ITENS = [
   { chave: 'sobre', rotulo: marcar('Sobre o Retro Computer'), icone: 'computador', descricao: marcar('Versão, licenças e créditos.'), abrir: () => dialogoSobre() },
 ];
 
+// Alguns itens só existem em um sistema (as atualizações do Linux).
+const visiveis = () => ITENS.filter((i) => !i.mostrar || i.mostrar());
+
 function abrirPainel(args = {}) {
   if (args.secao) {
     const it = ITENS.find((i) => i.chave === args.secao);
@@ -40,7 +44,7 @@ function abrirPainel(args = {}) {
   }
   const aberta = janelas.find((j) => j.id === 'painel');
   if (aberta) return aberta.focar();
-  const contagem = () => ({ texto: tr('{n} objeto(s)', { n: ITENS.length }), largura: 120, fixo: true });
+  const contagem = () => ({ texto: tr('{n} objeto(s)', { n: visiveis().length }), largura: 120, fixo: true });
   const j = new Janela({
     id: 'painel', titulo: tr('Painel de controle'), icone: 'painel', largura: 440, altura: 300,
     status: [contagem(), ''],
@@ -58,7 +62,7 @@ function abrirPainel(args = {}) {
     aoMenu: (sel, e) => { if (sel.length) abrirMenu([{ rotulo: tr('&Abrir'), negrito: true, acao: () => ITENS.find((i) => i.chave === sel[0].chave).abrir() }], { x: e.clientX, y: e.clientY }); },
     aoSelecionar: (sel) => j.definirStatus([contagem(), sel.length === 1 ? tr(ITENS.find((i) => i.chave === sel[0].chave).descricao) : '']),
   });
-  vista.desenhar(ITENS.map((i) => ({ chave: i.chave, rotulo: tr(i.rotulo), icone: i.icone, arrastavel: false })));
+  vista.desenhar(visiveis().map((i) => ({ chave: i.chave, rotulo: tr(i.rotulo), icone: i.icone, arrastavel: false })));
   return j;
 }
 

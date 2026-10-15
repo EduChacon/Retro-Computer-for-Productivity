@@ -1291,3 +1291,19 @@ button.ferramenta.apertado { box-shadow: var(--raso); background: var(--face) va
 .bt-vazio { padding: 8px; color: #404040; }
 .bt-nota { min-height: 28px; padding: 4px 0; color: #404040; }
 .bt-codigo { margin: 8px 0; font: bold 22px/26px monospace; letter-spacing: 4px; text-align: center; }
+
+/* As atualizações do Linux. */
+.atl-cabeca { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.atl-resumo { margin-bottom: 4px; font-weight: bold; }
+.atl-lista { flex: 1 1 auto; min-height: 80px; overflow: auto; padding: 2px; background: #fff; box-shadow: var(--campo); }
+.atl-item { display: flex; align-items: center; gap: 6px; height: 18px; white-space: nowrap; }
+.atl-nome { flex: none; }
+.atl-versao { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #404040; }
+.atl-seg { flex: none; padding: 0 4px; color: #fff; background: #800000; }
+.atl-vazia { padding: 8px; color: #404040; }
+.atl-registro { flex: none; height: 90px; margin: 6px 0 0; padding: 2px 4px; overflow: auto; font: 11px/13px monospace; color: #c0c0c0; background: #000; box-shadow: var(--campo); white-space: pre-wrap; }
+.atl-reinicio { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.atl-reinicio > div { flex: 1; }
+.atl-auto { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.janela.atualizacoes .corpo { display: flex; flex-direction: column; }
+.janela.atualizacoes.ocupada .atl-lista { cursor: progress; }
