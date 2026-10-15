@@ -159,7 +159,7 @@ input:disabled, textarea:disabled { background: var(--face); color: var(--sombra
 
 select {
   appearance: none;
-  background: #fff var(--seta-baixo) no-repeat right 6px center;
+  background: #fff var(--seta-baixo) no-repeat right 6px top 9px;
   box-shadow: var(--campo);
   border: none;
   border-radius: 0;
@@ -174,7 +174,7 @@ select {
   position: absolute;
   right: 2px; top: 2px; bottom: 2px;
   width: 16px;
-  background: var(--face) var(--seta-baixo) no-repeat center;
+  background: var(--face) var(--seta-baixo) no-repeat 4px 6px;
   box-shadow: var(--relevo);
   pointer-events: none;
 }
@@ -250,11 +250,16 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 ::-webkit-scrollbar-thumb { background: var(--face); box-shadow: var(--relevo); }
 ::-webkit-scrollbar-corner { background: var(--face); }
 ::-webkit-scrollbar-button:single-button { display: block; width: 16px; height: 16px; background-color: var(--face); background-repeat: no-repeat; box-shadow: var(--relevo); }
-::-webkit-scrollbar-button:single-button:active { box-shadow: var(--raso); background-position-x: calc(50% + 1px); }
+::-webkit-scrollbar-button:single-button:active { box-shadow: var(--raso); }
 ::-webkit-scrollbar-button:vertical:decrement { background-image: var(--seta-cima); background-position: 4px 5px; }
 ::-webkit-scrollbar-button:vertical:increment { background-image: var(--seta-baixo); background-position: 4px 6px; }
 ::-webkit-scrollbar-button:horizontal:decrement { background-image: var(--seta-esq); background-position: 5px 4px; }
 ::-webkit-scrollbar-button:horizontal:increment { background-image: var(--seta-dir); background-position: 6px 4px; }
+/* Apertada, a seta desce um ponto para a direita e para baixo (sempre em pontos inteiros). */
+::-webkit-scrollbar-button:vertical:decrement:active { background-position: 5px 6px; }
+::-webkit-scrollbar-button:vertical:increment:active { background-position: 5px 7px; }
+::-webkit-scrollbar-button:horizontal:decrement:active { background-position: 6px 5px; }
+::-webkit-scrollbar-button:horizontal:increment:active { background-position: 7px 5px; }
 
 /* ---------- Janelas ---------- */
 
@@ -293,7 +298,16 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
   background-repeat: no-repeat;
   background-position: center;
 }
-.titulo .botoes button:active { background-position: calc(50% + 1px) calc(50% + 1px); padding: 0; }
+.titulo .botoes button:active { padding: 0; }
+/* Cada desenho numa posição inteira (centralizar dava meio ponto, e cada botão arredondava para um lado). */
+.titulo .botoes .b-fechar { background-position: 4px 3px; }
+.titulo .botoes .b-fechar:active { background-position: 5px 4px; }
+.titulo .botoes .b-max { background-position: 3px 2px; }
+.titulo .botoes .b-max:active { background-position: 4px 3px; }
+.titulo .botoes .b-restaurar { background-position: 4px 2px; }
+.titulo .botoes .b-restaurar:active { background-position: 5px 3px; }
+.titulo .botoes .b-ajuda { background-position: 5px 2px; }
+.titulo .botoes .b-ajuda:active { background-position: 6px 3px; }
 .titulo .botoes .b-fechar { margin-left: 2px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='7' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v1h1v1h2V1h1V0h2v1H7v1H6v1H5v1h1v1h1v1h1v1H6V6H5V5H3v1H2v1H0V6h1V5h1V4h1V3H2V2H1V1H0z'/%3E%3C/svg%3E"); }
 .titulo .botoes .b-min { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='2' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h6v2H0z'/%3E%3C/svg%3E"); background-position: 4px 9px; }
 .titulo .botoes .b-min:active { background-position: 5px 10px; }
@@ -556,6 +570,16 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 }
 #bandeja img { width: 16px; height: 16px; }
 #bandeja .relogio { min-width: 38px; text-align: right; padding-top: 1px; }
+/* Com a data: duas linhas apertadas na altura da bandeja. */
+#bandeja .relogio.com-data { display: flex; flex-direction: column; align-items: flex-end; line-height: 10px; padding-top: 0; }
+#bandeja .bandeja-ico { flex: none; }
+#bandeja .sino { position: relative; display: flex; width: 16px; height: 16px; }
+#bandeja .sino.nao-perturbe img { opacity: 0.45; }
+#bandeja .sino-num {
+  position: absolute; right: -4px; top: -3px; min-width: 9px; height: 9px; padding: 0 1px;
+  background: #c00000; color: #fff; font-size: 8px; line-height: 9px; text-align: center; font-weight: bold;
+  box-shadow: 0 0 0 1px var(--face);
+}
 #bandeja .foco-tempo { font-weight: bold; color: #800000; min-width: 32px; }
 .sep-barra { width: 2px; height: 22px; box-shadow: inset 1px 0 var(--sombra), inset -1px 0 var(--luz); flex: none; }
 
@@ -584,24 +608,21 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 .menu .opcao.sub::after {
   content: '';
   position: absolute;
-  right: 6px; top: 50%;
-  margin-top: -4px;
+  right: 6px; top: 5px;
   width: 4px; height: 7px;
   background: var(--seta-dir);
 }
 .menu .opcao.marcada::before {
   content: '';
   position: absolute;
-  left: 6px; top: 50%;
-  margin-top: -4px;
+  left: 6px; top: 5px;
   width: 7px; height: 7px;
   background: var(--marca);
 }
 .menu .opcao.radio::before {
   content: '';
   position: absolute;
-  left: 6px; top: 50%;
-  margin-top: -3px;
+  left: 6px; top: 6px;
   width: 6px; height: 6px;
   background: #000;
   border-radius: 3px;
@@ -947,7 +968,75 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 .busca-vazio { padding: 2px 6px; color: #808080; }
 
 /* O calendário do relógio */
+.flutuante { position: absolute; z-index: 700000; }
 .calendario { position: absolute; z-index: 700000; width: 230px; background: var(--face); box-shadow: var(--relevo-janela); padding: 6px; }
+
+/* As caixinhas da bandeja: o volume, a bateria, a rede e as notificações. */
+.caixa-bandeja { background: var(--face); box-shadow: var(--relevo-janela); padding: 6px 8px 8px; min-width: 150px; display: flex; flex-direction: column; gap: 6px; }
+.caixa-bandeja hr.sulco { margin: 2px 0; }
+.caixa-bandeja label { gap: 5px; }
+.cxb-titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 2px; }
+.cxb-titulo a, .cxb-links a { color: var(--link); }
+.cxb-linha { display: flex; align-items: center; gap: 6px; }
+.cxb-nota { color: #404040; max-width: 220px; line-height: 13px; }
+.cxb-nota:empty { display: none; }
+.cxb-texto { max-width: 230px; }
+.cxb-botoes { display: flex; gap: 6px; justify-content: flex-end; }
+.cxb-links { display: flex; flex-direction: column; gap: 3px; }
+.caixa-bandeja.volume { min-width: 0; align-items: flex-start; }
+.vol-meio { display: flex; align-items: center; gap: 8px; align-self: center; }
+.vol-numero { min-width: 30px; }
+.caixa-bandeja.rede { width: 270px; }
+.caixa-bandeja.notificacoes { width: 290px; }
+
+/* O controle deslizante da época. */
+.deslizante { position: relative; flex: none; height: 21px; outline: none; touch-action: none; }
+.deslizante.vertical { width: 21px; height: auto; }
+.desl-trilho { position: absolute; left: 0; right: 0; top: 8px; height: 4px; box-shadow: var(--afundado); background: var(--face); }
+.deslizante.vertical .desl-trilho { left: 8px; right: auto; top: 0; bottom: 0; width: 4px; height: auto; }
+.desl-pega { position: absolute; top: 0; left: 0; width: 11px; height: 21px; background: var(--face); box-shadow: var(--relevo); }
+.deslizante.vertical .desl-pega { width: 21px; height: 11px; }
+.deslizante:focus-visible { outline: 1px dotted #000; outline-offset: 2px; }
+
+/* A bateria: a medida em blocos, como a barra de progresso. */
+.bat-linha { display: flex; align-items: center; gap: 6px; }
+.bat-medida { flex: 1; height: 14px; box-shadow: var(--afundado); background: #fff; padding: 2px; min-width: 120px; }
+.bat-medida > div { height: 100%; background: repeating-linear-gradient(90deg, var(--titulo) 0 8px, transparent 8px 10px); }
+.bat-medida > div.fraca { background: repeating-linear-gradient(90deg, #c00000 0 8px, transparent 8px 10px); }
+
+/* As redes Wi-Fi e as notificações: listas brancas, afundadas. */
+.lista-redes, .lista-avisos { background: #fff; box-shadow: var(--campo); padding: 2px; max-height: 170px; overflow-y: auto; outline: none; }
+.lista-redes { height: 120px; }
+.lista-redes .rede { display: flex; align-items: center; gap: 5px; padding: 1px 3px; cursor: default; white-space: nowrap; }
+.lista-redes .rede img { flex: none; }
+.rede-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.rede-vazio { width: 16px; flex: none; }
+.rede-status { color: #808080; }
+.lista-redes .rede.em-uso .rede-nome { font-weight: bold; }
+.lista-redes .rede.escolhida { background: var(--selecao); color: var(--selecao-texto); }
+.lista-redes .rede.escolhida .rede-status { color: #c0c0ff; }
+.lista-redes:focus .rede.escolhida { outline: 1px dotted #fff; outline-offset: -1px; }
+.rede-vazia { padding: 6px; color: #808080; }
+.lista-avisos { max-height: 260px; }
+.aviso-item { display: flex; gap: 6px; padding: 4px; align-items: flex-start; cursor: default; border-bottom: 1px solid var(--luz2); }
+.aviso-item:last-child { border-bottom: none; }
+.aviso-item:hover { background: var(--selecao); color: var(--selecao-texto); }
+.aviso-item:hover .aviso-hora { color: #c0c0ff; }
+.aviso-item > div { flex: 1; min-width: 0; }
+.aviso-topo { display: flex; justify-content: space-between; gap: 8px; }
+.aviso-topo b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aviso-hora { color: #808080; flex: none; }
+.aviso-texto { overflow-wrap: anywhere; line-height: 13px; }
+
+/* O indicador das teclas de volume e de brilho. */
+.indicador-bandeja {
+  position: absolute; right: 8px; bottom: 34px; z-index: 700001; display: flex; align-items: center; gap: 6px;
+  background: var(--face); box-shadow: var(--relevo-janela); padding: 6px 8px; min-width: 190px;
+}
+.indicador-bandeja[hidden] { display: none; }
+.indicador-bandeja span { min-width: 74px; }
+.ind-barra { flex: 1; height: 12px; box-shadow: var(--afundado); background: #fff; padding: 2px; }
+.ind-barra > div { height: 100%; background: repeating-linear-gradient(90deg, var(--titulo) 0 6px, transparent 6px 8px); }
 .cal-topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
 .cal-titulo { font-weight: bold; }
 .cal-titulo::first-letter { text-transform: uppercase; }

@@ -509,6 +509,57 @@ const ROTEIROS = {
     servidor.close();
   },
 
+  // A bandeja (com RETRO_BANDEJA_FALSA=1: o volume, o brilho, a bateria e o Wi-Fi de mentira):
+  // as caixinhas, conectar a uma rede protegida, as notificações e a data no relógio.
+  async bandeja() {
+    await fecharTudo();
+    await pagina.waitForTimeout(800);
+    const ico = (n) => `#bandeja .bandeja-ico >> nth=${n}`; // 0 a rede, 1 o volume, 2 a bateria, 3 o sino
+    console.log('dicas:', JSON.stringify(await pagina.evaluate(() => [...document.querySelectorAll('#bandeja .bandeja-ico')].map((e) => [e.getAttribute('src') || e.querySelector('img').getAttribute('src'), e.dataset.dica, e.hidden]))));
+    await pagina.click(ico(1));
+    await pagina.waitForTimeout(300);
+    await foto('bandeja-volume');
+    // Arrastar o controle para baixo baixa o volume.
+    const d = await pagina.locator('.caixa-bandeja .deslizante').boundingBox();
+    await pagina.mouse.move(d.x + d.width / 2, d.y + 20);
+    await pagina.mouse.down();
+    await pagina.mouse.move(d.x + d.width / 2, d.y + d.height - 25, { steps: 5 });
+    await pagina.mouse.up();
+    await pagina.waitForTimeout(400);
+    console.log('volume depois de arrastar:', JSON.stringify(await pagina.evaluate(() => retro.bandeja.volume())));
+    await pagina.click(ico(2));
+    await pagina.waitForTimeout(500);
+    await foto('bandeja-bateria');
+    await pagina.click(ico(0));
+    await pagina.waitForSelector('.lista-redes .rede', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    await pagina.click('.lista-redes .rede >> text=Escritório 5G');
+    await foto('bandeja-rede');
+    // Conectar: a senha errada é pedida de novo; a certa conecta.
+    await pagina.click('.caixa-bandeja.rede .cxb-botoes button >> nth=0');
+    await pagina.waitForSelector('.janela.dialogo input[type=password]', { timeout: 5000 });
+    await pagina.fill('.janela.dialogo input[type=password]', 'errada');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(600);
+    await foto('bandeja-senha-errada');
+    await pagina.fill('.janela.dialogo input[type=password]', 'senha123');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(800);
+    console.log('rede:', JSON.stringify(await pagina.evaluate(() => retro.bandeja.rede())));
+    console.log('balão:', await pagina.evaluate(() => (document.querySelector('.aviso-balao') || {}).textContent || '(nenhum)'));
+    // As notificações: mais duas, a data no relógio e o sino.
+    await pagina.evaluate(() => window.__retro.abrir('painel', { secao: 'data' }));
+    await pagina.waitForTimeout(400);
+    await pagina.check('.janela.ativa fieldset input[type=checkbox]');
+    await pagina.click('.janela.ativa .acoes button.padrao');
+    await pagina.waitForTimeout(400);
+    await foto('bandeja-sino-data');
+    await pagina.click(ico(3));
+    await pagina.waitForTimeout(300);
+    await foto('bandeja-notificacoes');
+    console.log('relógio:', await pagina.evaluate(() => document.querySelector('#bandeja .relogio').innerText.replace(/\n/g, ' | ')));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

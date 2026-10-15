@@ -108,6 +108,20 @@ contextBridge.exposeInMainWorld('retro', {
     icone: (id) => chamar('nativos:icone', id),
     abrir: (id) => chamar('nativos:abrir', id),
   },
+  // A bandeja: o volume, o brilho e a rede do computador.
+  bandeja: {
+    bateria: () => chamar('bandeja:bateria'),
+    volume: () => chamar('bandeja:volume'),
+    definirVolume: (o) => chamar('bandeja:definirVolume', o),
+    brilho: () => chamar('bandeja:brilho'),
+    definirBrilho: (n) => chamar('bandeja:definirBrilho', n),
+    rede: () => chamar('bandeja:rede'),
+    redes: (procurar) => chamar('bandeja:redes', !!procurar),
+    conectar: (ssid, senha) => chamar('bandeja:conectar', ssid, senha),
+    desconectar: () => chamar('bandeja:desconectar'),
+    ligarWifi: (v) => chamar('bandeja:ligarWifi', !!v),
+    configuracoesRede: () => chamar('bandeja:configuracoesRede'),
+  },
   navegador: {
     aoJanela: ouvir('navegador:janela'),
     limparDados: () => chamar('navegador:limparDados'),

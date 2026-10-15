@@ -262,7 +262,7 @@ class ProgramaCraft {
       this.arquivos.set(nomeDe(rel), rel);
       adicionarRecente(rel);
       this.responder(m.pedido, { ok: true, nome: nomeDe(rel) });
-      avisar(tr('Salvo'), caminhoTela(rel), { som: null, ms: 2500, icone: this.info.icone || 'programa' });
+      avisar(tr('Salvo'), caminhoTela(rel), { som: null, ms: 2500, icone: this.info.icone || 'programa', guardar: false });
     } catch (e) {
       this.responder(m.pedido, { ok: false, erro: e.message });
       erro(tr('Não foi possível salvar {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }), this.info.nome);

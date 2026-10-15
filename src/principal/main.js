@@ -20,6 +20,7 @@ const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = requ
 const { Terminais, acharClaude, comandoInstalarClaude } = require('./terminal');
 const { Aplicativos } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
+const bandeja = require('./bandeja');
 const idioma = require('./idioma');
 const { tr } = idioma;
 
@@ -69,6 +70,7 @@ let programas = null;
 let terminais = null;
 let aplicativos = null;
 let atualizador = null;
+let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -529,6 +531,18 @@ function registrarPonte() {
     if (!/^https?:\/\//i.test(String(url))) throw new Error(tr('Endereço inválido.'));
     return shell.openExternal(url);
   });
+  // A bandeja: o volume, o brilho e a rede do computador (bandeja.js).
+  tratar('bandeja:bateria', () => sistemaBandeja.bateria());
+  tratar('bandeja:volume', () => sistemaBandeja.volume.ler());
+  tratar('bandeja:definirVolume', (o) => sistemaBandeja.volume.definir(o || {}));
+  tratar('bandeja:brilho', () => sistemaBandeja.brilho.ler());
+  tratar('bandeja:definirBrilho', (n) => sistemaBandeja.brilho.definir(n));
+  tratar('bandeja:rede', () => sistemaBandeja.rede.estado());
+  tratar('bandeja:redes', (procurar) => sistemaBandeja.rede.redes(!!procurar));
+  tratar('bandeja:conectar', (ssid, senha) => sistemaBandeja.rede.conectar(String(ssid), senha ? String(senha) : ''));
+  tratar('bandeja:desconectar', () => sistemaBandeja.rede.desconectar());
+  tratar('bandeja:ligarWifi', (v) => sistemaBandeja.rede.ligarWifi(!!v));
+  tratar('bandeja:configuracoesRede', () => sistemaBandeja.rede.configuracoes());
   // A atualização do próprio Retro Computer (atualizador.js).
   tratar('atualizacao:info', () => atualizador.info());
   tratar('atualizacao:verificar', () => atualizador.verificar());
@@ -583,6 +597,17 @@ app.whenReady().then(async () => {
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
   atualizador = new Atualizador({ app, enviar, antesDeSair: () => { terminais.fecharTodos(); if (janela) janela.__podeFechar = true; } });
+  if (process.env.RETRO_BANDEJA_FALSA) {
+    sistemaBandeja = bandeja.bandejaFalsa();
+  } else {
+    const volume = new bandeja.Volume();
+    let bateria = null;
+    sistemaBandeja = {
+      volume, brilho: new bandeja.Brilho({ volume }), rede: new bandeja.Rede({ shell }),
+      // A bateria não aparece nem some com o computador ligado: basta perguntar uma vez.
+      bateria: async () => (bateria = bateria || bandeja.temBateria(process.platform, volume).then((existe) => ({ existe }))),
+    };
+  }
   await abrirDisco();
   menuDoSistema();
   configurarSessao();
@@ -595,5 +620,6 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   pararObservar();
   if (terminais) terminais.fecharTodos();
+  if (sistemaBandeja) sistemaBandeja.volume.fechar();
   app.quit();
 });

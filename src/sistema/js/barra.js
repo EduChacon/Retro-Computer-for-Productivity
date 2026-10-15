@@ -1,23 +1,23 @@
 /*
  * A barra de tarefas: o botão Iniciar com o menu, os botões das janelas
- * abertas e a bandeja (o foco, o som e o relógio).
+ * abertas e a bandeja (o foco, a rede, o volume, a bateria, o relógio e as notificações).
  */
 import { h, img, caminhoTela, nomeDe, tipoDe } from './util.js';
 import { abrirMenu, fecharMenus } from './menus.js';
 import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, minimizarTodas } from './janelas.js';
 import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pastaDocs } from './sistema.js';
-import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
 import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './nativos.js';
 import { alternarCalendario, montarBusca } from './barra-extras.js';
+import { montarBandeja } from './bandeja.js';
 
 let btIniciar;
 let tarefas;
 let relogio;
-let somIco;
 let focoEl;
 let busca;
 const mostrarBusca = () => !(estado.config.barra && estado.config.barra.busca === false);
+const mostrarData = () => !!(estado.config.barra && estado.config.barra.data);
 
 export function montarBarra() {
   const barra = document.getElementById('barra');
@@ -29,17 +29,16 @@ export function montarBarra() {
   });
   tarefas = h('div#tarefas');
   relogio = h('span.relogio');
-  somIco = img('sons', 16, { title: tr('Volume') });
   focoEl = h('span.foco-tempo', { hidden: true, title: tr('Foco') });
   const focoIco = img('foco', 16, { title: tr('Foco (Pomodoro)') });
   focoIco.hidden = true;
   focoIco.style.cursor = 'pointer';
   focoIco.addEventListener('click', () => abrir('foco'));
   focoEl.addEventListener('click', () => abrir('foco'));
-  somIco.addEventListener('click', alternarSom);
-  relogio.addEventListener('mousedown', (e) => { e.preventDefault(); alternarCalendario(relogio); });
+  relogio.addEventListener('mousedown', (e) => { if (e.button === 0) { e.preventDefault(); alternarCalendario(relogio); } });
   relogio.style.cursor = 'pointer';
-  const bandeja = h('div#bandeja', focoIco, focoEl, somIco, relogio);
+  const itens = montarBandeja();
+  const bandeja = h('div#bandeja', focoIco, focoEl, ...itens.antes, relogio, ...itens.depois);
   busca = montarBusca();
   busca.hidden = !mostrarBusca();
   barra.append(btIniciar, h('div.sep-barra'), tarefas, busca, bandeja);
@@ -47,6 +46,12 @@ export function montarBarra() {
   barra.addEventListener('contextmenu', (e) => {
     if (e.target.closest('#tarefas button')) return;
     e.preventDefault();
+    if (e.target.closest('.relogio')) {
+      return abrirMenu([
+        { rotulo: tr('&Ajustar data e hora…'), negrito: true, acao: () => abrir('painel', { secao: 'data' }) },
+        { rotulo: tr('Mostrar a &data'), marcado: mostrarData(), acao: () => alternarData() },
+      ], { x: e.clientX, y: e.clientY, acima: true });
+    }
     abrirMenu([
       { rotulo: tr('&Em cascata'), acao: emCascata },
       { rotulo: tr('Lado a lado &horizontal'), acao: () => lado(false) },
@@ -61,36 +66,33 @@ export function montarBarra() {
   });
 
   evJanelas.on('mudou', desenharTarefas);
-  evSistema.on('config', atualizarSom);
+  evSistema.on('config', tique);
   evSistema.on('foco', (f) => {
     focoIco.hidden = !f.ativo;
     focoEl.hidden = !f.ativo;
     focoEl.textContent = f.texto || '';
     focoEl.dataset.dica = f.fase || tr('Foco');
   });
-  atualizarSom();
   tique();
   setInterval(tique, 1000);
 }
 
 function tique() {
   const d = new Date();
-  const t = d.toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
-  if (relogio.textContent !== t) relogio.textContent = t;
+  const hora = d.toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
+  // Com a data, o relógio fica em duas linhas: a hora em cima e a data embaixo.
+  const data = mostrarData() ? d.toLocaleDateString(localidade(), { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const chave = hora + '|' + data;
+  if (relogio.dataset.chave !== chave) {
+    relogio.dataset.chave = chave;
+    relogio.classList.toggle('com-data', !!data);
+    relogio.replaceChildren(...(data ? [h('span', hora), h('span', data)] : [hora]));
+  }
   relogio.dataset.dica = d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function atualizarSom() {
-  const c = estado.config || {};
-  const mudo = !c.sons || !c.volume;
-  somIco.src = mudo ? 'icones/16/sons.png' : 'icones/16/sons.png';
-  somIco.style.opacity = mudo ? '0.45' : '1';
-  somIco.dataset.dica = mudo ? tr('Sons desligados (clique para ligar)') : tr('Sons ligados (clique para desligar)');
-}
-
-async function alternarSom() {
-  await definirConfig({ sons: !estado.config.sons });
-  if (estado.config.sons) tocar('info');
+export function alternarData() {
+  return definirConfig({ barra: { data: !mostrarData() } }).then(tique);
 }
 
 function desenharTarefas() {

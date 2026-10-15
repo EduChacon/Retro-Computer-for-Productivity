@@ -405,7 +405,7 @@ class Navegador {
     if (!nome) return;
     await salvarFavoritos([...favoritos(), { nome: nome.trim() || titulo, url: this.url }]);
     this.desenharInicio();
-    avisar(tr('Favorito adicionado'), nome, { icone: 'favoritos', som: null });
+    avisar(tr('Favorito adicionado'), nome, { icone: 'favoritos', som: null, guardar: false });
   }
 
   async removerFavorito(i) {

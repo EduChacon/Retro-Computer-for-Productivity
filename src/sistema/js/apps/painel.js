@@ -400,10 +400,16 @@ function dialogoData() {
   };
   desenhar();
   const t = setInterval(desenhar, 1000);
+  const chkData = h('input', { type: 'checkbox', checked: !!(estado.config.barra && estado.config.barra.data) });
   const conteudo = h('div', relogio, texto,
     h('p', { style: { color: '#808080', textAlign: 'center', marginTop: '10px' } }, tr('A data e a hora vêm do computador principal.')),
-    h('p', { style: { color: '#808080', textAlign: 'center' } }, tr('Fuso horário: {fuso}', { fuso: Intl.DateTimeFormat().resolvedOptions().timeZone })));
-  const j = dialogoBase({ titulo: tr('Propriedades de Data e hora'), icone: 'relogio', larg: 320, abas: [{ titulo: tr('Data e hora'), conteudo }] });
+    h('p', { style: { color: '#808080', textAlign: 'center' } }, tr('Fuso horário: {fuso}', { fuso: Intl.DateTimeFormat().resolvedOptions().timeZone })),
+    h('fieldset', { style: { margin: '8px 0 0' } }, h('legend', tr('Barra de tarefas')),
+      h('label', chkData, h('span', tr('Mostrar a data embaixo da hora')))));
+  const j = dialogoBase({
+    titulo: tr('Propriedades de Data e hora'), icone: 'relogio', larg: 320, abas: [{ titulo: tr('Data e hora'), conteudo }],
+    aoAplicar: () => definirConfig({ barra: { data: chkData.checked } }),
+  });
   if (j) j.ev.on('fechada', () => clearInterval(t));
   else clearInterval(t);
 }

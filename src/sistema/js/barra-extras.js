@@ -9,9 +9,54 @@ import { fecharMenus } from './menus.js';
 import { abrirNativo, iconeNativo } from './nativos.js';
 import { tr, marcar, localidade } from './idioma.js';
 
-/* ---------- O calendário ---------- */
+/* ---------- A caixinha que abre acima da barra (o calendário, o volume, a rede…) ---------- */
 
-let calendario = null;
+let aberto = null;
+
+export function fecharFlutuante() {
+  if (!aberto) return;
+  const a = aberto;
+  aberto = null;
+  a.el.remove();
+  document.removeEventListener('mousedown', a.fora, true);
+  document.removeEventListener('keydown', a.tecla, true);
+  a.ancora.classList.remove('aberto');
+  if (a.aoFechar) a.aoFechar();
+}
+
+/**
+ * Abre a caixinha de um item da barra, acima dele (um clique de novo no mesmo item fecha).
+ * Só uma fica aberta por vez; um clique fora ou o Esc fecham.
+ * @returns {HTMLElement|null} a caixinha, ou null quando o clique fechou
+ */
+export function alternarFlutuante(ancora, montar, { aoFechar, tecla } = {}) {
+  const mesma = aberto && aberto.ancora === ancora;
+  fecharFlutuante();
+  if (mesma) return null;
+  fecharMenus();
+  const el = montar();
+  el.classList.add('flutuante');
+  const tela = document.getElementById('tela');
+  tela.append(el);
+  const r = ancora.getBoundingClientRect();
+  const t = tela.getBoundingClientRect();
+  el.style.right = Math.max(2, Math.round(t.right - r.right)) + 'px';
+  el.style.bottom = Math.round(t.bottom - r.top + 4) + 'px';
+  // Sem passar da borda esquerda da tela.
+  if (el.getBoundingClientRect().left < t.left + 2) { el.style.right = 'auto'; el.style.left = '2px'; }
+  const fora = (e) => { if (!el.contains(e.target) && !ancora.contains(e.target)) fecharFlutuante(); };
+  const tec = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); fecharFlutuante(); return; }
+    if (tecla) tecla(e);
+  };
+  document.addEventListener('mousedown', fora, true);
+  document.addEventListener('keydown', tec, true);
+  ancora.classList.add('aberto');
+  aberto = { el, ancora, fora, tecla: tec, aoFechar };
+  return el;
+}
+
+/* ---------- O calendário ---------- */
 
 /** O primeiro dia da semana do idioma (0 = domingo), como nos calendários de parede de cada lugar. */
 function primeiroDia() {
@@ -23,66 +68,53 @@ function primeiroDia() {
   return 0;
 }
 
-export function fecharCalendario() {
-  if (!calendario) return;
-  calendario.el.remove();
-  document.removeEventListener('mousedown', calendario.fora, true);
-  document.removeEventListener('keydown', calendario.tecla, true);
-  calendario = null;
-}
+export const fecharCalendario = fecharFlutuante;
 
 export function alternarCalendario(ancora) {
-  if (calendario) return fecharCalendario();
-  fecharMenus();
   const hoje = new Date();
   const mes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  const titulo = h('div.cal-titulo');
-  const grade = h('div.cal-grade');
-  const el = h('div.calendario',
-    h('div.cal-topo',
-      h('button.cal-seta', { title: tr('Mês anterior'), on: { click: () => { mes.setMonth(mes.getMonth() - 1); desenhar(); } } }, '◀'),
-      titulo,
-      h('button.cal-seta', { title: tr('Próximo mês'), on: { click: () => { mes.setMonth(mes.getMonth() + 1); desenhar(); } } }, '▶')),
-    grade,
-    h('div.cal-rodape',
-      h('a', { href: '#', on: { click: (e) => { e.preventDefault(); mes.setFullYear(hoje.getFullYear(), hoje.getMonth(), 1); desenhar(); } } },
-        tr('Hoje: {data}', { data: hoje.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) })),
-      h('a', { href: '#', on: { click: (e) => { e.preventDefault(); fecharCalendario(); abrir('painel', { secao: 'data' }); } } }, tr('Data e hora…'))));
-  const p0 = primeiroDia();
-  function desenhar() {
-    titulo.textContent = mes.toLocaleDateString(localidade(), { month: 'long', year: 'numeric' });
-    const dias = [];
-    for (let i = 0; i < 7; i++) {
-      // Uma semana qualquer que começa num domingo (2 de outubro de 2022).
-      const d = new Date(2022, 9, 2 + ((p0 + i) % 7));
-      dias.push(h('div.cal-semana', d.toLocaleDateString(localidade(), { weekday: 'narrow' })));
-    }
-    const inicio = new Date(mes);
-    inicio.setDate(1 - ((mes.getDay() - p0 + 7) % 7));
-    for (let i = 0; i < 42; i++) {
-      const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
-      const cls = ['cal-dia'];
-      if (d.getMonth() !== mes.getMonth()) cls.push('fora');
-      if (d.toDateString() === hoje.toDateString()) cls.push('hoje');
-      dias.push(h('div.' + cls.join('.'), { title: d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }, String(d.getDate())));
-    }
-    grade.replaceChildren(...dias);
-  }
-  desenhar();
-  document.getElementById('tela').append(el);
-  const r = ancora.getBoundingClientRect();
-  const t = document.getElementById('tela').getBoundingClientRect();
-  el.style.right = Math.max(2, t.right - r.right) + 'px';
-  el.style.bottom = (t.bottom - r.top + 4) + 'px';
-  const fora = (e) => { if (!el.contains(e.target) && !ancora.contains(e.target)) fecharCalendario(); };
-  const tecla = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); fecharCalendario(); }
-    if (e.key === 'PageUp') { mes.setMonth(mes.getMonth() - 1); desenhar(); }
-    if (e.key === 'PageDown') { mes.setMonth(mes.getMonth() + 1); desenhar(); }
-  };
-  document.addEventListener('mousedown', fora, true);
-  document.addEventListener('keydown', tecla, true);
-  calendario = { el, fora, tecla };
+  let desenhar = () => { };
+  alternarFlutuante(ancora, () => {
+    const titulo = h('div.cal-titulo');
+    const grade = h('div.cal-grade');
+    const el = h('div.calendario',
+      h('div.cal-topo',
+        h('button.cal-seta', { title: tr('Mês anterior'), on: { click: () => { mes.setMonth(mes.getMonth() - 1); desenhar(); } } }, '◀'),
+        titulo,
+        h('button.cal-seta', { title: tr('Próximo mês'), on: { click: () => { mes.setMonth(mes.getMonth() + 1); desenhar(); } } }, '▶')),
+      grade,
+      h('div.cal-rodape',
+        h('a', { href: '#', on: { click: (e) => { e.preventDefault(); mes.setFullYear(hoje.getFullYear(), hoje.getMonth(), 1); desenhar(); } } },
+          tr('Hoje: {data}', { data: hoje.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) })),
+        h('a', { href: '#', on: { click: (e) => { e.preventDefault(); fecharFlutuante(); abrir('painel', { secao: 'data' }); } } }, tr('Data e hora…'))));
+    const p0 = primeiroDia();
+    desenhar = () => {
+      titulo.textContent = mes.toLocaleDateString(localidade(), { month: 'long', year: 'numeric' });
+      const dias = [];
+      for (let i = 0; i < 7; i++) {
+        // Uma semana qualquer que começa num domingo (2 de outubro de 2022).
+        const d = new Date(2022, 9, 2 + ((p0 + i) % 7));
+        dias.push(h('div.cal-semana', d.toLocaleDateString(localidade(), { weekday: 'narrow' })));
+      }
+      const inicio = new Date(mes);
+      inicio.setDate(1 - ((mes.getDay() - p0 + 7) % 7));
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+        const cls = ['cal-dia'];
+        if (d.getMonth() !== mes.getMonth()) cls.push('fora');
+        if (d.toDateString() === hoje.toDateString()) cls.push('hoje');
+        dias.push(h('div.' + cls.join('.'), { title: d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }, String(d.getDate())));
+      }
+      grade.replaceChildren(...dias);
+    };
+    desenhar();
+    return el;
+  }, {
+    tecla: (e) => {
+      if (e.key === 'PageUp') { mes.setMonth(mes.getMonth() - 1); desenhar(); }
+      if (e.key === 'PageDown') { mes.setMonth(mes.getMonth() + 1); desenhar(); }
+    },
+  });
 }
 
 /* ---------- A busca ---------- */

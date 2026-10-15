@@ -221,6 +221,120 @@ PENDRIVE_16 = [
 ]
 
 
+# 1.0: a bandeja. O sino das notificações e o cadeado (das redes protegidas e da tela de bloqueio).
+SINO_16 = [
+    "................",
+    ".......KK.......",
+    "......KYYK......",
+    ".....KYWYYK.....",
+    ".....KYWYYK.....",
+    "....KYWYYYyK....",
+    "....KYWYYYyK....",
+    "....KYYYYYyK....",
+    "...KYYYYYYYyK...",
+    "...KYYYYYYYyK...",
+    "..KYYYYYYYYYyK..",
+    "..KyyyyyyyyyyK..",
+    "..KKKKKKKKKKKK..",
+    "......KyyK......",
+    ".......KK.......",
+    "................",
+]
+
+CADEADO_16 = [
+    "................",
+    "......KKKK......",
+    ".....KLLLLK.....",
+    "....KLK..KLK....",
+    "....KLK..KLK....",
+    "....KLK..KLK....",
+    "...KKKKKKKKKK...",
+    "...KYYYYYYYyK...",
+    "...KYWYYYYYyK...",
+    "...KYYYKKYYyK...",
+    "...KYYYKKYYyK...",
+    "...KYYYYKYYyK...",
+    "...KYYYYYYYyK...",
+    "...KyyyyyyyyK...",
+    "...KKKKKKKKKK...",
+    "................",
+]
+
+# O sol do brilho da tela: o disco e os oito raios.
+SOL_16 = [
+    "................",
+    ".......y........",
+    "..y....Y....y...",
+    "...Y.......Y....",
+    "......KKK.......",
+    ".....KYYYK......",
+    "....KYWYYyK.....",
+    ".yY.KYYYYyK.Yy..",
+    "....KYYYYyK.....",
+    ".....KyyyK......",
+    "......KKK.......",
+    "...Y.......Y....",
+    "..y....Y....y...",
+    ".......y........",
+    "................",
+    "................",
+]
+
+
+def sinal(n):
+    """As barras do sinal do Wi-Fi: n de 0 a 4 cheias (azuis); as outras, só o contorno cinza."""
+    linhas = [['.'] * 16 for _ in range(16)]
+    for i in range(4):
+        x0, alto = 1 + i * 4, 4 + i * 3
+        cheia = i < n
+        for y in range(14 - alto, 14):
+            for x in range(x0, x0 + 3):
+                borda = y == 14 - alto or y == 13 or x in (x0, x0 + 2)
+                if cheia:
+                    linhas[y][x] = 'K' if borda else 'b'
+                elif borda:
+                    linhas[y][x] = 'G'
+    return [''.join(l) for l in linhas]
+
+
+# O raio da bateria carregando (por cima do corpo da bateria).
+RAIO = [
+    "........KKKK....",
+    ".......KYYYK....",
+    "......KYYYK.....",
+    ".....KYYYKKKK...",
+    "....KYYYYYYYK...",
+    "....KKKKYYYK....",
+    ".......KYYK.....",
+    "......KYYK......",
+    "......KYK.......",
+    "......KK........",
+]
+
+
+def bateria(n, carga=False):
+    """A bateria deitada: n de 0 a 4 quartos (0 é quase vazia, em vermelho); com carga, o raio."""
+    linhas = [['.'] * 16 for _ in range(16)]
+    for y in range(4, 12):
+        for x in range(0, 14):
+            borda = y in (4, 11) or x in (0, 13)
+            linhas[y][x] = 'K' if borda else 'W'
+    for y in range(6, 10):
+        linhas[y][14] = 'K'
+        linhas[y][15] = 'K' if y in (6, 9) else 'G'
+    cor = 'R' if n == 0 else ('O' if n == 1 else 'V')
+    cheio = 2 if n == 0 else round(12 * n / 4)
+    for y in range(5, 11):
+        for x in range(1, 1 + cheio):
+            linhas[y][x] = cor if y < 9 else ('r' if n == 0 else ('y' if n == 1 else 'v'))
+    if carga:
+        for dy, l in enumerate(RAIO):
+            for x, ch in enumerate(l):
+                if ch != '.':
+                    linhas[3 + dy][x] = ch
+    return [''.join(l) for l in linhas]
+
+
 def grade(linhas):
     a = len(linhas)
     w = max(len(x) for x in linhas)
@@ -563,6 +677,19 @@ def gerar(serenity):
     feitos[16]['breakout'] = grade(BREAKOUT_16)
     feitos[32]['removivel'] = grade(PENDRIVE_32)
     feitos[16]['removivel'] = grade(PENDRIVE_16)
+
+    # A bandeja (1.0): o volume e a rede do SerenityOS; o sino, o cadeado, o sol, o sinal e a bateria, próprios.
+    for nome, n16 in (('som-alto', 'audio-volume-high'), ('som-medio', 'audio-volume-medium'), ('som-baixo', 'audio-volume-low'),
+                      ('som-zero', 'audio-volume-zero'), ('som-mudo', 'audio-volume-muted'),
+                      ('rede-ligada', 'network-connected'), ('rede-desligada', 'network-disconnected')):
+        feitos[16][nome] = abrir_serenity(serenity, 16, n16)
+    feitos[16]['sino'] = grade(SINO_16)
+    feitos[16]['cadeado'] = grade(CADEADO_16)
+    feitos[16]['brilho'] = grade(SOL_16)
+    for n in range(5):
+        feitos[16][f'sinal-{n}'] = grade(sinal(n))
+        feitos[16][f'bateria-{n}'] = grade(bateria(n))
+        feitos[16][f'bateria-carga-{n}'] = grade(bateria(n, True))
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

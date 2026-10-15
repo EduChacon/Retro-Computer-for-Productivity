@@ -36,7 +36,7 @@ export async function abrirNativo(id) {
   try {
     const r = await retro.nativos.abrir(id);
     if (r && r.terminal) return abrir('prompt', { comando: r.terminal, titulo: nomeNativo(id) });
-    avisar(tr('Abrindo {programa}…', { programa: nomeNativo(id) }), tr('O programa abre numa janela do computador principal.'), { icone: 'programa', som: null, ms: 3500 });
+    avisar(tr('Abrindo {programa}…', { programa: nomeNativo(id) }), tr('O programa abre numa janela do computador principal.'), { icone: 'programa', som: null, ms: 3500, guardar: false });
   } catch (e) {
     erro(tr('Não foi possível abrir o programa "{programa}": {erro}', { programa: nomeNativo(id), erro: e.message }));
   }

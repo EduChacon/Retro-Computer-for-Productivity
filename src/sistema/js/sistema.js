@@ -135,13 +135,43 @@ export function adicionarRecente(rel) {
 /* ---------- Avisos (o balão perto do relógio) ---------- */
 
 let balao = null;
-export function avisar(titulo, texto, { icone = 'msg-info', ms = 6000, som = 'info', aoClicar } = {}) {
+
+// As notificações da sessão (o sino da bandeja): as mais novas primeiro, até 50.
+export const avisos = { lista: [], naoLidos: 0 };
+let numeroAviso = 0;
+
+/** Tira uma notificação da lista (depois de clicada) ou todas (sem id). */
+export function esquecerAviso(id) {
+  avisos.lista = id == null ? [] : avisos.lista.filter((a) => a.id !== id);
+  if (id == null) avisos.naoLidos = 0;
+  eventos.emit('avisos', avisos);
+}
+
+export function avisosLidos() {
+  if (!avisos.naoLidos) return;
+  avisos.naoLidos = 0;
+  eventos.emit('avisos', avisos);
+}
+
+/**
+ * O balão perto do relógio, guardado também nas notificações do sino.
+ * Com "Não perturbe", fica só no sino (sem balão nem som).
+ */
+export function avisar(titulo, texto, { icone = 'msg-info', ms = 6000, som = 'info', aoClicar, guardar = true } = {}) {
+  const id = ++numeroAviso;
+  if (guardar) {
+    avisos.lista = [{ id, titulo: String(titulo), texto: String(texto ?? ''), icone, aoClicar, em: Date.now() }, ...avisos.lista].slice(0, 50);
+    avisos.naoLidos++;
+    eventos.emit('avisos', avisos);
+  }
+  const clicar = () => { esquecerAviso(id); if (aoClicar) aoClicar(); };
+  if (estado.config && estado.config.naoPerturbe) return;
   if (balao) balao.remove();
   // Os ícones das caixas de mensagem só existem em 32 pontos; os outros vão no tamanho da bandeja.
   balao = h('div.aviso-balao', img(icone, icone.startsWith('msg-') ? 32 : 16), h('div', h('b', titulo), texto));
   if (aoClicar) {
     balao.style.cursor = 'pointer';
-    balao.addEventListener('click', () => { balao.remove(); aoClicar(); });
+    balao.addEventListener('click', () => { balao.remove(); clicar(); });
   }
   document.getElementById('tela').append(balao);
   if (som) tocar(som);
