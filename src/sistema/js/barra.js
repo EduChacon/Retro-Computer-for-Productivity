@@ -86,6 +86,7 @@ function tique() {
   if (relogio.dataset.chave !== chave) {
     relogio.dataset.chave = chave;
     relogio.classList.toggle('com-data', !!data);
+    document.body.classList.toggle('barra-alta', !!data);
     relogio.replaceChildren(...(data ? [h('span', hora), h('span', data)] : [hora]));
   }
   relogio.dataset.dica = d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });

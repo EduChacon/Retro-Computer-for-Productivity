@@ -268,7 +268,7 @@ function caixaBateria() {
   const pct = Math.round(bat.nivel * 100);
   const corpo = caixa('bateria',
     cabecalho(tr('Bateria')),
-    h('div.bat-linha', img(iconeBateria(), 16), h('div.bat-medida', h('div', { className: bat.nivel <= 0.1 ? 'fraca' : '', style: { width: pct + '%' } })), h('span', pct + '%')),
+    h('div.bat-linha', img(iconeBateria(), 16), h('div.bat-medida', h('div', { class: bat.nivel <= 0.1 ? 'fraca' : null, style: { width: pct + '%' } })), h('span', pct + '%')),
     h('div.cxb-texto', textoBateria()));
   const lugarBrilho = h('div');
   corpo.append(lugarBrilho);
@@ -462,9 +462,9 @@ function caixaNotificacoes() {
 
 /** Os ícones da bandeja: [rede, volume, bateria] antes do relógio e o sino depois dele. */
 export function montarBandeja() {
-  redeIco = img('rede-ligada', 16, { className: 'bandeja-ico' });
-  somIco = img('som-alto', 16, { className: 'bandeja-ico' });
-  batIco = img('bateria-4', 16, { className: 'bandeja-ico' });
+  redeIco = img('rede-ligada', 16, { class: 'bandeja-ico' });
+  somIco = img('som-alto', 16, { class: 'bandeja-ico' });
+  batIco = img('bateria-4', 16, { class: 'bandeja-ico' });
   batIco.hidden = true;
   sino = h('span.sino.bandeja-ico', img('sino', 16), h('span.sino-num', { hidden: true }));
 
