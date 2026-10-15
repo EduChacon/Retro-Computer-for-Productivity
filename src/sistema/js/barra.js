@@ -7,6 +7,7 @@
 import { h, img, caminhoTela, nomeDe, tipoDe } from './util.js';
 import { abrirMenu, fecharMenus } from './menus.js';
 import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, minimizarTodas } from './janelas.js';
+import { janelasNativas, eventosNativas, retroAtivo } from './janelas-nativas.js';
 import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pastaDocs, app, instalado } from './sistema.js';
 import { tr, marcar, localidade } from './idioma.js';
 import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './nativos.js';
@@ -80,6 +81,7 @@ export function montarBarra() {
   });
 
   evJanelas.on('mudou', desenharTarefas);
+  eventosNativas.on('mudou', desenharTarefas);
   evSistema.on('config', () => { tique(); desenharTarefas(); });
   evSistema.on('programas', desenharTarefas);
   desenharTarefas();
@@ -169,10 +171,15 @@ async function fecharTodas(js) {
 
 /* ---------- Os botões das janelas ---------- */
 
+/** A janela está na frente? (As do Linux dizem; as do Retro Computer, só com ele na frente.) */
+const naFrente = (j, ativa) => (j.nativa ? j.ativa : j === ativa && !j.minimizada);
+
 function desenharTarefas() {
   if (!tarefas || !estado.config) return;
-  const ativa = janelaAtiva();
-  const visiveis = lista.filter((j) => !j.dialogo);
+  // Com um programa do Linux na frente, nenhuma janela do Retro Computer fica apertada.
+  const ativa = retroAtivo() ? janelaAtiva() : null;
+  // As janelas dos programas do Linux (modo sistema) vêm depois das do Retro Computer.
+  const visiveis = [...lista.filter((j) => !j.dialogo), ...janelasNativas()];
   const icones = modoBotoes() === 'icones';
   // Com o nome: os fixados ficam à parte, como a Inicialização rápida da época.
   const rapidos = icones ? [] : fixados().map(programaDe).filter(Boolean);
@@ -193,11 +200,12 @@ function desenharTarefas() {
   tarefas.classList.toggle('so-icones', icones);
   if (icones) return desenharGrupos(visiveis, ativa);
   tarefas.replaceChildren(...visiveis.map((j) => {
-    const b = h('button', { title: j.titulo }, j.icone ? img(j.icone, 16) : null, h('span', j.titulo));
-    if (j === ativa && !j.minimizada) b.classList.add('apertado');
+    const pj = j.nativa && j.programa ? programaDe(j.programa) : null;
+    const b = h('button', { title: j.titulo }, pj ? iconeDe(pj) : j.icone ? img(j.icone, 16) : null, h('span', j.titulo));
+    if (naFrente(j, ativa)) b.classList.add('apertado');
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('click', () => {
-      if (j === janelaAtiva() && !j.minimizada) j.minimizar();
+      if (naFrente(j, ativa)) j.minimizar();
       else j.focar();
     });
     // O clique da roda abre outra janela do mesmo programa (como no Windows).
@@ -206,9 +214,10 @@ function desenharTarefas() {
       e.preventDefault();
       const p = programaDe(j.programa);
       abrirMenu([
-        { rotulo: tr('&Restaurar'), desativado: !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
+        // As janelas do Linux: trazer para a frente e minimizar (o tamanho é com o próprio programa).
+        { rotulo: tr('&Restaurar'), desativado: !j.nativa && !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
         { rotulo: tr('Mi&nimizar'), desativado: j.minimizada, acao: () => j.minimizar() },
-        { rotulo: tr('Ma&ximizar'), desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } },
+        ...(j.nativa ? [] : [{ rotulo: tr('Ma&ximizar'), desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } }]),
         ...(p ? [{ separador: true }, fixarOuDesafixar(p.chave)] : []),
         { separador: true },
         { rotulo: tr('&Fechar'), negrito: true, atalho: 'Alt+F4', acao: () => j.fechar() },
@@ -243,18 +252,18 @@ function desenharGrupos(visiveis, ativa) {
     const b = h('button.prog', { title: js.length === 1 ? js[0].titulo : g.p.nome }, iconeDe(g.p));
     if (js.length) b.classList.add('aberto');
     if (js.length > 1) b.classList.add('varias');
-    if (js.some((j) => j === ativa && !j.minimizada)) b.classList.add('apertado');
+    if (js.some((j) => naFrente(j, ativa))) b.classList.add('apertado');
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('auxclick', (e) => { if (e.button === 1 && g.p.abrir) g.p.abrir(); });
     b.addEventListener('click', () => {
       if (!js.length) return g.p.abrir && g.p.abrir();
       if (js.length === 1) {
         const j = js[0];
-        return j === janelaAtiva() && !j.minimizada ? j.minimizar() : j.focar();
+        return naFrente(j, ativa) ? j.minimizar() : j.focar();
       }
       const r = b.getBoundingClientRect();
       abrirMenu([
-        ...js.map((j) => ({ rotulo: j.titulo.replace(/&/g, '&&'), icone: j.icone || g.p.icone, negrito: j === janelaAtiva(), acao: () => j.focar() })),
+        ...js.map((j) => ({ rotulo: j.titulo.replace(/&/g, '&&'), icone: j.icone || g.p.icone, negrito: naFrente(j, ativa), acao: () => j.focar() })),
         ...(g.p.abrir ? [{ separador: true }, { rotulo: tr('&Nova janela'), acao: g.p.abrir }] : []),
       ], { x: r.left, y: r.top, acima: true });
     });

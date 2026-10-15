@@ -1307,3 +1307,6 @@ button.ferramenta.apertado { box-shadow: var(--raso); background: var(--face) va
 .atl-auto { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
 .janela.atualizacoes .corpo { display: flex; flex-direction: column; }
 .janela.atualizacoes.ocupada .atl-lista { cursor: progress; }
+
+/* Um programa do Linux na frente: a janela do Retro Computer perde a cor do título, como na época. */
+body.fora-de-foco .janela.ativa > .titulo { background: var(--titulo-inativo); color: var(--titulo-inativo-texto); }

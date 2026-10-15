@@ -57,6 +57,7 @@ function lerDesktop(texto, idioma = 'pt-BR') {
     terminal: /^true$/i.test(campos.Terminal || ''),
     pasta: campos.Path || null,
     categorias: (campos.Categories || '').split(';').filter(Boolean),
+    wmClass: campos.StartupWMClass || null,
   };
 }
 
@@ -177,6 +178,23 @@ class Aplicativos {
       this.lista = l.sort((a, b) => a.nome.localeCompare(b.nome, this.idioma()));
     }
     return this.lista.map(({ id, nome, terminal }) => ({ id, nome, terminal: !!terminal }));
+  }
+
+  /**
+   * O programa (o id do .desktop) de uma janela do Linux, pela classe dela: o StartupWMClass,
+   * o nome do arquivo .desktop ou o fim dele (org.gnome.Calculator), sem diferenciar maiúsculas.
+   */
+  idPorJanela({ classe = '', instancia = '' } = {}) {
+    if (this.plataforma !== 'linux') return null;
+    if (!this.lista) this.listar();
+    const nomes = [classe, instancia].filter(Boolean).map((s) => s.toLowerCase());
+    if (!nomes.length) return null;
+    const base = (id) => id.replace(/\.desktop$/, '').toLowerCase();
+    const a = this.lista.find((x) => x.wmClass && nomes.includes(x.wmClass.toLowerCase()))
+      || this.lista.find((x) => nomes.includes(base(x.id)))
+      || this.lista.find((x) => nomes.includes(base(x.id).split('.').pop()))
+      || this.lista.find((x) => nomes.includes(x.nome.toLowerCase()));
+    return a ? a.id : null;
   }
 
   achar(id) {

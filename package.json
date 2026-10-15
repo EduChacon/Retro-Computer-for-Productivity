@@ -110,6 +110,9 @@
         "flatpak",
         "lxpolkit",
         "wmctrl",
+        "xdotool",
+        "x11-utils",
+        "udisks2",
         "bluez",
         "cups"
       ]

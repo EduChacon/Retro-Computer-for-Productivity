@@ -9,6 +9,7 @@ import { estado } from './sistema.js';
 import { fecharMenus } from './menus.js';
 import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
+import { minimizarNativas } from './janelas-nativas.js';
 
 let tela = null;
 
@@ -20,6 +21,8 @@ const opcao = (k, padrao) => { const b = (estado.config && estado.config.bloquei
 export function bloquear() {
   if (tela || !temSenha()) return false;
   fecharMenus();
+  // As janelas dos programas do Linux saem da frente (senão ficariam por cima da tela de bloqueio).
+  minimizarNativas();
   // O foco sai de onde estava (uma página do Navegador, um programa): o teclado vem para a senha.
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   const campo = h('input', { type: 'password', autocomplete: 'off', spellcheck: false, 'aria-label': tr('Senha:') });

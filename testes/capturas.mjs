@@ -1091,6 +1091,25 @@ const ROTEIROS = {
     await foto('atualizacoes-instaladas');
   },
 
+  // Os programas do Linux na barra de tarefas (com RETRO_JANELAS_FALSAS=1).
+  async janelasLinux() {
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(1500);
+    await foto('janelas-linux-barra');
+    await pagina.click('#tarefas button:has-text("Calculadora")');
+    await pagina.waitForTimeout(800);
+    await foto('janelas-linux-ativa');
+    await pagina.click('#tarefas button:has-text("Calculadora")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('janelas-linux-menu');
+    await pagina.keyboard.press('Escape');
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ barra: { botoes: 'icones' } })));
+    await pagina.waitForTimeout(600);
+    await foto('janelas-linux-icones');
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ barra: { botoes: 'nomes' } })));
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

@@ -31,6 +31,7 @@ const { Monitor } = require('./monitor');
 const { Impressoras, ImpressorasFalsas } = require('./impressoras');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
+const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -87,6 +88,7 @@ let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja
 let loja = null; // os programas do Linux pelo Flathub (loja.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
+let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -689,6 +691,16 @@ function registrarPonte() {
   tratar('nativos:listar', (atualizar) => aplicativos.listar(!!atualizar));
   tratar('nativos:icone', (id) => aplicativos.icone(String(id)));
   tratar('nativos:abrir', (id) => aplicativos.abrir(String(id)));
+  // As janelas dos programas do Linux (modo sistema): a barra de tarefas mostra e comanda.
+  tratar('janelasLinux:listar', () => (janelasLinux ? janelasLinux.listar() : { lista: [], retroAtivo: true }));
+  tratar('janelasLinux:ativar', (id) => janelasLinux && janelasLinux.ativar(String(id)));
+  tratar('janelasLinux:minimizar', (id) => janelasLinux && janelasLinux.minimizar(String(id)));
+  tratar('janelasLinux:fechar', (id) => janelasLinux && janelasLinux.fechar(String(id)));
+  tratar('janelasLinux:minimizarTodas', async () => {
+    const n = janelasLinux ? await janelasLinux.minimizarTodas() : 0;
+    if (janela && !janela.isDestroyed()) janela.focus();
+    return n;
+  });
   tratar('navegador:responder', (id, resposta) => { const f = perguntas.get(id); if (f) f(resposta); return !!f; });
   tratar('navegador:esquecerPermissoes', () => {
     destaVez = {};
@@ -863,6 +875,13 @@ app.whenReady().then(async () => {
   programas = new Programas(path.join(app.getPath('userData'), 'programas'), (url, o) => net.fetch(url, o));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
+  if (MODO_SISTEMA || process.env.RETRO_JANELAS_FALSAS) {
+    janelasLinux = new (process.env.RETRO_JANELAS_FALSAS ? JanelasFalsas : JanelasLinux)({
+      pidsProprios: () => new Set([process.pid, ...app.getAppMetrics().map((m) => m.pid)]),
+      programaDe: (j) => { try { return aplicativos.idPorJanela(j); } catch { return null; } },
+      aoMudar: (r) => enviar('janelasLinux:mudou', r),
+    });
+  }
   bloqueio = new Bloqueio(config);
   // A tela bloqueia antes de o computador dormir (e quando o próprio sistema bloqueia):
   // na volta, a senha é pedida.
@@ -901,6 +920,7 @@ app.whenReady().then(async () => {
   registrarPonte();
   teclasDoSistema();
   criarJanela();
+  if (janelasLinux) janela.webContents.once('did-finish-load', () => janelasLinux.vigiar());
 });
 
 app.on('window-all-closed', () => {

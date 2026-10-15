@@ -61,6 +61,14 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  janelasLinux: {
+    listar: () => chamar('janelasLinux:listar'),
+    ativar: (id) => chamar('janelasLinux:ativar', id),
+    minimizar: (id) => chamar('janelasLinux:minimizar', id),
+    fechar: (id) => chamar('janelasLinux:fechar', id),
+    minimizarTodas: () => chamar('janelasLinux:minimizarTodas'),
+    aoMudar: ouvir('janelasLinux:mudou'),
+  },
   atualizacoesLinux: {
     listar: () => chamar('atualizacoesLinux:listar'),
     procurar: (senha) => chamar('atualizacoesLinux:procurar', senha),
