@@ -1,6 +1,7 @@
 /*
  * Os sons do sistema, sintetizados na hora (nenhum arquivo de som de terceiros):
- * a abertura, o desligar, o erro, o aviso, a pergunta, a lixeira, o fim do foco e os jogos.
+ * a abertura, o desligar, o erro, o aviso, a pergunta, a lixeira, o obturador da Captura de
+ * tela, o fim do foco e os jogos.
  */
 let ctx = null;
 let ligado = true;
@@ -113,6 +114,28 @@ const SONS = {
     g.gain.value = 0.5;
     src.connect(f).connect(g).connect(saida());
     src.start(t);
+  },
+  /** O obturador da Captura de tela: dois estalos curtos de ruído (abre e fecha). */
+  captura() {
+    const c = contexto();
+    const t = c.currentTime + 0.01;
+    const s = saidaSeca();
+    [0, 0.09].forEach((dt, k) => {
+      const n = Math.floor(c.sampleRate * 0.05);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = k ? 2600 : 3800;
+      f.Q.value = 1.2;
+      const g = c.createGain();
+      g.gain.value = 0.7;
+      src.connect(f).connect(g).connect(s);
+      src.start(t + dt);
+    });
   },
   foco() {
     const t = contexto().currentTime + 0.01;

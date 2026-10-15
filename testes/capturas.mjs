@@ -883,6 +883,52 @@ const ROTEIROS = {
     console.log('pastas:', fs.readdirSync(path.join(disco, DOCS)).sort().join(' | '));
   },
 
+  // A Captura de tela (a janela da frente, um pedaço e a tecla) e o Monitor do sistema.
+  async capturaMonitor() {
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.type('Uma janela para capturar.');
+    await abrir('captura');
+    await pagina.waitForTimeout(500);
+    await foto('captura-vazia');
+    await pagina.selectOption('.janela.captura select >> nth=0', 'janela');
+    await pagina.click('.janela.captura .barra-ferramentas button >> nth=0');
+    await pagina.waitForTimeout(1800);
+    await foto('captura-janela');
+    await pagina.selectOption('.janela.captura select >> nth=0', 'regiao');
+    await pagina.click('.janela.captura .barra-ferramentas button >> nth=0');
+    await pagina.waitForSelector('#captura-regiao', { timeout: 10000 });
+    await pagina.mouse.move(60, 60);
+    await pagina.mouse.down();
+    await pagina.mouse.move(300, 200, { steps: 5 });
+    await pagina.waitForTimeout(300);
+    await foto('captura-escolhendo');
+    await pagina.mouse.up();
+    await pagina.waitForTimeout(1500);
+    await foto('captura-pedaco');
+    await pagina.evaluate(() => import('./js/apps/captura.js').then((m) => m.capturaRapida('tela')));
+    await pagina.waitForTimeout(1500);
+    await foto('captura-tecla');
+    const pasta = path.join(disco, DOCS, T('Capturas de tela'));
+    console.log('capturas guardadas:', fs.existsSync(pasta) ? fs.readdirSync(pasta).length : 0);
+    // O Monitor pelo atalho (Ctrl+Shift+Esc chega pelo processo principal).
+    await app.evaluate(({ BrowserWindow }) => {
+      const wc = BrowserWindow.getAllWindows()[0].webContents;
+      wc.sendInputEvent({ type: 'keyDown', keyCode: 'Escape', modifiers: ['control', 'shift'] });
+      wc.sendInputEvent({ type: 'keyUp', keyCode: 'Escape', modifiers: ['control', 'shift'] });
+    });
+    await pagina.waitForSelector('.janela.monitor', { timeout: 10000 });
+    await pagina.waitForTimeout(800);
+    await foto('monitor-programas');
+    await pagina.click('.janela.monitor .abas > div >> nth=1');
+    await pagina.waitForTimeout(2500);
+    await foto('monitor-processos');
+    await pagina.click('.janela.monitor .abas > div >> nth=2');
+    await pagina.waitForTimeout(6500);
+    await foto('monitor-desempenho');
+  },
+
   // Os jogos: as regras (conferidas aqui) e as janelas.
   async jogos() {
     await fecharTudo();

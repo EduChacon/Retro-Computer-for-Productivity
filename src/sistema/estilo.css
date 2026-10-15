@@ -1168,3 +1168,44 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .janela.reprodutor.rep-cheia .rep-controles { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; padding: 4px; background: var(--face); box-shadow: var(--relevo); transform: translateY(110%); transition: transform 0.2s; }
 .janela.reprodutor.rep-cheia.rep-mostrar .rep-controles { transform: none; }
 .janela.reprodutor.rep-cheia:not(.rep-mostrar) .rep-tela { cursor: none; }
+
+/* A Captura de tela. */
+.cap-area { flex: 1 1 auto; min-height: 0; display: flex; overflow: auto; padding: 6px; background: #808080; box-shadow: var(--campo); }
+.cap-previa { display: none; flex: none; margin: auto; max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); }
+.cap-area.com-imagem .cap-previa { display: block; }
+.cap-area.com-imagem .cap-vazio { display: none; }
+.cap-vazio { margin: auto; padding: 8px; color: #fff; text-align: center; }
+.janela.captura .barra-ferramentas select { height: 22px; }
+#captura-regiao { position: fixed; inset: 0; z-index: 2147482000; cursor: crosshair; background-size: 100% 100%; touch-action: none; }
+.cap-escuro { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); }
+.cap-caixa { display: none; position: absolute; outline: 1px dashed #fff; box-shadow: 0 0 0 1px #000; background-repeat: no-repeat; }
+.cap-dica { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 3px 10px; background: var(--face); box-shadow: var(--relevo); }
+
+/* O Monitor do sistema. */
+.mon-paineis { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.mon-painel { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; overflow: hidden; }
+.mon-painel[hidden] { display: none; }
+.mon-tabela { flex: 1 1 auto; min-height: 60px; display: flex; flex-direction: column; background: #fff; box-shadow: var(--campo); padding: 2px; }
+.mon-cab { flex: none; display: flex; }
+.mon-cab > div { padding: 1px 6px; background: var(--face); box-shadow: var(--relevo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+.mon-cab > div:active { box-shadow: var(--raso); padding: 2px 5px 0 7px; }
+.mon-corpo { flex: 1 1 auto; min-height: 0; overflow: auto; outline: none; }
+.mon-linha { display: flex; height: 18px; align-items: center; }
+.mon-linha > div { display: flex; align-items: center; gap: 3px; padding: 0 6px; overflow: hidden; white-space: nowrap; }
+.mon-linha > div > span { overflow: hidden; text-overflow: ellipsis; }
+.mon-linha > div > img { width: 16px; height: 16px; flex: none; }
+.mon-linha.apagada { color: var(--sombra); }
+.mon-linha.sel { background: var(--selecao); color: var(--selecao-texto); }
+.mon-corpo:focus .mon-linha.sel { outline: 1px dotted #fff; outline-offset: -1px; }
+.mon-cab > .numero, .mon-linha > .numero { justify-content: flex-end; text-align: right; }
+.mon-rodape { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mon-linha-graficos { flex: none; display: flex; gap: 8px; }
+.mon-linha-graficos .mon-quadro:last-child { flex: 1 1 auto; min-width: 0; }
+.mon-quadro { margin: 0; padding: 4px 8px 8px; }
+.mon-medidor { display: block; width: 70px; height: 84px; box-shadow: var(--campo); }
+.mon-grafico { display: block; width: 100%; height: 84px; box-shadow: var(--campo); }
+.mon-totais { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, auto); grid-auto-flow: column; gap: 2px 16px; }
+.mon-totais > div { display: flex; justify-content: space-between; gap: 8px; }
+.mon-desempenho { overflow-y: auto; }
+.mon-linha-graficos .mon-quadro:first-child { flex: none; width: 96px; box-sizing: border-box; }
+.mon-linha-graficos .mon-quadro:first-child .mon-medidor { margin: 0 auto; }

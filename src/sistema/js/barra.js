@@ -280,7 +280,9 @@ async function itensProgramas() {
       rotulo: tr('Acessórios'), icone: 'pasta-programas', sub: () => [
         { rotulo: tr('Bloco de notas'), icone: 'bloco', acao: () => abrir('bloco') },
         { rotulo: tr('Calculadora'), icone: 'calculadora', acao: () => abrir('calculadora') },
+        { rotulo: tr('Captura de tela'), icone: 'captura', acao: () => abrir('captura') },
         { rotulo: tr('Foco (Pomodoro)'), icone: 'foco', acao: () => abrir('foco') },
+        { rotulo: tr('Monitor do sistema'), icone: 'monitor', acao: () => abrir('monitor') },
         { rotulo: tr('Prompt de comando'), icone: 'prompt', acao: () => abrir('prompt') },
         { rotulo: tr('Reprodutor de mídia'), icone: 'reprodutor', acao: () => abrir('midia') },
         { rotulo: tr('Visualizador de imagens'), icone: 'imagens', acao: () => abrir('imagens') },

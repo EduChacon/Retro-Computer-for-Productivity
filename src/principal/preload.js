@@ -61,6 +61,15 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  monitor: {
+    amostra: () => chamar('monitor:amostra'),
+    processos: () => chamar('monitor:processos'),
+    finalizar: (pid, forcar) => chamar('monitor:finalizar', pid, forcar),
+  },
+  captura: {
+    tirar: () => chamar('captura:tirar'),
+    copiar: (png) => chamar('captura:copiar', png),
+  },
   compactados: {
     listar: (rel) => chamar('compactados:listar', rel),
     extrair: (rel, o) => chamar('compactados:extrair', rel, o),

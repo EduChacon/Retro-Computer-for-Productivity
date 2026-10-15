@@ -9,7 +9,7 @@
  * A área de trabalho fala com este processo só pela ponte do preload
  * (window.retro); os programas, só pela área de trabalho (postMessage).
  */
-const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -27,6 +27,7 @@ const { Bloqueio, semSegredos } = require('./bloqueio');
 const { Unidades, UnidadesFalsas } = require('./unidades');
 const { servirArquivo } = require('./servir');
 const compactados = require('./compactados');
+const { Monitor } = require('./monitor');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -224,11 +225,14 @@ function criarJanela() {
     prefs.spellcheck = false;
     if (params.partition !== SESSAO_NAVEGADOR || !enderecoDaWeb(params.src || 'about:blank')) e.preventDefault();
   });
-  // F11 alterna a tela cheia (também dentro dos programas).
+  // F11 alterna a tela cheia (também dentro dos programas); Ctrl+Shift+Esc abre o Monitor do sistema.
   wc.on('before-input-event', (e, entrada) => {
     if (entrada.type === 'keyDown' && entrada.key === 'F11') {
       e.preventDefault();
       alternarTelaCheia();
+    } else if (entrada.type === 'keyDown' && entrada.key === 'Escape' && entrada.control && entrada.shift && !MODO_SISTEMA) {
+      e.preventDefault();
+      enviar('sistema:tecla', 'monitor');
     }
   });
   janela.on('enter-full-screen', () => enviar('sistema:telaCheia', true));
@@ -405,7 +409,10 @@ function pedirAoUsuario(canal, dados) {
 function teclasDoSistema() {
   if (!MODO_SISTEMA) return;
   const globais = new Set();
-  for (const [tecla, acao] of [['VolumeUp', 'volume+'], ['VolumeDown', 'volume-'], ['VolumeMute', 'mudo']]) {
+  // Também valem com um programa do Linux em foco: o volume, a Captura de tela (Print Screen:
+  // a tela; Alt: a janela; Shift: um pedaço) e o Monitor do sistema (Ctrl+Shift+Esc).
+  for (const [tecla, acao] of [['VolumeUp', 'volume+'], ['VolumeDown', 'volume-'], ['VolumeMute', 'mudo'],
+    ['PrintScreen', 'captura'], ['Alt+PrintScreen', 'captura-janela'], ['Shift+PrintScreen', 'captura-regiao'], ['Control+Shift+Escape', 'monitor']]) {
     try { if (globalShortcut.register(tecla, () => enviar('sistema:tecla', acao))) globais.add(acao); } catch { }
   }
   const DO_TECLADO = { AudioVolumeUp: 'volume+', AudioVolumeDown: 'volume-', AudioVolumeMute: 'mudo', BrightnessUp: 'brilho+', BrightnessDown: 'brilho-', LaunchCalculator: 'calculadora', LaunchApplication2: 'calculadora' };
@@ -423,7 +430,9 @@ function teclasDoSistema() {
           enviar('sistema:tecla', 'bloquear');
           return;
         }
-        const acao = DO_TECLADO[input.key];
+        let acao = DO_TECLADO[input.key];
+        if (input.key === 'PrintScreen') acao = input.alt ? 'captura-janela' : input.shift ? 'captura-regiao' : 'captura';
+        if (input.key === 'Escape' && input.control && input.shift) acao = 'monitor';
         if (acao && !globais.has(acao)) {
           e.preventDefault();
           enviar('sistema:tecla', acao);
@@ -734,6 +743,29 @@ function registrarPonte() {
     setTimeout(() => app.exit(0), 50);
   });
   tratar('sistema:escalaTela', () => (janela ? screen.getDisplayMatching(janela.getBounds()).scaleFactor : 1));
+  // O Monitor do sistema.
+  const monitor = new Monitor({ app });
+  tratar('monitor:amostra', () => monitor.amostra());
+  tratar('monitor:processos', () => monitor.processos());
+  tratar('monitor:finalizar', (pid, forcar) => monitor.finalizar(pid, !!forcar));
+  // A Captura de tela: no modo sistema, a tela inteira (com os programas do Linux por cima);
+  // nos outros, o conteúdo da janela do Retro Computer.
+  tratar('captura:tirar', async () => {
+    if (MODO_SISTEMA) {
+      try {
+        const d = screen.getDisplayMatching(janela.getBounds());
+        const tamanho = { width: Math.round(d.size.width * d.scaleFactor), height: Math.round(d.size.height * d.scaleFactor) };
+        const fontes = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: tamanho });
+        const f = fontes.find((s) => String(s.display_id) === String(d.id)) || fontes[0];
+        if (f && !f.thumbnail.isEmpty()) return new Uint8Array(f.thumbnail.toPNG());
+      } catch { }
+    }
+    return new Uint8Array((await janela.webContents.capturePage()).toPNG());
+  });
+  tratar('captura:copiar', (png) => {
+    clipboard.writeImage(nativeImage.createFromBuffer(Buffer.from(png)));
+    return true;
+  });
   tratar('sistema:zoom', (fator) => {
     if (janela && fator > 0.2 && fator < 6) janela.webContents.setZoomFactor(fator);
   });

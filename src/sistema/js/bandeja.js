@@ -481,6 +481,8 @@ export function montarBandeja() {
     else if (acao === 'iniciar') import('./barra.js').then((m) => m.alternarIniciar());
     else if (acao === 'calculadora') abrir('calculadora');
     else if (acao === 'bloquear') import('./bloqueio.js').then((m) => m.bloquear());
+    else if (acao === 'monitor') abrir('monitor');
+    else if (acao.startsWith('captura')) import('./apps/captura.js').then((m) => m.capturaRapida(acao === 'captura-janela' ? 'janela' : acao === 'captura-regiao' ? 'regiao' : 'tela'));
   });
   return { antes: [redeIco, somIco, batIco], depois: [sino] };
 }

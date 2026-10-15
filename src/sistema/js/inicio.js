@@ -33,6 +33,8 @@ import './apps/breakout.js';
 import './apps/nativos.js';
 import './apps/imagens.js';
 import './apps/midia.js';
+import './apps/captura.js';
+import './apps/monitor.js';
 
 const boot = document.getElementById('boot');
 
