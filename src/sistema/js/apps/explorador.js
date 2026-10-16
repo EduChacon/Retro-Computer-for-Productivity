@@ -668,7 +668,15 @@ class Explorador {
         itens.push({ separador: true }, { rotulo: tr('P&ropriedades'), acao: () => (it.chave === 'disco' ? abrir('painel', { secao: 'disco' }) : propriedades(pastaDocs())) });
       }
       if (it.chave === 'lixeira') itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
-      if (it.unidadeRaiz) itens.push({ separador: true }, { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(it.unidadeRaiz) });
+      if (it.chave === 'disco') itens.push({ rotulo: tr('Verificar com o antivír&us'), icone: 'seguranca', acao: () => abrir('antivirus', { alvo: { tipo: 'disco', rel: '' } }) });
+      if (it.unidadeRaiz) {
+        const u = it.unidadeRaiz;
+        itens.push({ separador: true },
+          { rotulo: tr('Verificar com o antivír&us'), icone: 'seguranca', desativado: !u.montada && !u.raiz, acao: () => abrir('antivirus', { alvo: { tipo: 'unidade', id: u.id, rel: '', nome: nomeUnidade(u) } }) },
+          { rotulo: tr('&Formatar…'), acao: () => import('../formatar.js').then((m) => m.formatarUnidade(u)) },
+          { separador: true },
+          { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(u) });
+      }
       return abrirMenu(itens, pos);
     }
     const zip = lerPastaZip(this.pasta);

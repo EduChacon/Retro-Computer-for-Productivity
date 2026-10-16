@@ -77,6 +77,7 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 - Dois cliques num arquivo do pendrive o copiam para `Meus documentos/Recebidos` e o abrem de lá; o original fica intacto. Para trazer vários: botão direito › "Copiar para Meus documentos" ou "Copiar para a Área de trabalho".
 - Para levar: botão direito num arquivo do disco C: › Enviar para › o pendrive (ou Copiar e Colar). Nada é apagado nem gravado por cima no pendrive.
 - Antes de tirar: botão direito no pendrive › "Remover com segurança".
+- **Formatar** (botão direito no pendrive, no Linux): exFAT (lido pelo Windows, pelo Mac e pelo Linux) ou FAT32 (os aparelhos antigos), com o rótulo; pede a confirmação e a senha de administrador. Um pendrive que guarda o disco C: (o modo portátil) ou o próprio sistema não é formatado. No Windows e no Mac, a caixa leva ao Explorador de Arquivos ou ao Utilitário de Disco.
 
 ### O Explorador e as pastas compactadas
 
@@ -125,6 +126,8 @@ Painel de controle › **Segurança** mostra o estado de cada proteção, com o 
 Painel de controle › **Cópia de segurança** copia o disco C: inteiro, com a Lixeira e as versões anteriores, para outra pasta (um disco externo, um pendrive, a pasta de uma nuvem do computador principal), todo dia ou toda semana, ou na hora ("Fazer a cópia agora"). Ela fica numa pasta "Cópia do Retro Computer" dentro do destino e só acrescenta e atualiza: um arquivo excluído do disco C: continua na cópia. Com o destino desligado, a cópia espera e é feita quando ele voltar; o fim (ou o erro) aparece num aviso.
 
 No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw`, que o pacote do Retro Computer recomenda): ele recusa as conexões que chegam de outros computadores, e a internet continua como antes. Ligar e desligar pedem a senha de administrador.
+
+**O antivírus sob demanda**: botão direito num arquivo, numa pasta, no disco C: ou num pendrive › "Verificar com o antivírus" (ou Painel de controle › Segurança › Verificar…). No Linux, ele usa o ClamAV (o `clamscan`; a janela o instala com a senha de administrador, se faltar, e atualiza as definições); no Windows, o Microsoft Defender (o `MpCmdRun`, sem deixar que ele apague nada); no macOS, o próprio sistema verifica os arquivos (o XProtect). Nada é apagado: o que for achado aparece na lista, e os do disco C: podem ir para a Lixeira.
 
 ### A tela e a energia
 

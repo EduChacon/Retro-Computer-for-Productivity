@@ -241,6 +241,8 @@ export function menuDeItens(sel, o = {}) {
     if (ehCompactado(um.nome)) itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(um.rel) });
     itens.push({ rotulo: tr('Pe&dir ao Claude'), icone: 'claude', sub: () => pedidosAoClaude(um) });
   }
+  // O antivírus: um arquivo ou uma pasta de cada vez.
+  if (um && um.rel != null) itens.push({ rotulo: tr('Verificar com o antivír&us'), icone: 'seguranca', acao: () => abrir('antivirus', { alvo: { tipo: 'disco', rel: um.rel } }) });
   if (sel.length) {
     itens.push({ separador: true });
     itens.push({ rotulo: tr('Recor&tar'), atalho: 'Ctrl+X', acao: () => copiarItens(rels, true) });

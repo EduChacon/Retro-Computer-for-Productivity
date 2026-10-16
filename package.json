@@ -113,6 +113,8 @@
         "pipewire-pulse | pulseaudio-utils | alsa-utils",
       "pulseaudio-utils",
       "xkbset",
+      "dosfstools",
+      "exfatprogs",
         "flatpak",
         "lxpolkit",
         "wmctrl",

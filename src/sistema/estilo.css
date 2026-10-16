@@ -1475,3 +1475,12 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 /* A lupa (logotipo + "+"): a tela inteira ampliada em volta do ponteiro. */
 #tela.com-lupa { transform-origin: var(--lupa-x, 50%) var(--lupa-y, 50%); transform: scale(var(--lupa, 1)); }
 .lupa-aviso { position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 100000; padding: 3px 8px; background: var(--dica); color: #000; box-shadow: 1px 1px 0 var(--escuro), inset 0 0 0 1px var(--escuro); pointer-events: none; }
+
+/* O Antivírus: a lista das ameaças encontradas. */
+.av-lista { flex: 1 1 auto; min-height: 70px; height: auto; overflow: auto; padding: 2px; background: #fff; }
+.av-linha { display: grid; grid-template-columns: 16px 1fr auto; gap: 6px; align-items: center; padding: 1px 2px; }
+.av-linha.sel { background: var(--selecao); color: var(--selecao-texto); }
+.av-arquivo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.av-ameaca { color: #800000; white-space: nowrap; }
+.av-linha.sel .av-ameaca { color: inherit; }
+.av-nada { color: var(--sombra); padding: 2px 4px; }

@@ -52,6 +52,19 @@ function lerLsblk(json) {
   return r;
 }
 
+/**
+ * O comando que formata uma partição do pendrive (Linux): o exFAT (o padrão, lido pelo Windows,
+ * pelo Mac e pelo Linux) ou o FAT32 (os aparelhos antigos, com arquivos de até 4 GB). Só os nomes
+ * de dispositivo de disco passam; o rótulo fica só com letras, números, espaço, "-" e "_".
+ */
+function comandoFormatar(dispositivo, sistema, rotulo) {
+  if (!/^\/dev\/(sd[a-z]+\d*|mmcblk\d+(p\d+)?|nvme\d+n\d+(p\d+)?|vd[a-z]+\d*)$/.test(String(dispositivo))) return null;
+  const limpo = String(rotulo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _-]/g, '').trim();
+  if (sistema === 'fat32') return ['mkfs.vfat', ['-F', '32', '-n', (limpo || 'PENDRIVE').toUpperCase().slice(0, 11).trim(), dispositivo]];
+  if (sistema === 'exfat') return ['mkfs.exfat', ['-L', (limpo || 'PENDRIVE').slice(0, 15).trim(), dispositivo]];
+  return null;
+}
+
 /** "Mounted /dev/sdb1 at /media/eu/PENDRIVE" (udisksctl mount) → o lugar. */
 function lerMontagem(s) {
   const m = /\bat\s+(\/.+?)\.?\s*$/m.exec(String(s).trim());
@@ -167,6 +180,28 @@ class Unidades {
     return { ok: true };
   }
 
+  /**
+   * Formata o pendrive (Linux, com a senha de administrador): desmonta, formata a partição e
+   * monta de novo. Tudo o que havia nele é apagado: a tela pede a confirmação antes.
+   */
+  async formatar(id, { sistema = 'exfat', rotulo = '' } = {}, senha, comoAdmin) {
+    if (this.plataforma !== 'linux') return { ok: false, sistema: true };
+    const u = await this.unidade(id);
+    const cmd = comandoFormatar(u.id, sistema, rotulo);
+    if (!cmd) return { ok: false, erro: 'unidade' };
+    if (u.montada) {
+      try { await rodar('udisksctl', ['unmount', '-b', u.id, '--no-user-interaction'], { timeout: 60000 }); } catch (e) {
+        const ocupado = /busy|in use/i.test(String(e.saida || e.message));
+        return { ok: false, ocupado, erro: String(e.saida || e.message).split('\n')[0].slice(0, 300) };
+      }
+    }
+    const r = await comoAdmin(senha, cmd[0], cmd[1], { timeout: 10 * 60 * 1000 });
+    // Formatada ou não, a unidade volta a ficar à vista.
+    await rodar('udisksctl', ['mount', '-b', u.id, '--no-user-interaction'], { timeout: 30000 }).catch(() => { });
+    await this.listar();
+    return r;
+  }
+
   /** O conteúdo de uma pasta da unidade. */
   async listarPasta(id, rel = '') {
     const u = await this.montar(id);
@@ -224,6 +259,13 @@ class UnidadesFalsas extends Unidades {
     this.ligada = false;
     return { ok: true };
   }
+
+  // A de mentira não apaga nada: só confere a senha de teste ("certa") e o comando.
+  async formatar(id, { sistema = 'exfat', rotulo = '' } = {}, senha) {
+    if (senha !== 'certa') return { ok: false, senhaErrada: true };
+    this.formatada = comandoFormatar('/dev/sdz1', sistema, rotulo);
+    return { ok: true };
+  }
 }
 
-module.exports = { Unidades, UnidadesFalsas, lerLsblk, lerMontagem, dentro, escondida };
+module.exports = { Unidades, UnidadesFalsas, lerLsblk, lerMontagem, dentro, escondida, comandoFormatar };

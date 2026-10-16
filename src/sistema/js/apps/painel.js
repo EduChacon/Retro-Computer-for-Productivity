@@ -616,6 +616,7 @@ function dialogoSeguranca() {
   const fw = linux ? linha(tr('Firewall'), tr('Configurar…'), () => depois(dialogoFirewall())) : null;
   const atl = linux ? linha(tr('Atualizações de segurança'), tr('Atualizações…'), () => abrir('atualizacoes')) : null;
   const chave = linha(tr('Chave de API do Claude'), tr('Claude…'), () => dialogoClaude());
+  const av = linha(tr('Antivírus'), tr('Verificar…'), () => abrir('antivirus'));
 
   async function ler() {
     const b = estado.config.bloqueio || {};
@@ -637,6 +638,10 @@ function dialogoSeguranca() {
       else if (r.automaticas) atl.definir(true, tr('Automáticas'), tr('As correções de segurança do Linux entram sozinhas, todo dia.'));
       else atl.definir(false, tr('Manuais'), tr('As correções de segurança só entram quando você as instala.'));
     }
+    const e = await retro.antivirus.estado().catch(() => ({ disponivel: false }));
+    if (e.disponivel) av.definir(true, tr('Pronto'), e.motor === 'clamav' ? tr('O ClamAV verifica o disco C:, uma pasta ou um pendrive quando você pede (botão direito › Verificar com o antivírus).') : tr('O Microsoft Defender do Windows protege sempre; aqui, ele verifica o que você pedir.'));
+    else if (e.instalavel) av.definir(false, tr('Não instalado'), tr('O antivírus ClamAV não está instalado. Verificar… o instala.'));
+    else av.definir(true, tr('Pelo sistema'), tr('O próprio sistema verifica os arquivos.'));
     const s = await retro.seguranca.estado().catch(() => ({}));
     if (!s.temChave) chave.definir(true, tr('Nenhuma'), tr('Nenhuma chave de API guardada (o Claude Code pode entrar com a conta).'));
     else if (s.chaveiro === 'basic_text') chave.definir(false, tr('Sem chaveiro'), tr('Sem o chaveiro do Linux, a chave fica só embaralhada no disco. Instale o GNOME Keyring (o pacote gnome-keyring) e entre de novo no computador.'));
@@ -646,7 +651,7 @@ function dialogoSeguranca() {
   const estadoAba = h('div',
     h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('seguranca', 32),
       h('div', { style: { lineHeight: '13px' } }, tr('O estado das proteções deste computador. O que estiver em vermelho merece uma olhada.'))),
-    bloq.el, fw && fw.el, atl && atl.el, chave.el);
+    bloq.el, fw && fw.el, atl && atl.el, av.el, chave.el);
 
   const n = estado.config.navegador || {};
   const chkHttps = h('input', { type: 'checkbox', checked: n.soHttps !== false });

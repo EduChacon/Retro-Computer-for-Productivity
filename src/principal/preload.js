@@ -272,7 +272,20 @@ contextBridge.exposeInMainWorld('retro', {
     ejetar: (id) => chamar('unidades:ejetar', id),
     trazer: (id, rels, destino) => chamar('unidades:trazer', id, rels, destino),
     levar: (id, rels, destino) => chamar('unidades:levar', id, rels, destino),
+    formatar: (id, opcoes, senha) => chamar('unidades:formatar', id, opcoes, senha),
+    formatarNoSistema: () => chamar('unidades:formatarNoSistema'),
     aoMudar: ouvir('unidades:mudou'),
+  },
+  // O antivírus sob demanda.
+  antivirus: {
+    estado: () => chamar('antivirus:estado'),
+    verificar: (alvo) => chamar('antivirus:verificar', alvo),
+    parar: () => chamar('antivirus:parar'),
+    instalar: (senha) => chamar('antivirus:instalar', senha),
+    atualizar: (senha) => chamar('antivirus:atualizar', senha),
+    aoAndar: ouvir('antivirus:andamento'),
+    aoAchar: ouvir('antivirus:achou'),
+    aoInstalar: ouvir('antivirus:instalando'),
   },
   // A tela de bloqueio: a senha só é conferida aqui; o resumo dela nunca vem para a página.
   bloqueio: {

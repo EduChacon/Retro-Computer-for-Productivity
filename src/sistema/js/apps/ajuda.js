@@ -121,7 +121,8 @@ const TOPICOS = [
 <h2>Levar</h2>
 <p>Botão direito num arquivo do disco C: › <b>Enviar para</b> › o pendrive. Copiar e Colar também funcionam. Nada é apagado nem gravado por cima no pendrive.</p>
 <h2>Retirar</h2>
-<p>Antes de tirar o pendrive, use o botão direito nele › <b>Remover com segurança</b> e espere o aviso.</p>`],
+<p>Antes de tirar o pendrive, use o botão direito nele › <b>Remover com segurança</b> e espere o aviso.</p>
+<p><b>Formatar</b> (botão direito no pendrive, no Linux): apaga tudo o que há nele e o prepara em exFAT (o Windows, o Mac e o Linux leem) ou FAT32 (os aparelhos antigos). Pede a confirmação e a senha de administrador; no Windows e no Mac, a caixa mostra o caminho do próprio sistema.</p>`],
     en: ['USB drives and cards', `
 <h2>Where they show up</h2>
 <p>USB drives, memory cards and external disks show up in <b>Computer</b>, with their free space. With Retro Computer as the Linux system, they are mounted automatically when plugged in, with a notice.</p>
@@ -130,7 +131,8 @@ const TOPICOS = [
 <h2>Taking out</h2>
 <p>Right-click a file on drive C: › <b>Send to</b> › the USB drive. Copy and Paste also work. Nothing on the USB drive is deleted or overwritten.</p>
 <h2>Removing</h2>
-<p>Before unplugging the USB drive, right-click it › <b>Safely remove</b> and wait for the notice.</p>`],
+<p>Before unplugging the USB drive, right-click it › <b>Safely remove</b> and wait for the notice.</p>
+<p><b>Format</b> (right-click the USB drive, on Linux): deletes everything on it and prepares it as exFAT (Windows, Mac and Linux read it) or FAT32 (old devices). It asks for confirmation and the administrator password; on Windows and Mac, the box shows the system's own way.</p>`],
     es: ['Memorias USB y tarjetas', `
 <h2>Dónde aparecen</h2>
 <p>Las memorias USB, las tarjetas de memoria y los discos externos aparecen en <b>Mi computadora</b>, con el espacio libre. Con Retro Computer como sistema de Linux, se montan solos al conectarlos, con un aviso.</p>
@@ -139,7 +141,8 @@ const TOPICOS = [
 <h2>Llevar</h2>
 <p>Clic derecho en un archivo del disco C: › <b>Enviar a</b> › la memoria. Copiar y Pegar también funcionan. Nada de la memoria se borra ni se sobrescribe.</p>
 <h2>Retirar</h2>
-<p>Antes de sacar la memoria, usa el clic derecho en ella › <b>Quitar de forma segura</b> y espera el aviso.</p>`],
+<p>Antes de sacar la memoria, usa el clic derecho en ella › <b>Quitar de forma segura</b> y espera el aviso.</p>
+<p><b>Formatear</b> (clic derecho en la memoria, en Linux): borra todo lo que hay en ella y la prepara en exFAT (la leen Windows, Mac y Linux) o FAT32 (los aparatos antiguos). Pide la confirmación y la contraseña de administrador; en Windows y en Mac, la ventana muestra el camino del propio sistema.</p>`],
   },
   {
     id: 'barra', icone: 'relogio',
@@ -437,21 +440,27 @@ const TOPICOS = [
 <h2>Privacidade</h2>
 <p>Na aba <b>Privacidade</b>: só conexões seguras (HTTPS) no Navegador, apagar os dados de navegação (os cookies, os dados dos sites e os arquivos temporários) ao fechar o Retro Computer e guardar ou não o histórico da área de transferência.</p>
 <h2>O firewall</h2>
-<p>No Linux, <b>Painel de controle › Firewall</b> liga o firewall do sistema (o ufw): ele recusa as conexões que outros computadores tentam abrir neste, e a internet continua como antes. Ligar e desligar pedem a senha de administrador.</p>`],
+<p>No Linux, <b>Painel de controle › Firewall</b> liga o firewall do sistema (o ufw): ele recusa as conexões que outros computadores tentam abrir neste, e a internet continua como antes. Ligar e desligar pedem a senha de administrador.</p>
+<h2>O antivírus</h2>
+<p>Botão direito num arquivo, numa pasta, no disco C: ou num pendrive › <b>Verificar com o antivírus</b> (ou Painel de controle › Segurança › Verificar…). No Linux, ele usa o ClamAV (a janela o instala, com a senha de administrador, se faltar); no Windows, o Microsoft Defender. Nada é apagado: o que for achado aparece na lista, e o botão <b>Mandar para a Lixeira</b> tira os do disco C: do caminho.</p>`],
     en: ['Security and privacy', `
 <h2>The Security Center</h2>
 <p><b>Control Panel › Security</b> shows, in one place, the lock screen password, the firewall and the automatic security updates (on Linux) and how the Claude key is stored. Whatever is in red deserves a look; each line has the button that leads to its settings.</p>
 <h2>Privacy</h2>
 <p>On the <b>Privacy</b> tab: secure connections only (HTTPS) in the Browser, deleting the browsing data (cookies, site data and temporary files) when Retro Computer closes, and keeping the clipboard history or not.</p>
 <h2>The firewall</h2>
-<p>On Linux, <b>Control Panel › Firewall</b> turns on the system firewall (ufw): it refuses the connections that other computers try to open to this one, and the internet keeps working as before. Turning it on and off asks for the administrator password.</p>`],
+<p>On Linux, <b>Control Panel › Firewall</b> turns on the system firewall (ufw): it refuses the connections that other computers try to open to this one, and the internet keeps working as before. Turning it on and off asks for the administrator password.</p>
+<h2>The antivirus</h2>
+<p>Right-click a file, a folder, drive C: or a USB drive › <b>Scan for viruses</b> (or Control Panel › Security › Scan…). On Linux, it uses ClamAV (the window installs it, with the administrator password, if it is missing); on Windows, Microsoft Defender. Nothing is deleted: what is found appears in the list, and the <b>Send to the Trash</b> button moves the ones on drive C: out of the way.</p>`],
     es: ['Seguridad y privacidad', `
 <h2>El Centro de seguridad</h2>
 <p><b>Panel de control › Seguridad</b> muestra, en un solo lugar, la contraseña de la pantalla de bloqueo, el firewall y las actualizaciones de seguridad automáticas (en Linux) y cómo está guardada la clave de Claude. Lo que esté en rojo merece una mirada; cada línea tiene el botón que lleva a su configuración.</p>
 <h2>Privacidad</h2>
 <p>En la pestaña <b>Privacidad</b>: solo conexiones seguras (HTTPS) en el Navegador, borrar los datos de navegación (las cookies, los datos de los sitios y los archivos temporales) al cerrar Retro Computer y guardar o no el historial del portapapeles.</p>
 <h2>El firewall</h2>
-<p>En Linux, <b>Panel de control › Firewall</b> activa el firewall del sistema (ufw): rechaza las conexiones que otras computadoras intentan abrir con esta, e internet sigue igual que antes. Activarlo y desactivarlo piden la contraseña de administrador.</p>`],
+<p>En Linux, <b>Panel de control › Firewall</b> activa el firewall del sistema (ufw): rechaza las conexiones que otras computadoras intentan abrir con esta, e internet sigue igual que antes. Activarlo y desactivarlo piden la contraseña de administrador.</p>
+<h2>El antivirus</h2>
+<p>Clic derecho en un archivo, una carpeta, el disco C: o una memoria USB › <b>Analizar con el antivirus</b> (o Panel de control › Seguridad › Analizar…). En Linux, usa ClamAV (la ventana lo instala, con la contraseña de administrador, si falta); en Windows, Microsoft Defender. Nada se borra: lo que se encuentre aparece en la lista, y el botón <b>Enviar a la Papelera</b> aparta los del disco C:.</p>`],
   },
   {
     id: 'linux', icone: 'computador',

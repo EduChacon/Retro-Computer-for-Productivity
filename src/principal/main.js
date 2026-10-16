@@ -11,6 +11,7 @@
  */
 const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard, ClipboardItem, webContents } = require('electron');
 const fs = require('node:fs');
+const { spawn } = require('node:child_process');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 
@@ -44,6 +45,8 @@ const { Som, SomFalso } = require('./som');
 const { Energia } = require('./energia');
 const { DataHora, DataHoraFalsa } = require('./datahora');
 const { AcessibilidadeLinux } = require('./acessibilidade');
+const { Antivirus } = require('./antivirus');
+const { dentro: dentroDaUnidade } = require('./unidades');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -718,6 +721,40 @@ function registrarPonte() {
   tratar('unidades:ejetar', (id) => unidades.ejetar(String(id)));
   tratar('unidades:trazer', (id, rels, destino) => unidades.trazer(String(id), (rels || []).map(String), String(destino || '')));
   tratar('unidades:levar', (id, rels, destino) => unidades.levar(String(id), (rels || []).map(String), String(destino || '')));
+  // Formatar o pendrive (Linux, com a senha de administrador). Nunca o que guarda o disco C: (o modo
+  // portátil) nem o que está em uso pelo sistema.
+  tratar('unidades:formatar', async (id, opcoes, senha) => {
+    const u = await unidades.unidade(String(id));
+    if (u.raiz && (u.raiz === '/' || disco.raiz === u.raiz || disco.raiz.startsWith(u.raiz + path.sep))) return { ok: false, emUso: true };
+    return unidades.formatar(String(id), opcoes || {}, String(senha || ''), sistemaLinux.comoAdmin);
+  });
+  tratar('unidades:formatarNoSistema', () => {
+    if (process.platform === 'darwin') return shell.openPath('/System/Applications/Utilities/Disk Utility.app').then(() => true);
+    if (process.platform === 'win32') { spawn('explorer.exe', ['shell:MyComputerFolder'], { detached: true, stdio: 'ignore' }).unref(); return true; }
+    return false;
+  });
+  // O antivírus sob demanda (o ClamAV no Linux, o Microsoft Defender no Windows).
+  const antivirus = new Antivirus({ comoAdmin: sistemaLinux.comoAdmin, falso: !!process.env.RETRO_ANTIVIRUS_FALSO });
+  tratar('antivirus:estado', () => antivirus.estado());
+  tratar('antivirus:verificar', async (alvo = {}) => {
+    let abs;
+    if (alvo.tipo === 'unidade') abs = dentroDaUnidade((await unidades.unidade(String(alvo.id))).raiz, String(alvo.rel || ''));
+    else abs = disco.real(String(alvo.rel || ''));
+    // O que fica dentro do disco C: volta como caminho interno (para a Lixeira); o resto, como está.
+    const relDe = (arq) => {
+      const r = path.relative(disco.raiz, arq);
+      return r && !r.startsWith('..') && !path.isAbsolute(r) ? r.split(path.sep).join('/') : null;
+    };
+    let ultimo = 0;
+    const r = await antivirus.verificar(abs, {
+      aoAndar: (x) => { const agora = Date.now(); if (agora - ultimo > 150 || x.n === x.total) { ultimo = agora; enviar('antivirus:andamento', { n: x.n, total: x.total, arquivo: relDe(x.arquivo) || x.arquivo }); } },
+      aoAchar: (x) => enviar('antivirus:achou', { arquivo: x.arquivo, rel: relDe(x.arquivo), ameaca: x.ameaca }),
+    });
+    return { ...r, achados: r.achados.map((x) => ({ arquivo: x.arquivo, rel: relDe(x.arquivo), ameaca: x.ameaca })) };
+  });
+  tratar('antivirus:parar', () => { antivirus.parar(); return true; });
+  tratar('antivirus:instalar', (senha) => antivirus.instalar(String(senha || ''), (s) => enviar('antivirus:instalando', String(s).slice(-2000))));
+  tratar('antivirus:atualizar', (senha) => antivirus.atualizar(String(senha || '')));
   tratar('bloqueio:conferir', (senha) => bloqueio.conferir(String(senha || '')));
   tratar('bloqueio:definir', (atual, nova) => bloqueio.definir(String(atual || ''), String(nova || '')));
   tratar('config:chave', (chave) => config.gravarChave(chave));

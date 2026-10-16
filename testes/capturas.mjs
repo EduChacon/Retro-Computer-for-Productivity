@@ -74,7 +74,7 @@ if (process.env.RETRO_SEM_BOAS_VINDAS) {
   fs.writeFileSync(path.join(dados, 'config.json'), JSON.stringify({ primeiraVez: false }));
 }
 // Roteiro "unidades": um "pendrive" que é uma pasta comum (RETRO_UNIDADES_FALSAS), com arquivos.
-if (ROTEIRO === 'unidades' && !process.env.RETRO_UNIDADES_FALSAS) {
+if ((ROTEIRO === 'unidades' || ROTEIRO === 'antivirus') && !process.env.RETRO_UNIDADES_FALSAS) {
   const pen = path.join(tmp, 'pendrive');
   fs.mkdirSync(path.join(pen, 'Fotos'), { recursive: true });
   fs.mkdirSync(path.join(pen, 'System Volume Information'), { recursive: true });
@@ -944,6 +944,51 @@ const ROTEIROS = {
 
   // A bandeja (com RETRO_BANDEJA_FALSA=1: o volume, o brilho, a bateria e o Wi-Fi de mentira):
   // as caixinhas, conectar a uma rede protegida, as notificações e a data no relógio.
+  // O antivírus (com RETRO_ANTIVIRUS_FALSO=1: ele acha o arquivo de teste EICAR, escrito na hora) e a
+  // caixa de formatar o pendrive (com RETRO_UNIDADES_FALSAS; a senha de teste é "certa").
+  async antivirus() {
+    const pasta = path.join(disco, DOCS, 'Recebidos');
+    fs.mkdirSync(pasta, { recursive: true });
+    const { EICAR } = require('../src/principal/antivirus.js');
+    fs.writeFileSync(path.join(pasta, 'brinde.com'), EICAR);
+    for (let i = 1; i <= 30; i++) fs.writeFileSync(path.join(pasta, `nota ${i}.txt`), 'texto ' + i);
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.click('.janela.ativa .item:has-text("Recebidos")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('antivirus-menu');
+    await pagina.click(`.menu .opcao:has-text("${T('Verificar com o antivír&us')}")`);
+    await pagina.waitForSelector('.janela.ativa .av-linha', { timeout: 20000 });
+    await pagina.waitForTimeout(2500);
+    await foto('antivirus-achou');
+    await pagina.click('.janela.ativa .av-linha');
+    await pagina.click(`.janela.ativa button:has-text("${T('Mandar para a Lixeira')}")`);
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(800);
+    await foto('antivirus-lixeira');
+    console.log('na lixeira:', JSON.stringify(await pagina.evaluate(() => retro.disco.lixeira().then((l) => l.map((x) => x.nome)))));
+    // O pendrive: Formatar….
+    await abrir('explorador', { pasta: '::computador' });
+    await pagina.waitForTimeout(900);
+    await pagina.click('.janela.ativa .item:has-text("PENDRIVE")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('formatar-menu');
+    await pagina.click(`.menu .opcao:has-text("${T('&Formatar…')}")`);
+    await pagina.waitForTimeout(600);
+    await foto('formatar');
+    await pagina.click(`.janela.ativa button:has-text("${T('Iniciar')}")`);
+    await pagina.waitForTimeout(400);
+    await foto('formatar-aviso');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(800);
+    await foto('formatar-pronto');
+  },
+
   // A acessibilidade (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e RETRO_ACESSIBILIDADE_FALSA=1):
   // as abas, o alto contraste com o cursor grande, a lupa e o aviso visual de um som.
   async acessibilidade() {
