@@ -241,6 +241,81 @@ class Unidades {
   }
 }
 
+/*
+ * As pastas do computador principal (fora do modo sistema): a área de trabalho, os documentos, os
+ * downloads, as imagens, as músicas e os vídeos da pessoa no Windows, no Mac ou no Linux. Na tela,
+ * ficam em Meu computador › Computador principal e funcionam como um pendrive: ver, trazer para o
+ * disco C: (uma cópia) e levar do C: (com um nome livre). Nada é apagado nem gravado por cima lá.
+ * A pasta do próprio disco C: não aparece nelas (trazer de dentro dela seria mover no disco).
+ */
+const PASTAS_FORA = [
+  ['mesa', 'desktop', 'pasta-mesa'],
+  ['documentos', 'documents', 'documentos'],
+  ['downloads', 'downloads', 'pasta-recebidos'],
+  ['imagens', 'pictures', 'pasta-imagens'],
+  ['musicas', 'music', 'pasta-musicas'],
+  ['videos', 'videos', 'pasta-videos'],
+];
+
+/** O caminho é a raiz do disco C: ou está dentro dela? */
+function noDisco(raizDisco, p) {
+  if (!raizDisco) return false;
+  const rel = path.relative(path.resolve(raizDisco), path.resolve(p));
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+}
+
+class PastasDoComputador extends Unidades {
+  /** @param {{ caminho: (nome: string) => string, disco: Function, existe?: Function }} o */
+  constructor({ caminho, disco, existe } = {}) {
+    super({ disco });
+    this.caminho = caminho;
+    this.existe = existe || ((p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } });
+  }
+
+  async listar() {
+    const r = [];
+    const vistas = new Set();
+    for (const [id, nome, icone] of PASTAS_FORA) {
+      let raiz = null;
+      try { raiz = this.caminho(nome); } catch { }
+      // Sem a pasta (ou com o mesmo caminho de outra, como o Linux sem as pastas do usuário), fica de fora.
+      if (!raiz || vistas.has(path.resolve(raiz)) || !this.existe(raiz)) continue;
+      const d = this.disco();
+      if (d && noDisco(d.raiz, raiz)) continue;
+      vistas.add(path.resolve(raiz));
+      r.push({ id: 'pc:' + id, tipo: 'pc', pasta: id, icone, raiz, montada: true });
+    }
+    this.ultimas = new Map(r.map((u) => [u.id, u]));
+    return r;
+  }
+
+  async montar(id) { return this.unidade(id); }
+  async ejetar() { return { ok: false, erro: 'pasta' }; }
+  async formatar() { return { ok: false, erro: 'unidade' }; }
+  async montarNovas() { return []; }
+
+  async listarPasta(id, rel = '') {
+    const u = await this.unidade(id);
+    const d = this.disco();
+    // A pasta do disco C: (quando fica nos documentos) não aparece: ela já está à vista como o C:.
+    return (await super.listarPasta(id, rel)).filter((f) => !(d && noDisco(d.raiz, dentro(u.raiz, f.rel))));
+  }
+
+  async trazer(id, rels, destinoC) {
+    const u = await this.unidade(id);
+    const d = this.disco();
+    if (rels.some((r) => noDisco(d && d.raiz, dentro(u.raiz, r)))) throw new Error('disco');
+    return d.importar(rels.map((r) => dentro(u.raiz, r)), destinoC);
+  }
+
+  async levar(id, relsC, destino = '') {
+    const u = await this.unidade(id);
+    const d = this.disco();
+    if (noDisco(d && d.raiz, dentro(u.raiz, destino))) throw new Error('disco');
+    return d.exportar(relsC, dentro(u.raiz, destino));
+  }
+}
+
 /** Para os testes e as capturas (RETRO_UNIDADES_FALSAS=pasta): um "pendrive" que é uma pasta comum. */
 class UnidadesFalsas extends Unidades {
   constructor(o, pasta) {
@@ -268,4 +343,4 @@ class UnidadesFalsas extends Unidades {
   }
 }
 
-module.exports = { Unidades, UnidadesFalsas, lerLsblk, lerMontagem, dentro, escondida, comandoFormatar };
+module.exports = { Unidades, UnidadesFalsas, PastasDoComputador, PASTAS_FORA, noDisco, lerLsblk, lerMontagem, dentro, escondida, comandoFormatar };

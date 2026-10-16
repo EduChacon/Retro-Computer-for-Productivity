@@ -55,3 +55,40 @@ test('unidades: trazer para o C: e levar para o pendrive, sem gravar por cima', 
   await assert.rejects(un.listarPasta('falsa', '../c'));
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test('pastas do computador principal: só as que existem, sem a pasta do disco C:, sem gravar por cima', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-fora-'));
+  const casa = path.join(tmp, 'casa');
+  for (const p of ['desktop', 'documents', 'downloads']) fs.mkdirSync(path.join(casa, p), { recursive: true });
+  fs.writeFileSync(path.join(casa, 'documents', 'contrato.txt'), 'contrato');
+  // O disco C: dentro dos documentos, como o padrão (Documentos/Retro Computer).
+  const raizC = path.join(casa, 'documents', 'Retro Computer');
+  const disco = new Disco(raizC);
+  await disco.preparar?.();
+  fs.mkdirSync(path.join(raizC, 'Docs'), { recursive: true });
+  fs.writeFileSync(path.join(raizC, 'Docs', 'carta.txt'), 'carta');
+  // As imagens com o mesmo caminho dos documentos (como o Linux sem as pastas do usuário) e as músicas que não existem.
+  const caminhos = { desktop: 'desktop', documents: 'documents', downloads: 'downloads', pictures: 'documents', music: 'music', videos: 'videos' };
+  const fora = new u.PastasDoComputador({ caminho: (n) => path.join(casa, caminhos[n]), disco: () => disco });
+  const lista = await fora.listar();
+  assert.deepStrictEqual(lista.map((x) => x.id), ['pc:mesa', 'pc:documentos', 'pc:downloads']);
+  // A pasta do disco C: não aparece nos documentos e não pode ser trazida nem receber nada por aqui.
+  assert.deepStrictEqual((await fora.listarPasta('pc:documentos', '')).map((x) => x.nome), ['contrato.txt']);
+  await assert.rejects(fora.trazer('pc:documentos', ['Retro Computer/Docs/carta.txt'], 'Docs'), /disco/);
+  await assert.rejects(fora.trazer('pc:documentos', ['Retro Computer'], 'Docs'), /disco/);
+  await assert.rejects(fora.levar('pc:documentos', ['Docs/carta.txt'], 'Retro Computer/Docs'), /disco/);
+  assert.strictEqual(fs.readFileSync(path.join(raizC, 'Docs', 'carta.txt'), 'utf8'), 'carta');
+  // Trazer é uma cópia; levar nunca grava por cima.
+  await fora.trazer('pc:documentos', ['contrato.txt'], 'Docs');
+  assert.strictEqual(fs.readFileSync(path.join(raizC, 'Docs', 'contrato.txt'), 'utf8'), 'contrato');
+  assert.ok(fs.existsSync(path.join(casa, 'documents', 'contrato.txt')));
+  await fora.levar('pc:mesa', ['Docs/carta.txt'], '');
+  await fora.levar('pc:mesa', ['Docs/carta.txt'], '');
+  assert.deepStrictEqual(fs.readdirSync(path.join(casa, 'desktop')).sort(), ['carta (2).txt', 'carta.txt']);
+  // Sem remover com segurança nem formatar; e nada sai da pasta.
+  assert.strictEqual((await fora.ejetar('pc:mesa')).ok, false);
+  assert.strictEqual((await fora.formatar('pc:mesa')).ok, false);
+  await assert.rejects(fora.listarPasta('pc:mesa', '../documents'));
+  await assert.rejects(fora.listarPasta('pc:outra', ''));
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
