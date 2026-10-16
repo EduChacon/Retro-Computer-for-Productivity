@@ -810,6 +810,35 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
 
   // O login do Google no Navegador (precisa da internet): na página de login, o Navegador se
   // apresenta como o Firefox; noutro site, como o Chrome.
+  // A troca de jeito no login do Google (precisa da internet): a recusa do Google é imitada no
+  // processo principal (o did-navigate da página de recusa), e o Navegador passa do Firefox para o
+  // Chrome, recomeça o login e, recusado de novo, sugere o Firefox de verdade.
+  async loginTroca() {
+    await fecharTudo();
+    await pagina.evaluate(() => retro.config.definir({ navegador: { loginGoogle: 'firefox' } }));
+    await abrir('navegador', { url: 'https://accounts.google.com/ServiceLogin?service=mail', interno: true });
+    await pagina.waitForTimeout(7000);
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const ler = () => pagina.evaluate((s) => document.querySelector(s).executeJavaScript('[location.href.slice(0, 60), navigator.userAgent, !!navigator.userAgentData && navigator.userAgentData.brands.map((b) => b.brand).join(",")]'), wv);
+    const recusar = () => app.evaluate(({ webContents }) => {
+      const wc = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && /accounts\.google\.com/.test(w.getURL()));
+      if (!wc) return 'sem a página';
+      wc.emit('did-navigate', {}, 'https://accounts.google.com/v3/signin/rejected?continue=x');
+      return 'recusado';
+    });
+    const modo = () => app.evaluate(() => { try { return JSON.parse(require('fs').readFileSync(require('path').join(require('electron').app.getPath('userData'), 'config.json'), 'utf8')).navegador.loginGoogle; } catch (e) { return String(e.message); } });
+    console.log('antes:', JSON.stringify(await ler()));
+    console.log(await recusar());
+    await pagina.waitForTimeout(7000);
+    console.log('depois da 1ª recusa:', JSON.stringify(await ler()), '| guardado:', await pagina.evaluate(() => window.__retro.estado.config.navegador && window.__retro.estado.config.navegador.loginGoogle));
+    console.log(await recusar());
+    await pagina.waitForTimeout(1500);
+    console.log('aviso:', await pagina.evaluate(() => { const j = document.querySelector('.janela.ativa'); return j ? j.innerText.slice(0, 160) : ''; }));
+    await foto('login-troca-aviso');
+    await pagina.keyboard.press('Escape');
+    await pagina.evaluate(() => retro.config.definir({ navegador: { loginGoogle: 'firefox' } }));
+  },
+
   async loginGoogle() {
     await fecharTudo();
     await abrir('navegador', { url: 'https://accounts.google.com/', interno: true });

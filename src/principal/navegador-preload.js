@@ -7,10 +7,10 @@
  */
 const { ipcRenderer, webFrame } = require('electron');
 
-// O login do Google: ali o Navegador se apresenta como o Firefox (main.js, agenteFirefox), e o
-// Firefox não tem o navigator.userAgentData do Chromium, que denunciaria o navegador embutido.
+// O login do Google: ali o Navegador se apresenta como o Firefox ou como o Chrome (login-google.js),
+// e o navigator.userAgentData acompanha (o processo principal manda o que a página deve enxergar).
 if (location.hostname === 'accounts.google.com') {
-  try { webFrame.executeJavaScript("try { Object.defineProperty(Navigator.prototype, 'userAgentData', { get: () => undefined, configurable: true }); } catch (e) { }"); } catch { }
+  try { const s = ipcRenderer.sendSync('navegador:loginGoogle'); if (s) webFrame.executeJavaScript(s); } catch { }
 }
 
 // As notificações (window.Notification) do site: a página pede como sempre, e o aviso vai para a

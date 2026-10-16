@@ -10,7 +10,7 @@ import { h, img, rotulo, barraAdaptavel } from '../util.js';
 import { zoomInterface } from '../aparencia.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, estado, definirConfig, avisar, eventos } from '../sistema.js';
+import { registrarApp, estado, definirConfig, avisar, eventos, abrir } from '../sistema.js';
 import { entrada, confirmar, mensagem, ajustarAoConteudo } from '../dialogos.js';
 import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
@@ -1165,6 +1165,20 @@ retro.navegador.aoSemSeguranca(({ id, url }) => {
     const aba = n.abaDaPagina(id);
     if (aba) n.mostrarSemSeguranca(url, aba);
   }
+});
+
+// O Google recusou o login dos dois jeitos (login-google.js): o caminho é o Firefox de verdade.
+let avisandoLogin = false;
+retro.navegador.aoLoginRecusado(async () => {
+  if (avisandoLogin) return;
+  avisandoLogin = true;
+  const v = await mensagem({
+    titulo: tr('Login do Google'),
+    tipo: 'aviso',
+    texto: tr('O Google recusou o login neste Navegador. Para entrar na sua conta do Google, use o Firefox como navegador padrão: com ele instalado no computador, o ícone do Navegador abre o Firefox, com o visual do Retro Computer.'),
+    botoes: [{ texto: tr('Abrir as opções da Internet'), valor: 'painel', padrao: true }, { texto: tr('Fechar'), valor: null }],
+  }).finally(() => { avisandoLogin = false; });
+  if (v === 'painel') abrir('painel', { secao: 'internet' });
 });
 
 /* ---------- As permissões dos sites e a escolha da tela ---------- */

@@ -374,6 +374,7 @@ contextBridge.exposeInMainWorld('retro', {
     semSeguranca: (url) => chamar('navegador:semSeguranca', url),
     abrirSemSeguranca: (url) => chamar('navegador:abrirSemSeguranca', url),
     aoSemSeguranca: ouvir('navegador:semSeguranca'),
+    aoLoginRecusado: ouvir('navegador:loginRecusado'),
     aoPermissao: ouvir('navegador:permissao'),
     aoTela: ouvir('navegador:tela'),
     responder: (id, resposta) => chamar('navegador:responder', id, resposta),
