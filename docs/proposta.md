@@ -22,12 +22,28 @@ Retro Computer (Electron)
 │   ├── terminal.js    o Prompt de comando (node-pty)
 │   ├── config.js      as configurações e a chave de API (cofre do sistema)
 │   ├── idioma.js      os textos do processo principal e os nomes das pastas em cada idioma
+│   ├── servir.js      o disco em trechos (vídeo) e as miniaturas das fotos
+│   ├── compactados.js ver, extrair e criar .zip (yauzl, yazl); extrair .tar
+│   ├── unidades.js    os pendrives e cartões (lsblk/udisksctl, Win32_LogicalDisk, /Volumes)
+│   ├── aplicativos.js os programas do computador principal (.desktop, menu Iniciar, Aplicativos)
+│   ├── loja.js        os programas do Linux pelo Flathub (flatpak --user)
+│   ├── atualizador.js a atualização do próprio Retro Computer (electron-updater)
+│   ├── bandeja.js     o volume, o brilho e o Wi-Fi do computador
+│   ├── bloqueio.js    a senha da tela de bloqueio (PBKDF2)
+│   ├── monitor.js     o processador, a memória e os processos
+│   ├── impressoras.js as impressoras, a padrão e a fila (CUPS, PowerShell)
+│   ├── bluetooth.js   parear e conectar pelo bluetoothctl (BlueZ)
+│   ├── sistema-linux.js        o modo sistema: energia, sessão, teclado, senha de administrador
+│   ├── atualizacoes-linux.js   apt e flatpak, as atualizações de segurança automáticas
+│   ├── janelas-linux.js        as janelas dos programas do Linux (wmctrl, xprop, xdotool)
 │   └── main.js        a janela, os protocolos e a ponte com a área de trabalho
 ├── a área de trabalho (página)        src/sistema/  → sistema://retro/
-│   ├── janelas, menus, barra de tarefas, ícones, diálogos
+│   ├── janelas, menus, barra de tarefas, bandeja, ícones, diálogos, tela de bloqueio
 │   ├── idiomas/       en.json e es.json (o português é a chave)
-│   └── apps/          Meu computador, Lixeira, Bloco de notas, Painel de controle,
-│                      Adicionar ou remover programas, Prompt, Claude, Foco, Ajuda…
+│   └── apps/          Meu computador (Explorador), Lixeira, Bloco de notas, Painel de controle,
+│                      Adicionar ou remover programas (e a Loja), Navegador, E-mail, Prompt,
+│                      Claude, Foco, Calculadora, Visualizador de imagens, Reprodutor de mídia,
+│                      Captura de tela, Monitor do sistema, Atualizações do Linux, jogos, Ajuda…
 └── o adaptador                        src/adaptador/adaptador.js
     entra na página de cada programa instalado e troca as caixas
     Abrir e Salvar do navegador pelas do disco C:
@@ -59,7 +75,8 @@ Testado com o WordCraft 0.7.0: abrir um `.md` do disco, salvar como `.docx` (a c
 
 - **Os programas**: ao abrir um Craft, a janela procura a versão nova (a consulta fica guardada por 6 horas em `programas/atualizacoes.json`, com 5 segundos de espera no máximo) e, conforme a escolha do usuário, instala antes de abrir, pergunta ou não procura. Uns 20 segundos depois de ligar, a mesma busca roda para todos os instalados, sem mexer nos abertos.
 - **Uma atualização nunca volta atrás**: `instalar(id, …, { atualizar: true })` só aceita uma versão maior que a instalada e não usa a versão conhecida do catálogo quando a internet falha. O programa instalado de um `.zip` (versão `local`) não é trocado sozinho.
-- **O próprio Retro Computer**: o último lançamento de `EduChacon/Retro-Computer-for-Productivity` é consultado uma vez por dia; havendo versão nova, um aviso abre a página de download (uma vez por versão). A atualização automática do aplicativo exigiria instaladores assinados, por isso fica para depois.
+- **O próprio Retro Computer**: o último lançamento de `EduChacon/Retro-Computer-for-Productivity` é consultado uma vez por dia pelo `electron-updater` (os arquivos `latest*.yml` e `.blockmap` sobem com o lançamento). No Windows e no `.AppImage`, a versão nova é baixada e instalada ao reiniciar; no `.deb`, a instalação pede a senha de administrador; no macOS (sem assinatura, a troca automática não é aceita) e no `.zip` do Windows, o aviso abre a página de download.
+- **O Linux** (no modo sistema): Painel de controle › Atualizações do Linux usa o `apt` (`upgrade`, que nunca remove pacotes, com as configurações do usuário mantidas) e o `flatpak update --user`; as atualizações de segurança automáticas são as do `unattended-upgrades`.
 
 ### Os idiomas
 
@@ -80,10 +97,24 @@ Testado com o WordCraft 0.7.0: abrir um `.md` do disco, salvar como `.docx` (a c
 
 O Prompt de comando é um terminal de verdade (node-pty e xterm.js) com o shell do computador principal, aberto numa pasta do disco. O ícone Claude abre o mesmo terminal com o comando `claude`. A chave de API, se houver, é guardada pelo `safeStorage` do Electron (Keychain no macOS, DPAPI no Windows, o chaveiro do Linux) e entregue só ao terminal.
 
+### O modo sistema no Linux
+
+O pacote `.deb` instala a sessão "Retro Computer" em `/usr/share/xsessions`. O script da sessão (`recursos/linux/sessao.sh`) aplica o teclado do sistema, o "tocar para clicar" do touchpad, a economia de energia do monitor, o agente de senha do sistema (lxpolkit) e um gerenciador de janelas leve (Openbox, com o tema "Retro" e a faixa da barra de tarefas livre) para os programas do Linux, e abre o Retro Computer de novo se ele parar com erro. Com `RETRO_SISTEMA=1`:
+
+- a tela cheia fica fixa; Desligar vale para o computador (`systemctl`, pelo logind) e oferece sair da sessão;
+- as teclas do logotipo, de volume, de brilho, de calculadora e Print Screen são atalhos globais, mesmo com um programa do Linux na frente;
+- as janelas dos programas do Linux entram na barra de tarefas (o `wmctrl` lista, o `xprop` diz a ativa, o `xdotool` minimiza), ligadas ao programa do menu pela classe da janela;
+- os pendrives são montados sozinhos (`udisksctl`);
+- a senha de administrador é pedida numa caixa do Retro Computer e passada ao `sudo -S`, sem ficar guardada.
+
+### O Navegador
+
+Cada janela do Navegador é um `<webview>` numa sessão própria (só `http` e `https`, sem Node), com um preload isolado que repassa os atalhos e os botões laterais do mouse. As permissões (câmera, microfone, localização, notificações, área de transferência, compartilhamento da tela) passam por uma caixa do Retro Computer; os sites instalados como programas usam a mesma sessão, numa janela sem a barra de endereço. O Electron não traz o Widevine: os serviços de vídeo com proteção contra cópia não tocam.
+
 ### O visual
 
 - Bordas em relevo de dois pixels, a barra de título azul-marinho, a barra de tarefas e o menu Iniciar com a faixa lateral, como nos computadores da época.
-- Ícones do SerenityOS (BSD-2-Clause), com as pastas recoloridas de amarelo, e desenhos próprios (o computador, o disquete do botão Iniciar, a caixa de programas, o tomate do Foco, a pena do processador de texto).
+- Ícones do SerenityOS (BSD-2-Clause), com as pastas recoloridas de amarelo, e desenhos próprios (o computador, o disquete do botão Iniciar, a caixa de programas, o tomate do Foco, a pena do processador de texto, o pendrive, a impressora, o Bluetooth, o Breakout e os ícones da bandeja).
 - Fontes de bitmap do SerenityOS (Katica na interface, Csilla no Prompt), convertidas para WOFF2 com os acentos do português.
 - O tamanho dos pixels é sempre um número inteiro de pixels da tela, para as letras ficarem nítidas.
 - Sons sintetizados na hora; nenhum som, ícone ou fonte da Microsoft ou da Apple.
@@ -99,7 +130,11 @@ O Prompt de comando é um terminal de verdade (node-pty e xterm.js) com o shell 
 | 4. Foco, proteção de tela, Ajuda, Executar, Localizar, Desligar | Feita |
 | 5. Instaladores para os três sistemas (GitHub Actions) | Feita, sem assinatura digital |
 | 6. Inglês e espanhol; atualizações ao abrir; lançamentos no GitHub; Linux ARM64 (Raspberry Pi) | Feita (0.2.0) |
-| 7. Tema Mac clássico, navegador focado, modo foco completo, modo sistema no Linux | Sugestões ([uso.md](uso.md), seção 8) |
+| 7. Navegador e e-mail, calculadora, jogos, programas do computador, atualização do próprio aplicativo | Feita (1.0) |
+| 8. Bandeja (rede, volume, bateria, brilho, notificações), barra de tarefas com busca e programas fixados, tela de bloqueio | Feita (1.0) |
+| 9. Modo sistema no Linux: sessão própria, teclado, mouse e toque, Loja (Flathub), atualizações, programas do Linux na barra | Feita (1.0) |
+| 10. Ferramentas: pendrives, pastas compactadas, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, sites como programas, Explorador com árvore e miniaturas, impressoras, Bluetooth | Feita (1.0) |
+| 11. Tema Mac clássico, várias telas, papel de parede e esquemas de cores, navegador focado, modo foco completo | Sugestões ([uso.md](uso.md), seção 8) |
 
 ## Riscos conhecidos
 
@@ -107,3 +142,5 @@ O Prompt de comando é um terminal de verdade (node-pty e xterm.js) com o shell 
 - Os Craft precisam de WebGPU ou WebGL2. Sem placa de vídeo utilizável, o Retro Computer liga o WebGL2 por software (mais lento); se nem isso funcionar, a janela explica o motivo.
 - Sem certificados, os instaladores do macOS e do Windows mostram um aviso na primeira abertura.
 - No macOS, o aplicativo aberto pelo Finder não herda o PATH do terminal; por isso o Prompt abre o shell como "login", que lê o perfil do usuário.
+- O que depende do aparelho no Linux (o pareamento do Bluetooth, o CUPS, o `apt`, o `wmctrl` e o `xdotool`, a captura de tela pelo `desktopCapturer` no modo sistema) foi testado com saídas simuladas (as variáveis `RETRO_*_FALSO(S)` e os testes de leitura); o uso num notebook de verdade pode pedir ajustes.
+- O modo sistema supõe o X11 (Openbox). Numa sessão Wayland, a lista das janelas do Linux e os atalhos globais não funcionam.

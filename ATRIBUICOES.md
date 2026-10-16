@@ -38,7 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Desenhos próprios do projeto (MIT)
 
-Feitos ponto a ponto em `ferramentas/icones.py`: `computador`, `logo` (o disquete do botão Iniciar), `foco` (o tomate), `programas-caixa`, a pena de `wordcraft`/`documento`, os papéis de `lixeira-cheia` e as composições `documentos`, `pasta-programas` e `html`. Os sons (`src/sistema/js/sons.js`) são sintetizados na hora. Os padrões de fundo (`src/sistema/js/aparencia.js`) são desenhos próprios de 8×8 pontos.
+Feitos ponto a ponto em `ferramentas/icones.py`: `computador`, `logo` (o disquete do botão Iniciar), `foco` (o tomate), `programas-caixa`, a pena de `wordcraft`/`documento`, os papéis de `lixeira-cheia`, `breakout`, `removivel` (o pendrive), `impressora`, `bluetooth` e os da bandeja (`sino`, `cadeado`, `brilho`, `sinal-*`, `bateria-*` e `bateria-carga-*`). As composições juntam ícones do SerenityOS com esses desenhos: `documentos`, `pasta-programas`, `html`, `reprodutor` (o filme com o botão de tocar), `lightcraft` (a foto com o sol) e `atualizacoes` (o computador com as setas). As cartas da Paciência, o Campo Minado e o Breakout são desenhados na hora pelo próprio código. Os sons (`src/sistema/js/sons.js`) são sintetizados na hora. Os padrões de fundo (`src/sistema/js/aparencia.js`) são desenhos próprios de 8×8 pontos. O tema "Retro" do Openbox (`recursos/linux/openbox/`) também é próprio.
 
 ## Bibliotecas
 
@@ -47,11 +47,15 @@ Feitos ponto a ponto em `ferramentas/icones.py`: `computador`, `logo` (o disquet
 | [Electron](https://www.electronjs.org/) | MIT | o aplicativo |
 | [xterm.js](https://xtermjs.org/) e complementos (fit, webgl, unicode11) | MIT | o terminal do Prompt de comando |
 | [node-pty](https://github.com/microsoft/node-pty) | MIT | o shell do Prompt de comando |
-| [yauzl](https://github.com/thejoshwolfe/yauzl) | MIT | extrair os pacotes dos programas |
+| [yauzl](https://github.com/thejoshwolfe/yauzl) | MIT | extrair os pacotes dos programas e as pastas compactadas |
+| [yazl](https://github.com/thejoshwolfe/yazl) | MIT | criar as pastas compactadas (Enviar para › Pasta compactada) |
+| [electron-updater](https://github.com/electron-userland/electron-builder) | MIT | a atualização do próprio Retro Computer |
 
 ## Programas instaláveis (não incluídos)
 
 Os programas Craft (WordCraft, GridCraft, DeckCraft, PdfCraft, PhotoCraft, LightCraft, VectorCraft, FigCraft, DesignCraft, FilmCraft, EffectCraft, SoundCraft, CADCraft) são do ArtCraft Team, licença MIT ou Apache-2.0 (<https://github.com/storytold>). Eles não fazem parte do Retro Computer: cada um é baixado do lançamento oficial, sem modificação, quando o usuário o instala. Os nomes e logotipos são marcas deles.
+
+Os programas da aba "Programas do Linux" vêm do [Flathub](https://flathub.org/), cada um com a sua licença (mostrada na ficha do programa); eles são instalados pelo Flatpak do próprio Linux, e os ícones e as capturas da loja são lidos do Flathub na hora, sem fazer parte do Retro Computer.
 
 Claude e Claude Code são da Anthropic. O Retro Computer só oferece instalar o Claude Code com o instalador oficial.
 

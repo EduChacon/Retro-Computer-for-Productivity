@@ -129,6 +129,15 @@ const ROTEIROS = {
   async boot() {
     // Com RETRO_BOOT=1: a tela do BIOS e a abertura (capturadas logo no início).
   },
+  async ajuda() {
+    // Os tópicos da Ajuda, um por captura (o texto rolado até o fim mostra se cabe).
+    await fecharTudo();
+    for (const topico of ['inicio', 'pendrives', 'barra', 'internet', 'acessorios', 'painel', 'linux', 'atalhos']) {
+      await abrir('ajuda', { topico });
+      await pagina.waitForTimeout(300);
+      await foto('ajuda-' + topico);
+    }
+  },
   async claude() {
     await fecharTudo();
     await abrir('claude', { pasta: DOCS });

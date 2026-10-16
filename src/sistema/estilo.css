@@ -845,6 +845,8 @@ body.barra-alta { --altura-barra: 34px; }
 .texto-ajuda { user-select: text; line-height: 15px; }
 .texto-ajuda h2 { font-size: 10px; font-weight: bold; margin: 12px 0 4px; color: var(--titulo); }
 .texto-ajuda p { margin: 4px 0; }
+.texto-ajuda ul { margin: 4px 0; padding-left: 16px; }
+.texto-ajuda li { margin: 2px 0; }
 .texto-ajuda code, .codigo-linha { font-family: 'Csilla', monospace; background: #fff; box-shadow: var(--raso); padding: 1px 4px; }
 .codigo-linha { display: block; padding: 4px 6px; margin: 6px 0; user-select: text; white-space: pre-wrap; word-break: break-all; }
 

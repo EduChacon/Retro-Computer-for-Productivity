@@ -4,7 +4,7 @@ Leia antes de mexer no código. Complementa o [README](README.md), o [docs/uso.m
 
 ## O que é
 
-Um computador retrô para produtividade: um aplicativo Electron (Windows, macOS e Linux) com a área de trabalho no estilo do PC dos anos 90, o disco C: numa pasta comum do computador principal, os programas Craft instalados da versão oficial para navegador e o Claude Code no Prompt de comando.
+Um computador retrô para produtividade: um aplicativo Electron (Windows, macOS e Linux) com a área de trabalho no estilo do PC dos anos 90, o disco C: numa pasta comum do computador principal, os programas Craft instalados da versão oficial para navegador e o Claude Code no Prompt de comando. No Linux, ele também é o sistema do computador (o "modo sistema": a sessão "Retro Computer" da tela de entrada, com `RETRO_SISTEMA=1`), pensado para um notebook antigo ou um mini PC.
 
 - **Dono:** EduChacon (repositório `EduChacon/Retro-Computer-for-Productivity`), código aberto, licença MIT.
 - **Idioma:** o código, os comentários, os nomes, os commits e a documentação em português do Brasil, com acentos. A interface fala português, inglês e espanhol (veja "Idiomas"). A página do GitHub é em inglês (`README.md`, com `README.pt-BR.md` e `README.es.md`), assim como as notas dos lançamentos (`docs/lancamentos/`).
@@ -31,6 +31,21 @@ src/principal/         o processo principal (Node)
   terminal.js          o Prompt de comando (node-pty) e achar o "claude"
   config.js            as configurações (config.json) e a chave cifrada
   idioma.js            tr() do processo principal, os nomes das pastas em cada idioma
+  servir.js            sistema://retro/disco/ (em trechos, para o vídeo) e /miniatura/ (cache)
+  compactados.js       .zip (yauzl, yazl) e .tar: ver, extrair sem gravar por cima, compactar
+  unidades.js          pendrives e cartões (lsblk/udisksctl, Win32_LogicalDisk, /Volumes)
+  aplicativos.js       os programas do computador principal (.desktop, menu Iniciar, Aplicativos)
+  loja.js              os programas do Linux pelo Flathub (flatpak --user)
+  atualizador.js       a atualização do próprio Retro Computer (electron-updater)
+  bandeja.js           o volume, o brilho e o Wi-Fi (wpctl/pactl/amixer, nmcli, PowerShell)
+  bloqueio.js          a senha da tela de bloqueio (só o resumo PBKDF2)
+  monitor.js           o processador, a memória e os processos (ps ou PowerShell)
+  impressoras.js       as impressoras, a padrão, a fila (lpoptions/lpstat/cancel) e imprimir
+  bluetooth.js         o bluetoothctl: ligar, procurar, parear (a conversa), conectar
+  sistema-linux.js     o modo sistema: energia (systemctl), sessão, teclado, sudo (comoAdmin)
+  atualizacoes-linux.js  apt e flatpak; as atualizações de segurança automáticas
+  janelas-linux.js     as janelas dos programas do Linux (wmctrl, xprop, xdotool)
+  navegador-preload.js entra nas páginas do Navegador (atalhos e botões laterais do mouse)
 src/adaptador/adaptador.js   entra em cada programa: Abrir/Salvar → caixas do disco
 src/sistema/           a área de trabalho (página servida em sistema://retro/)
   index.html, estilo.css, fontes/, icones/{16,32}/
@@ -43,15 +58,25 @@ src/sistema/           a área de trabalho (página servida em sistema://retro/)
   js/vista.js          a vista de ícones (seleção, laço, teclado, arrastar e soltar)
   js/arquivos.js       operações com arquivos e o menu do botão direito
   js/mesa.js           a área de trabalho; js/barra.js a barra de tarefas e o Iniciar
+  js/barra-extras.js   o calendário do relógio e a caixa de busca
+  js/bandeja.js        a bandeja (rede, volume, bateria, brilho, notificações, teclas)
   js/sistema.js        o estado, os programas, abrir arquivos, recentes, avisos
   js/aparencia.js      fundo (cor e padrão 8×8) e o tamanho dos pixels
   js/sons.js           os sons sintetizados
   js/inicio.js         a abertura (BIOS, marca) e a montagem
-  js/apps/             explorador, bloco, craft, prompt (e Claude), programas, painel,
+  js/controles.js      o controle deslizante
+  js/arvore.js         a barra de pastas do Explorador
+  js/compactados.js, unidades.js, webapps.js, impressao.js, bluetooth.js, bloqueio.js,
+  janelas-nativas.js, nativos.js, atualizacao.js, admin.js   o lado da tela de cada recurso
+  js/apps/             explorador, bloco, craft, prompt (e Claude), programas, loja, painel,
+                       navegador, calculadora, imagens, midia, captura, monitor, atualizacoes,
+                       nativos, paciencia, campominado, breakout,
                        diversos (Executar, Localizar, Desligar), foco, protecao, ajuda
 catalogo/programas.json      os programas conhecidos (id, repo, tipos de arquivo, ícone; a categoria e a descrição nos três idiomas)
+recursos/linux/        a sessão do modo sistema (sessao.sh, o tema do Openbox, o .desktop) e os scripts do .deb
 ferramentas/           icones.py, fontes.sh, fonte-serenity.py, textos.js (as traduções que faltam)
-testes/                *.test.js (npm test: disco, idiomas, atualizações) e capturas.mjs (Playwright + Electron)
+testes/                *.test.js (npm test: o disco, os idiomas, as atualizações e a leitura das saídas
+                       de cada ferramenta do sistema) e capturas.mjs (Playwright + Electron)
 docs/                  uso.md, proposta.md, img/ (img/en e img/es para os READMEs), lancamentos/ (notas, em inglês)
 .github/workflows/compilar.yml   testes e instaladores (Windows, macOS, Linux PC e ARM64) a cada push
 .github/workflows/publicar.yml   na main, com versão nova no package.json: compila e cria o lançamento vX.Y.Z
@@ -62,15 +87,23 @@ docs/                  uso.md, proposta.md, img/ (img/en e img/es para os README
 ```
 npm install                 # instala e compila o node-pty para o Electron
 npm start                   # abre o Retro Computer
-npm test                    # testes do disco, dos idiomas e das atualizações (node:test)
+npm test                    # os testes (node:test)
 node ferramentas/textos.js  # as traduções que faltam ou sobram
 xvfb-run -a node testes/capturas.mjs SAIDA geral    # capturas (Linux sem tela)
 npx electron-builder --linux dir --publish never     # empacotar sem instalar
 ```
 
-Variáveis úteis: `RETRO_DADOS` (pasta das configurações), `RETRO_DISCO` (pasta do disco C:), `RETRO_JANELA=1` (sem tela cheia), `RETRO_RAPIDO=1` (sem a abertura), `RETRO_IDIOMA=en` ou `es` (o idioma, por cima da configuração), `RETRO_ZIP` (no roteiro de capturas: instala pacotes `.zip` antes), `RETRO_FALSA_VERSAO=9.9.9` (no roteiro de capturas: finge que a busca achou essa versão), `RETRO_SEM_BOAS_VINDAS=1` (sem a Ajuda e o balão da primeira vez), `RETRO_EXECUTAVEL` (testa o aplicativo empacotado). Como administrador (root), o Electron precisa de `--no-sandbox` (o roteiro de capturas já passa).
+Variáveis úteis: `RETRO_DADOS` (pasta das configurações), `RETRO_DISCO` (pasta do disco C:), `RETRO_JANELA=1` (sem tela cheia), `RETRO_RAPIDO=1` (sem a abertura), `RETRO_IDIOMA=en` ou `es` (o idioma, por cima da configuração), `RETRO_SISTEMA=1` (o modo sistema), `RETRO_ZIP` (no roteiro de capturas: instala pacotes `.zip` antes), `RETRO_FALSA_VERSAO=9.9.9` (no roteiro de capturas: finge que a busca achou essa versão), `RETRO_SEM_BOAS_VINDAS=1` (sem a Ajuda e o balão da primeira vez), `RETRO_EXECUTAVEL` (testa o aplicativo empacotado).
 
-Roteiros de capturas: `geral` (as telas principais), `craft` (o WordCraft: abrir, salvar, salvar de novo, abrir; precisa de `RETRO_ZIP`), `atualizar` (a atualização ao abrir: perguntar, recusar, a janela dos programas e a falha sem internet; precisa de `RETRO_ZIP` e `RETRO_FALSA_VERSAO`), `idioma` (a troca de idioma e o Sobre), `claude` (o Claude Code no Prompt), `mais` (detalhes, Lixeira, Executar, Localizar, Foco, Ajuda), `lixo` (o ícone da Lixeira), `boot` (com `RETRO_BOOT=1`). Todos aceitam `RETRO_IDIOMA`.
+As ferramentas do sistema têm versões de mentira, para os testes e as capturas sem o aparelho: `RETRO_ENERGIA_FALSA=1` (desligar, reiniciar e suspender só são anotados: use-a sempre com `RETRO_SISTEMA=1` fora de um computador dedicado), `RETRO_BANDEJA_FALSA=1` (volume, brilho, bateria e Wi-Fi), `RETRO_LOJA_FALSA=1` (o Flathub de verdade, o flatpak de mentira), `RETRO_UNIDADES_FALSAS=<pasta>` (um pendrive), `RETRO_IMPRESSORAS_FALSAS=1`, `RETRO_BLUETOOTH_FALSO=1`, `RETRO_ATUALIZACOES_FALSAS=1` (a senha de teste é "certa"), `RETRO_JANELAS_FALSAS=1` (dois programas do Linux abertos) e `RETRO_MIDIA_FALSA=1` (a câmera e o microfone do Chromium). Como administrador (root), o Electron precisa de `--no-sandbox` (o roteiro de capturas já passa).
+
+Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
+
+- as telas: `geral`, `mais` (detalhes, Lixeira, Executar, Localizar, Foco, Ajuda), `ajuda` (os tópicos da Ajuda), `idioma` (a troca de idioma e o Sobre), `lixo` (o ícone da Lixeira), `boot` (com `RETRO_BOOT=1`);
+- os programas: `craft` (o WordCraft: abrir, salvar, salvar de novo, abrir; precisa de `RETRO_ZIP`), `atualizar` (a atualização ao abrir; precisa de `RETRO_ZIP` e `RETRO_FALSA_VERSAO`), `autoatualizar` (a do próprio aplicativo, com `RETRO_EXECUTAVEL`), `nativos`, `loja` (com `RETRO_LOJA_FALSA=1`), `claude`;
+- a internet: `navegador`, `permissoes` (com `RETRO_MIDIA_FALSA=1`), `webapps`;
+- as ferramentas: `calculadora`, `jogos`, `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;
+- a barra e o sistema: `barra`, `fixados`, `bandeja` (com `RETRO_BANDEJA_FALSA=1`), `bloqueio`, `sistema` (com `RETRO_SISTEMA=1` e `RETRO_ENERGIA_FALSA=1`), `impressoras`, `bluetooth`, `atualizacoesLinux` e `janelasLinux` (cada um com a sua variável de mentira).
 
 Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do processo principal e um roteiro (ou um passo) em `testes/capturas.mjs` quando for da tela. Olhe as capturas antes de dar por pronto.
 
@@ -95,12 +128,15 @@ Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do proc
 - Prefira a ferramenta de edição ou scripts de troca de texto que conferem se acharam o trecho. Não use `t.replace(a, b)` com texto em JavaScript (os padrões `$&` e `$'` corrompem o arquivo); use a função.
 - Comentários curtos em português, explicando o porquê.
 - A área de trabalho não tem empacotador: são módulos ES carregados direto (`src/sistema/js`). O processo principal é CommonJS.
-- Um programa novo da área de trabalho é um módulo em `js/apps/` que chama `registrarApp(id, { nome, icone, abrir })` e é importado em `js/inicio.js`.
+- Um programa novo da área de trabalho é um módulo em `js/apps/` que chama `registrarApp(id, { nome, icone, abrir })` e é importado em `js/inicio.js`. Para entrar no Iniciar, ele vai em `itensProgramas` (`js/barra.js`); para a Ajuda, um tópico em `js/apps/ajuda.js`, nos três idiomas.
+- Um recurso que depende de uma ferramenta do sistema (o `bluetoothctl`, o `apt`, o `wmctrl`…) fica numa classe do processo principal com as funções de leitura das saídas exportadas (testadas em `testes/`) e uma versão de mentira ligada por uma variável `RETRO_*`, para as capturas. As ações de administrador passam por `comoAdmin` (`sistema-linux.js`), com a senha pedida pela caixa do Retro Computer (`js/admin.js`).
+- Toda tecla do Electron que a área de trabalho também usa precisa ser conferida em `main.js` (o `before-input-event`): o F11, por exemplo, é da tela cheia do aplicativo.
 - Um tipo de arquivo novo: `TIPOS` em `js/util.js` (ícone e descrição) e, se um programa o abre, `tipos` no `catalogo/programas.json`.
 - Ícones: rode `python3 -I ferramentas/icones.py PASTA_DO_SERENITY` (com a raiz de um clone do SerenityOS); os desenhos próprios ficam no próprio roteiro, ponto a ponto.
 
 ## O que o dono gosta
 
 - Visual fiel à época, bem acabado e coerente; capturas do que foi feito.
+- Usar o Retro Computer como o sistema de um notebook antigo (com mouse e teclado sem fio, teclado em EUA internacional): o que funciona no Windows de hoje deve ter um equivalente aqui.
 - Foco no trabalho: poucas distrações, tudo à mão.
 - Nada perdido e arquivos sempre acessíveis fora do programa.

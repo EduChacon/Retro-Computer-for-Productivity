@@ -173,7 +173,7 @@ export async function procurar(termo) {
 const GRUPOS = { programas: marcar('Programas'), configuracoes: marcar('Configurações'), arquivos: marcar('Arquivos') };
 
 export function montarBusca() {
-  const campo = h('input', { type: 'search', spellcheck: false, placeholder: tr('Procurar'), 'aria-label': tr('Procurar') });
+  const campo = h('input', { type: 'search', spellcheck: false, placeholder: tr('Pesquisar'), 'aria-label': tr('Pesquisar') });
   const caixa = h('div#busca-barra', img('localizar', 16), campo);
   let painel = null;
   let resultados = [];
