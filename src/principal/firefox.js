@@ -42,8 +42,9 @@ function tipoDe(caminho) {
  * pessoal oculta): o perfil vai para a pasta que cada um pode usar.
  */
 function pastaPerfil(tipo, dados, casa = os.homedir()) {
-  if (tipo === 'snap') return path.join(casa, 'snap', 'firefox', 'common', 'retro-computer');
-  if (tipo === 'flatpak') return path.join(casa, '.var', 'app', FLATPAK, 'retro-computer');
+  // O snap e o flatpak só existem no Linux: os caminhos são sempre com "/".
+  if (tipo === 'snap') return path.posix.join(casa, 'snap', 'firefox', 'common', 'retro-computer');
+  if (tipo === 'flatpak') return path.posix.join(casa, '.var', 'app', FLATPAK, 'retro-computer');
   return path.join(dados, 'firefox');
 }
 
