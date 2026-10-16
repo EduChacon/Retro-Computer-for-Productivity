@@ -7,7 +7,9 @@
  * perfil do usuário: aberto pelo Finder ou pelo menu, o aplicativo não herda
  * o PATH do terminal, e o comando "claude" não seria achado.
  */
+const fs = require('node:fs');
 const os = require('node:os');
+const path = require('node:path');
 const { tr } = require('./idioma');
 const { execFile } = require('node:child_process');
 
@@ -126,16 +128,44 @@ function acharClaude() {
  * (RETRO_PEDIDO, RETRO_CLAUDE_SISTEMA e RETRO_CLAUDE_MCP), nunca escritos no comando; o
  * --mcp-config vem por último, porque ele aceita mais de um arquivo.
  */
-function comandoClaude({ pedido = false, ajustes = false, plataforma = process.platform } = {}) {
+function comandoClaude({ pedido = false, ajustes = false, configuracoes = false, plataforma = process.platform } = {}) {
   const v = (nome) => (plataforma === 'win32' ? '$env:' + nome : `"$${nome}"`);
   const partes = [process.env.RETRO_CLAUDE_FALSO || 'claude'];
   if (pedido) partes.push(v('RETRO_PEDIDO'));
+  if (configuracoes) partes.push('--settings', v('RETRO_CLAUDE_AJUSTES'));
   if (ajustes) partes.push('--append-system-prompt-file', v('RETRO_CLAUDE_SISTEMA'), '--mcp-config', v('RETRO_CLAUDE_MCP'));
   return partes.join(' ');
+}
+
+// O idioma em que o Claude responde (a configuração "language" do Claude Code), pelo do Retro Computer.
+const IDIOMA_CLAUDE = { 'pt-BR': 'português do Brasil', es: 'español' };
+
+/**
+ * As configurações do Claude Code nesta janela (o --settings, que vale só para a sessão): o tema
+ * que combina com as cores do terminal ("light" no fundo claro, "dark" no escuro) e o idioma do
+ * Retro Computer. O que o usuário já escolheu no Claude (/theme, /config) fica: o tema dele, se
+ * combina com o fundo (ou é um tema próprio), e o idioma dele, se houver.
+ */
+function ajustesClaude({ tema = 'escuro', idioma = 'pt-BR', doUsuario = {} } = {}) {
+  const r = {};
+  const claro = tema === 'claro';
+  const dele = typeof doUsuario.theme === 'string' ? doUsuario.theme : '';
+  if (!(dele.startsWith('custom:') || dele.startsWith(claro ? 'light' : 'dark'))) r.theme = claro ? 'light' : 'dark';
+  if (!doUsuario.language && IDIOMA_CLAUDE[idioma]) r.language = IDIOMA_CLAUDE[idioma];
+  return r;
+}
+
+/** As configurações do usuário do Claude Code (~/.claude/settings.json, ou a pasta de CLAUDE_CONFIG_DIR). */
+function configuracoesDoClaude(env = process.env) {
+  const pasta = env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+  try {
+    const j = JSON.parse(fs.readFileSync(path.join(pasta, 'settings.json'), 'utf8'));
+    return j && typeof j === 'object' && !Array.isArray(j) ? j : {};
+  } catch { return {}; }
 }
 
 function comandoInstalarClaude() {
   return process.platform === 'win32' ? INSTALAR_CLAUDE.win32 : INSTALAR_CLAUDE.outros;
 }
 
-module.exports = { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, shellPadrao };
+module.exports = { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude, shellPadrao };

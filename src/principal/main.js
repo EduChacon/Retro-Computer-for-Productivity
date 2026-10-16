@@ -18,7 +18,7 @@ const path = require('node:path');
 const { Disco } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
-const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude } = require('./terminal');
+const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
 const { Aplicativos } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
@@ -1260,7 +1260,20 @@ function registrarPonte() {
       // O Claude que ajusta o Retro Computer: o servidor MCP e o texto que explica onde ele está.
       const arqs = (config.obter().claude || {}).ajustes !== false ? arquivosMcp() : null;
       if (arqs) { env.RETRO_CLAUDE_MCP = arqs.mcp; env.RETRO_CLAUDE_SISTEMA = arqs.sistema; }
-      comando = comandoClaude({ pedido: !!pedido, ajustes: !!arqs });
+      // O tema que combina com as cores da janela e o idioma do Retro Computer (só nesta sessão).
+      const aj = ajustesClaude({ tema: o.claude.tema === 'claro' ? 'claro' : 'escuro', idioma: idioma.idioma(), doUsuario: configuracoesDoClaude() });
+      let configuracoes = false;
+      if (Object.keys(aj).length) {
+        try {
+          const pasta = path.join(app.getPath('userData'), 'claude');
+          fs.mkdirSync(pasta, { recursive: true });
+          const arq = path.join(pasta, 'configuracoes.json');
+          fs.writeFileSync(arq, JSON.stringify(aj, null, 1), { mode: 0o600 });
+          env.RETRO_CLAUDE_AJUSTES = arq;
+          configuracoes = true;
+        } catch { }
+      }
+      comando = comandoClaude({ pedido: !!pedido, ajustes: !!arqs, configuracoes });
     }
     return terminais.criar({ cols: o.cols, rows: o.rows, cwd, comando, env });
   });

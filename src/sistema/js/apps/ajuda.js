@@ -335,6 +335,7 @@ const TOPICOS = [
 <h2>Como usar</h2>
 <p>Clique duas vezes no ícone <b>Claude</b>. Ele abre no Prompt de comando, na pasta Meus documentos. Para outra pasta, use o botão direito nela › <b>Abrir o Claude aqui</b>.</p>
 <p>O botão direito num arquivo › <b>Pedir ao Claude</b> abre o Claude já com o pedido: revisar o texto, resumir, traduzir ou outro pedido escrito na hora (numa pasta: organizá-la). Antes, o Retro Computer guarda a versão de agora do arquivo, em <b>Versões anteriores…</b>.</p>
+<p>O Claude abre com o fundo claro e responde no idioma do Retro Computer. A lista da barra da janela troca para o fundo escuro (o Claude acompanha na próxima vez que abrir); a outra lista muda o tamanho da letra.</p>
 <h2>O Claude ajusta o Retro Computer</h2>
 <p>Peça em palavras: "deixe o fundo azul-marinho", "ponha a Calculadora no menu Iniciar", "instale o WordCraft", "desligue os sons". O Claude muda a aparência, a barra de tarefas, o menu Iniciar, os sons, os atalhos e os programas, e o que ele apagar do disco vai para a Lixeira. O Claude Code pergunta antes de cada ajuste. A senha, a chave de API, a pasta do disco e as atualizações ficam só com você. Para desligar: Painel de controle › Claude › Ajustes.</p>
 <h2>Instalação e acesso</h2>
@@ -346,6 +347,7 @@ const TOPICOS = [
 <h2>How to use it</h2>
 <p>Double-click the <b>Claude</b> icon. It opens in the Command Prompt, in the Documents folder. For another folder, right-click it › <b>Open Claude here</b>.</p>
 <p>Right-clicking a file › <b>Ask Claude</b> opens Claude with the request already made: review the text, summarize, translate or another request typed on the spot (on a folder: organize it). First, Retro Computer keeps the current version of the file, in <b>Previous versions…</b>.</p>
+<p>Claude opens with a light background and answers in the Retro Computer language. The list in the window's toolbar switches to the dark background (Claude follows the next time it opens); the other list changes the text size.</p>
 <h2>Claude adjusts the Retro Computer</h2>
 <p>Ask in words: "make the background navy blue", "put the Calculator in the Start menu", "install WordCraft", "turn off the sounds". Claude changes the appearance, the taskbar, the Start menu, the sounds, the shortcuts and the programs, and whatever it deletes from the disk goes to the Trash. Claude Code asks before each adjustment. The password, the API key, the disk folder and the updates stay with you. To turn it off: Control Panel › Claude › Adjustments.</p>
 <h2>Installation and access</h2>
@@ -357,6 +359,7 @@ const TOPICOS = [
 <h2>Cómo usarlo</h2>
 <p>Haz doble clic en el icono <b>Claude</b>. Se abre en la Línea de comandos, en la carpeta Mis documentos. Para otra carpeta, clic derecho en ella › <b>Abrir Claude aquí</b>.</p>
 <p>El clic derecho en un archivo › <b>Pedir a Claude</b> abre Claude con el pedido ya hecho: revisar el texto, resumir, traducir u otro pedido escrito en el momento (en una carpeta: organizarla). Antes, Retro Computer guarda la versión actual del archivo, en <b>Versiones anteriores…</b>.</p>
+<p>Claude se abre con el fondo claro y responde en el idioma de Retro Computer. La lista de la barra de la ventana cambia al fondo oscuro (Claude lo sigue la próxima vez que se abra); la otra lista cambia el tamaño de la letra.</p>
 <h2>Claude ajusta el Retro Computer</h2>
 <p>Pídelo con palabras: "pon el fondo azul marino", "pon la Calculadora en el menú Inicio", "instala WordCraft", "apaga los sonidos". Claude cambia la apariencia, la barra de tareas, el menú Inicio, los sonidos, los accesos directos y los programas, y lo que borre del disco va a la Papelera. Claude Code pregunta antes de cada ajuste. La contraseña, la clave de API, la carpeta del disco y las actualizaciones quedan contigo. Para desactivarlo: Panel de control › Claude › Ajustes.</p>
 <h2>Instalación y acceso</h2>

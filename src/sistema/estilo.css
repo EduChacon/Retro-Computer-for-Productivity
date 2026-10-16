@@ -882,6 +882,7 @@ body.barra-alta { --altura-barra: 34px; }
 
 /* Prompt de comando */
 .prompt-corpo { flex: 1; min-height: 0; background: #000; padding: 2px 0 2px 4px; box-shadow: var(--campo); }
+.prompt-corpo.claro { background: #fff; }
 .prompt-corpo .xterm { height: 100%; }
 .prompt-corpo .xterm-viewport::-webkit-scrollbar-track { background: var(--face) var(--xadrez); }
 

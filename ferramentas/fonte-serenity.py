@@ -5,8 +5,16 @@ Cada ponto aceso vira um quadrado no contorno; com font-size igual a
 `--px` (a altura do glifo), um ponto da fonte ocupa um pixel da tela.
 Licença das fontes de origem: BSD-2-Clause (SerenityOS).
 
-Uso: python3 -I ferramentas/fonte-serenity.py ENTRADA.font SAIDA.woff2 NOME [ESTILO]
+Uso: python3 -I ferramentas/fonte-serenity.py ENTRADA.font SAIDA.woff2 NOME [ESTILO] [opções]
+  --proprios       acrescenta os símbolos desenhados em ferramentas/glifos-terminal.py (os que faltam)
+  --negrito        os símbolos próprios engrossados, para a versão em negrito
+  --de OUTRA.font  os glifos que faltam vêm da OUTRA fonte, engrossados (o negrito a partir da regular)
+
+A margem esquerda de cada glifo (o "lsb") é a do desenho: com ela em zero, o Chromium encostava
+cada letra à esquerda da célula, e na fonte de largura fixa o "i" e o "l" deixavam um buraco depois.
 """
+import importlib.util
+import os
 import struct
 import sys
 
@@ -69,10 +77,49 @@ def contorno(f, w, rows):
     return pen.glyph()
 
 
+def modulo_glifos():
+    sys.dont_write_bytecode = True  # sem a pasta __pycache__ ao lado das ferramentas
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'glifos-terminal.py')
+    spec = importlib.util.spec_from_file_location('glifos_terminal', caminho)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def margem(w, rows):
+    """A primeira coluna acesa do glifo (0 no glifo vazio, como o espaço)."""
+    cols = [x for x in range(w) if any(r & (1 << x) for r in rows)]
+    return min(cols) if cols else 0
+
+
 def main():
-    ent, sai, nome = sys.argv[1], sys.argv[2], sys.argv[3]
-    estilo = sys.argv[4] if len(sys.argv) > 4 else 'Regular'
+    args = sys.argv[1:]
+    opcoes = {'--proprios': False, '--negrito': False}
+    outra = None
+    pos = []
+    i = 0
+    while i < len(args):
+        if args[i] in opcoes:
+            opcoes[args[i]] = True
+        elif args[i] == '--de':
+            i += 1
+            outra = args[i]
+        else:
+            pos.append(args[i])
+        i += 1
+    ent, sai, nome = pos[0], pos[1], pos[2]
+    estilo = pos[3] if len(pos) > 3 else 'Regular'
     f = ler(ent)
+    if opcoes['--proprios']:
+        g = modulo_glifos()
+        for c, v in g.proprios(negrito=opcoes['--negrito']).items():
+            f['glifos'].setdefault(c, v)
+    if outra:
+        g = modulo_glifos()
+        o = ler(outra)
+        for c, (w, rows) in o['glifos'].items():
+            if c not in f['glifos'] and w == f['gw']:
+                f['glifos'][c] = (w, g.engrossar(rows, w))
     gh = f['gh']
     em = gh * UN
     fb = FontBuilder(em, isTTF=True)
@@ -84,7 +131,7 @@ def main():
     for c, (w, rows) in f['glifos'].items():
         g = contorno(f, w, rows)
         glyf['u%04X' % c] = g
-        metr['u%04X' % c] = ((w + f['esp']) * UN, 0)
+        metr['u%04X' % c] = ((w + f['esp']) * UN, margem(w, rows) * UN)
     fb.setupGlyf(glyf)
     fb.setupHorizontalMetrics(metr)
     asc = (f['base'] + 1) * UN

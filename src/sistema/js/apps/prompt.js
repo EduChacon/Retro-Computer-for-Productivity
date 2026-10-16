@@ -9,12 +9,21 @@ import { registrarApp, estado, definirConfig, abrir, pastaDocs } from '../sistem
 import { mensagem, erro, ajustarAoConteudo } from '../dialogos.js';
 import { tr } from '../idioma.js';
 
-// As cores dos monitores VGA da época.
-const TEMA = {
-  background: '#000000', foreground: '#c0c0c0', cursor: '#c0c0c0', cursorAccent: '#000000',
-  selectionBackground: '#c0c0c0', selectionForeground: '#000000',
-  black: '#000000', red: '#aa0000', green: '#00aa00', yellow: '#aa5500', blue: '#0000aa', magenta: '#aa00aa', cyan: '#00aaaa', white: '#aaaaaa',
-  brightBlack: '#555555', brightRed: '#ff5555', brightGreen: '#55ff55', brightYellow: '#ffff55', brightBlue: '#5555ff', brightMagenta: '#ff55ff', brightCyan: '#55ffff', brightWhite: '#ffffff',
+// As cores: o fundo escuro dos monitores VGA da época (o padrão do Prompt) e o fundo claro, como
+// uma folha de papel (o padrão do Claude), com o branco das cores trocado por cinza para aparecer.
+const TEMAS = {
+  escuro: {
+    background: '#000000', foreground: '#c0c0c0', cursor: '#c0c0c0', cursorAccent: '#000000',
+    selectionBackground: '#c0c0c0', selectionForeground: '#000000',
+    black: '#000000', red: '#aa0000', green: '#00aa00', yellow: '#aa5500', blue: '#0000aa', magenta: '#aa00aa', cyan: '#00aaaa', white: '#aaaaaa',
+    brightBlack: '#555555', brightRed: '#ff5555', brightGreen: '#55ff55', brightYellow: '#ffff55', brightBlue: '#5555ff', brightMagenta: '#ff55ff', brightCyan: '#55ffff', brightWhite: '#ffffff',
+  },
+  claro: {
+    background: '#ffffff', foreground: '#000000', cursor: '#000000', cursorAccent: '#ffffff',
+    selectionBackground: '#000080', selectionForeground: '#ffffff',
+    black: '#000000', red: '#aa0000', green: '#007700', yellow: '#886600', blue: '#0000aa', magenta: '#aa00aa', cyan: '#007777', white: '#777777',
+    brightBlack: '#555555', brightRed: '#cc0000', brightGreen: '#008800', brightYellow: '#aa7700', brightBlue: '#0000ff', brightMagenta: '#cc00cc', brightCyan: '#008888', brightWhite: '#444444',
+  },
 };
 const FONTE = "'Csilla', 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', monospace";
 
@@ -37,7 +46,11 @@ class Prompt {
     this.tituloBase = titulo || tr('Prompt de comando');
     this.id = null;
     this.encerrado = false;
-    const tam = (estado.config.prompt && estado.config.prompt.fonte) || 10;
+    const cfg = estado.config.prompt || {};
+    const tam = cfg.fonte || 10;
+    // As cores de cada um: o Claude claro e o Prompt escuro, a não ser que o usuário tenha trocado.
+    this.chaveTema = this.claude ? 'temaClaude' : 'tema';
+    this.tema = TEMAS[cfg[this.chaveTema]] ? cfg[this.chaveTema] : this.claude ? 'claro' : 'escuro';
     this.j = new Janela({
       titulo: this.tituloBase,
       icone: icone || 'prompt',
@@ -50,8 +63,12 @@ class Prompt {
     this.seletorFonte = h('select', { title: tr('Tamanho da letra') }, [10, 15, 20].map((n) => h('option', { value: String(n) }, n === 10 ? tr('Normal') : n === 15 ? tr('Média') : tr('Grande'))));
     this.seletorFonte.value = String(tam);
     this.seletorFonte.addEventListener('change', () => this.mudarFonte(Number(this.seletorFonte.value)));
+    this.seletorTema = h('select', { title: tr('Cores do terminal') }, h('option', { value: 'claro' }, tr('Fundo claro')), h('option', { value: 'escuro' }, tr('Fundo escuro')));
+    this.seletorTema.value = this.tema;
+    this.seletorTema.addEventListener('change', () => this.mudarTema(this.seletorTema.value));
     const barra = h('div.barra-ferramentas',
       h('div.select-caixa', { style: { width: '84px' } }, this.seletorFonte),
+      h('div.select-caixa', { style: { width: '104px' } }, this.seletorTema),
       h('div.sep'),
       h('button.ferramenta', { title: tr('Copiar (Ctrl+Shift+C)'), on: { click: () => this.copiar() } }, tr('Copiar')),
       h('button.ferramenta', { title: tr('Colar (Ctrl+Shift+V)'), on: { click: () => this.colar() } }, tr('Colar')),
@@ -59,6 +76,7 @@ class Prompt {
       h('button.ferramenta', { title: tr('Mostrar a pasta no computador principal'), on: { click: () => retro.disco.mostrar(this.pasta) } }, img('pasta-aberta', 16), tr('Pasta')),
     );
     this.areaTerm = h('div.prompt-corpo');
+    this.areaTerm.classList.toggle('claro', this.tema === 'claro');
     this.j.corpo.append(barra, this.areaTerm);
     // Ctrl+roda do mouse: a letra maior ou menor (os mesmos três tamanhos da lista).
     this.areaTerm.addEventListener('wheel', (e) => {
@@ -88,7 +106,7 @@ class Prompt {
       fontFamily: FONTE,
       fontSize: tam,
       lineHeight: 1.2,
-      theme: TEMA,
+      theme: TEMAS[this.tema],
       cursorBlink: true,
       cursorStyle: 'underline',
       scrollback: 5000,
@@ -126,7 +144,9 @@ class Prompt {
     });
     new ResizeObserver(() => this.ajustar()).observe(this.areaTerm);
     try {
-      this.id = await retro.terminal.criar({ cols: this.term.cols, rows: this.term.rows, pasta: this.pasta, comando: this.comando, claude: this.claude });
+      // O Claude Code abre com o tema que combina com estas cores (main.js, ajustesClaude).
+      const claude = this.claude ? { ...this.claude, tema: this.tema } : null;
+      this.id = await retro.terminal.criar({ cols: this.term.cols, rows: this.term.rows, pasta: this.pasta, comando: this.comando, claude });
       terminais.set(this.id, this);
     } catch (e) {
       this.term.write(`\r\n${tr('Não foi possível abrir o terminal: {erro}', { erro: e.message })}\r\n`);
@@ -159,6 +179,19 @@ class Prompt {
       this.ajustar();
     });
     definirConfig({ prompt: { fonte: tam } }).catch(() => { });
+  }
+
+  mudarTema(tema) {
+    if (!TEMAS[tema] || tema === this.tema) return;
+    this.tema = tema;
+    this.areaTerm.classList.toggle('claro', tema === 'claro');
+    if (this.term) this.term.options.theme = TEMAS[tema];
+    definirConfig({ prompt: { [this.chaveTema]: tema } }).catch(() => { });
+    // O Claude Code escolhe as cores dele ao abrir: com o Claude já aberto, ele acompanha na próxima vez.
+    if (this.claude && this.id && !this.encerrado) {
+      mensagem({ titulo: 'Claude', tipo: 'info', texto: tr('As cores do Claude acompanham o fundo novo na próxima vez que ele abrir. Para continuar a mesma conversa, digite /resume no Claude novo.') })
+        .then(() => this.term && this.term.focus());
+    }
   }
 
   copiar() {

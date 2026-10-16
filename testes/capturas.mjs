@@ -1157,6 +1157,32 @@ const ROTEIROS = {
     await pagina.waitForTimeout(2500);
     await foto('claude-maximizado');
   },
+  // O texto do Claude no terminal (com RETRO_CLAUDE_FALSO apontando para um script que escreve um
+  // texto como o dele: o negrito, os acentos, as aspas, as setas e as molduras), nos três tamanhos de letra.
+  async claudeTexto() {
+    await fecharTudo();
+    await abrir('claude', { pasta: DOCS });
+    await pagina.waitForTimeout(4000);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 0, y: 0, w: 1024, h: 660 }; j.aplicarRet(); });
+    for (const tam of ['10', '15', '20']) {
+      await pagina.selectOption('.janela.ativa .barra-ferramentas select >> nth=0', tam);
+      await pagina.waitForTimeout(1500);
+      await foto('claude-texto-' + tam);
+    }
+    // O fundo escuro (o aviso de que o Claude acompanha na próxima vez) e o Claude aberto de novo.
+    await pagina.selectOption('.janela.ativa .barra-ferramentas select >> nth=0', '10');
+    await pagina.selectOption('.janela.ativa .barra-ferramentas select >> nth=1', 'escuro');
+    await pagina.waitForTimeout(800);
+    await foto('claude-texto-escuro-aviso');
+    await pagina.keyboard.press('Enter');
+    console.log('tema guardado:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.prompt)));
+    await fecharTudo();
+    await abrir('claude', { pasta: DOCS });
+    await pagina.waitForTimeout(4000);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 0, y: 0, w: 1024, h: 660 }; j.aplicarRet(); });
+    await pagina.waitForTimeout(800);
+    await foto('claude-texto-escuro');
+  },
   async mesa() {
     // A área de trabalho padrão (sem o Prompt), o botão direito num programa do Iniciar e a aba
     // Área de trabalho de Painel › Aparência.
