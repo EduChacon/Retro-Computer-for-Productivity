@@ -56,6 +56,7 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 
 - **Os ícones** de início: Meu computador, Meus documentos, a Lixeira, o Navegador, o E-mail e o Claude. Painel de controle › Aparência › **Ícones** liga e desliga os do sistema (também o Prompt de comando, o Painel de controle, o Bloco de notas e o Foco), com "Restaurar o padrão".
 - **Outro programa**: botão direito nele, no menu Iniciar › "Adicionar à área de trabalho" (ou "Remover da área de trabalho"); o mesmo menu fixa o programa na barra de tarefas. Botão direito num ícone da área de trabalho › "Remover da área de trabalho".
+- **Atalhos nas pastas**: o ícone de um programa arrastado da área de trabalho para uma pasta (o ícone dela ou a janela aberta) vira um arquivo de atalho dentro dela e sai da área de trabalho (com Ctrl, fica nos dois lugares; solto na Lixeira, só sai da área de trabalho). O arquivo é um texto pequeno, `Calculadora.atalho`, com a chave do programa (`Programa=calculadora`), e aparece com o ícone do programa, a setinha e o nome sem o `.atalho` (que volta sozinho ao renomear). Dois cliques abrem o programa; ele só aponta para os programas que o Retro Computer conhece, nunca para um caminho, e o de um programa removido avisa.
 - **Os arquivos e as pastas** da área de trabalho ficam na pasta `Área de trabalho` do disco C:.
 
 ### A barra de tarefas

@@ -14,6 +14,8 @@ import { ehCompactado, extrairEMostrar, compactarItens } from './compactados.js'
 import { ehFixada, alternarFixada, seguirPasta } from './acesso.js';
 
 export const TIPO_ARRASTO = 'application/x-retro-arquivos';
+// Os atalhos de programas da área de trabalho (as chaves): soltos numa pasta, viram arquivos de atalho.
+export const TIPO_ATALHOS = 'application/x-retro-atalhos';
 
 /**
  * A caixa "Abrir com", como a da época: a lista dos programas que abrem o tipo (e o do computador
@@ -219,6 +221,8 @@ export async function soltarEm(e, destino) {
   let internos = dt.getData(TIPO_ARRASTO);
   const soltos = caminhosSoltos(e);
   const copiar = e.ctrlKey || e.altKey;
+  let atalhos = [];
+  try { atalhos = JSON.parse(dt.getData(TIPO_ATALHOS) || '[]'); } catch { }
   if (!internos && soltos.length) {
     const rels = await relsDoArrasto(soltos);
     if (rels) internos = JSON.stringify(rels);
@@ -233,10 +237,12 @@ export async function soltarEm(e, destino) {
     await levarParaUnidade(u, rels, un.rel);
     return rels.length;
   }
+  const deAtalhos = atalhos.length ? await soltarAtalhos(atalhos, destino, copiar) : 0;
   if (internos) {
     const rels = JSON.parse(internos);
+    if (!rels.length) return deAtalhos;
     if (destino === '::lixeira') return excluir(rels);
-    return moverPara(rels, destino, copiar);
+    return deAtalhos + await moverPara(rels, destino, copiar);
   }
   const caminhos = soltos;
   if (!caminhos.length || destino === '::lixeira') return 0;
@@ -252,7 +258,35 @@ export async function soltarEm(e, destino) {
 
 export function aceitaSoltar(e) {
   const tipos = e.dataTransfer ? [...e.dataTransfer.types] : [];
-  return tipos.includes(TIPO_ARRASTO) || tipos.includes('Files');
+  return tipos.includes(TIPO_ARRASTO) || tipos.includes(TIPO_ATALHOS) || tipos.includes('Files');
+}
+
+/**
+ * Os atalhos de programas da área de trabalho soltos numa pasta do disco viram arquivos de atalho
+ * nela e saem da área de trabalho (com Ctrl, ficam nos dois lugares); na Lixeira, só saem da área
+ * de trabalho, como o "Remover da área de trabalho".
+ */
+async function soltarAtalhos(chaves, destino, copiar) {
+  const { removerAtalho } = await import('./mesa.js');
+  if (destino === '::lixeira') {
+    for (const k of chaves) removerAtalho(k);
+    return chaves.length;
+  }
+  if (typeof destino !== 'string' || destino.startsWith('::')) return 0;
+  const { programaDe } = await import('./barra.js');
+  let feitos = 0;
+  for (const k of chaves) {
+    const p = programaDe(k);
+    if (!p) continue;
+    try {
+      await retro.disco.criarAtalho(destino, p.nome, k);
+      if (!copiar) removerAtalho(k);
+      feitos++;
+    } catch (e) {
+      await erro(tr('Não foi possível criar o atalho de {nome}: {erro}', { nome: p.nome, erro: e.message }));
+    }
+  }
+  return feitos;
 }
 
 export async function levar(rels, onde) {

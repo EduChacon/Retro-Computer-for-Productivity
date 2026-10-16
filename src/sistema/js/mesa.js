@@ -12,7 +12,7 @@ import { confirmar } from './dialogos.js';
 import { tocar } from './sons.js';
 import { tr, marcar } from './idioma.js';
 import { nomeNativo, iconeNativo, iconeNativoJa, abrirNativo } from './nativos.js';
-import { estaFixado, fixar, desafixar } from './barra.js';
+import { estaFixado, fixar, desafixar, programaDe, itemDeAtalho } from './barra.js';
 
 let vista;
 let lixeiraCheia = false;
@@ -54,6 +54,8 @@ function atalhoDe(chave) {
 
 /** Os ícones do sistema que Painel › Aparência › Área de trabalho liga e desliga, na ordem da mesa. */
 export const ICONES_SISTEMA = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'programas', 'prompt', 'painel', 'bloco', 'foco'];
+// Os ícones da área de trabalho que não são programas (não viram arquivo de atalho).
+const NAO_PROGRAMAS = ['meu-computador', 'meus-documentos', 'lixeira'];
 export const ICONES_PADRAO = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'];
 export const naMesa = (chave) => ((estado.config.mesa && estado.config.mesa.atalhos) || []).includes(chave);
 
@@ -119,13 +121,15 @@ export async function atualizar(selecionarChaves) {
   const itens = atalhos.map(({ k, a }) => ({
     chave: k, rotulo: a.semTraducao ? a.rotulo : tr(a.rotulo), icone: a.icone, iconeUrl: a.iconeUrl, sistema: true, alvo: a.alvo, atalho: a.atalhoSeta,
     pos: posicoes[k], arrastavel: true,
+    // Os programas (não Meu computador, Meus documentos e a Lixeira): soltos numa pasta, viram um arquivo de atalho.
+    programa: !NAO_PROGRAMAS.includes(k) && !!programaDe(k),
   }));
   let arquivos = [];
   try { arquivos = await retro.disco.listar(pastaMesa()); } catch { }
   for (const f of arquivos) {
     const t = tipoDe(f.nome, f.pasta);
     const chave = 'arq:' + f.nome;
-    itens.push({ chave, rotulo: f.nome, icone: f.pasta ? iconeDaPasta(f.rel) : t.icone, rel: f.rel, pasta: f.pasta, alvo: f.pasta ? f.rel : null, pos: posicoes[chave] });
+    itens.push({ chave, rotulo: f.nome, icone: f.pasta ? iconeDaPasta(f.rel) : t.icone, rel: f.rel, pasta: f.pasta, alvo: f.pasta ? f.rel : null, pos: posicoes[chave], ...(f.atalho ? itemDeAtalho(f) : {}) });
   }
   vista.desenhar(itens, { selecionarChaves });
 }
@@ -133,8 +137,10 @@ export async function atualizar(selecionarChaves) {
 async function renomearItem(it) {
   if (it.sistema) return;
   const i = vista.itens.indexOf(it);
-  const novo = await editarRotulo(vista.els[i].itemEl, it.rotulo, { semExtensao: !it.pasta });
+  let novo = await editarRotulo(vista.els[i].itemEl, it.rotulo, { semExtensao: !it.pasta });
   if (!novo) return;
+  // O atalho mostra o nome sem o ".atalho": ele volta no nome do arquivo.
+  if (it.extOculta && !novo.toLowerCase().endsWith(it.extOculta.toLowerCase())) novo += it.extOculta;
   const rel = await renomear(it.rel, novo);
   if (rel) {
     const posicoes = { ...(estado.config.mesa.posicoes || {}) };

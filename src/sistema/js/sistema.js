@@ -217,6 +217,15 @@ export async function abrirArquivo(rel, { com } = {}) {
     if (pad === 'fora') { adicionarRecente(rel); return abrirNoComputador(rel); }
     if (pad && programasPara(nome).some((p) => p.id === pad)) com = pad;
   }
+  // O atalho de um programa abre o programa (só os que o Retro Computer conhece, pela chave).
+  if (!com && /\.atalho$/i.test(nome)) {
+    const chave = await retro.disco.lerAtalho(rel).catch(() => null);
+    const { programaDe } = await import('./barra.js');
+    const p = chave && programaDe(chave);
+    if (p) return p.abrir();
+    const { erro } = await import('./dialogos.js');
+    return erro(tr('O programa do atalho "{nome}" não está mais neste computador.', { nome: nome.replace(/\.atalho$/i, '') }));
+  }
   // As pastas compactadas: o .zip abre como pasta no Explorador; o .tar só se extrai.
   if (!com && /\.(zip|tar|tgz|txz|tbz2?|tar\.(gz|xz|bz2))$/i.test(nome)) {
     const c = await import('./compactados.js');

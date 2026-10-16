@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('retro', {
     info: (rel) => chamar('disco:info', rel),
     existe: (rel) => chamar('disco:existe', rel),
     ler: (rel) => chamar('disco:ler', rel),
+    lerAtalho: (rel) => chamar('disco:lerAtalho', rel),
+    criarAtalho: (pai, nome, chave) => chamar('disco:criarAtalho', pai, nome, chave),
     lerTexto: (rel) => chamar('disco:lerTexto', rel),
     gravar: (rel, dados, o) => chamar('disco:gravar', rel, dados, o),
     criarPasta: (pai, nome) => chamar('disco:criarPasta', pai, nome),

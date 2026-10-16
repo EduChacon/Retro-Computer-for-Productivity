@@ -40,6 +40,29 @@ function nomeValido(nome) {
   return true;
 }
 
+/*
+ * O atalho de um programa num arquivo (o ".lnk" do Windows): um texto pequeno com a chave do
+ * programa do Retro Computer ("craft:wordcraft", "navegador", "nativo:…"). Ele só aponta para os
+ * programas que o Retro Computer já conhece: a área de trabalho acha o programa pela chave e
+ * nunca roda um caminho escrito no arquivo.
+ */
+const EXT_ATALHO = '.atalho';
+const MAX_ATALHO = 4096;
+
+/** O texto de um arquivo de atalho. */
+function textoAtalho(chave) {
+  return `[Retro Computer]\r\nPrograma=${chave}\r\n`;
+}
+
+/** A chave do programa de um arquivo de atalho, ou null. */
+function lerAtalho(texto) {
+  const m = /^\s*Programa\s*=\s*([^\r\n]+?)\s*$/im.exec(String(texto || ''));
+  const chave = m ? m[1] : '';
+  return chave && chave.length <= 1000 && !/[\x00-\x1f]/.test(chave) ? chave : null;
+}
+
+const ehAtalho = (nome) => nome.toLowerCase().endsWith(EXT_ATALHO);
+
 class Disco {
   constructor(raiz) {
     this.raiz = path.resolve(raiz);
@@ -131,7 +154,12 @@ class Disco {
       const relItem = n ? `${n}/${e.name}` : e.name;
       try {
         const st = await fsp.stat(path.join(pasta, e.name));
-        itens.push({ rel: relItem, nome: e.name, pasta: st.isDirectory(), tamanho: st.size, modificado: st.mtimeMs });
+        const item = { rel: relItem, nome: e.name, pasta: st.isDirectory(), tamanho: st.size, modificado: st.mtimeMs };
+        // O atalho de um programa já vem com a chave dele (para o ícone e o nome do programa).
+        if (!item.pasta && ehAtalho(e.name) && st.size <= MAX_ATALHO) {
+          item.atalho = lerAtalho(await fsp.readFile(path.join(pasta, e.name), 'utf8').catch(() => ''));
+        }
+        itens.push(item);
       } catch { /* link quebrado ou sem acesso */ }
     }
     itens.sort((a, b) => (b.pasta - a.pasta) || a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base', numeric: true }));
@@ -140,6 +168,25 @@ class Disco {
 
   async ler(rel) {
     return fsp.readFile(this.real(rel));
+  }
+
+  /** A chave do programa de um arquivo de atalho do disco, ou null. */
+  async lerAtalho(rel) {
+    const n = this.normalizar(rel);
+    if (!ehAtalho(n)) return null;
+    const st = await fsp.stat(this.real(n));
+    if (st.size > MAX_ATALHO) return null;
+    return lerAtalho(await fsp.readFile(this.real(n), 'utf8'));
+  }
+
+  /** Cria o atalho de um programa numa pasta ("Calculadora.atalho", ou "Calculadora (2).atalho"). */
+  async criarAtalho(relPai, nome, chave) {
+    if (!lerAtalho(textoAtalho(chave))) throw new ErroDisco(tr('Nome de arquivo vazio.'), 'invalido');
+    // Os sinais que os sistemas não aceitam num nome viram espaço.
+    const limpo = String(nome || '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+/, '') || 'Atalho';
+    const pai = this.normalizar(relPai);
+    const livre = await this.nomeLivre(pai, limpo + EXT_ATALHO);
+    return this.gravar(pai ? `${pai}/${livre}` : livre, Buffer.from(textoAtalho(chave), 'utf8'));
   }
 
   /** Grava o arquivo; se ele já existir, a versão anterior vai para .versoes/. */
@@ -430,4 +477,4 @@ class Disco {
   }
 }
 
-module.exports = { Disco, ErroDisco, nomeValido, LIXEIRA, VERSOES, VERSOES_MAX, PASTAS_INICIAIS };
+module.exports = { Disco, ErroDisco, nomeValido, lerAtalho, textoAtalho, EXT_ATALHO, LIXEIRA, VERSOES, VERSOES_MAX, PASTAS_INICIAIS };

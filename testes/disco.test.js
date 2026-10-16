@@ -125,3 +125,26 @@ test('configurações: null apaga a chave', () => {
   assert.deepEqual(c.mesa.posicoes, { b: [0, 0] });
   assert.ok(Array.isArray(c.mesa.atalhos));
 });
+
+test('os arquivos de atalho dos programas: o texto, a leitura e o nome livre', async () => {
+  const { lerAtalho, textoAtalho } = require('../src/principal/disco.js');
+  assert.equal(lerAtalho(textoAtalho('craft:wordcraft')), 'craft:wordcraft');
+  assert.equal(lerAtalho('[Retro Computer]\nprograma = nativo:win:C:\\Programas\\Firefox.lnk\n'), 'nativo:win:C:\\Programas\\Firefox.lnk');
+  assert.equal(lerAtalho('qualquer coisa'), null);
+  assert.equal(lerAtalho('Programa=\n'), null);
+  const d = novoDisco();
+  await d.preparar();
+  const a = await d.criarAtalho('Meus documentos', 'Calculadora', 'calculadora');
+  const b = await d.criarAtalho('Meus documentos', 'Calculadora', 'calculadora');
+  const c = await d.criarAtalho('Meus documentos', 'A/B: "teste"?', 'bloco');
+  assert.deepEqual([a.nome, b.nome, c.nome], ['Calculadora.atalho', 'Calculadora (2).atalho', 'A B teste .atalho'.replace(' .', '.')]);
+  const lista = await d.listar('Meus documentos');
+  assert.deepEqual(lista.map((x) => x.atalho), ['bloco', 'calculadora', 'calculadora']);
+  assert.equal(await d.lerAtalho('Meus documentos/Calculadora (2).atalho'), 'calculadora');
+  // Um arquivo qualquer não é atalho, nem um .atalho grande demais.
+  await d.gravar('Meus documentos/texto.txt', Buffer.from('Programa=calculadora'));
+  await d.gravar('Meus documentos/grande.atalho', Buffer.alloc(5000, 'a'));
+  assert.equal(await d.lerAtalho('Meus documentos/texto.txt'), null);
+  assert.equal(await d.lerAtalho('Meus documentos/grande.atalho'), null);
+  assert.equal((await d.listar('Meus documentos')).find((x) => x.nome === 'texto.txt').atalho, undefined);
+});

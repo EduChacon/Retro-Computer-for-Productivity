@@ -8,7 +8,7 @@
  *         miniatura? (o endereço da miniatura de uma foto, na vista de miniaturas) }
  */
 import { h, img, limitar } from './util.js';
-import { TIPO_ARRASTO, aceitaSoltar, soltarEm, comecarArrastoNativo, arrastoDaqui, arrastoDoSistema, caminhosSoltos, relsDoArrasto } from './arquivos.js';
+import { TIPO_ARRASTO, TIPO_ATALHOS, aceitaSoltar, soltarEm, comecarArrastoNativo, arrastoDaqui, arrastoDoSistema, caminhosSoltos, relsDoArrasto } from './arquivos.js';
 
 const CEL_L = 75;
 const CEL_A = 70;
@@ -167,6 +167,9 @@ export class VistaIcones {
           return;
         }
         e.dataTransfer.setData(TIPO_ARRASTO, JSON.stringify(rels));
+        // Os atalhos de programas da área de trabalho, que viram arquivos ao entrar numa pasta.
+        const atalhos = sel.filter((x) => x.sistema && x.programa).map((x) => x.chave);
+        if (atalhos.length) e.dataTransfer.setData(TIPO_ATALHOS, JSON.stringify(atalhos));
         e.dataTransfer.setData('text/plain', rels.join('\n'));
         e.dataTransfer.effectAllowed = 'copyMove';
         const fantasma = el.itemEl.querySelector('.icone img');

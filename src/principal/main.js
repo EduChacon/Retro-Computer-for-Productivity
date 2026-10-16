@@ -1125,6 +1125,8 @@ function registrarPonte() {
   tratar('disco:info', (rel) => disco.info(rel));
   tratar('disco:existe', (rel) => disco.existe(rel));
   tratar('disco:ler', (rel) => disco.ler(rel).then((b) => new Uint8Array(b)));
+  tratar('disco:lerAtalho', (rel) => disco.lerAtalho(String(rel)));
+  tratar('disco:criarAtalho', (pai, nome, chave) => disco.criarAtalho(String(pai), String(nome), String(chave)));
   tratar('disco:lerTexto', (rel) => disco.ler(rel).then((b) => b.toString('utf8')));
   tratar('disco:gravar', (rel, dados, o) => disco.gravar(rel, dados, o));
   tratar('disco:criarPasta', (pai, nome) => disco.criarPasta(pai, nome));

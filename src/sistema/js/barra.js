@@ -162,6 +162,18 @@ export function programaDe(chave) {
   return { chave, nome: tr(NOMES_FIXADOS[chave] || a.nome), icone: a.icone || 'programa', abrir: () => abrir(chave) };
 }
 
+/**
+ * Um arquivo de atalho (o disco já leu a chave do programa: f.atalho) como item de uma pasta: o
+ * ícone do programa com a setinha e o nome sem o ".atalho" (que volta ao renomear: extOculta).
+ */
+export function itemDeAtalho(f) {
+  const p = programaDe(f.atalho);
+  return {
+    rotulo: f.nome.replace(/\.atalho$/i, ''), icone: p ? p.icone : 'programa', iconeUrl: (p && p.iconeUrl) || null,
+    atalho: true, extOculta: f.nome.slice(-'.atalho'.length),
+  };
+}
+
 export const estaFixado = (chave) => fixados().includes(chave);
 
 export function fixar(chave) {

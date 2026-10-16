@@ -24,6 +24,7 @@ import { pastaDoZip, lerPastaZip, itensDoZip, extrairEMostrar, abrirDoZip } from
 import { Arvore } from '../arvore.js';
 import { PainelVisualizacao } from '../visualizar.js';
 import { fixadas } from '../acesso.js';
+import { itemDeAtalho } from '../barra.js';
 
 // As fotos com miniatura (as que o Electron ou o sistema sabem encolher).
 const COM_MINIATURA = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif', 'tif', 'tiff', 'heic']);
@@ -653,6 +654,7 @@ class Explorador {
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
         tamanho: f.tamanho, modificado: f.modificado,
         miniatura: this.modo === 'miniaturas' && !f.pasta && COM_MINIATURA.has(extensao(f.nome)) ? urlMiniatura(f.rel, f.modificado) : null,
+        ...(f.atalho ? itemDeAtalho(f) : {}),
       };
     });
   }
@@ -802,8 +804,10 @@ class Explorador {
     if (!it.rel) return;
     const i = this.vista.itens.indexOf(it);
     if (i < 0) return;
-    const novo = await editarRotulo(this.vista.els[i].itemEl, it.rotulo, { semExtensao: !it.pasta });
+    let novo = await editarRotulo(this.vista.els[i].itemEl, it.rotulo, { semExtensao: !it.pasta });
     if (!novo) return;
+    // O atalho mostra o nome sem o ".atalho": ele volta no nome do arquivo.
+    if (it.extOculta && !novo.toLowerCase().endsWith(it.extOculta.toLowerCase())) novo += it.extOculta;
     const rel = await renomear(it.rel, novo);
     if (rel) this.carregar('arq:' + rel);
   }

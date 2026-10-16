@@ -591,6 +591,67 @@ const ROTEIROS = {
 
   // Arrastar e soltar com o mouse: um arquivo sobre o ícone de uma pasta (no Explorador e na área de
   // trabalho), um arquivo para dentro de uma pasta aberta, e renomear na área de trabalho (o texto à vista).
+  // Os atalhos de programas: o da área de trabalho solto numa pasta vira um arquivo de atalho (e sai
+  // da área de trabalho); dois cliques nele abrem o programa; renomear mantém o ".atalho".
+  async atalhos() {
+    const mesa = path.join(disco, MESA);
+    await pagina.evaluate(() => { window.__retro.arrastoSimulado = true; });
+    fs.mkdirSync(path.join(mesa, 'Projetos'), { recursive: true });
+    await pagina.evaluate(async () => { const m = await import('./js/mesa.js'); await m.adicionarAtalho('calculadora'); await m.adicionarAtalho('bloco'); });
+    await fecharTudo();
+    await pagina.waitForTimeout(1500);
+    const arrastar = async (de, para) => {
+      const a = await pagina.locator(de).first().boundingBox();
+      const b = await pagina.locator(para).first().boundingBox();
+      await pagina.mouse.move(a.x + a.width / 2, a.y + 12);
+      await pagina.mouse.down();
+      for (let i = 1; i <= 12; i++) await pagina.mouse.move(a.x + a.width / 2 + ((b.x + b.width / 2) - (a.x + a.width / 2)) * i / 12, a.y + 12 + ((b.y + 12) - (a.y + 12)) * i / 12);
+      await pagina.waitForTimeout(150);
+      await pagina.mouse.up();
+      await pagina.waitForTimeout(1500);
+    };
+    const naMesa = () => pagina.evaluate(() => window.__retro.estado.config.mesa.atalhos);
+    await foto('atalhos-antes');
+    await arrastar(`#mesa .item:has(.rotulo:text-is("${T('Calculadora')}"))`, '#mesa .item:has(.rotulo:text-is("Projetos"))');
+    console.log('na pasta:', JSON.stringify(fs.readdirSync(path.join(mesa, 'Projetos'))), '| na área de trabalho:', JSON.stringify(await naMesa()));
+    console.log('conteúdo:', JSON.stringify(fs.readFileSync(path.join(mesa, 'Projetos', T('Calculadora') + '.atalho'), 'utf8')));
+    // Na pasta aberta: o ícone da Calculadora com a setinha, o nome sem o ".atalho".
+    await abrir('explorador', { pasta: MESA + '/Projetos' });
+    await pagina.waitForTimeout(1200);
+    // O Bloco de notas, solto dentro da pasta aberta.
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 380, y: 60, w: 420, h: 300 }; j.aplicarRet(); });
+    await pagina.waitForTimeout(400);
+    await arrastar(`#mesa .item:has(.rotulo:text-is("${T('Bloco de notas')}"))`, '.janela.ativa .icones');
+    console.log('na pasta, depois do Bloco:', JSON.stringify(fs.readdirSync(path.join(mesa, 'Projetos')).sort()), '| na área de trabalho:', JSON.stringify(await naMesa()));
+    await foto('atalhos-pasta');
+    await abrir('explorador', { pasta: MESA + '/Projetos' });
+    await pagina.waitForTimeout(800);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.explorador.definirModo('detalhes'); });
+    await pagina.waitForTimeout(500);
+    await foto('atalhos-detalhes');
+    console.log('detalhes:', JSON.stringify(await pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .linha-item')].map((l) => l.innerText.replace(/\s+/g, ' ').trim()))));
+    // Renomear: o nome novo continua um atalho.
+    await pagina.click(`.janela.ativa .item:has(.rotulo:text-is("${T('Calculadora')}"))`);
+    await pagina.keyboard.press('F2');
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.type('Contas');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1200);
+    console.log('renomeado:', JSON.stringify(fs.readdirSync(path.join(mesa, 'Projetos')).sort()));
+    // Dois cliques abrem o programa.
+    await pagina.dblclick('.janela.ativa .item:has(.rotulo:text-is("Contas"))');
+    await pagina.waitForTimeout(1200);
+    console.log('aberta:', await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().titulo));
+    await foto('atalhos-aberto');
+    // Um atalho para um programa que não existe mais avisa.
+    fs.writeFileSync(path.join(mesa, 'Projetos', 'Velho.atalho'), '[Retro Computer]\r\nPrograma=craft:nao-existe\r\n');
+    await pagina.evaluate((m) => import('./js/sistema.js').then((s) => { s.abrirArquivo(m + '/Projetos/Velho.atalho'); }), MESA);
+    await pagina.waitForTimeout(800);
+    console.log('aviso:', await pagina.evaluate(() => (document.querySelector('.janela.ativa .cxb-texto, .janela.ativa .mensagem') || document.querySelector('.janela.ativa')).innerText.slice(0, 120)));
+    await foto('atalhos-sem-programa');
+    await pagina.keyboard.press('Enter');
+  },
+
   async arrastar() {
     const docs = path.join(disco, DOCS);
     const mesa = path.join(disco, MESA);
