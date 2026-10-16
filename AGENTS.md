@@ -51,6 +51,7 @@ src/principal/         o processo principal (Node)
   diario.js            o Diário de trabalho: um .txt por dia, só acrescentando linhas
   copia.js             a cópia de segurança do disco C: (só acrescenta e atualiza)
   firefox.js           o Firefox do computador como navegador padrão (perfil próprio, user.js e userChrome.css)
+  visualizar.js        o que o painel de visualização lê: o Word (mammoth), as planilhas e o .odt
   transferencia.js     o histórico da área de transferência (só na memória)
   firewall.js          o firewall do Linux (ufw)
   https.js             só conexões seguras no Navegador (http:// vira https://)
@@ -78,6 +79,8 @@ src/sistema/           a área de trabalho (página servida em sistema://retro/)
   js/inicio.js         a abertura (BIOS, marca) e a montagem
   js/controles.js      o controle deslizante
   js/arvore.js         a barra de pastas do Explorador
+  js/visualizar.js     o painel de visualização do Explorador (o PDF pelo pdf.js, em vendor/pdfjs/)
+  js/acesso.js         as pastas fixadas do Acesso rápido
   js/compactados.js, unidades.js, webapps.js, impressao.js, bluetooth.js, bloqueio.js,
   janelas-nativas.js, nativos.js, atualizacao.js, admin.js   o lado da tela de cada recurso
   js/apps/             explorador, bloco, craft, prompt (e Claude), programas, loja, painel,
@@ -117,7 +120,7 @@ Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 - a internet: `navegador`, `permissoes` (com `RETRO_MIDIA_FALSA=1`), `webapps`;
 - as ferramentas: `calculadora`, `jogos`, `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;
 - a barra e o sistema: `barra`, `fixados`, `bandeja` (com `RETRO_BANDEJA_FALSA=1`), `bloqueio`, `sistema` (com `RETRO_SISTEMA=1` e `RETRO_ENERGIA_FALSA=1`), `impressoras`, `bluetooth`, `atualizacoesLinux` e `janelasLinux` (cada um com a sua variável de mentira);
-- as janelas e o teclado: `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`), `mouse` (com `RETRO_MOUSE_FALSO=1`), `caracteres` (o Mapa de caracteres), `caixas` (confere se cada caixa do Painel cabe sem rolar, sem fotos), `mesa` (a área de trabalho padrão, o botão direito no Iniciar e a aba Ícones), `diario` (o Diário de trabalho), `copia` (a cópia de segurança para uma pasta temporária), `firefox` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1`, `RETRO_FIREFOX` e o openbox: o Firefox aberto pelo ícone do Navegador, fotografado pelo `import`; o Firefox fica aberto, então rode com `timeout`), `pedirClaude` (o "Pedir ao Claude" do botão direito, com `RETRO_CLAUDE_FALSO` apontando para um script que mostra o pedido recebido);
+- as janelas e o teclado: `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`), `mouse` (com `RETRO_MOUSE_FALSO=1`), `caracteres` (o Mapa de caracteres), `caixas` (confere se cada caixa do Painel cabe sem rolar, sem fotos), `mesa` (a área de trabalho padrão, o botão direito no Iniciar e a aba Ícones), `diario` (o Diário de trabalho), `copia` (a cópia de segurança para uma pasta temporária), `firefox` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1`, `RETRO_FIREFOX` e o openbox: o Firefox aberto pelo ícone do Navegador, fotografado pelo `import`; o Firefox fica aberto, então rode com `timeout`), `pedirClaude` (o "Pedir ao Claude" do botão direito, com `RETRO_CLAUDE_FALSO` apontando para um script que mostra o pedido recebido), `visualizar` (o painel de visualização com um .docx, um PDF, uma planilha, um CSV, um texto e uma foto feitos na hora; e o Acesso rápido);
 - o que veio das distribuições: `produtividade` (o histórico da área de transferência, a conta na busca, a luz noturna, o modo de energia, o firewall e a aba Atalhos; com `RETRO_BANDEJA_FALSA=1` e `RETRO_FIREWALL_FALSO=1`) e `seguranca` (a Central de segurança e o aviso do site sem HTTPS; com `RETRO_FIREWALL_FALSO=1` e `RETRO_ATUALIZACOES_FALSAS=1`, e a internet).
 
 As teclas simuladas pelo Playwright não passam pelo `before-input-event` do Electron: os roteiros mandam a ação como o processo principal a manda (`tecla('alternar')`), e a leitura das teclas fica em `src/principal/atalhos.js`, testada à parte. Para o modo sistema com janelas do Linux de verdade, o Xvfb com o openbox, o `xdotool key` e o `import -window root` (ImageMagick) funcionam.

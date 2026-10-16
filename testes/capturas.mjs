@@ -122,6 +122,77 @@ const abrir = (id, args) => pagina.evaluate(([i, a]) => window.__retro.abrir(i, 
 const tecla = (acao) => app.evaluate(({ BrowserWindow }, a) => BrowserWindow.getAllWindows().find((w) => w.isVisible()).webContents.send('sistema:tecla', a), acao);
 const fecharTudo = () => pagina.evaluate(async () => { for (const j of window.__retro.janelas.lista.slice()) await j.fechar(true); });
 
+/** Um .docx pequeno (o XML do Word, à mão): um título, parágrafos com negrito e itálico e uma tabela. */
+async function docxSimples(arquivo) {
+  const yazl = require('yazl');
+  const zip = new yazl.ZipFile();
+  const p = (txt, estilo) => `<w:p>${estilo ? `<w:pPr><w:pStyle w:val="${estilo}"/></w:pPr>` : ''}${txt}</w:p>`;
+  const r = (txt, b, i) => `<w:r>${b || i ? `<w:rPr>${b ? '<w:b/>' : ''}${i ? '<w:i/>' : ''}</w:rPr>` : ''}<w:t xml:space="preserve">${txt}</w:t></w:r>`;
+  const celula = (txt) => `<w:tc>${p(r(txt))}</w:tc>`;
+  const corpo = [
+    p(r('Relatório mensal'), 'Heading1'),
+    p(r('Este documento resume as atividades do mês. ') + r('Todas as metas foram cumpridas', true) + r(', com ') + r('folga no prazo', false, true) + r('.')),
+    p(r('O segundo parágrafo traz os números principais, organizados na tabela abaixo, e as observações da equipe sobre o andamento dos trabalhos.')),
+    `<w:tbl>${[['Item', 'Previsto', 'Feito'], ['Relatórios', '12', '14'], ['Reuniões', '8', '7']].map((l) => `<w:tr>${l.map(celula).join('')}</w:tr>`).join('')}</w:tbl>`,
+    p(r('Próximos passos', true)),
+    p(r('Revisar o orçamento e preparar a apresentação de outubro.')),
+  ].join('');
+  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${corpo}</w:body></w:document>`;
+  const estilos = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style></w:styles>`;
+  const tipos = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const relsDoc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  zip.addBuffer(Buffer.from(tipos), '[Content_Types].xml');
+  zip.addBuffer(Buffer.from(rels), '_rels/.rels');
+  zip.addBuffer(Buffer.from(doc), 'word/document.xml');
+  zip.addBuffer(Buffer.from(estilos), 'word/styles.xml');
+  zip.addBuffer(Buffer.from(relsDoc), 'word/_rels/document.xml.rels');
+  zip.end();
+  await new Promise((ok, falha) => zip.outputStream.pipe(fs.createWriteStream(arquivo)).on('close', ok).on('error', falha));
+}
+
+/** Uma planilha .xlsx pequena (a primeira folha com textos e números). */
+async function xlsxSimples(arquivo, folha, linhas) {
+  const yazl = require('yazl');
+  const zip = new yazl.ZipFile();
+  const textos = [];
+  const col = (k) => String.fromCharCode(65 + k);
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const dados = linhas.map((l, i) => `<row r="${i + 1}">${l.map((v, k) => (typeof v === 'number'
+    ? `<c r="${col(k)}${i + 1}"><v>${v}</v></c>`
+    : `<c r="${col(k)}${i + 1}" t="s"><v>${textos.push(v) - 1}</v></c>`)).join('')}</row>`).join('');
+  const ns = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+  zip.addBuffer(Buffer.from(`<workbook ${ns} xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${esc(folha)}" sheetId="1" r:id="rId1"/></sheets></workbook>`), 'xl/workbook.xml');
+  zip.addBuffer(Buffer.from('<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'), 'xl/_rels/workbook.xml.rels');
+  zip.addBuffer(Buffer.from(`<sst ${ns}>${textos.map((s) => `<si><t>${esc(s)}</t></si>`).join('')}</sst>`), 'xl/sharedStrings.xml');
+  zip.addBuffer(Buffer.from(`<worksheet ${ns}><sheetData>${dados}</sheetData></worksheet>`), 'xl/worksheets/sheet1.xml');
+  zip.end();
+  await new Promise((ok, falha) => zip.outputStream.pipe(fs.createWriteStream(arquivo)).on('close', ok).on('error', falha));
+}
+
+/** Um PDF pequeno (escrito à mão, com a fonte Helvetica padrão): uma folha A4 por texto de "paginas". */
+function pdfSimples(arquivo, paginas) {
+  const objs = [];
+  const n = paginas.length;
+  // 1 catálogo, 2 páginas, 3 fonte, depois (página, conteúdo) para cada folha.
+  objs[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objs[2] = `<< /Type /Pages /Count ${n} /Kids [${paginas.map((_, i) => `${4 + i * 2} 0 R`).join(' ')}] >>`;
+  objs[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+  const esc = (s) => s.replace(/[\\()]/g, (c) => '\\' + c);
+  paginas.forEach((linhas, i) => {
+    const txt = linhas.map((l, k) => `BT /F1 ${k === 0 ? 20 : 12} Tf 60 ${770 - k * 24 - (k ? 16 : 0)} Td (${esc(l)}) Tj ET`).join('\n');
+    objs[4 + i * 2] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${5 + i * 2} 0 R >>`;
+    objs[5 + i * 2] = `<< /Length ${Buffer.byteLength(txt, 'latin1')} >>\nstream\n${txt}\nendstream`;
+  });
+  let saida = '%PDF-1.4\n';
+  const pos = [];
+  for (let k = 1; k < objs.length; k++) { pos[k] = Buffer.byteLength(saida, 'latin1'); saida += `${k} 0 obj\n${objs[k]}\nendobj\n`; }
+  const xref = Buffer.byteLength(saida, 'latin1');
+  saida += `xref\n0 ${objs.length}\n0000000000 65535 f \n` + pos.slice(1).map((p) => String(p).padStart(10, '0') + ' 00000 n \n').join('');
+  saida += `trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  fs.writeFileSync(arquivo, Buffer.from(saida, 'latin1'));
+}
+
 async function esperarPronto(ms = 90000) {
   await pagina.waitForFunction(() => !document.querySelector('.corpo .carregando'), null, { timeout: ms });
   await pagina.waitForTimeout(1500);
@@ -1335,6 +1406,66 @@ const ROTEIROS = {
   },
 
   // O Explorador: a barra de pastas, o endereço em pedaços e as miniaturas das fotos.
+  // O painel de visualização (Alt+P) com um .docx, um PDF, um texto e uma foto; o Acesso rápido.
+  async visualizar() {
+    const pasta = path.join(disco, DOCS, 'Trabalho');
+    fs.mkdirSync(pasta, { recursive: true });
+    await docxSimples(path.join(pasta, 'Relatório.docx'));
+    pdfSimples(path.join(pasta, 'Contrato.pdf'), [
+      ['Contrato de prestação de serviços', 'Cláusula 1. O contratado entrega o trabalho até o fim do mês.', 'Cláusula 2. O pagamento é feito em duas parcelas iguais.', 'Cláusula 3. As partes podem rever o prazo de comum acordo.'],
+      ['Anexo', 'Cronograma e valores combinados.'],
+    ]);
+    await xlsxSimples(path.join(pasta, 'Orçamento.xlsx'), 'Outubro', [
+      ['Item', 'Previsto', 'Gasto', 'Saldo'], ['Material', 1200, 980.5, 219.5], ['Transporte', 400, 455, -55], ['Serviços', 2500, 2100, 400], ['Total', 4100, 3535.5, 564.5],
+    ]);
+    fs.writeFileSync(path.join(pasta, 'Contatos.csv'), 'Nome;Telefone;Cidade\nAna;(11) 5555-0101;São Paulo\nBruno;(21) 5555-0202;"Rio de Janeiro"\n');
+    fs.writeFileSync(path.join(pasta, 'Notas.txt'), 'Ideias para a reunião:\n\n- revisar o orçamento\n- marcar a apresentação\n- pedir os números ao financeiro\n');
+    try { execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=800x600', '-frames:v', '1', path.join(pasta, 'Gráfico.png')]); } catch { }
+    await fecharTudo();
+    await pagina.evaluate(([docs]) => import('./js/sistema.js').then((m) => m.definirConfig({
+      explorador: { modo: 'detalhes', arvore: true, visualizar: false },
+      recentes: [docs + '/Trabalho/Contrato.pdf', docs + '/Trabalho/Relatório.docx', docs + '/Teste.md'],
+    })), [DOCS]);
+    await abrir('explorador', { pasta: `${DOCS}/Trabalho` });
+    await pagina.waitForTimeout(600);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret.w = 600; j.ret.h = 470; j.ret.x = 20; j.ret.y = 10; j.aplicarRet(); });
+    await pagina.click('.janela.ativa .item:has-text("Relatório")');
+    // Alt+P abre o painel (e alarga a janela estreita).
+    await pagina.keyboard.press('Alt+p');
+    await pagina.waitForTimeout(1500);
+    await foto('visualizar-docx');
+    await pagina.click('.janela.ativa .item:has-text("Contrato")');
+    await pagina.waitForTimeout(2500);
+    await foto('visualizar-pdf');
+    await pagina.click('.janela.ativa .item:has-text("Orçamento")');
+    await pagina.waitForTimeout(1200);
+    await foto('visualizar-planilha');
+    await pagina.click('.janela.ativa .item:has-text("Contatos")');
+    await pagina.waitForTimeout(800);
+    await foto('visualizar-csv');
+    await pagina.click('.janela.ativa .item:has-text("Notas")');
+    await pagina.waitForTimeout(800);
+    await foto('visualizar-texto');
+    if (fs.existsSync(path.join(pasta, 'Gráfico.png'))) {
+      await pagina.click('.janela.ativa .item:has-text("Gráfico")');
+      await pagina.waitForTimeout(800);
+      await foto('visualizar-imagem');
+    }
+    // Fixar a pasta no Acesso rápido (botão direito em Meus documentos) e abrir o Acesso rápido.
+    await pagina.click('.janela.ativa .barra-ferramentas button:has-text("' + T('Acima') + '")');
+    await pagina.waitForTimeout(800);
+    await pagina.click('.janela.ativa .lista-arquivos .item:has-text("Trabalho")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('acesso-fixar');
+    await pagina.click(`.menu .opcao:has-text("${T('&Fixar no Acesso rápido')}")`);
+    await pagina.waitForTimeout(600);
+    await pagina.click(`.janela.ativa .arv-linha:has-text("${T('Acesso rápido')}")`);
+    await pagina.waitForTimeout(1500);
+    await foto('acesso-rapido');
+    console.log('fixadas:', JSON.stringify(await pagina.evaluate(() => import('./js/acesso.js').then((m) => m.fixadas()))));
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ explorador: { modo: 'icones', visualizar: false } })));
+  },
+
   async explorador() {
     const fotos = path.join(disco, DOCS, 'Fotos', 'Viagem');
     fs.mkdirSync(fotos, { recursive: true });

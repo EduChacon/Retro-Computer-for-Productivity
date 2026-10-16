@@ -81,6 +81,12 @@ contextBridge.exposeInMainWorld('retro', {
     aoProgresso: ouvir('copia:progresso'),
     aoFim: ouvir('copia:fim'),
   },
+  // O painel de visualização do Explorador.
+  visualizar: {
+    docx: (rel) => chamar('visualizar:docx', rel),
+    planilha: (rel) => chamar('visualizar:planilha', rel),
+    odt: (rel) => chamar('visualizar:odt', rel),
+  },
   // O Diário de trabalho (Acessórios).
   diario: {
     anotar: (texto, o) => chamar('diario:anotar', texto, o),

@@ -10,6 +10,7 @@ import { tocar } from './sons.js';
 import { tr } from './idioma.js';
 import { listarUnidades, levarParaUnidade, nomeUnidade } from './unidades.js';
 import { ehCompactado, extrairEMostrar, compactarItens } from './compactados.js';
+import { ehFixada, alternarFixada, seguirPasta } from './acesso.js';
 
 export const TIPO_ARRASTO = 'application/x-retro-arquivos';
 
@@ -55,6 +56,7 @@ export async function renomear(rel, novo) {
       if (!ok) return null;
     }
     const r = await retro.disco.renomear(rel, novo);
+    seguirPasta(rel, r.rel);
     return r.rel;
   } catch (e) {
     await erro(tr('Não foi possível renomear {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }), tr('Erro ao renomear o arquivo'));
@@ -99,7 +101,10 @@ export async function moverPara(rels, destino, copiar = false) {
     if (rel === destino || destino.startsWith(rel + '/')) continue;
     try {
       if (copiar) await retro.disco.copiar(rel, destino);
-      else await retro.disco.mover(rel, destino);
+      else {
+        const r = await retro.disco.mover(rel, destino);
+        if (r && r.rel) seguirPasta(rel, r.rel);
+      }
       feitos++;
     } catch (e) {
       await erro((copiar ? tr('Não foi possível copiar {nome}: {erro}', { nome: nomeDe(rel), erro: e.message }) : tr('Não foi possível mover {nome}: {erro}', { nome: nomeDe(rel), erro: e.message })));
@@ -217,6 +222,12 @@ export function menuDeItens(sel, o = {}) {
     itens.push({ rotulo: tr('Abrir o &Prompt de comando aqui'), acao: () => abrir('prompt', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Abrir o C&laude aqui'), icone: 'claude', acao: () => abrir('claude', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Pe&dir ao Claude'), sub: () => pedidosAoClaude(um) });
+    if (um.rel) {
+      itens.push({ separador: true });
+      itens.push(ehFixada(um.rel)
+        ? { rotulo: tr('Desa&fixar do Acesso rápido'), icone: 'favoritos', acao: () => alternarFixada(um.rel).catch((e) => erro(e.message)) }
+        : { rotulo: tr('&Fixar no Acesso rápido'), icone: 'favoritos', acao: () => alternarFixada(um.rel).catch((e) => erro(e.message)) });
+    }
   } else if (um) {
     const progs = programasPara(um.nome);
     itens.push({ rotulo: tr('&Abrir'), negrito: true, acao: () => abrirArquivo(um.rel) });

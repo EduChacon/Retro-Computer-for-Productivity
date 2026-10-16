@@ -78,7 +78,9 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 
 ### O Explorador e as pastas compactadas
 
-- **Exibir › Barra de pastas** (ou o botão Pastas) mostra a árvore à esquerda: Meu computador, o disco C:, Meus documentos, a Área de trabalho, os pendrives e a Lixeira.
+- **Exibir › Barra de pastas** (ou o botão Pastas) mostra a árvore à esquerda: o Acesso rápido, Meu computador, o disco C:, Meus documentos, a Área de trabalho, os pendrives e a Lixeira.
+- **Acesso rápido**, no alto da árvore: as pastas fixadas (botão direito numa pasta › "Fixar no Acesso rápido"; no começo, a Área de trabalho e Meus documentos) e os arquivos usados por último. Uma pasta fixada renomeada ou movida pelo Retro Computer continua fixada.
+- **Exibir › Painel de visualização** (Alt+P, ou o botão Visualizar) mostra à direita o arquivo escolhido, sem abrir o programa: o Word (`.docx`, convertido pelo mammoth), o texto do OpenDocument (`.odt`), o PDF (as páginas, pelo pdf.js, até 40), a primeira folha das planilhas (`.xlsx`, `.ods`, `.csv`, até 200 linhas), os textos, as fotos, os vídeos, as músicas e as páginas da internet salvas (numa moldura sem scripts e sem a internet). Numa janela estreita, o painel a alarga.
 - **O endereço** fica em pedaços: cada nome leva àquela pasta. Um clique no espaço vazio ao lado (ou Alt+D, F4) vira o campo de texto.
 - **Exibir › Miniaturas** mostra as fotos encolhidas.
 - **Um `.zip` abre como pasta** (só para ver). Botão direito › "Extrair tudo…" cria uma pasta nova ao lado, sem gravar por cima de nada; os `.tar` (`.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`) também se extraem. Para compactar: Enviar para › Pasta compactada (zip).

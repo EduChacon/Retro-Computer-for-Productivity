@@ -38,6 +38,7 @@ const { Mouse, MouseFalso, limparEscolhas } = require('./mouse');
 const { Diario } = require('./diario');
 const { CopiaSeguranca, destinoValido, venceu } = require('./copia');
 const { Firefox, CLASSE: CLASSE_FIREFOX } = require('./firefox');
+const { Visualizador } = require('./visualizar');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -57,6 +58,24 @@ const VENDOR = {
   'xterm/addon-webgl.js': path.join(RAIZ_APP, 'node_modules', '@xterm', 'addon-webgl', 'lib', 'addon-webgl.js'),
   'xterm/addon-unicode11.js': path.join(RAIZ_APP, 'node_modules', '@xterm', 'addon-unicode11', 'lib', 'addon-unicode11.js'),
 };
+// As pastas de bibliotecas servidas inteiras (o pdf.js do painel de visualização: o código, as
+// fontes padrão, os mapas de caracteres e os decodificadores), só as subpastas listadas.
+const VENDOR_PASTAS = {
+  'pdfjs/': { raiz: path.join(RAIZ_APP, 'node_modules', 'pdfjs-dist'), sub: ['build', 'cmaps', 'standard_fonts', 'wasm', 'iccs'] },
+};
+
+/** O arquivo de uma biblioteca (vendor/…), ou null. */
+function arquivoVendor(rel) {
+  if (VENDOR[rel]) return VENDOR[rel];
+  for (const [prefixo, p] of Object.entries(VENDOR_PASTAS)) {
+    if (!rel.startsWith(prefixo)) continue;
+    const resto = rel.slice(prefixo.length);
+    if (!p.sub.includes(resto.split('/')[0])) return null;
+    const arquivo = path.resolve(p.raiz, resto);
+    return arquivo.startsWith(p.raiz + path.sep) ? arquivo : null;
+  }
+  return null;
+}
 
 if (process.env.RETRO_DADOS) app.setPath('userData', path.resolve(process.env.RETRO_DADOS));
 
@@ -213,8 +232,8 @@ function registrarProtocolos() {
     const url = new URL(pedido.url);
     let rel = decodeURIComponent(url.pathname);
     if (rel.startsWith('/vendor/')) {
-      const arquivo = VENDOR[rel.slice('/vendor/'.length)];
-      if (!arquivo) return new Response('404', { status: 404 });
+      const arquivo = arquivoVendor(rel.slice('/vendor/'.length));
+      if (!arquivo || !fs.existsSync(arquivo)) return new Response('404', { status: 404 });
       return new Response(await fsp.readFile(arquivo), { headers: { 'Content-Type': mimeDe(arquivo) } });
     }
     // Os arquivos do disco C: (o Visualizador de imagens e o Reprodutor de mídia), só para ler.
@@ -710,6 +729,11 @@ function registrarPonte() {
     return { pasta, hoje: diario.arquivoDeHoje() };
   });
   tratar('diario:hoje', () => diario.garantirHoje());
+  // O painel de visualização do Explorador: o Word, as planilhas e o texto do OpenDocument.
+  const vis = new Visualizador();
+  tratar('visualizar:docx', (rel) => vis.docx(disco.real(String(rel || ''))));
+  tratar('visualizar:planilha', (rel) => vis.planilha(disco.real(String(rel || '')), path.extname(String(rel || '')).slice(1).toLowerCase()));
+  tratar('visualizar:odt', (rel) => vis.odt(disco.real(String(rel || ''))));
   // O Firefox com o visual do Retro Computer (o navegador padrão quando instalado).
   tratar('firefox:estado', () => firefox.estado());
   tratar('firefox:abrir', async (url, o = {}) => {

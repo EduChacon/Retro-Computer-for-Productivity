@@ -1330,7 +1330,33 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .exp-corpo > .lista-arquivos { flex: 1 1 auto; min-width: 0; }
 .exp-arvore { flex: none; min-width: 100px; overflow: auto; background: #fff; box-shadow: var(--campo); }
 .exp-divisoria { flex: none; width: 4px; cursor: col-resize; touch-action: none; }
-.exp-corpo:not(.com-arvore) .exp-divisoria { display: none; }
+.exp-corpo:not(.com-arvore) .exp-divisoria:not(.vis-div) { display: none; }
+/* O painel de visualização (Exibir › Painel de visualização): o arquivo em cima, os dados embaixo. */
+.exp-vis { flex: none; min-width: 140px; display: flex; background: #fff; box-shadow: var(--campo); padding: 2px; overflow: hidden; }
+.exp-corpo:not(.com-vis) .exp-vis, .exp-corpo:not(.com-vis) .vis-div { display: none; }
+.vis { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.vis-corpo { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+.vis-vazio { margin: auto; padding: 12px; text-align: center; color: var(--sombra); white-space: pre-line; overflow-wrap: anywhere; }
+.vis-moldura { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: #fff; }
+.vis-pdf { flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; background: var(--sombra); }
+.vis-pdf .vis-vazio { color: #fff; }
+.vis-folha { flex: none; width: 100%; height: auto; background: #fff; box-shadow: 1px 1px 0 var(--escuro); }
+.vis-texto { margin: 0; padding: 4px 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; user-select: text; }
+.vis-imagem { flex: 1 1 auto; min-height: 0; width: 100%; padding: 6px; object-fit: scale-down; }
+.vis-video { flex: none; width: 100%; max-height: 100%; margin: auto 0; background: #000; }
+.vis-som { margin: auto; padding: 8px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.vis-som audio { width: 100%; max-width: 260px; }
+.vis-folha-calc { flex: none; align-self: flex-start; min-width: 100%; }
+.vis-aba { padding: 2px 4px 3px; font-weight: bold; }
+.vis-tabela { border-collapse: collapse; }
+.vis-tabela th { position: sticky; top: 0; z-index: 1; padding: 0 4px; background: var(--face); font-weight: normal; box-shadow: var(--raso-alto); text-align: center; }
+.vis-tabela tbody th { left: 0; top: auto; min-width: 24px; text-align: right; }
+.vis-tabela thead th:first-child { left: 0; z-index: 2; }
+.vis-tabela td { max-width: 180px; padding: 0 4px; border: 1px solid var(--face); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vis-tabela td.num { text-align: right; }
+.vis-dados { flex: none; display: flex; gap: 8px; align-items: flex-start; padding: 6px 4px 4px; border-top: 1px solid var(--face); overflow-wrap: anywhere; }
+.vis-dados > div { min-width: 0; }
+.vis-dados b { display: block; margin-bottom: 2px; }
 .arvore { min-width: max-content; padding: 2px; outline: none; }
 .arv-linha { display: flex; align-items: center; gap: 3px; height: 18px; white-space: nowrap; cursor: default; }
 .arv-linha img { flex: none; }

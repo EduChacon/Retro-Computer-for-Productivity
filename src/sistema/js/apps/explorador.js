@@ -2,6 +2,7 @@
  * As janelas de pasta (o explorador do disco), Meu computador e a Lixeira.
  *   pasta '::computador'  Meu computador (o disco C:, o Painel de controle, a Lixeira)
  *   pasta '::lixeira'     a Lixeira
+ *   pasta '::acesso'      o Acesso rápido (as pastas fixadas e os arquivos usados por último)
  *   pasta '::unidade:…'   um pendrive ou cartão (unidades.js): ver, trazer para o C:, levar do C:
  *   pasta '::zip:…'       por dentro de uma pasta compactada (compactados.js): ver e extrair
  *   qualquer outra        uma pasta do disco ('' é a raiz C:\)
@@ -19,6 +20,8 @@ import { tr, marcar } from '../idioma.js';
 import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos } from '../unidades.js';
 import { pastaDoZip, lerPastaZip, itensDoZip, extrairEMostrar, abrirDoZip } from '../compactados.js';
 import { Arvore } from '../arvore.js';
+import { PainelVisualizacao } from '../visualizar.js';
+import { fixadas } from '../acesso.js';
 
 // As fotos com miniatura (as que o Electron ou o sistema sabem encolher).
 const COM_MINIATURA = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif', 'tif', 'tiff', 'heic']);
@@ -26,6 +29,7 @@ const COM_MINIATURA = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico'
 const ESPECIAIS = {
   '::computador': { titulo: marcar('Meu computador'), icone: 'computador' },
   '::lixeira': { titulo: marcar('Lixeira'), icone: 'lixeira' },
+  '::acesso': { titulo: marcar('Acesso rápido'), icone: 'favoritos' },
 };
 
 function tituloDe(pasta) {
@@ -88,9 +92,10 @@ class Explorador {
       abrirMenu(this.itensExibir(), { x: r.left, y: r.bottom });
     });
     this.btPastas = h('button.ferramenta', { title: tr('Mostrar ou esconder a barra de pastas'), on: { click: () => this.alternarArvore() } }, img('pasta', 16), tr('Pastas'));
+    this.btVis = h('button.ferramenta', { title: tr('Mostrar ou esconder o painel de visualização (Alt+P)'), on: { click: () => this.alternarVis() } }, img('documento', 16), tr('Visualizar'));
     const ferramentas = h('div.barra-ferramentas',
       this.btVoltar, this.btAcima, this.btPastas, h('div.sep'),
-      h('span', tr('Endereço')), this.caixaEndereco, h('div.sep'), btVista);
+      h('span', tr('Endereço')), this.caixaEndereco, h('div.sep'), btVista, this.btVis);
     this.area = h('div.lista-arquivos', { style: { flex: '1' } });
     // A barra de pastas à esquerda (a árvore), com a divisória para arrastar.
     this.arvore = new Arvore({ aoEscolher: (p) => this.navegar(p) });
@@ -98,9 +103,16 @@ class Explorador {
     const divisoria = h('div.exp-divisoria');
     divisoria.addEventListener('pointerdown', (e) => this.arrastarDivisoria(e));
     this.comArvore = !(c.explorador && c.explorador.arvore === false);
-    this.corpo = h('div.exp-corpo', this.painelArvore, divisoria, this.area);
+    // O painel de visualização à direita (Exibir › Painel de visualização), também com a divisória.
+    this.vis = new PainelVisualizacao();
+    this.painelVis = h('div.exp-vis', { style: { width: ((c.explorador && c.explorador.largVis) || 240) + 'px' } }, this.vis.el);
+    const divisoriaVis = h('div.exp-divisoria.vis-div');
+    divisoriaVis.addEventListener('pointerdown', (e) => this.arrastarDivisoriaVis(e));
+    this.comVis = !!(c.explorador && c.explorador.visualizar);
+    this.corpo = h('div.exp-corpo', this.painelArvore, divisoria, this.area, divisoriaVis, this.painelVis);
     this.j.corpo.append(ferramentas, this.corpo);
     this.aplicarArvore();
+    this.aplicarVis();
     this.vista = new VistaIcones(this.area, {
       modo: this.modo,
       colunas: [tr('Nome'), tr('Tamanho'), tr('Tipo'), tr('Modificado')],
@@ -108,9 +120,13 @@ class Explorador {
       aoMenu: (sel, e) => this.menu(sel, e),
       aoRenomear: (it) => this.renomearItem(it),
       aoExcluir: (itens) => this.excluirItens(itens),
-      aoSelecionar: () => this.atualizarStatus(),
+      aoSelecionar: () => { this.atualizarStatus(); this.atualizarVis(); },
     });
     this.area.addEventListener('keydown', (e) => this.atalhos(e));
+    // Alt+P, como no Windows: de qualquer lugar da janela (a lista, a árvore, o endereço).
+    this.j.corpo.addEventListener('keydown', (e) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'p') { e.preventDefault(); e.stopPropagation(); this.alternarVis(); }
+    });
     // Ctrl+roda do mouse: os ícones maiores ou menores, de modo em modo (como no Windows).
     this.area.addEventListener('wheel', (e) => {
       if (!e.ctrlKey || !e.deltaY) return;
@@ -120,8 +136,15 @@ class Explorador {
     }, { passive: false });
     this.paraDeOuvir = retro.disco.aoMudar((pastas) => {
       if (pastas.includes(this.pasta) || (this.pasta === '::lixeira' && pastas.includes('::lixeira')) || this.pasta === '::computador') this.carregar();
+      else if (this.pasta === '::acesso' && this.tocaAcesso(pastas)) this.carregar();
       if (this.comArvore) for (const p of pastas) this.arvore.recarregar(p);
     });
+    // As pastas fixadas mudaram (nesta janela ou noutra): a árvore e o Acesso rápido acompanham.
+    const aoMudarAcesso = () => {
+      this.arvore.recarregar('::acesso');
+      if (this.pasta === '::acesso') this.carregar();
+    };
+    document.addEventListener('retro-acesso', aoMudarAcesso);
     // Um pendrive que chega ou sai: o Meu computador se atualiza; a janela do que saiu volta para ele.
     const aoMudarUnidades = (e) => {
       const un = lerPastaUnidade(this.pasta);
@@ -130,8 +153,18 @@ class Explorador {
       if (this.comArvore) this.arvore.recarregar('::computador');
     };
     document.addEventListener('retro-unidades', aoMudarUnidades);
-    this.j.ev.on('fechada', () => { this.paraDeOuvir(); document.removeEventListener('retro-unidades', aoMudarUnidades); });
-    this.j.ev.on('ativada', () => setTimeout(() => { if (!this.j.el.contains(document.activeElement)) this.vista.focoNoRaiz(); }, 0));
+    this.j.ev.on('fechada', () => {
+      this.paraDeOuvir();
+      document.removeEventListener('retro-unidades', aoMudarUnidades);
+      document.removeEventListener('retro-acesso', aoMudarAcesso);
+      clearTimeout(this.esperaVis);
+      this.vis.limpar();
+    });
+    this.j.ev.on('ativada', () => setTimeout(() => {
+      if (!this.j.el.contains(document.activeElement)) this.vista.focoNoRaiz();
+      // Os arquivos recentes mudam quando se abre um documento noutro lugar.
+      if (this.pasta === '::acesso' && this.assinaturaAcesso() !== this.acessoLido) this.carregar();
+    }, 0));
     this.carregar(selecionar);
   }
 
@@ -142,7 +175,9 @@ class Explorador {
           const sel = this.vista ? this.vista.selecionados() : [];
           const doDisco = !this.pasta.startsWith('::');
           const itens = [];
-          if (this.pasta === '::lixeira') {
+          if (this.pasta === '::acesso') {
+            if (sel.length) itens.push(...menuDeItens(sel, { aoRenomear: (it) => this.renomearItem(it), abrirPasta: (rel) => this.navegar(rel) }), { separador: true });
+          } else if (this.pasta === '::lixeira') {
             itens.push({ rotulo: tr('&Restaurar'), desativado: !sel.length, acao: () => this.restaurar(sel) });
             itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
             itens.push({ separador: true });
@@ -184,9 +219,10 @@ class Explorador {
           { rotulo: tr('&Avançar'), desativado: !this.adiante.length, acao: () => this.avancar() },
           { rotulo: tr('A&cima'), desativado: this.pasta === '::computador', acao: () => this.subir() },
           { separador: true },
+          { rotulo: tr('Ace&sso rápido'), icone: 'favoritos', acao: () => this.navegar('::acesso') },
           { rotulo: tr('&Meu computador'), icone: 'computador', acao: () => this.navegar('::computador') },
           { rotulo: tr('&Disco C:'), icone: 'disco', acao: () => this.navegar('') },
-          { rotulo: tr('Meus &documentos'), icone: 'documentos', acao: () => this.navegar(pastaDocs()) },
+          { rotulo: tr('Meus d&ocumentos'), icone: 'documentos', acao: () => this.navegar(pastaDocs()) },
           { rotulo: tr('Á&rea de trabalho'), icone: 'pasta', acao: () => this.navegar(pastaMesa()) },
           { rotulo: tr('&Lixeira'), icone: 'lixeira', acao: () => this.navegar('::lixeira') },
         ],
@@ -214,6 +250,7 @@ class Explorador {
       ...this.itensModos(),
       { separador: true },
       { rotulo: tr('Barra de &pastas'), marcado: this.comArvore, acao: () => this.alternarArvore() },
+      { rotulo: tr('Painel de &visualização'), atalho: 'Alt+P', marcado: this.comVis, acao: () => this.alternarVis() },
       { separador: true },
       { rotulo: tr('&Organizar ícones'), sub: () => this.itensOrganizar() },
       { separador: true },
@@ -247,6 +284,60 @@ class Explorador {
     definirConfig({ explorador: { arvore: this.comArvore } }).catch(() => { });
   }
 
+  aplicarVis() {
+    this.corpo.classList.toggle('com-vis', this.comVis);
+    this.btVis.classList.toggle('apertado', this.comVis);
+    if (this.comVis) this.atualizarVis(true);
+    else { clearTimeout(this.esperaVis); this.visChave = null; this.vis.limpar(); }
+  }
+
+  alternarVis() {
+    this.comVis = !this.comVis;
+    // Numa janela estreita, o painel abre espaço alargando a janela (sem passar da tela).
+    const j = this.j;
+    if (this.comVis && !j.maximizada && j.ret && j.ret.w < 700) {
+      const tela = document.getElementById('janelas').getBoundingClientRect();
+      j.ret.w = Math.min(Math.max(j.ret.w, 760), Math.floor(tela.width) - 8);
+      if (j.ret.x + j.ret.w > tela.width) j.ret.x = Math.max(0, Math.floor(tela.width) - j.ret.w);
+      j.aplicarRet();
+    }
+    this.aplicarVis();
+    definirConfig({ explorador: { visualizar: this.comVis } }).catch(() => { });
+  }
+
+  /** O painel mostra o item escolhido (um só); a troca espera um instante, para as setas não lerem cada arquivo. */
+  atualizarVis(agora = false) {
+    if (!this.comVis) return;
+    clearTimeout(this.esperaVis);
+    this.esperaVis = setTimeout(() => {
+      const sel = this.vista ? this.vista.selecionados() : [];
+      if (sel.length !== 1) {
+        this.visChave = null;
+        return this.vis.vazio(sel.length ? tr('{n} objeto(s) selecionado(s)', { n: sel.length }) : undefined);
+      }
+      const it = sel[0];
+      const chave = it.chave + ':' + (it.modificado || '');
+      if (chave === this.visChave) return;
+      this.visChave = chave;
+      this.vis.mostrar(it);
+    }, agora ? 0 : 150);
+  }
+
+  arrastarDivisoriaVis(e) {
+    e.preventDefault();
+    const ini = { x: e.clientX, w: this.painelVis.offsetWidth };
+    const alvo = e.currentTarget;
+    alvo.setPointerCapture(e.pointerId);
+    const mover = (ev) => { this.painelVis.style.width = Math.max(140, Math.min(this.corpo.clientWidth - 160, ini.w - (ev.clientX - ini.x))) + 'px'; };
+    const soltar = () => {
+      alvo.removeEventListener('pointermove', mover);
+      alvo.removeEventListener('pointerup', soltar);
+      definirConfig({ explorador: { largVis: this.painelVis.offsetWidth } }).catch(() => { });
+    };
+    alvo.addEventListener('pointermove', mover);
+    alvo.addEventListener('pointerup', soltar);
+  }
+
   arrastarDivisoria(e) {
     e.preventDefault();
     const ini = { x: e.clientX, w: this.painelArvore.offsetWidth };
@@ -267,6 +358,7 @@ class Explorador {
     const pc = { rotulo: tr('Meu computador'), pasta: '::computador', icone: 'computador' };
     if (pasta === '::computador') return [pc];
     if (pasta === '::lixeira') return [{ rotulo: tr('Lixeira'), pasta, icone: 'lixeira' }];
+    if (pasta === '::acesso') return [{ rotulo: tr('Acesso rápido'), pasta, icone: 'favoritos' }];
     const disco = (rel) => {
       const partes = String(rel || '').split('/').filter(Boolean);
       return [pc, { rotulo: 'C:', pasta: '', icone: 'disco' }, ...partes.map((p, i) => ({ rotulo: p, pasta: partes.slice(0, i + 1).join('/') }))];
@@ -337,7 +429,7 @@ class Explorador {
   subir() {
     if (this.pasta === '::computador') return;
     const de = this.pasta;
-    if (this.pasta === '' || this.pasta === '::lixeira') return this.navegar('::computador', de === '' ? 'disco' : 'lixeira');
+    if (this.pasta === '' || this.pasta === '::lixeira' || this.pasta === '::acesso') return this.navegar('::computador', de === '' ? 'disco' : de === '::lixeira' ? 'lixeira' : undefined);
     const un = lerPastaUnidade(this.pasta);
     if (un) return un.rel ? this.navegar(pastaDaUnidade(un.id, paiDe(un.rel)), 'un:' + un.rel) : this.navegar('::computador', 'unidade:' + un.id);
     const zip = lerPastaZip(this.pasta);
@@ -349,6 +441,7 @@ class Explorador {
     const t = texto.trim();
     if (t.toLowerCase() === tr('Meu computador').toLowerCase()) return this.navegar('::computador');
     if (t.toLowerCase() === tr('Lixeira').toLowerCase()) return this.navegar('::lixeira');
+    if (t.toLowerCase() === tr('Acesso rápido').toLowerCase()) return this.navegar('::acesso');
     const rel = caminhoInterno(t);
     try {
       const info = await retro.disco.info(rel);
@@ -376,6 +469,7 @@ class Explorador {
     try {
       if (pasta === '::computador') itens = await this.itensComputador();
       else if (pasta === '::lixeira') itens = await this.itensLixeira();
+      else if (pasta === '::acesso') itens = await this.itensAcesso();
       else if (un) itens = await this.itensUnidade(un.id, un.rel);
       else if (zip) itens = await this.itensZip(zip.rel, zip.dentro);
       else itens = await this.itensPasta(pasta);
@@ -391,6 +485,50 @@ class Explorador {
     this.vista.desenhar(itens, { selecionarChaves: selecionar ? [selecionar] : undefined });
     if (selecionar) this.vista.selecionarChave(selecionar);
     this.atualizarStatus();
+    this.atualizarVis();
+  }
+
+  /** O que o Acesso rápido mostra (para saber se precisa ler de novo). */
+  assinaturaAcesso() {
+    return JSON.stringify([fixadas(), (estado.config.recentes || []).slice(0, 15)]);
+  }
+
+  /** Uma mudança no disco que toca o Acesso rápido (uma pasta fixada ou a de um arquivo recente). */
+  tocaAcesso(pastas) {
+    const rec = (estado.config.recentes || []).slice(0, 15);
+    return pastas.some((p) => fixadas().includes(p) || fixadas().includes(paiDe(p)) || rec.some((r) => paiDe(r) === p));
+  }
+
+  /** O Acesso rápido: as pastas fixadas (na ordem) e os arquivos usados por último (que ainda existem). */
+  async itensAcesso() {
+    this.acessoLido = this.assinaturaAcesso();
+    const ler = (rel) => retro.disco.info(rel).catch(() => null);
+    const [pastas, arquivos] = await Promise.all([
+      Promise.all(fixadas().map(ler)),
+      Promise.all((estado.config.recentes || []).slice(0, 15).map(ler)),
+    ]);
+    const recortados = new Set(transferencia.recortar ? transferencia.rels : []);
+    const itens = [];
+    for (const f of pastas) {
+      if (!f || !f.pasta) continue;
+      itens.push({
+        chave: 'arq:' + f.rel, rotulo: f.nome, icone: f.rel === pastaDocs() ? 'documentos' : 'pasta', rel: f.rel, nome: f.nome, pasta: true,
+        alvo: f.rel, fixada: true, recortado: recortados.has(f.rel), modificado: f.modificado,
+        dica: caminhoTela(f.rel), colunas: ['', tr('Pasta fixada'), dataHora(f.modificado)],
+      });
+    }
+    for (const f of arquivos) {
+      if (!f || f.pasta) continue;
+      const t = tipoDe(f.nome);
+      itens.push({
+        chave: 'arq:' + f.rel, rotulo: f.nome, icone: t.icone, rel: f.rel, nome: f.nome, pasta: false, recortado: recortados.has(f.rel),
+        dica: caminhoTela(f.rel) + '\n' + tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
+        colunas: [tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
+        tamanho: f.tamanho, modificado: f.modificado,
+        miniatura: this.modo === 'miniaturas' && COM_MINIATURA.has(extensao(f.nome)) ? urlMiniatura(f.rel, f.modificado) : null,
+      });
+    }
+    return itens;
   }
 
   async itensComputador() {
@@ -473,7 +611,7 @@ class Explorador {
         alvo: f.pasta ? f.rel : null, recortado: recortados.has(f.rel),
         dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
-        tamanho: f.tamanho,
+        tamanho: f.tamanho, modificado: f.modificado,
         miniatura: this.modo === 'miniaturas' && !f.pasta && COM_MINIATURA.has(extensao(f.nome)) ? urlMiniatura(f.rel, f.modificado) : null,
       };
     });
@@ -557,6 +695,10 @@ class Explorador {
         { rotulo: tr('Copiar para Meus &documentos'), acao: () => trazerDaUnidade(un.id, rels, pastaDocs()).then((f) => avisarTrazidos(f, pastaDocs())) },
         { rotulo: tr('Copiar para a Área de &trabalho'), acao: () => trazerDaUnidade(un.id, rels, pastaMesa()).then((f) => avisarTrazidos(f, pastaMesa())) },
       ], pos);
+    }
+    if (this.pasta === '::acesso') {
+      if (!sel.length) return abrirMenu(this.itensExibir(), pos);
+      return abrirMenu(menuDeItens(sel, { aoRenomear: (it) => this.renomearItem(it), abrirPasta: (rel) => this.navegar(rel) }), pos);
     }
     if (!sel.length) {
       return abrirMenu(menuDoFundo(this.pasta, {

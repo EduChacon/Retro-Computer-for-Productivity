@@ -52,6 +52,10 @@ const TOPICOS = [
 <p>O disco C: é uma pasta do computador principal (veja qual em Painel de controle › Disco C:). Tudo o que você salva fica nela e pode ser aberto também fora do Retro Computer.</p>
 <h2>O Explorador</h2>
 <p><b>Meu computador</b> mostra o disco C:, os pendrives e a Lixeira. <b>Exibir › Barra de pastas</b> (ou o botão <b>Pastas</b>) mostra as pastas à esquerda. Cada nome do endereço, no alto, leva àquela pasta; para digitar um endereço, clique no espaço vazio ao lado (ou Alt+D). <b>Exibir › Miniaturas</b> mostra as fotos encolhidas.</p>
+<h2>Painel de visualização</h2>
+<p><b>Exibir › Painel de visualização</b> (ou Alt+P, ou o botão <b>Visualizar</b>) mostra à direita o arquivo escolhido, sem abri-lo: documentos do Word (.docx) e do OpenDocument (.odt), PDF (as páginas), planilhas (.xlsx, .ods e .csv: a primeira folha), textos, fotos, vídeos e músicas. A divisória entre os dois lados se arrasta.</p>
+<h2>Acesso rápido</h2>
+<p>No alto da barra de pastas, o <b>Acesso rápido</b> reúne as pastas fixadas e os arquivos usados por último. Para fixar uma pasta: botão direito nela › <b>Fixar no Acesso rápido</b> (e, para tirar, <b>Desafixar</b>).</p>
 <h2>Trazer arquivos</h2>
 <p>Arraste arquivos do computador principal para uma janela de pasta ou para a área de trabalho. Eles são copiados para o disco C:. Também dá para usar o menu Arquivo › Trazer do computador principal.</p>
 <h2>Levar arquivos</h2>
@@ -68,6 +72,10 @@ const TOPICOS = [
 <p>Drive C: is a folder on the main computer (see which one in Control Panel › Drive C:). Everything you save stays there and can also be opened outside Retro Computer.</p>
 <h2>The Explorer</h2>
 <p><b>Computer</b> shows drive C:, the USB drives and the Trash. <b>View › Folders Bar</b> (or the <b>Folders</b> button) shows the folders on the left. Each name in the address at the top leads to that folder; to type an address, click the empty space next to it (or Alt+D). <b>View › Thumbnails</b> shows the pictures in small size.</p>
+<h2>Preview pane</h2>
+<p><b>View › Preview Pane</b> (or Alt+P, or the <b>Preview</b> button) shows the chosen file on the right without opening it: Word (.docx) and OpenDocument (.odt) documents, PDF (the pages), spreadsheets (.xlsx, .ods and .csv: the first sheet), texts, pictures, videos and music. The divider between the two sides can be dragged.</p>
+<h2>Quick access</h2>
+<p>At the top of the folders bar, <b>Quick access</b> gathers the pinned folders and the files used last. To pin a folder: right-click it › <b>Pin to Quick access</b> (and, to remove it, <b>Unpin</b>).</p>
 <h2>Bringing files in</h2>
 <p>Drag files from the main computer onto a folder window or onto the desktop. They are copied to drive C:. You can also use the File › Bring from the main computer menu.</p>
 <h2>Taking files out</h2>
@@ -84,6 +92,10 @@ const TOPICOS = [
 <p>El disco C: es una carpeta de la computadora principal (mira cuál en Panel de control › Disco C:). Todo lo que guardas queda en ella y también se puede abrir fuera de Retro Computer.</p>
 <h2>El Explorador</h2>
 <p><b>Mi computadora</b> muestra el disco C:, las memorias USB y la Papelera. <b>Ver › Panel de carpetas</b> (o el botón <b>Carpetas</b>) muestra las carpetas a la izquierda. Cada nombre de la dirección, arriba, lleva a esa carpeta; para escribir una dirección, haz clic en el espacio vacío de al lado (o Alt+D). <b>Ver › Miniaturas</b> muestra las fotos en pequeño.</p>
+<h2>Panel de vista previa</h2>
+<p><b>Ver › Panel de vista previa</b> (o Alt+P, o el botón <b>Vista previa</b>) muestra a la derecha el archivo elegido, sin abrirlo: documentos de Word (.docx) y de OpenDocument (.odt), PDF (las páginas), hojas de cálculo (.xlsx, .ods y .csv: la primera hoja), textos, fotos, videos y música. El separador entre los dos lados se puede arrastrar.</p>
+<h2>Acceso rápido</h2>
+<p>Arriba del panel de carpetas, el <b>Acceso rápido</b> reúne las carpetas fijadas y los archivos usados por último. Para fijar una carpeta: clic derecho en ella › <b>Fijar en Acceso rápido</b> (y, para quitarla, <b>Dejar de fijar</b>).</p>
 <h2>Traer archivos</h2>
 <p>Arrastra archivos de la computadora principal a una ventana de carpeta o al escritorio. Se copian al disco C:. También puedes usar el menú Archivo › Traer de la computadora principal.</p>
 <h2>Llevar archivos</h2>

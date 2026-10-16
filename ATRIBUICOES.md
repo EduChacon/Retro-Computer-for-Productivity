@@ -50,6 +50,8 @@ Feitos ponto a ponto em `ferramentas/icones.py`: `computador`, `logo` (o disquet
 | [yauzl](https://github.com/thejoshwolfe/yauzl) | MIT | extrair os pacotes dos programas e as pastas compactadas |
 | [yazl](https://github.com/thejoshwolfe/yazl) | MIT | criar as pastas compactadas (Enviar para › Pasta compactada) |
 | [electron-updater](https://github.com/electron-userland/electron-builder) | MIT | a atualização do próprio Retro Computer |
+| [mammoth](https://github.com/mwilliamson/mammoth.js) | BSD-2-Clause | o Word (`.docx`) no painel de visualização do Explorador |
+| [PDF.js](https://mozilla.github.io/pdf.js/) (`pdfjs-dist`) | Apache-2.0 | o PDF no painel de visualização do Explorador; vem com as fontes padrão (Foxit, BSD-3-Clause, do PDFium; Liberation Sans, GPL-2.0 com a exceção das fontes), os decodificadores em WebAssembly (OpenJPEG, BSD-2-Clause; JBIG2, do PDFium, BSD-3-Clause; qcms, MIT) e os mapas de caracteres (cmaps, da Adobe, BSD-3-Clause), cada um com a licença na própria pasta |
 
 ## Programas instaláveis (não incluídos)
 
