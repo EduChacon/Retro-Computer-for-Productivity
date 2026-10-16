@@ -7,7 +7,8 @@ import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco } from '../sistema.js';
-import { ajustarAoConteudo, confirmar, erro, info } from '../dialogos.js';
+import { ajustarAoConteudo, confirmar, confirmarComPrazo, erro, info } from '../dialogos.js';
+import { deslizante } from '../controles.js';
 import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparencia.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira } from '../mesa.js';
@@ -68,7 +69,7 @@ function abrirPainel(args = {}) {
 
 /* ---------- Diálogos de propriedades ---------- */
 
-function dialogoBase({ titulo, icone, abas, larg = 380, aoAplicar }) {
+function dialogoBase({ titulo, icone, abas, larg = 380, altMin = 0, aoAplicar }) {
   const existente = janelas.find((x) => x.titulo === titulo);
   if (existente) { existente.focar(); return null; }
   const j = new Janela({ titulo, icone, largura: larg, altura: 420, redimensionavel: false, minimizavel: false, maximizavel: false });
@@ -93,6 +94,13 @@ function dialogoBase({ titulo, icone, abas, larg = 380, aoAplicar }) {
   j.corpo.style.padding = '8px';
   j.corpo.append(cab, painel, acoes);
   ajustarAoConteudo(j, { largura: larg });
+  // As abas mais altas (que crescem depois de abrir) cabem sem rolar.
+  if (altMin && j.ret.h < altMin) {
+    const area = document.getElementById('janelas').getBoundingClientRect();
+    j.ret.h = Math.min(altMin, Math.floor(area.height) - 8);
+    j.ret.y = Math.max(0, Math.round((area.height - j.ret.h) / 2.4));
+    j.aplicarRet();
+  }
   return j;
 }
 
@@ -148,11 +156,29 @@ function dialogoAparencia() {
   const selEscala = h('select', h('option', { value: 'auto' }, tr('Automático')), h('option', { value: '1' }, tr('1 × (pequeno)')), h('option', { value: '2' }, tr('2 × (grande)')), h('option', { value: '3' }, tr('3 × (muito grande)')));
   selEscala.value = String(escala);
   const chkRapido = h('input', { type: 'checkbox', checked: !!c.inicioRapido });
+  // A área da tela (a resolução), como no Windows 95: só no Retro Computer como sistema do Linux.
+  const res = { saida: null, antes: null, modos: [], escolhido: null };
+  const areaTela = h('div', { hidden: true, style: { marginTop: '8px' } });
+  retro.tela.modos().then((t) => {
+    if (!t || !t.disponivel) return;
+    Object.assign(res, { saida: t.saida, antes: t.atual, modos: t.modos.slice().reverse(), escolhido: t.atual });
+    const texto = h('div', { style: { textAlign: 'center', marginTop: '2px' } });
+    const mostrar = (m) => { const [l, a] = m.replace('i', '').split('x'); texto.textContent = tr('{l} por {a} pixels', { l, a }); };
+    const desl = deslizante({
+      valor: Math.max(0, res.modos.indexOf(t.atual)), min: 0, max: res.modos.length - 1, tamanho: 160, passo: 1, passoGrande: 1, rotulo: tr('Área da tela'),
+      aoMudar: (i) => { res.escolhido = res.modos[i]; mostrar(res.escolhido); },
+    });
+    mostrar(t.atual);
+    areaTela.replaceChildren(h('div', tr('Área da tela')),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' } }, h('span', tr('Menos')), desl.el, h('span', tr('Mais'))), texto);
+    areaTela.hidden = false;
+  }).catch(() => { });
   const abaConfig = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tela')),
       h('div', h('label', radioCheia, h('span', tr('Tela cheia (recomendado para o foco)')))),
       h('div', { style: { marginTop: '6px' } }, h('label', radioJanela, h('span', tr('Numa janela do computador principal')))),
-      c.modoSistema ? null : h('div', { style: { marginTop: '6px', color: '#808080' } }, tr('A tecla F11 alterna a qualquer momento.'))),
+      c.modoSistema ? null : h('div', { style: { marginTop: '6px', color: '#808080' } }, tr('A tecla F11 alterna a qualquer momento.')),
+      areaTela),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tamanho dos pixels')),
       h('div.linha', h('div.select-caixa', { style: { flex: '1' } }, selEscala)),
       h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Cada pixel da interface usa um número inteiro de pixels da tela, para as letras e os ícones ficarem nítidos.'))),
@@ -163,15 +189,25 @@ function dialogoAparencia() {
   // No modo sistema, o Retro Computer é a tela inteira.
   if (c.modoSistema) { radioCheia.disabled = true; radioJanela.disabled = true; }
 
+  // Os efeitos (como a aba do Windows 98): os cantos magnéticos das janelas.
+  const chkEncaixe = h('input', { type: 'checkbox', checked: !c.janelas || c.janelas.encaixe !== false });
+  const abaEfeitos = h('div',
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Janelas')),
+      h('label', chkEncaixe, h('span', tr('Encaixar as janelas ao arrastá-las até as bordas e os cantos da tela'))),
+      h('div', { style: { color: '#808080', marginTop: '6px', lineHeight: '13px' } },
+        tr('À esquerda ou à direita, a janela ocupa metade da tela; num canto, um quarto; no alto, a tela toda. A tecla do logotipo com as setas faz o mesmo.'))),
+  );
+
   dialogoBase({
     titulo: tr('Propriedades de Aparência'),
     icone: 'aparencia',
     larg: 440,
-    abas: [{ titulo: tr('Plano de fundo'), conteudo: abaFundo }, { titulo: tr('Proteção de tela'), conteudo: abaProtecao }, { titulo: tr('Configurações'), conteudo: abaConfig }],
+    altMin: 540,
+    abas: [{ titulo: tr('Plano de fundo'), conteudo: abaFundo }, { titulo: tr('Proteção de tela'), conteudo: abaProtecao }, { titulo: tr('Efeitos'), conteudo: abaEfeitos }, { titulo: tr('Configurações'), conteudo: abaConfig }],
     aoAplicar: async () => {
       aplicarProt();
       escala = selEscala.value;
-      await definirConfig({ papel, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked });
+      await definirConfig({ papel, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, janelas: { encaixe: chkEncaixe.checked } });
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);
       await aplicarEscala(escala);
@@ -179,8 +215,27 @@ function dialogoAparencia() {
         telaCheia = radioCheia.checked;
         await retro.sistema.telaCheia(telaCheia);
       }
+      if (res.escolhido && res.escolhido !== res.antes) await trocarResolucao(res);
     },
   });
+}
+
+/** Troca a resolução e pergunta se fica; sem resposta em 15 segundos, volta à anterior. */
+async function trocarResolucao(res) {
+  const r = await retro.tela.definir(res.saida, res.escolhido);
+  if (!r || !r.ok) {
+    erro(tr('Não foi possível mudar a resolução: {erro}', { erro: (r && r.erro) || '?' }));
+    return;
+  }
+  // A janela acompanha a tela nova antes da pergunta.
+  await new Promise((ok) => setTimeout(ok, 600));
+  if (await confirmarComPrazo(tr('A tela foi reconfigurada. Manter esta configuração?'), 15, { titulo: tr('Configurações da tela') })) {
+    await definirConfig({ tela: { saida: res.saida, modo: res.escolhido } });
+    res.antes = res.escolhido;
+  } else {
+    await retro.tela.definir(res.saida, res.antes);
+    res.escolhido = res.antes;
+  }
 }
 
 /* Abrir junto com o computador e, no Linux, ser o sistema dele */

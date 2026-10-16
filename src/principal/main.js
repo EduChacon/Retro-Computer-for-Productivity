@@ -32,6 +32,8 @@ const { Impressoras, ImpressorasFalsas } = require('./impressoras');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
+const { acaoDaTecla, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atalhos');
+const { Tela, TelaFalsa } = require('./tela');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -89,6 +91,7 @@ let loja = null; // os programas do Linux pelo Flathub (loja.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
+let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -424,6 +427,28 @@ function pedirAoUsuario(canal, dados) {
   });
 }
 
+// A tecla do logotipo apertada e solta sozinha abre o Iniciar (no modo sistema).
+let logotipoSozinho = false;
+
+/**
+ * Os atalhos do Windows, em todas as janelas (também dentro do Navegador e dos programas):
+ * Alt+F4, Alt+Tab e a tecla do logotipo com uma letra, um número ou uma seta (atalhos.js).
+ */
+function atalhosDoWindows() {
+  app.on('web-contents-created', (_e, wc) => {
+    wc.on('before-input-event', (e, input) => {
+      if (input.type === 'keyUp') {
+        if (input.key === 'Alt') enviar('sistema:tecla', 'alternar-fim');
+        return;
+      }
+      const acao = acaoDaTecla(input, { plataforma: process.platform, sistema: MODO_SISTEMA });
+      if (!acao) return;
+      e.preventDefault();
+      enviar('sistema:tecla', acao);
+    });
+  });
+}
+
 /**
  * As teclas do computador no modo sistema (sem a área de trabalho do Linux, ninguém mais
  * cuida delas): a tecla do logotipo sozinha abre o Iniciar; as de volume e de brilho do
@@ -433,26 +458,30 @@ function teclasDoSistema() {
   if (!MODO_SISTEMA) return;
   const globais = new Set();
   // Também valem com um programa do Linux em foco: o volume, a Captura de tela (Print Screen:
-  // a tela; Alt: a janela; Shift: um pedaço) e o Monitor do sistema (Ctrl+Shift+Esc).
+  // a tela; Alt: a janela; Shift: um pedaço), o Monitor do sistema (Ctrl+Shift+Esc) e os atalhos
+  // do Windows (Alt+Tab, Alt+F4 e a tecla do logotipo com uma letra, um número ou uma seta).
   for (const [tecla, acao] of [['VolumeUp', 'volume+'], ['VolumeDown', 'volume-'], ['VolumeMute', 'mudo'],
-    ['PrintScreen', 'captura'], ['Alt+PrintScreen', 'captura-janela'], ['Shift+PrintScreen', 'captura-regiao'], ['Control+Shift+Escape', 'monitor']]) {
-    try { if (globalShortcut.register(tecla, () => enviar('sistema:tecla', acao))) globais.add(acao); } catch { }
+    ['PrintScreen', 'captura'], ['Alt+PrintScreen', 'captura-janela'], ['Shift+PrintScreen', 'captura-regiao'], ['Control+Shift+Escape', 'monitor'],
+    ...GLOBAIS_DO_WINDOWS]) {
+    try {
+      const ok = globalShortcut.register(tecla, () => {
+        // A tecla do logotipo já foi usada: soltá-la não abre o Iniciar.
+        logotipoSozinho = false;
+        // O Alt+Tab traz o Retro Computer para a frente: o resto das teclas (e o soltar do Alt) chega a ele.
+        if (acao.startsWith('alternar') && janela && !janela.isDestroyed()) janela.focus();
+        enviar('sistema:tecla', acao);
+      });
+      if (ok) globais.add(acao);
+    } catch { }
   }
   const DO_TECLADO = { AudioVolumeUp: 'volume+', AudioVolumeDown: 'volume-', AudioVolumeMute: 'mudo', BrightnessUp: 'brilho+', BrightnessDown: 'brilho-', LaunchCalculator: 'calculadora', LaunchApplication2: 'calculadora' };
   // O layout escolhido em Painel › Teclado (por cima do da instalação do Linux).
   const t = config.obter().teclado;
   if (t && t.layout) sistemaLinux.aplicarTeclado(t.layout, t.variante).catch(() => { });
-  let logotipoSozinho = false;
   app.on('web-contents-created', (_e, wc) => {
     wc.on('before-input-event', (e, input) => {
       if (input.type === 'keyDown') {
         logotipoSozinho = input.key === 'Meta' && !input.isAutoRepeat;
-        // A tecla do logotipo com L bloqueia (como no Windows).
-        if (input.meta && (input.key === 'l' || input.key === 'L')) {
-          e.preventDefault();
-          enviar('sistema:tecla', 'bloquear');
-          return;
-        }
         let acao = DO_TECLADO[input.key];
         if (input.key === 'PrintScreen') acao = input.alt ? 'captura-janela' : input.shift ? 'captura-regiao' : 'captura';
         if (input.key === 'Escape' && input.control && input.shift) acao = 'monitor';
@@ -696,6 +725,9 @@ function registrarPonte() {
   tratar('janelasLinux:ativar', (id) => janelasLinux && janelasLinux.ativar(String(id)));
   tratar('janelasLinux:minimizar', (id) => janelasLinux && janelasLinux.minimizar(String(id)));
   tratar('janelasLinux:fechar', (id) => janelasLinux && janelasLinux.fechar(String(id)));
+  tratar('tela:modos', () => tela.modos());
+  tratar('tela:definir', (saida, modo) => tela.definir(String(saida), String(modo)));
+  tratar('janelasLinux:encaixar', (id, seta) => janelasLinux && janelasLinux.encaixar(String(id), String(seta)));
   tratar('janelasLinux:minimizarTodas', async () => {
     const n = janelasLinux ? await janelasLinux.minimizarTodas() : 0;
     if (janela && !janela.isDestroyed()) janela.focus();
@@ -880,6 +912,8 @@ app.whenReady().then(async () => {
       pidsProprios: () => new Set([process.pid, ...app.getAppMetrics().map((m) => m.pid)]),
       programaDe: (j) => { try { return aplicativos.idPorJanela(j); } catch { return null; } },
       aoMudar: (r) => enviar('janelasLinux:mudou', r),
+      // Sem o _NET_WORKAREA, a área da tela do Electron (já sem a barra de tarefas do Openbox).
+      areaPadrao: () => { const a = screen.getPrimaryDisplay().workArea; return { x: a.x, y: a.y, w: a.width, h: a.height }; },
     });
   }
   bloqueio = new Bloqueio(config);
@@ -918,7 +952,12 @@ app.whenReady().then(async () => {
   configurarNavegador();
   registrarProtocolos();
   registrarPonte();
+  atalhosDoWindows();
   teclasDoSistema();
+  // A resolução escolhida em Painel › Aparência volta antes de a janela abrir (modo sistema).
+  tela = new (process.env.RETRO_TELA_FALSA ? TelaFalsa : Tela)({ sistema: MODO_SISTEMA });
+  const t = config.obter().tela;
+  if (MODO_SISTEMA && t && t.modo) await tela.definir(t.saida, t.modo).catch(() => { });
   criarJanela();
   if (janelasLinux) janela.webContents.once('did-finish-load', () => janelasLinux.vigiar());
 });

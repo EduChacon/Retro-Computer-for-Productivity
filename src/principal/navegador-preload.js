@@ -2,8 +2,8 @@
 /*
  * Entra em cada página do Navegador (isolado da página, sem acesso a ela).
  * Repassa à janela do Navegador os botões laterais do mouse (voltar e avançar),
- * as teclas de atalho, que de outro modo ficariam com a página, e as
- * notificações do site (que viram o balão da barra de tarefas).
+ * o Ctrl+roda (o zoom), as teclas de atalho, que de outro modo ficariam com a
+ * página, e as notificações do site (que viram o balão da barra de tarefas).
  */
 const { ipcRenderer, webFrame } = require('electron');
 
@@ -64,6 +64,13 @@ function atalho(e) {
   if (ctrl && e.key === 'Escape') return 'iniciar';
   return null;
 }
+
+// Ctrl+roda do mouse (e o pinçar do touchpad) muda o zoom da página, como nos navegadores.
+window.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey || !e.deltaY) return;
+  e.preventDefault();
+  avisar(e.deltaY < 0 ? 'aumentar' : 'diminuir');
+}, { passive: false, capture: true });
 
 window.addEventListener('keydown', (e) => {
   const a = atalho(e);

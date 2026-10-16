@@ -36,6 +36,7 @@ import './apps/midia.js';
 import './apps/captura.js';
 import './apps/monitor.js';
 import './apps/atualizacoes.js';
+import './atalhos.js';
 
 const boot = document.getElementById('boot');
 

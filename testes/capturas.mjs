@@ -118,6 +118,8 @@ async function foto(nome) {
   console.log('captura:', arq);
 }
 const abrir = (id, args) => pagina.evaluate(([i, a]) => window.__retro.abrir(i, a), [id, args || {}]);
+// Uma tecla do sistema como o processo principal a manda (sistema:tecla).
+const tecla = (acao) => app.evaluate(({ BrowserWindow }, a) => BrowserWindow.getAllWindows().find((w) => w.isVisible()).webContents.send('sistema:tecla', a), acao);
 const fecharTudo = () => pagina.evaluate(async () => { for (const j of window.__retro.janelas.lista.slice()) await j.fechar(true); });
 
 async function esperarPronto(ms = 90000) {
@@ -128,6 +130,91 @@ async function esperarPronto(ms = 90000) {
 const ROTEIROS = {
   async boot() {
     // Com RETRO_BOOT=1: a tela do BIOS e a abertura (capturadas logo no início).
+  },
+  async resolucao() {
+    // A área da tela (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e RETRO_TELA_FALSA=1) e a aba Efeitos.
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(500);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Efeitos') }).click();
+    await pagina.waitForTimeout(200);
+    await foto('aparencia-efeitos');
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Configurações') }).click();
+    await pagina.waitForTimeout(400);
+    await pagina.locator('.janela.ativa .deslizante').focus();
+    await pagina.keyboard.press('ArrowLeft');
+    await pagina.waitForTimeout(200);
+    await foto('area-da-tela');
+    await pagina.locator('.janela.ativa button', { hasText: T('&Aplicar').replace('&', '') }).click();
+    await pagina.waitForTimeout(1200);
+    await foto('manter-resolucao');
+    await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim').replace('&', '') }).click();
+    await pagina.waitForTimeout(400);
+    console.log('resolução guardada:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.tela)));
+  },
+  async encaixe() {
+    // Os cantos magnéticos, a tecla do logotipo com as setas, o Alt+Tab, o Alt+F4 e o Ctrl+roda.
+    await fecharTudo();
+    const estado = () => pagina.evaluate(() => window.__retro.janelas.lista.map((j) => ({ t: j.titulo, enc: j.encaixe, max: j.maximizada, ativa: j.el.classList.contains('ativa'), ret: { ...j.ret } })));
+    await abrir('bloco');
+    await pagina.waitForTimeout(300);
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(600);
+    const titulo = pagina.locator('.janela.ativa .titulo .texto');
+    let b = await titulo.boundingBox();
+    await pagina.mouse.move(b.x + 20, b.y + 6);
+    await pagina.mouse.down();
+    await pagina.mouse.move(300, 300, { steps: 5 });
+    await pagina.mouse.move(1, 300, { steps: 5 });
+    await pagina.waitForTimeout(200);
+    await foto('encaixe-previa-esquerda');
+    await pagina.mouse.up();
+    await pagina.waitForTimeout(300);
+    // O Bloco de notas no canto de cima, à direita: um quarto da tela.
+    await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('bloco')).focar());
+    b = await pagina.locator('.janela.ativa .titulo .texto').boundingBox();
+    await pagina.mouse.move(b.x + 20, b.y + 6);
+    await pagina.mouse.down();
+    await pagina.mouse.move(700, 200, { steps: 5 });
+    await pagina.mouse.move(1023, 2, { steps: 5 });
+    await pagina.waitForTimeout(200);
+    await foto('encaixe-previa-canto');
+    await pagina.mouse.up();
+    await pagina.waitForTimeout(300);
+    console.log('depois de arrastar:', JSON.stringify(await estado()));
+    // Logotipo+seta para baixo: do quarto de cima para a metade direita. (As teclas simuladas
+    // não passam pelo before-input-event: a ação vai direto, como o processo principal a manda.)
+    await tecla('encaixe:ArrowDown');
+    await pagina.waitForTimeout(300);
+    console.log('depois do logotipo+baixo:', JSON.stringify(await estado()));
+    await foto('encaixe-lado-a-lado');
+    // Alt+Tab: a caixa das janelas; soltar o Alt escolhe.
+    await tecla('alternar');
+    await pagina.waitForTimeout(250);
+    await foto('alt-tab');
+    console.log('alternador aberto?', await pagina.locator('.alternador').count());
+    await tecla('alternar-fim');
+    await pagina.waitForTimeout(300);
+    console.log('depois do Alt+Tab:', JSON.stringify(await estado()), '| alternador:', await pagina.locator('.alternador').count());
+    // Ctrl+roda no Bloco de notas: a letra em dobro.
+    await pagina.locator('.janela.bloco textarea').click();
+    const t = await pagina.locator('.janela.bloco textarea').boundingBox();
+    await pagina.mouse.move(t.x + 40, t.y + 40);
+    await pagina.keyboard.down('Control');
+    await pagina.mouse.wheel(0, -120);
+    await pagina.keyboard.up('Control');
+    await pagina.keyboard.type('Texto ampliado com Ctrl+roda.');
+    await pagina.waitForTimeout(300);
+    console.log('fonte do Bloco:', await pagina.locator('.janela.bloco textarea').evaluate((el) => getComputedStyle(el).fontSize));
+    await foto('ctrl-roda-bloco');
+    // Alt+F4 fecha a janela da frente (o Bloco pergunta se salva: Não).
+    const antes = (await estado()).length;
+    await tecla('fechar-janela');
+    await pagina.waitForTimeout(400);
+    const nao = pagina.locator('.janela.dialogo button', { hasText: T('&Não').replace('&', '') });
+    if (await nao.count()) await nao.first().click();
+    await pagina.waitForTimeout(300);
+    console.log('janelas antes e depois do Alt+F4:', antes, (await estado()).length);
   },
   async ajuda() {
     // Os tópicos da Ajuda, um por captura (o texto rolado até o fim mostra se cabe).

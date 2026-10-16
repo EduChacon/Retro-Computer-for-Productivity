@@ -15,6 +15,10 @@ let ativa = null;
 // O programa que está abrindo agora (sistema.abrir): as janelas criadas nesse instante são dele,
 // para a barra de tarefas agrupar e fixar.
 let programaAbrindo = null;
+// A ordem em que as janelas foram usadas (a mais recente no fim), para o Alt+Tab.
+export const recentes = [];
+// Os cantos magnéticos: arrastar a janela até a borda encaixa (Painel › Aparência › Configurações).
+export const opcoes = { encaixe: true };
 
 export function comPrograma(id, fn) {
   const antes = programaAbrindo;
@@ -52,6 +56,8 @@ export class Janela {
 
     const redim = o.redimensionavel !== false && !this.dialogo;
     const max = o.maximizavel !== false && redim;
+    this.redim = redim;
+    this.encaixe = null;
     const min = o.minimizavel !== false && !this.dialogo;
 
     this.el = h('div.janela' + (this.dialogo ? '.dialogo' : ''), { role: 'dialog' });
@@ -135,6 +141,7 @@ export class Janela {
       area().append(this.el);
     }
     lista.push(this);
+    acompanharArea();
     if (o.maximizada) this.maximizar();
     this.focar();
     eventos.emit('mudou');
@@ -178,6 +185,11 @@ export class Janela {
       ativa.ev.emit('desativada');
     }
     ativa = this;
+    if (!this.dialogo) {
+      const i = recentes.indexOf(this);
+      if (i >= 0) recentes.splice(i, 1);
+      recentes.push(this);
+    }
     this.el.classList.add('ativa');
     if (!this.dialogo) this.el.style.zIndex = ++zTopo;
     this.ev.emit('ativada');
@@ -227,9 +239,46 @@ export class Janela {
     this.maximizada = false;
     this.el.classList.remove('maximizada');
     this.ret = this.retAntes || this.ret;
+    // Maximizada a partir de um encaixe, volta ao encaixe (a tela pode ter mudado de tamanho).
+    if (this.encaixe) this.ret = retDoEncaixe(this.encaixe, area().getBoundingClientRect());
     this.aplicarRet();
     if (this.bMax) { this.bMax.className = 'b-max'; this.bMax.dataset.dica = tr('Maximizar'); }
     this.ev.emit('tamanho');
+  }
+
+  /** Encaixa numa metade ('esq', 'dir') ou num quarto da tela ('no', 'ne', 'so', 'se'); 'max' maximiza. */
+  encaixar(nome) {
+    if (!this.redim || !nome) return;
+    if (nome === 'max') { this.maximizar(); return; }
+    if (this.maximizada) this.restaurar();
+    if (!this.encaixe) this.retLivre = { ...this.ret };
+    this.encaixe = nome;
+    this.ret = retDoEncaixe(nome, area().getBoundingClientRect());
+    this.el.classList.add('encaixada');
+    this.aplicarRet();
+    this.ev.emit('tamanho');
+  }
+
+  /** Sai do encaixe e volta ao tamanho e ao lugar de antes. */
+  desencaixar() {
+    if (!this.encaixe) return;
+    this.encaixe = null;
+    this.el.classList.remove('encaixada');
+    if (this.retLivre) this.ret = { ...this.retLivre };
+    this.aplicarRet();
+    this.ev.emit('tamanho');
+  }
+
+  /** As teclas do logotipo + setas, como no Windows (a seta e o estado de agora dizem o próximo). */
+  encaixarPorSeta(seta) {
+    if (this.dialogo) return;
+    const estadoAgora = this.maximizada ? 'max' : this.encaixe || 'livre';
+    const destino = (SETAS[estadoAgora] || SETAS.livre)[seta];
+    if (!destino) return;
+    if (destino === 'minimizar') this.minimizar();
+    else if (destino === 'restaurar') { if (this.maximizada) this.restaurar(); else this.desencaixar(); }
+    else if (destino === 'livre') this.desencaixar();
+    else this.encaixar(destino);
   }
 
   alternarMaximizar() {
@@ -249,6 +298,8 @@ export class Janela {
     if (this.bloqueio) this.bloqueio.remove();
     const i = lista.indexOf(this);
     if (i >= 0) lista.splice(i, 1);
+    const r = recentes.indexOf(this);
+    if (r >= 0) recentes.splice(r, 1);
     this.ev.emit('fechada');
     if (ativa === this) {
       ativa = null;
@@ -278,21 +329,39 @@ export class Janela {
   iniciarArrasto(e) {
     if (e.button !== 0 || e.target.closest('button')) return;
     this.focar();
-    if (this.maximizada) return;
+    if (this.maximizada && !this.redim) return;
     e.preventDefault();
     const ini = { px: e.clientX, py: e.clientY, x: this.ret.x, y: this.ret.y };
     const t = area().getBoundingClientRect();
+    // Maximizada ou encaixada, a janela só sai do lugar depois de o ponteiro andar um pouco.
+    let preso = this.maximizada || !!this.encaixe;
+    let zona = null;
     document.body.classList.add('arrastando');
     const mover = (ev) => {
+      if (preso) {
+        if (Math.abs(ev.clientX - ini.px) + Math.abs(ev.clientY - ini.py) < 6) return;
+        // Volta ao tamanho livre com a barra de título embaixo do ponteiro, na mesma proporção.
+        const larg = this.maximizada ? t.width : this.ret.w;
+        const prop = limitar((ini.px - t.left - (this.maximizada ? 0 : this.ret.x)) / larg, 0.05, 0.95);
+        if (this.maximizada) this.restaurar();
+        this.desencaixar();
+        ini.x = Math.round(ini.px - t.left - prop * this.ret.w);
+        ini.y = Math.max(0, Math.round(ini.py - t.top - 9));
+        preso = false;
+      }
       this.ret.x = Math.round(limitar(ini.x + ev.clientX - ini.px, 40 - this.ret.w, t.width - 40));
       this.ret.y = Math.round(limitar(ini.y + ev.clientY - ini.py, 0, t.height - 20));
       this.aplicarRet();
+      zona = opcoes.encaixe && this.redim ? zonaDoPonteiro(ev.clientX, ev.clientY, t) : null;
+      mostrarPrevia(zona, t);
     };
     const soltar = () => {
       document.body.classList.remove('arrastando');
       window.removeEventListener('pointermove', mover);
       window.removeEventListener('pointerup', soltar);
       window.removeEventListener('pointercancel', soltar);
+      mostrarPrevia(null);
+      if (zona) this.encaixar(zona);
       this.ev.emit('movida');
     };
     window.addEventListener('pointermove', mover);
@@ -309,6 +378,8 @@ export class Janela {
     const t = area().getBoundingClientRect();
     document.body.classList.add('arrastando');
     document.body.style.cursor = getComputedStyle(e.target).cursor;
+    // Redimensionar à mão tira do encaixe (o tamanho novo passa a ser o livre).
+    if (this.encaixe) { this.encaixe = null; this.el.classList.remove('encaixada'); }
     const mover = (ev) => {
       const dx = ev.clientX - ini.px;
       const dy = ev.clientY - ini.py;
@@ -355,12 +426,90 @@ window.addEventListener('blur', () => {
   }, 0);
 });
 
+/* ---------- Os cantos magnéticos ---------- */
+
+const BORDA = 6;   // a distância da borda que conta como encostar
+const CANTO = 56;  // e a do canto, para encaixar num quarto
+
+/** Onde o ponteiro encosta: 'esq', 'dir', 'max' (o alto) ou um canto ('no', 'ne', 'so', 'se'). */
+export function zonaDoPonteiro(x, y, t) {
+  const esq = x <= t.left + BORDA;
+  const dir = x >= t.right - BORDA - 1;
+  const alto = y <= t.top + BORDA;
+  const perto = (v, a) => Math.abs(v - a) < CANTO;
+  if (esq) return perto(y, t.top) ? 'no' : perto(y, t.bottom) || y > t.bottom ? 'so' : 'esq';
+  if (dir) return perto(y, t.top) ? 'ne' : perto(y, t.bottom) || y > t.bottom ? 'se' : 'dir';
+  if (alto) return perto(x, t.left) ? 'no' : perto(x, t.right) ? 'ne' : 'max';
+  return null;
+}
+
+/** O retângulo de cada encaixe, dentro da área das janelas (sem a barra de tarefas). */
+export function retDoEncaixe(nome, t) {
+  const W = Math.floor(t.width);
+  const H = Math.floor(t.height);
+  const w2 = Math.floor(W / 2);
+  const h2 = Math.floor(H / 2);
+  return {
+    esq: { x: 0, y: 0, w: w2, h: H },
+    dir: { x: w2, y: 0, w: W - w2, h: H },
+    no: { x: 0, y: 0, w: w2, h: h2 },
+    ne: { x: w2, y: 0, w: W - w2, h: h2 },
+    so: { x: 0, y: h2, w: w2, h: H - h2 },
+    se: { x: w2, y: h2, w: W - w2, h: H - h2 },
+    max: { x: 0, y: 0, w: W, h: H },
+  }[nome];
+}
+
+// Logotipo + seta: do estado de agora (livre, maximizada ou um encaixe) para o próximo.
+const SETAS = {
+  livre: { ArrowLeft: 'esq', ArrowRight: 'dir', ArrowUp: 'max', ArrowDown: 'minimizar' },
+  max: { ArrowLeft: 'esq', ArrowRight: 'dir', ArrowDown: 'restaurar' },
+  esq: { ArrowRight: 'livre', ArrowUp: 'no', ArrowDown: 'so' },
+  dir: { ArrowLeft: 'livre', ArrowUp: 'ne', ArrowDown: 'se' },
+  no: { ArrowRight: 'ne', ArrowUp: 'max', ArrowDown: 'esq' },
+  ne: { ArrowLeft: 'no', ArrowUp: 'max', ArrowDown: 'dir' },
+  so: { ArrowRight: 'se', ArrowUp: 'esq', ArrowDown: 'minimizar' },
+  se: { ArrowLeft: 'so', ArrowUp: 'dir', ArrowDown: 'minimizar' },
+};
+
+// O contorno quadriculado do lugar onde a janela vai encaixar (como o arrastar das janelas da época).
+let previa = null;
+function mostrarPrevia(zona, t) {
+  if (!zona) { if (previa) previa.hidden = true; return; }
+  if (!previa) {
+    previa = h('div.previa-encaixe', { hidden: true });
+    area().append(previa);
+  }
+  const r = retDoEncaixe(zona, t);
+  Object.assign(previa.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+  previa.hidden = false;
+}
+
+// A área muda de tamanho (a resolução, a barra de tarefas com a data): os encaixes acompanham.
+let observador = null;
+function acompanharArea() {
+  if (observador || !area() || typeof ResizeObserver === 'undefined') return;
+  observador = new ResizeObserver(() => {
+    const t = area().getBoundingClientRect();
+    for (const j of lista) {
+      if (!j.encaixe || j.maximizada) continue;
+      j.ret = retDoEncaixe(j.encaixe, t);
+      j.aplicarRet();
+      j.ev.emit('tamanho');
+    }
+  });
+  observador.observe(area());
+}
+
+const soltarEncaixe = (j) => { j.encaixe = null; j.el.classList.remove('encaixada'); };
+
 /** Organizar as janelas (menu da barra de tarefas). */
 export function emCascata() {
   let i = 0;
   for (const j of lista) {
     if (j.dialogo || j.minimizada) continue;
     j.restaurar();
+    soltarEncaixe(j);
     j.ret.x = 10 + i * 24;
     j.ret.y = 10 + i * 24;
     j.aplicarRet();
@@ -376,6 +525,7 @@ export function lado(vertical) {
   const t = area().getBoundingClientRect();
   vis.forEach((j, i) => {
     j.restaurar();
+    soltarEncaixe(j);
     if (vertical) {
       const w = Math.floor(t.width / vis.length);
       j.ret = { x: i * w, y: 0, w, h: Math.floor(t.height) };
@@ -390,4 +540,19 @@ export function lado(vertical) {
 
 export function minimizarTodas() {
   for (const j of lista) if (!j.dialogo) j.minimizar();
+}
+
+// Logotipo+D: a primeira vez mostra a área de trabalho; a segunda devolve as mesmas janelas.
+let escondidas = null;
+export function mostrarAreaDeTrabalho() {
+  const abertas = lista.filter((j) => !j.dialogo && !j.minimizada);
+  if (!abertas.length && escondidas) {
+    const voltar = escondidas.filter((j) => !j.fechada);
+    escondidas = null;
+    for (const j of voltar) j.focar();
+    return 'restaurou';
+  }
+  escondidas = abertas;
+  for (const j of abertas) j.minimizar();
+  return 'escondeu';
 }

@@ -27,6 +27,8 @@ const PADRAO = {
   barra: { fixados: ['explorador', 'navegador', 'correio', 'bloco'], botoes: 'nomes' },
   // Os sites instalados como programas: [{ id, nome, url, icone (PNG em data:) }].
   webapps: [],
+  // As janelas: encaixar ao arrastar até as bordas e os cantos (os cantos magnéticos).
+  janelas: { encaixe: true },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,

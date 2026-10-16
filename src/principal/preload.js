@@ -61,11 +61,16 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  tela: {
+    modos: () => chamar('tela:modos'),
+    definir: (saida, modo) => chamar('tela:definir', saida, modo),
+  },
   janelasLinux: {
     listar: () => chamar('janelasLinux:listar'),
     ativar: (id) => chamar('janelasLinux:ativar', id),
     minimizar: (id) => chamar('janelasLinux:minimizar', id),
     fechar: (id) => chamar('janelasLinux:fechar', id),
+    encaixar: (id, seta) => chamar('janelasLinux:encaixar', id, seta),
     minimizarTodas: () => chamar('janelasLinux:minimizarTodas'),
     aoMudar: ouvir('janelasLinux:mudou'),
   },

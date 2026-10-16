@@ -52,6 +52,34 @@ export function confirmar(texto, { titulo = tr('Confirmar'), sim = tr('&Sim'), n
   return mensagem({ titulo, texto, tipo, botoes: [{ texto: sim, valor: true, padrao: true }, { texto: nao, valor: false }] }).then((v) => v === true);
 }
 
+/**
+ * Pergunta com prazo (como a troca de resolução da época): sem resposta em `segundos`,
+ * vale o Não. Devolve true só com o Sim.
+ */
+export function confirmarComPrazo(texto, segundos, { titulo = tr('Confirmar') } = {}) {
+  return new Promise((resolve) => {
+    let feito = false;
+    let resta = segundos;
+    const j = new Janela({ titulo, dialogo: true, largura: 380, altura: 150, aoFechar: () => { if (!feito) { feito = true; clearInterval(timer); resolve(false); } } });
+    const contagem = h('div', { style: { marginTop: '6px', color: '#000080' } });
+    const mostrar = () => { contagem.textContent = tr('Voltando à configuração anterior em {n} segundos.', { n: resta }); };
+    const fim = (v) => {
+      if (feito) return;
+      feito = true;
+      clearInterval(timer);
+      j.fechar(true);
+      resolve(v === true);
+    };
+    const timer = setInterval(() => { resta -= 1; if (resta <= 0) fim(false); else mostrar(); }, 1000);
+    mostrar();
+    const { div, els } = botoes([{ texto: tr('&Sim'), valor: true, padrao: true }, { texto: tr('&Não'), valor: false }], fim);
+    j.corpo.append(h('div.mensagem', img('msg-pergunta', 32), h('div.texto', texto, contagem)), div);
+    ajustarAoConteudo(j);
+    tocar('pergunta');
+    els[0].focus();
+  });
+}
+
 /** Sim / Não / Cancelar: devolve 'sim', 'nao' ou null. */
 export function simNaoCancelar(texto, titulo = 'Retro Computer') {
   return mensagem({

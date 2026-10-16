@@ -5,6 +5,7 @@ import { registrarApp, adicionarRecente, avisar, estado, definirConfig, pastaDoc
 import { caixaArquivo, simNaoCancelar, erro, entrada, info } from '../dialogos.js';
 import { tr, marcar } from '../idioma.js';
 
+const ZOOM_MAX = 4;
 const TIPOS = [{ rotulo: marcar('Documentos de texto (*.txt)'), exts: ['txt'] }, { rotulo: marcar('Markdown (*.md)'), exts: ['md'] }];
 
 class Bloco {
@@ -14,6 +15,7 @@ class Bloco {
     this.crlf = false;
     this.busca = '';
     this.quebra = true;
+    this.zoom = 1;
     this.fixa = !!(estado.config.bloco && estado.config.bloco.fixa);
     this.texto = h('textarea.quebra', { spellcheck: false, wrap: 'soft' });
     this.texto.classList.toggle('proporcional', !this.fixa);
@@ -29,6 +31,12 @@ class Bloco {
     this.j.corpo.append(this.texto);
     this.texto.addEventListener('input', () => this.marcarSujo(true));
     this.texto.addEventListener('keydown', (e) => this.teclas(e));
+    // Ctrl+roda do mouse: o zoom do texto.
+    this.texto.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey || !e.deltaY) return;
+      e.preventDefault();
+      this.mudarZoom(e.deltaY < 0 ? 1 : -1);
+    }, { passive: false });
     this.j.ev.on('ativada', () => setTimeout(() => this.texto.focus(), 0));
     if (arquivo) this.abrirRel(arquivo);
     else this.texto.focus();
@@ -70,6 +78,14 @@ class Bloco {
         ],
       },
       {
+        // O zoom em números inteiros: as letras de bitmap continuam nítidas.
+        rotulo: tr('E&xibir'), itens: () => [
+          { rotulo: tr('&Ampliar'), atalho: 'Ctrl++', desativado: this.zoom >= ZOOM_MAX, acao: () => this.mudarZoom(1) },
+          { rotulo: tr('&Reduzir'), atalho: 'Ctrl+-', desativado: this.zoom <= 1, acao: () => this.mudarZoom(-1) },
+          { rotulo: tr('Restaurar o &zoom padrão'), atalho: 'Ctrl+0', desativado: this.zoom === 1, acao: () => this.mudarZoom(0) },
+        ],
+      },
+      {
         rotulo: tr('&Pesquisar'), itens: [
           { rotulo: tr('&Localizar…'), atalho: 'Ctrl+F', acao: () => this.localizar(true) },
           { rotulo: tr('Localizar &próxima'), atalho: 'F3', acao: () => this.localizar(false) },
@@ -106,6 +122,9 @@ class Bloco {
     else if (ctrl && k === 'n') { e.preventDefault(); this.novo(); }
     else if (ctrl && k === 'f') { e.preventDefault(); this.localizar(true); }
     else if (ctrl && k === 'p') { e.preventDefault(); this.imprimir(); }
+    else if (ctrl && (k === '+' || k === '=')) { e.preventDefault(); this.mudarZoom(1); }
+    else if (ctrl && k === '-') { e.preventDefault(); this.mudarZoom(-1); }
+    else if (ctrl && k === '0') { e.preventDefault(); this.mudarZoom(0); }
     else if (e.key === 'F3') { e.preventDefault(); this.localizar(false); }
     else if (e.key === 'F5') { e.preventDefault(); this.horaData(); }
     else if (e.key === 'Tab') {
@@ -187,6 +206,13 @@ class Bloco {
     const t = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('pt-BR');
     this.texto.focus();
     document.execCommand('insertText', false, t);
+  }
+
+  /** O zoom (1×, 2×, 3× ou 4×); passo 0 volta ao normal. */
+  mudarZoom(passo) {
+    this.zoom = passo === 0 ? 1 : Math.min(ZOOM_MAX, Math.max(1, this.zoom + passo));
+    this.texto.style.fontSize = this.zoom === 1 ? '' : `${10 * this.zoom}px`;
+    this.texto.style.lineHeight = this.zoom === 1 ? '' : `${13 * this.zoom}px`;
   }
 
   definirFonte(fixa) {

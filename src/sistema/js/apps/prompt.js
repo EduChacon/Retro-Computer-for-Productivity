@@ -58,6 +58,17 @@ class Prompt {
     );
     this.areaTerm = h('div.prompt-corpo');
     this.j.corpo.append(barra, this.areaTerm);
+    // Ctrl+roda do mouse: a letra maior ou menor (os mesmos três tamanhos da lista).
+    this.areaTerm.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey || !e.deltaY) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const tams = [...this.seletorFonte.options].map((o) => Number(o.value));
+      const i = tams.indexOf(Number(this.seletorFonte.value)) + (e.deltaY < 0 ? 1 : -1);
+      if (i < 0 || i >= tams.length) return;
+      this.seletorFonte.value = String(tams[i]);
+      this.mudarFonte(tams[i]);
+    }, { passive: false, capture: true });
     this.j.ev.on('fechada', () => this.encerrar());
     this.j.ev.on('ativada', () => setTimeout(() => this.term && this.term.focus(), 0));
     this.j.ev.on('tamanho', () => this.ajustar());

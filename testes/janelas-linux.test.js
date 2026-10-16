@@ -40,3 +40,37 @@ test('janelas do Linux: nada vai para o wmctrl sem um id de janela', async () =>
   assert.strictEqual(await j.ativar('0x1; rm -rf /'), false);
   assert.strictEqual(await j.fechar('abc'), false);
 });
+
+test('janelas do Linux: a área útil e a moldura para encaixar com a tecla do logotipo', async () => {
+  assert.deepStrictEqual(jl.lerAreaUtil('_NET_WORKAREA(CARDINAL) = 0, 0, 1440, 866'), { x: 0, y: 0, w: 1440, h: 866 });
+  assert.deepStrictEqual(jl.lerAreaUtil('_NET_WORKAREA:  not found.'), null);
+  assert.deepStrictEqual(jl.lerMoldura('_NET_FRAME_EXTENTS(CARDINAL) = 4, 4, 22, 4'), { e: 4, d: 4, c: 22, b: 4 });
+  assert.deepStrictEqual(jl.lerMoldura(''), { e: 0, d: 0, c: 0, b: 0 });
+  // Sem um id de janela ou com uma seta desconhecida, nada vai para o wmctrl.
+  const j = new jl.JanelasLinux();
+  assert.strictEqual(await j.encaixar('0x1; reboot', 'ArrowLeft'), false);
+  assert.strictEqual(await j.encaixar('0x3a00007', 'Diagonal'), false);
+});
+
+test('tela: os modos do xrandr da tela principal', async () => {
+  const { lerXrandr, Tela } = require('../src/principal/tela');
+  const texto = [
+    'Screen 0: minimum 8 x 8, current 1440 x 900, maximum 32767 x 32767',
+    'eDP-1 connected primary 1440x900+0+0 (normal left inverted right x axis y axis) 286mm x 179mm',
+    '   1440x900      59.90*+',
+    '   1366x768      59.79',
+    '   1280x800      59.81    59.91',
+    '   1280x800      59.99',
+    'HDMI-1 disconnected (normal left inverted right x axis y axis)',
+    'DP-1 connected 1920x1080+1440+0 (normal) 510mm x 290mm',
+    '   1920x1080     60.00*+',
+  ].join('\n');
+  assert.deepStrictEqual(lerXrandr(texto), { saida: 'eDP-1', atual: '1440x900', preferido: '1440x900', modos: ['1440x900', '1366x768', '1280x800'] });
+  // Sem a marcada como principal, vale a primeira ligada.
+  assert.strictEqual(lerXrandr(texto.replace(' primary', '')).saida, 'eDP-1');
+  assert.strictEqual(lerXrandr('Screen 0: minimum 8 x 8'), null);
+  // Fora do modo sistema, nada muda a resolução; nomes estranhos não chegam ao xrandr.
+  const t = new Tela({ plataforma: 'linux', sistema: false });
+  assert.deepStrictEqual(await t.modos(), { disponivel: false });
+  assert.deepStrictEqual(await t.definir('eDP-1; reboot', '800x600'), { ok: false, erro: 'modo' });
+});

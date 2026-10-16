@@ -111,6 +111,13 @@ class Explorador {
       aoSelecionar: () => this.atualizarStatus(),
     });
     this.area.addEventListener('keydown', (e) => this.atalhos(e));
+    // Ctrl+roda do mouse: os ícones maiores ou menores, de modo em modo (como no Windows).
+    this.area.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey || !e.deltaY) return;
+      e.preventDefault();
+      const i = MODOS_POR_TAMANHO.indexOf(this.modo) + (e.deltaY < 0 ? 1 : -1);
+      if (i >= 0 && i < MODOS_POR_TAMANHO.length) this.definirModo(MODOS_POR_TAMANHO[i]);
+    }, { passive: false });
     this.paraDeOuvir = retro.disco.aoMudar((pastas) => {
       if (pastas.includes(this.pasta) || (this.pasta === '::lixeira' && pastas.includes('::lixeira')) || this.pasta === '::computador') this.carregar();
       if (this.comArvore) for (const p of pastas) this.arvore.recarregar(p);
@@ -630,6 +637,9 @@ function propriedadesLixo(m) {
     texto: `${m.nome}\n\n` + tr('Local original: {local}\nExcluído em: {data}', { local: caminhoTela(paiDe(m.origem)), data: dataHora(m.apagadoEm) }) + `\n${tr('Tamanho:')} ${m.pasta ? tr('pasta') : tamanho(m.tamanho)}\n\n` + tr('Para usar este item, restaure-o (botão direito › Restaurar).'),
   });
 }
+
+// Do menor ao maior, para o Ctrl+roda.
+const MODOS_POR_TAMANHO = ['detalhes', 'lista', 'icones', 'miniaturas'];
 
 function abrirExplorador(args = {}) {
   let pasta = args.pasta != null ? args.pasta : '::computador';

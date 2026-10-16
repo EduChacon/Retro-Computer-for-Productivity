@@ -35,6 +35,18 @@ function lerAtiva(texto) {
   return m && !/^0x0+$/.test(m[1]) ? m[1].toLowerCase() : null;
 }
 
+/** xprop -root _NET_WORKAREA → { x, y, w, h } (a área sem a barra de tarefas), ou null. */
+function lerAreaUtil(texto) {
+  const m = /=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)/.exec(String(texto));
+  return m ? { x: Number(m[1]), y: Number(m[2]), w: Number(m[3]), h: Number(m[4]) } : null;
+}
+
+/** xprop -id … _NET_FRAME_EXTENTS → a moldura de cada lado { e, d, c, b } (esquerda, direita, cima, baixo). */
+function lerMoldura(texto) {
+  const m = /=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)/.exec(String(texto));
+  return m ? { e: Number(m[1]), d: Number(m[2]), c: Number(m[3]), b: Number(m[4]) } : { e: 0, d: 0, c: 0, b: 0 };
+}
+
 /** Os ids de janela comparáveis (o wmctrl põe zeros à esquerda: 0x03a00007; o xprop, não). */
 const normalizar = (id) => '0x' + String(id || '').replace(/^0x0*/i, '').toLowerCase();
 
@@ -43,8 +55,9 @@ class JanelasLinux {
    * pidsProprios(): os pids do Retro Computer (as janelas dele não entram);
    * programaDe(janela): o id do .desktop do programa (para o ícone e para fixar), ou null.
    */
-  constructor({ pidsProprios = () => new Set([process.pid]), programaDe = () => null, aoMudar = () => { } } = {}) {
+  constructor({ pidsProprios = () => new Set([process.pid]), programaDe = () => null, aoMudar = () => { }, areaPadrao = () => null } = {}) {
     this.pidsProprios = pidsProprios;
+    this.areaPadrao = areaPadrao;
     this.programaDe = programaDe;
     this.aoMudar = aoMudar;
     this.assinatura = '';
@@ -94,6 +107,33 @@ class JanelasLinux {
     return true;
   }
 
+  /**
+   * A tecla do logotipo + seta numa janela do Linux: à esquerda ou à direita, metade da tela;
+   * para cima, maximiza; para baixo, restaura (se estava maximizada) ou minimiza.
+   */
+  async encaixar(id, seta) {
+    if (!idValido(id) || !/^Arrow(Left|Right|Up|Down)$/.test(seta)) return false;
+    const max = ['-ir', id, '-b', 'add,maximized_vert,maximized_horz'];
+    const tirarMax = ['-ir', id, '-b', 'remove,maximized_vert,maximized_horz'];
+    if (seta === 'ArrowUp') { await rodar('wmctrl', max).catch(() => { }); return true; }
+    if (seta === 'ArrowDown') {
+      const estado = await rodar('xprop', ['-id', id, '_NET_WM_STATE']).catch(() => '');
+      if (/MAXIMIZED/.test(estado)) await rodar('wmctrl', tirarMax).catch(() => { });
+      else await this.minimizar(id);
+      return true;
+    }
+    const area = lerAreaUtil(await rodar('xprop', ['-root', '_NET_WORKAREA']).catch(() => '')) || this.areaPadrao();
+    if (!area) return false;
+    const mold = lerMoldura(await rodar('xprop', ['-id', id, '_NET_FRAME_EXTENTS']).catch(() => ''));
+    const metade = Math.floor(area.w / 2);
+    const x = seta === 'ArrowLeft' ? area.x : area.x + metade;
+    const w = (seta === 'ArrowLeft' ? metade : area.w - metade) - mold.e - mold.d;
+    const h = area.h - mold.c - mold.b;
+    await rodar('wmctrl', tirarMax).catch(() => { });
+    await rodar('wmctrl', ['-ir', id, '-e', `0,${x},${area.y},${Math.max(100, w)},${Math.max(100, h)}`]).catch(() => { });
+    return true;
+  }
+
   /** Antes da tela de bloqueio: nenhuma janela do Linux fica por cima dela. */
   async minimizarTodas() {
     const { lista } = await this.listar();
@@ -132,7 +172,8 @@ class JanelasFalsas extends JanelasLinux {
   async ativar(id) { for (const j of this.falsas) j.ativa = j.id === id; this.avisar(); return true; }
   async minimizar(id) { const j = this.falsas.find((x) => x.id === id); if (j) j.ativa = false; this.avisar(); return true; }
   async fechar(id) { this.falsas = this.falsas.filter((j) => j.id !== id); this.avisar(); return true; }
+  async encaixar(id, seta) { (this.encaixes = this.encaixes || []).push([id, seta]); return true; }
   avisar() { this.listar().then((r) => this.aoMudar(r)); }
 }
 
-module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar };
+module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar, lerAreaUtil, lerMoldura };
