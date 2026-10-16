@@ -253,11 +253,11 @@ export function menuDeItens(sel, o = {}) {
         // Os pendrives e cartões conectados entram no fim (uma cópia; o do disco C: fica).
         const unidades = (await listarUnidades()).filter((u) => u.montada);
         return [
-          { rotulo: tr('Área de trabalho do computador principal'), icone: 'computador', acao: () => levar(rels, 'desktop') },
-          { rotulo: tr('Downloads do computador principal'), icone: 'pasta', acao: () => levar(rels, 'downloads') },
+          { rotulo: tr('Área de trabalho do computador principal'), icone: 'pasta-mesa', acao: () => levar(rels, 'desktop') },
+          { rotulo: tr('Downloads do computador principal'), icone: 'pasta-recebidos', acao: () => levar(rels, 'downloads') },
           { rotulo: tr('Outra pasta do computador principal…'), icone: 'pasta-aberta', acao: () => levar(rels, 'escolher') },
           { separador: true },
-          { rotulo: tr('Área de trabalho (atalho)'), icone: 'documentos', desativado: sel.every((s) => paiDe(s.rel) === pastaMesa()), acao: () => moverPara(rels, pastaMesa(), true) },
+          { rotulo: tr('Área de trabalho (atalho)'), icone: 'pasta-mesa', desativado: sel.every((s) => paiDe(s.rel) === pastaMesa()), acao: () => moverPara(rels, pastaMesa(), true) },
           { rotulo: tr('Pasta compactada (zip)'), icone: 'compactado', acao: () => compactarItens(rels) },
           ...(unidades.length ? [{ separador: true }] : []),
           ...unidades.map((u) => ({ rotulo: nomeUnidade(u), icone: 'removivel', acao: () => levarParaUnidade(u, rels) })),

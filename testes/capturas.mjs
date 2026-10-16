@@ -443,6 +443,24 @@ const ROTEIROS = {
     console.log('LANG=' + (process.env.LANG || ''), '| GTK_IM_MODULE do aplicativo:', await app.evaluate(() => process.env.GTK_IM_MODULE));
   },
 
+  // As pastas especiais com os próprios ícones (como no Windows): o C:, Meus documentos (com
+  // Recebidos, o Diário, as Capturas, Imagens, Músicas e Vídeos), a barra de pastas e a caixa Abrir.
+  async pastas() {
+    const T2 = (pt) => (CATALOGO[pt] || pt);
+    const docs = path.join(disco, DOCS);
+    for (const p of [path.join(disco, 'DOS'), path.join(docs, PASTAS[IDIOMA].recebidos), path.join(docs, T2('Capturas de tela')), path.join(docs, T2('Diário de trabalho')),
+      path.join(docs, T2('Imagens')), path.join(docs, T2('Músicas')), path.join(docs, T2('Vídeos')), path.join(docs, 'Trabalho')]) fs.mkdirSync(p, { recursive: true });
+    await pagina.evaluate((d) => window.__retro.definirConfig({ pastas: { diario: d } }), T2('Diário de trabalho'));
+    await fecharTudo();
+    await abrir('explorador', { pasta: '' });
+    await pagina.waitForTimeout(1000);
+    await foto('pastas-c');
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(1000);
+    await foto('pastas-documentos');
+  },
+
   async vitrine() {
     await fecharTudo();
     const lances = ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5', 'c2c3', 'g8f6', 'd2d4', 'e5d4', 'c3d4', 'c5b4', 'b1c3', 'f6e4', 'e1g1', 'e4c3', 'b2c3', 'b4c3'];

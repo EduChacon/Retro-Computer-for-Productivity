@@ -11,7 +11,7 @@ import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, da
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, abrir, abrirArquivo, estado, definirConfig, pastaDocs, pastaMesa } from '../sistema.js';
+import { registrarApp, abrir, abrirArquivo, estado, definirConfig, pastaDocs, pastaMesa, iconeDaPasta } from '../sistema.js';
 import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir, novaPasta, novoTexto, copiarItens, colar, transferencia } from '../arquivos.js';
 import { erro, confirmar, propriedades, mensagem } from '../dialogos.js';
 import { esvaziarLixeira } from '../mesa.js';
@@ -48,8 +48,9 @@ function iconeDe(pasta, cheia) {
   if (lerPastaZip(pasta)) return lerPastaZip(pasta).dentro ? 'pasta-aberta' : 'compactado';
   if (ESPECIAIS[pasta]) return ESPECIAIS[pasta].icone;
   if (!pasta) return 'disco';
-  if (pasta === pastaDocs()) return 'documentos';
-  return 'pasta-aberta';
+  // Uma pasta especial mostra o próprio ícone (as outras, a pasta aberta).
+  const especial = iconeDaPasta(pasta);
+  return especial === 'pasta' ? 'pasta-aberta' : especial;
 }
 
 class Explorador {
@@ -223,7 +224,7 @@ class Explorador {
           { rotulo: tr('&Meu computador'), icone: 'computador', acao: () => this.navegar('::computador') },
           { rotulo: tr('&Disco C:'), icone: 'disco', acao: () => this.navegar('') },
           { rotulo: tr('Meus d&ocumentos'), icone: 'documentos', acao: () => this.navegar(pastaDocs()) },
-          { rotulo: tr('Á&rea de trabalho'), icone: 'pasta', acao: () => this.navegar(pastaMesa()) },
+          { rotulo: tr('Á&rea de trabalho'), icone: 'pasta-mesa', acao: () => this.navegar(pastaMesa()) },
           { rotulo: tr('&Lixeira'), icone: 'lixeira', acao: () => this.navegar('::lixeira') },
         ],
       },
@@ -512,7 +513,7 @@ class Explorador {
     for (const f of pastas) {
       if (!f || !f.pasta) continue;
       itens.push({
-        chave: 'arq:' + f.rel, rotulo: f.nome, icone: f.rel === pastaDocs() ? 'documentos' : 'pasta', rel: f.rel, nome: f.nome, pasta: true,
+        chave: 'arq:' + f.rel, rotulo: f.nome, icone: iconeDaPasta(f.rel), rel: f.rel, nome: f.nome, pasta: true,
         alvo: f.rel, fixada: true, recortado: recortados.has(f.rel), modificado: f.modificado,
         dica: caminhoTela(f.rel), colunas: ['', tr('Pasta fixada'), dataHora(f.modificado)],
       });
@@ -607,7 +608,7 @@ class Explorador {
     return lista.map((f) => {
       const t = tipoDe(f.nome, f.pasta);
       return {
-        chave: 'arq:' + f.rel, rotulo: f.nome, icone: t.icone, rel: f.rel, nome: f.nome, pasta: f.pasta,
+        chave: 'arq:' + f.rel, rotulo: f.nome, icone: f.pasta ? iconeDaPasta(f.rel) : t.icone, rel: f.rel, nome: f.nome, pasta: f.pasta,
         alvo: f.pasta ? f.rel : null, recortado: recortados.has(f.rel),
         dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],

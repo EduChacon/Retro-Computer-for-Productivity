@@ -2,7 +2,7 @@
  * O estado do sistema: as configurações, os programas (embutidos e instalados),
  * qual programa abre cada tipo de arquivo, os documentos recentes e os avisos.
  */
-import { h, img, extensao, nomeDe, ehTexto, Eventos, caminhoTela, EXECUTAVEIS } from './util.js';
+import { h, img, extensao, nomeDe, paiDe, ehTexto, Eventos, caminhoTela, EXECUTAVEIS } from './util.js';
 import { configurar as configurarSons, tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
 import { comPrograma } from './janelas.js';
@@ -102,6 +102,40 @@ export async function atualizarProgramas() {
 /** Os nomes das pastas do disco (no idioma em que o disco foi criado). */
 export const pastaDocs = () => (estado.config && estado.config.pastas && estado.config.pastas.documentos) || 'Meus documentos';
 export const pastaMesa = () => (estado.config && estado.config.pastas && estado.config.pastas.mesa) || 'Área de trabalho';
+
+// As pastas de imagens, músicas, vídeos e downloads pelo nome (nos três idiomas), como as do Windows.
+const NOMES_ESPECIAIS = {
+  'pasta-imagens': ['imagens', 'minhas imagens', 'fotos', 'images', 'my images', 'pictures', 'my pictures', 'photos', 'imágenes', 'mis imágenes', 'fotografías'],
+  'pasta-musicas': ['músicas', 'minhas músicas', 'música', 'music', 'my music', 'mi música', 'mis músicas'],
+  'pasta-videos': ['vídeos', 'meus vídeos', 'videos', 'my videos', 'mis videos', 'mis vídeos', 'filmes', 'movies'],
+  'pasta-recebidos': ['downloads', 'baixados', 'descargas'],
+};
+
+/**
+ * O ícone de uma pasta do disco C:. As pastas especiais têm o próprio, como no Windows: Meus
+ * documentos, a Área de trabalho, o DOS e, dentro de Meus documentos, Recebidos, o Diário e as
+ * Capturas de tela; e as de imagens, músicas, vídeos e downloads, em Meus documentos ou no C:.
+ */
+export function iconeDaPasta(rel) {
+  const n = String(rel || '');
+  const docs = pastaDocs();
+  if (n === docs) return 'documentos';
+  if (n === pastaMesa()) return 'pasta-mesa';
+  if (n.toUpperCase() === 'DOS') return 'pasta-dos';
+  const p = (estado.config && estado.config.pastas) || {};
+  const pai = paiDe(n);
+  const nome = nomeDe(n).toLocaleLowerCase();
+  const igual = (x) => !!x && nome === String(x).toLocaleLowerCase();
+  if (pai === docs) {
+    if (igual(p.recebidos)) return 'pasta-recebidos';
+    if (igual(p.diario || tr('Diário de trabalho'))) return 'pasta-diario';
+    if (igual(p.capturas || tr('Capturas de tela'))) return 'pasta-capturas';
+  }
+  if (pai === docs || pai === '') {
+    for (const [icone, nomes] of Object.entries(NOMES_ESPECIAIS)) if (nomes.includes(nome)) return icone;
+  }
+  return 'pasta';
+}
 
 /**
  * Abre um endereço da internet: no Navegador do Retro Computer (numa janela já

@@ -4,7 +4,7 @@
  * expandidas (nada é lido antes); a pasta da janela fica marcada e com o caminho aberto.
  */
 import { h, img, paiDe } from './util.js';
-import { pastaDocs, pastaMesa } from './sistema.js';
+import { pastaDocs, pastaMesa, iconeDaPasta } from './sistema.js';
 import { listarUnidades, nomeUnidade, pastaDaUnidade, lerPastaUnidade } from './unidades.js';
 import { lerPastaZip } from './compactados.js';
 import { tr } from './idioma.js';
@@ -61,7 +61,7 @@ export class Arvore {
     if (pasta === '::acesso') {
       const infos = await Promise.all(fixadas().map((rel) => retro.disco.info(rel).catch(() => null)));
       return infos.filter((f) => f && f.pasta).map((f) => ({
-        pasta: f.rel, rotulo: f.nome || 'C:', icone: f.rel === pastaDocs() ? 'documentos' : 'pasta', temFilhos: true, atalho: true, prefixo: '★',
+        pasta: f.rel, rotulo: f.nome || 'C:', icone: f.rel ? iconeDaPasta(f.rel) : 'disco', temFilhos: true, atalho: true, prefixo: '★',
       }));
     }
     if (pasta === '::computador') {
@@ -69,7 +69,7 @@ export class Arvore {
       return [
         { pasta: '', rotulo: tr('Disco local (C:)'), icone: 'disco', temFilhos: true },
         { pasta: pastaDocs(), rotulo: tr('Meus documentos'), icone: 'documentos', temFilhos: true, atalho: true },
-        { pasta: pastaMesa(), rotulo: pastaMesa(), icone: 'pasta', temFilhos: true, atalho: true },
+        { pasta: pastaMesa(), rotulo: pastaMesa(), icone: 'pasta-mesa', temFilhos: true, atalho: true },
         ...unidades.filter((u) => u.montada).map((u) => ({ pasta: pastaDaUnidade(u.id), rotulo: nomeUnidade(u), icone: 'removivel', temFilhos: true })),
         { pasta: '::lixeira', rotulo: tr('Lixeira'), icone: 'lixeira', temFilhos: false },
       ];
@@ -78,7 +78,7 @@ export class Arvore {
     const lista = un
       ? (await retro.unidades.pasta(un.id, un.rel).catch(() => [])).filter((f) => f.pasta).map((f) => ({ pasta: pastaDaUnidade(un.id, f.rel), nome: f.nome }))
       : (await retro.disco.listar(pasta).catch(() => [])).filter((f) => f.pasta).map((f) => ({ pasta: f.rel, nome: f.nome }));
-    return lista.sort((a, b) => ordenar(a.nome, b.nome)).map((f) => ({ pasta: f.pasta, rotulo: f.nome, icone: 'pasta', temFilhos: true }));
+    return lista.sort((a, b) => ordenar(a.nome, b.nome)).map((f) => ({ pasta: f.pasta, rotulo: f.nome, icone: un ? 'pasta' : iconeDaPasta(f.pasta), temFilhos: true }));
   }
 
   async abrirNo(pasta) {

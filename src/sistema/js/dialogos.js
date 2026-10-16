@@ -6,7 +6,7 @@ import { h, img, rotulo, tipoDe, caminhoTela, caminhoInterno, juntar, paiDe, nom
 import { Janela } from './janelas.js';
 import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
-import { pastaDocs } from './sistema.js';
+import { pastaDocs, iconeDaPasta } from './sistema.js';
 
 const ICONES = { erro: 'msg-erro', aviso: 'msg-aviso', info: 'msg-info', pergunta: 'msg-pergunta' };
 const SONS = { erro: 'erro', aviso: 'aviso', info: 'info', pergunta: 'pergunta' };
@@ -232,7 +232,7 @@ export function caixaArquivo(o) {
       }
       selecionados = new Set();
       listaEl.replaceChildren(...itens.map((it, i) => {
-        const t = tipoDe(it.nome, it.pasta);
+        const t = it.pasta ? { icone: iconeDaPasta(it.rel) } : tipoDe(it.nome, it.pasta);
         const el = h('div.item', { dataset: { i } },
           h('div.icone', { style: { '--ico': `url(icones/16/${t.icone}.png)` } }, img(t.icone, 16)),
           h('div.rotulo', it.nome));

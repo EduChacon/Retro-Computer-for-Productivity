@@ -6,7 +6,7 @@
 import { tipoDe, juntar } from './util.js';
 import { VistaIcones } from './vista.js';
 import { abrirMenu } from './menus.js';
-import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado, pastaMesa, pastaDocs, app } from './sistema.js';
+import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado, pastaMesa, pastaDocs, app, iconeDaPasta } from './sistema.js';
 import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir } from './arquivos.js';
 import { confirmar } from './dialogos.js';
 import { tocar } from './sons.js';
@@ -125,7 +125,7 @@ export async function atualizar(selecionarChaves) {
   for (const f of arquivos) {
     const t = tipoDe(f.nome, f.pasta);
     const chave = 'arq:' + f.nome;
-    itens.push({ chave, rotulo: f.nome, icone: t.icone, rel: f.rel, pasta: f.pasta, alvo: f.pasta ? f.rel : null, pos: posicoes[chave] });
+    itens.push({ chave, rotulo: f.nome, icone: f.pasta ? iconeDaPasta(f.rel) : t.icone, rel: f.rel, pasta: f.pasta, alvo: f.pasta ? f.rel : null, pos: posicoes[chave] });
   }
   vista.desenhar(itens, { selecionarChaves });
 }
