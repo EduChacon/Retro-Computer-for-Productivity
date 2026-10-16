@@ -113,14 +113,14 @@ class Loja {
     this.processo = null;
   }
 
-  /** { plataforma, flatpak (versão ou null), remoto } */
+  /** { plataforma, loja, flatpak (a versão ou null), pronta }: o mesmo formato das do Windows e do Mac (lojas.js). */
   async info() {
-    if (this.plataforma !== 'linux') return { plataforma: this.plataforma, flatpak: null };
+    if (this.plataforma !== 'linux') return { plataforma: this.plataforma, loja: 'flatpak', flatpak: null, pronta: false };
     try {
       const v = (await rodar('flatpak', ['--version'], { timeout: 5000 })).trim().replace(/^Flatpak\s*/i, '');
-      return { plataforma: 'linux', flatpak: v || '?' };
+      return { plataforma: 'linux', loja: 'flatpak', flatpak: v || '?', pronta: true };
     } catch {
-      return { plataforma: 'linux', flatpak: null };
+      return { plataforma: 'linux', loja: 'flatpak', flatpak: null, pronta: false };
     }
   }
 
@@ -316,7 +316,7 @@ class LojaFalsa extends Loja {
     this.lista = [{ id: 'org.gnome.TextEditor', nome: 'Text Editor', versao: '46.3', usuario: true }];
   }
 
-  async info() { return { plataforma: 'linux', flatpak: '1.14.10' }; }
+  async info() { return { plataforma: 'linux', loja: 'flatpak', flatpak: '1.14.10', pronta: true }; }
   async instalados() { return this.lista.map((x) => ({ ...x })); }
   async atualizacoes() { return ['org.gnome.TextEditor']; }
   async garantirRemoto() { }

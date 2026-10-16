@@ -215,6 +215,21 @@ async function iconeDoArquivo(arquivo, { app, shell, nativeImage, plataforma = p
   return url === 'data:image/png;base64,' ? null : url;
 }
 
+/**
+ * O programa da lista com o nome de um pacote da loja (o "Mozilla Firefox" do winget é o atalho
+ * "Firefox" do menu Iniciar): o mesmo nome, sem acento e sem maiúsculas; senão, um nome dentro do outro.
+ */
+function acharPorNome(lista, nome) {
+  const n = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9+]+/g, ' ').trim();
+  const alvo = n(nome);
+  if (!alvo) return null;
+  const l = (lista || []).filter((a) => !a.terminal && n(a.nome));
+  return l.find((a) => n(a.nome) === alvo)
+    || l.filter((a) => alvo.includes(n(a.nome)) && n(a.nome).length >= 3).sort((a, b) => b.nome.length - a.nome.length)[0]
+    || l.filter((a) => n(a.nome).startsWith(alvo + ' ')).sort((a, b) => a.nome.length - b.nome.length)[0]
+    || null;
+}
+
 /* ---------- Comum ---------- */
 
 class Aplicativos {
@@ -305,4 +320,4 @@ class Aplicativos {
   }
 }
 
-module.exports = { Aplicativos, lerDesktop, limparExec, iconeLinux, iconeDoArquivo, origemDoIcone, iconeDoUrl, expandirVariaveis };
+module.exports = { Aplicativos, acharPorNome, lerDesktop, limparExec, iconeLinux, iconeDoArquivo, origemDoIcone, iconeDoUrl, expandirVariaveis };

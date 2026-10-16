@@ -10,7 +10,7 @@ import { registrarApp, estado, atualizarProgramas, abrir, abrirArquivo, avisar, 
 import { confirmar, erro } from '../dialogos.js';
 import { adicionarAtalho } from '../mesa.js';
 import { tr, idiomaAtual } from '../idioma.js';
-import { AbaLinux } from './loja.js';
+import { AbaLoja, nomeDaLoja } from './loja.js';
 
 /** Um texto do catálogo no idioma atual ({ "pt-BR": …, "en": …, "es": … } ou texto simples). */
 export function doCatalogo(v) {
@@ -72,11 +72,12 @@ class Programas {
         h('div', { style: { flex: '1', color: '#808080', lineHeight: '12px' } }, tr('Para instalar um pacote "nome-web-versão.zip" já baixado.')),
         h('button', { on: { click: () => this.j.fechar() } }, tr('Fechar'))),
     );
-    // As abas (só no Linux, onde há a loja): os programas recomendados (os Craft) e os do Linux.
-    this.linux = new AbaLinux();
+    // As abas: os programas recomendados (os Craft) e a loja do computador (o Flathub no Linux,
+    // o winget no Windows, o Homebrew no Mac).
+    this.linux = new AbaLoja();
     this.abasEl = h('div.abas', { hidden: true });
     this.painelEl = h('div.programas-painel', abaRetro, this.linux.el);
-    const abas = [tr('Programas recomendados'), tr('Programas do Linux')];
+    let abas = [tr('Programas recomendados'), tr('Programas do computador')];
     this.mostrarAba = (i) => {
       this.aba = i;
       this.abasEl.replaceChildren(...abas.map((t, k) => {
@@ -91,10 +92,11 @@ class Programas {
     this.linux.el.hidden = true;
     this.j.corpo.append(this.abasEl, this.painelEl);
     retro.loja.info().then((info) => {
-      if (info.plataforma !== 'linux') return;
+      if (!info.loja) return;
+      abas = [tr('Programas recomendados'), nomeDaLoja(info)];
       this.abasEl.hidden = false;
       this.painelEl.classList.add('com-abas');
-      this.mostrarAba(args.aba === 'linux' ? 1 : 0);
+      this.mostrarAba(args.aba === 'loja' || args.aba === 'linux' ? 1 : 0);
     }).catch(() => { });
     this.paraDeOuvir = retro.programas.aoProgresso((id, p) => this.progresso(id, p));
     this.j.ev.on('fechada', () => { this.paraDeOuvir(); this.linux.fechar(); });
@@ -276,7 +278,7 @@ function abrirProgramas(args = {}) {
   if (aberta) {
     aberta.focar();
     if (args.instalar && aberta.programas) aberta.programas.carregar(args.instalar);
-    if (args.aba === 'linux' && aberta.programas && !aberta.programas.abasEl.hidden) aberta.programas.mostrarAba(1);
+    if ((args.aba === 'loja' || args.aba === 'linux') && aberta.programas && !aberta.programas.abasEl.hidden) aberta.programas.mostrarAba(1);
     return aberta.programas;
   }
   const p = new Programas(args);

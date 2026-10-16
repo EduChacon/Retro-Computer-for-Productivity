@@ -8,9 +8,11 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 async function chamar(canal, ...args) {
   const r = await ipcRenderer.invoke(canal, ...args);
   if (r && r.ok) return r.valor;
-  const e = new Error((r && r.erro) || 'Erro desconhecido.');
-  if (r && r.codigo) e.codigo = r.codigo;
-  throw e;
+  const mensagem = (r && r.erro) || 'Erro desconhecido.';
+  // A ponte (contextBridge) só copia a mensagem de um Error: o erro com código ("senha",
+  // "sem-novidade") vai como um objeto simples, com a mensagem, o código e o mesmo texto.
+  if (r && r.codigo) throw { name: 'Error', message: mensagem, codigo: r.codigo, toString: () => 'Error: ' + mensagem };
+  throw new Error(mensagem);
 }
 
 function ouvir(canal) {

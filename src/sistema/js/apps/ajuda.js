@@ -199,8 +199,11 @@ const TOPICOS = [
 <p>Para escolher o programa de um tipo de arquivo: botão direito no arquivo › <b>Abrir com › Escolher o programa…</b>, com a caixa <b>Sempre usar este programa</b> marcada (também o programa do computador principal). Os escolhidos ficam em <b>Painel de controle › Programas padrão</b>, que os muda ou os volta ao normal.</p>
 <h2>Programas do computador</h2>
 <p><b>Iniciar › Programas › Programas do computador</b> lista os programas instalados no computador principal; cada um pode ganhar um atalho na área de trabalho e no menu Iniciar.</p>
-<h2>Programas do Linux</h2>
-<p>No Linux, Adicionar ou remover programas tem a aba <b>Programas do Linux</b>, com os programas do Flathub: pesquise, veja a ficha de cada um e instale sem senha. Eles aparecem com os Programas do computador.</p>
+<h2>A loja do computador</h2>
+<p>Adicionar ou remover programas tem uma segunda aba com os programas do próprio computador, só de fontes oficiais: pesquise, veja a ficha de cada um, instale, atualize e remova. Eles aparecem com os Programas do computador.</p>
+<ul><li>No Linux, <b>Programas do Linux</b>: os do Flathub, instalados sem senha.</li>
+<li>No Windows, <b>Programas do Windows</b>: os do winget, o repositório oficial de programas do Windows. Alguns pedem a confirmação do Windows para instalar.</li>
+<li>No Mac, <b>Programas do Mac</b>: os do Homebrew (brew.sh), que vão para a pasta Aplicativos. Sem o Homebrew, a aba o instala pelo Prompt de comando; os programas que pedem a senha do Mac terminam a instalação por lá.</li></ul>
 <h2>Sem internet?</h2>
 <p>Baixe o pacote "nome-web-versão.zip" em outro lugar e use <b>Instalar de um arquivo .zip</b>.</p>
 <h2>Programas do Windows (no Linux)</h2>
@@ -216,8 +219,11 @@ const TOPICOS = [
 <p>To choose the program for a file type: right-click the file › <b>Open with › Choose program…</b>, with <b>Always use this program</b> checked (the main computer's program is an option too). The choices are listed in <b>Control Panel › Default programs</b>, which changes them or restores the default.</p>
 <h2>Computer programs</h2>
 <p><b>Start › Programs › Computer programs</b> lists the programs installed on the main computer; each one can get a shortcut on the desktop and in the Start menu.</p>
-<h2>Linux programs</h2>
-<p>On Linux, Add or Remove Programs has the <b>Linux programs</b> tab, with the programs from Flathub: search, see each one's details and install without a password. They show up with the Computer programs.</p>
+<h2>The computer's store</h2>
+<p>Add or Remove Programs has a second tab with programs for the computer itself, from official sources only: search, see each one's details, install, update and remove. They show up with the Computer programs.</p>
+<ul><li>On Linux, <b>Linux programs</b>: the ones from Flathub, installed without a password.</li>
+<li>On Windows, <b>Windows Programs</b>: the ones from winget, the official Windows program repository. Some ask for Windows confirmation to install.</li>
+<li>On the Mac, <b>Mac programs</b>: the ones from Homebrew (brew.sh), which go to the Applications folder. Without Homebrew, the tab installs it through the Command Prompt; programs that ask for the Mac password finish installing there.</li></ul>
 <h2>No internet?</h2>
 <p>Download the "name-web-version.zip" package somewhere else and use <b>Install from a .zip file</b>.</p>
 <h2>Windows programs (on Linux)</h2>
@@ -233,8 +239,11 @@ const TOPICOS = [
 <p>Para elegir el programa de un tipo de archivo: clic derecho en el archivo › <b>Abrir con › Elegir el programa…</b>, con <b>Usar siempre este programa</b> marcado (también el programa de la computadora principal). Los elegidos quedan en <b>Panel de control › Programas predeterminados</b>, que los cambia o los restablece.</p>
 <h2>Programas de la computadora</h2>
 <p><b>Inicio › Programas › Programas de la computadora</b> muestra los programas instalados en la computadora principal; cada uno puede tener un acceso directo en el escritorio y en el menú Inicio.</p>
-<h2>Programas de Linux</h2>
-<p>En Linux, Agregar o quitar programas tiene la pestaña <b>Programas de Linux</b>, con los programas de Flathub: busca, mira la ficha de cada uno e instala sin contraseña. Aparecen junto a los Programas de la computadora.</p>
+<h2>La tienda de la computadora</h2>
+<p>Agregar o quitar programas tiene una segunda pestaña con los programas de la propia computadora, solo de fuentes oficiales: busca, mira la ficha de cada uno, instala, actualiza y quita. Aparecen junto a los Programas de la computadora.</p>
+<ul><li>En Linux, <b>Programas de Linux</b>: los de Flathub, instalados sin contraseña.</li>
+<li>En Windows, <b>Programas de Windows</b>: los de winget, el repositorio oficial de programas de Windows. Algunos piden la confirmación de Windows para instalarse.</li>
+<li>En el Mac, <b>Programas de Mac</b>: los de Homebrew (brew.sh), que van a la carpeta Aplicaciones. Sin Homebrew, la pestaña lo instala por la Línea de comandos; los programas que piden la contraseña del Mac terminan de instalarse ahí.</li></ul>
 <h2>¿Sin internet?</h2>
 <p>Descarga el paquete "nombre-web-versión.zip" en otro lugar y usa <b>Instalar desde un archivo .zip</b>.</p>
 <h2>Programas de Windows (en Linux)</h2>

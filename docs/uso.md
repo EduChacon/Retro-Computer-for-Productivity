@@ -8,7 +8,7 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 - No Linux, ele também pode ser o próprio sistema do computador: a sessão "Retro Computer" da tela de entrada abre direto nele, sem a área de trabalho do Linux por baixo (seção 7). Assim, um notebook antigo ou um mini PC vira um computador retrô dedicado.
 - Fala português, inglês e espanhol (Painel de controle › Idioma).
 - O disco C: é uma pasta do computador principal (por padrão, `Documentos/Retro Computer`). Tudo o que se salva fica nela, visível também fora do programa.
-- Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pela Loja de programas (no alto do menu Iniciar; no Painel de controle, "Adicionar ou remover programas") e rodam em janelas da área de trabalho. No Linux, a mesma janela instala os programas do Flathub.
+- Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pela Loja de programas (no alto do menu Iniciar; no Painel de controle, "Adicionar ou remover programas") e rodam em janelas da área de trabalho. A mesma janela tem a loja do computador: o Flathub no Linux, o winget no Windows e o Homebrew no Mac.
 - Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Prompt de comando, DOS e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
 - As janelas se encaixam nas bordas e nos cantos da tela, e os atalhos do Windows (Alt+Tab, a tecla do logotipo com uma letra) funcionam no Retro Computer como sistema.
 - Painel de controle › Segurança mostra num lugar só a senha, o firewall, as atualizações e a privacidade.
@@ -198,9 +198,13 @@ Os Craft são novos (versões 0.x). Eles já abrem e gravam os formatos de escri
 
 Iniciar › Programas › "Programas do computador…" lista os programas instalados no computador principal (os `.desktop` do Linux, o menu Iniciar do Windows, os Aplicativos do macOS). Cada um pode ganhar um atalho na área de trabalho e no menu Iniciar; os de terminal abrem no Prompt de comando.
 
-### Programas do Linux (Flathub)
+### A loja do computador (Flathub, winget e Homebrew)
 
-No Linux, a Loja de programas tem a aba "Programas do Linux": os mais usados e as categorias do Flathub, a pesquisa e a ficha de cada programa (descrição, captura, versão, licença e tamanho). A instalação é só para o usuário (`flatpak --user`), sem senha, e o programa novo entra nos Programas do computador. Sem o Flatpak, a aba explica como instalá-lo.
+A Loja de programas tem uma segunda aba com os programas do próprio computador, só de fontes oficiais: os mais usados, as categorias, a pesquisa, a ficha de cada programa, instalar, atualizar, remover e abrir. O programa novo entra nos Programas do computador.
+
+- **Linux, "Programas do Linux"**: o Flathub, com a descrição, a captura, a versão, a licença e o tamanho. A instalação é só para o usuário (`flatpak --user`), sem senha. Sem o Flatpak, a aba explica como instalá-lo.
+- **Windows, "Programas do Windows"**: o winget (o Gerenciador de Pacotes do Windows, que vem no Windows 10 e no 11), só com a fonte `winget`, o repositório oficial. A ficha vem do manifesto do programa nesse repositório (github.com/microsoft/winget-pkgs), no idioma do Retro Computer quando houver. A instalação é silenciosa; os programas que instalam para todos os usuários pedem a confirmação do Windows. Os escolhidos de cada categoria ficam guardados por um dia na pasta de dados (`loja-winget.json`), porque cada versão é uma pergunta ao winget. "Abrir" usa o atalho do menu Iniciar com o nome do pacote.
+- **Mac, "Programas do Mac"**: o Homebrew (brew.sh), só os aplicativos com janela (os "casks"), com a lista, as descrições e a popularidade da interface oficial (formulae.brew.sh), guardadas por um dia (`loja-brew.json`). Sem o Homebrew, a aba o instala pelo Prompt de comando, com o instalador oficial. Os instaladores `.pkg` pedem a senha do Mac: o Retro Computer oferece continuar pelo Prompt de comando, com o mesmo comando.
 
 ### Programas do Windows (no Linux, pelo WINE)
 

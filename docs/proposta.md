@@ -27,6 +27,7 @@ Retro Computer (Electron)
 │   ├── unidades.js    os pendrives e cartões (lsblk/udisksctl, Win32_LogicalDisk, /Volumes)
 │   ├── aplicativos.js os programas do computador principal (.desktop, menu Iniciar, Aplicativos)
 │   ├── loja.js        os programas do Linux pelo Flathub (flatpak --user)
+│   ├── lojas.js       a mesma loja no Windows (winget) e no Mac (Homebrew)
 │   ├── atualizador.js a atualização do próprio Retro Computer (electron-updater)
 │   ├── bandeja.js     o volume, o brilho e o Wi-Fi do computador
 │   ├── bloqueio.js    a senha da tela de bloqueio (PBKDF2)

@@ -23,6 +23,8 @@ const { Aplicativos, iconeDoArquivo } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
+const { LojaWinget, LojaBrew, LojaWingetFalsa, LojaBrewFalsa } = require('./lojas');
+const { acharPorNome } = require('./aplicativos');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
 const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
@@ -180,7 +182,7 @@ let terminais = null;
 let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
-let loja = null; // os programas do Linux pelo Flathub (loja.js)
+let loja = null; // a loja de programas: o Flathub no Linux (loja.js), o winget no Windows e o Homebrew no Mac (lojas.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let energiaOpcoes = null; // as opções de energia do modo sistema (energia.js)
 let acessLinux = null; // as teclas de aderência e as do mouse do modo sistema (acessibilidade.js)
@@ -1465,7 +1467,7 @@ function registrarPonte() {
     if (!/^https?:\/\//i.test(String(url))) throw new Error(tr('Endereço inválido.'));
     return shell.openExternal(url);
   });
-  // A loja dos programas do Linux (loja.js).
+  // A loja de programas (loja.js e lojas.js).
   tratar('loja:info', () => loja.info());
   tratar('loja:buscar', (o) => loja.buscar(o || {}));
   tratar('loja:detalhes', (id, idioma) => loja.detalhes(String(id), String(idioma || 'en')));
@@ -1622,6 +1624,29 @@ function registrarPonte() {
  * de novo é a própria sessão (o código 75 do sessao.sh): o app.relaunch abriria fora dela, e a
  * sessão terminaria com o código 0.
  */
+/**
+ * A loja de cada sistema: o Flathub no Linux, o winget no Windows e o Homebrew no Mac.
+ * RETRO_LOJA_FALSA=1 é o Flathub de mentira; =winget e =brew, as outras (para as capturas).
+ * Depois de instalar ou remover, a lista dos programas do computador é refeita.
+ */
+function criarLoja() {
+  const falsa = process.env.RETRO_LOJA_FALSA;
+  const qual = falsa === 'winget' ? 'win32' : falsa === 'brew' ? 'darwin' : falsa ? 'linux' : process.platform;
+  const comum = { fetch: (u, o) => net.fetch(u, o), aoInstalar: () => { try { aplicativos.listar(true); } catch { } } };
+  if (qual === 'win32') {
+    // O winget não abre programas: vale o atalho do menu Iniciar com o nome do pacote.
+    const abrirPrograma = async (nome) => {
+      const a = acharPorNome(aplicativos.listar(true), nome);
+      if (!a) return false;
+      await aplicativos.abrir(a.id);
+      return true;
+    };
+    return new (falsa ? LojaWingetFalsa : LojaWinget)({ ...comum, abrirPrograma, pastaDados: app.getPath('userData') });
+  }
+  if (qual === 'darwin') return new (falsa ? LojaBrewFalsa : LojaBrew)({ ...comum, pastaDados: app.getPath('userData') });
+  return new (falsa ? LojaFalsa : Loja)(comum);
+}
+
 function reabrirApp() {
   if (terminais) terminais.fecharTodos();
   if (servidorMcp) servidorMcp.fechar();
@@ -1881,8 +1906,7 @@ app.whenReady().then(async () => {
   };
   powerMonitor.on('suspend', bloquear);
   powerMonitor.on('lock-screen', bloquear);
-  // Depois de instalar ou remover um programa do Linux, a lista dos programas do computador é refeita.
-  loja = new (process.env.RETRO_LOJA_FALSA ? LojaFalsa : Loja)({ fetch: (u, o) => net.fetch(u, o), aoInstalar: () => { try { aplicativos.listar(true); } catch { } } });
+  loja = criarLoja();
   atualizador = new Atualizador({ app, enviar, antesDeSair: () => { terminais.fecharTodos(); if (janela) janela.__podeFechar = true; } });
   if (process.env.RETRO_BANDEJA_FALSA) {
     sistemaBandeja = bandeja.bandejaFalsa();

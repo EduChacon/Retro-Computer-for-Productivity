@@ -1931,35 +1931,52 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('relógio:', await pagina.evaluate(() => document.querySelector('#bandeja .relogio').innerText.replace(/\n/g, ' | ')));
   },
 
-  // A loja dos programas do Linux (com RETRO_LOJA_FALSA=1: o Flathub de verdade, o flatpak de mentira).
+  // A loja de programas. Com RETRO_LOJA_FALSA=1, a do Linux (o Flathub de verdade, o flatpak de mentira);
+  // com =winget, a do Windows (os manifestos de verdade, o winget de mentira); com =brew, a do Mac
+  // (a lista do Homebrew de verdade, o brew de mentira). As fotos levam o nome da loja.
   async loja() {
+    const qual = { winget: 'winget', brew: 'brew' }[process.env.RETRO_LOJA_FALSA] || 'linux';
+    const fotoLoja = (n) => foto(qual === 'linux' ? n : n.replace('loja-', `loja-${qual}-`));
     await fecharTudo();
-    await abrir('programas', { aba: 'linux' });
+    await abrir('programas', { aba: 'loja' });
     await pagina.waitForSelector('.janela.ativa .loja-item', { timeout: 30000 }).catch(() => console.log('a lista não carregou'));
     await pagina.waitForTimeout(2500);
-    await foto('loja-mais-usados');
+    await fotoLoja('loja-mais-usados');
     console.log('itens:', await pagina.locator('.janela.ativa .loja-item').count());
-    await pagina.fill('.janela.ativa .loja-topo input', 'libreoffice');
+    await pagina.fill('.janela.ativa .loja-topo input', qual === 'linux' ? 'libreoffice' : 'firefox');
     await pagina.keyboard.press('Enter');
     await pagina.waitForSelector('.janela.ativa .loja-item.sel', { timeout: 20000 });
     await pagina.waitForSelector('.janela.ativa .ficha-dados', { timeout: 20000 }).catch(() => console.log('a ficha não carregou'));
     await pagina.waitForTimeout(2500);
-    await foto('loja-ficha');
+    await fotoLoja('loja-ficha');
     console.log('ficha:', (await pagina.textContent('.janela.ativa .loja-ficha')).slice(0, 200));
     await pagina.click('.janela.ativa .loja-botoes button >> text=' + T('Instalar'));
     await pagina.waitForTimeout(900);
-    await foto('loja-instalando');
+    await fotoLoja('loja-instalando');
     await pagina.waitForFunction(() => !document.querySelector('.janela.ativa .loja-botoes button[hidden]') === false, null, { timeout: 15000 }).catch(() => { });
     await pagina.waitForTimeout(2500);
     console.log('estado:', await pagina.textContent('.janela.ativa .loja-estado'));
     console.log('no menu:', JSON.stringify(await pagina.evaluate(() => (window.__retro.estado.config.nativos || {}).menu || [])));
     await pagina.selectOption('.janela.ativa .loja-topo select', ':instalados');
     await pagina.waitForTimeout(2500);
-    await foto('loja-instalados');
+    await fotoLoja('loja-instalados');
+    // No Mac, o instalador .pkg pede a senha: o mesmo comando vai para o Prompt.
+    if (qual === 'brew') {
+      await pagina.selectOption('.janela.ativa .loja-topo select', '');
+      await pagina.fill('.janela.ativa .loja-topo input', 'zoom');
+      await pagina.keyboard.press('Enter');
+      await pagina.waitForSelector('.janela.ativa .loja-item.sel[data-id="zoom"]', { timeout: 20000 }).catch(() => console.log('o zoom não apareceu'));
+      await pagina.waitForTimeout(800);
+      await pagina.click('.janela.ativa .loja-botoes button >> text=' + T('Instalar'));
+      await pagina.waitForTimeout(2500);
+      await fotoLoja('loja-senha');
+      await pagina.keyboard.press('Escape');
+      await pagina.waitForTimeout(400);
+    }
     // A primeira aba continua a dos programas do Retro Computer.
     await pagina.click('.janela.ativa .abas > div >> nth=0');
     await pagina.waitForTimeout(500);
-    await foto('loja-aba-retro');
+    await fotoLoja('loja-aba-retro');
   },
 
   // A barra de tarefas: a busca ao lado do Iniciar, os programas fixados e os dois jeitos dos botões.

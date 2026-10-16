@@ -62,6 +62,8 @@ O Firefox (Mozilla, MPL-2.0) também não faz parte do Retro Computer: é o inst
 
 Os programas da aba "Programas do Linux" vêm do [Flathub](https://flathub.org/), cada um com a sua licença (mostrada na ficha do programa); eles são instalados pelo Flatpak do próprio Linux, e os ícones e as capturas da loja são lidos do Flathub na hora, sem fazer parte do Retro Computer.
 
+Os da aba "Programas do Windows" vêm do [winget](https://github.com/microsoft/winget-cli) (o Gerenciador de Pacotes do Windows, que vem no Windows), só da fonte oficial `winget`; as fichas são lidas na hora dos manifestos do repositório [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) (MIT). Os da aba "Programas do Mac" vêm do [Homebrew](https://brew.sh/) (BSD-2-Clause), com a lista e as descrições da interface oficial dele ([formulae.brew.sh](https://formulae.brew.sh/)). Nenhum dos dois faz parte do Retro Computer, e cada programa tem a sua licença e é baixado do site de quem o fez.
+
 Claude e Claude Code são da Anthropic. O Retro Computer só oferece instalar o Claude Code com o instalador oficial.
 
 ## Inspiração

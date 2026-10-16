@@ -898,8 +898,8 @@ body.barra-alta { --altura-barra: 34px; }
 /* As abas de Adicionar ou remover programas (no Linux, a loja). */
 .programas-painel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .programas-painel.com-abas { box-shadow: var(--relevo-janela); padding: 10px; margin-top: -2px; }
-.aba-programas, .aba-linux { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.aba-programas[hidden], .aba-linux[hidden] { display: none; }
+.aba-programas, .aba-loja { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.aba-programas[hidden], .aba-loja[hidden] { display: none; }
 .loja-topo { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
 .loja-topo input { flex: 1; min-width: 0; }
 .loja-topo .select-caixa { width: 160px; }
