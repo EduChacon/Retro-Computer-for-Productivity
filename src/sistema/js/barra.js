@@ -14,6 +14,7 @@ import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './n
 import { alternarCalendario, montarBusca } from './barra-extras.js';
 import { montarBandeja } from './bandeja.js';
 import { bloquear, temSenha } from './bloqueio.js';
+import { usaFirefox as firefoxPadrao } from './apps/navegador.js';
 
 let btIniciar;
 let tarefas;
@@ -322,6 +323,8 @@ async function itensProgramas() {
     { rotulo: tr('Programas do computador…'), icone: 'computador', acao: () => abrir('nativos') },
     { separador: true },
     { rotulo: tr('Navegador'), icone: 'navegador', acao: () => abrir('navegador') },
+    // Com o Firefox como padrão, o Navegador daqui (o dos sites instalados como programas) continua à mão.
+    ...(firefoxPadrao() ? [{ rotulo: tr('Navegador do Retro Computer'), icone: 'internet', acao: () => abrir('navegador', { interno: true }) }] : []),
     { rotulo: tr('E-mail'), icone: 'correio', acao: () => abrir('correio') },
     { rotulo: tr('Claude'), icone: 'claude', acao: () => abrir('claude') },
     { rotulo: tr('Explorador de arquivos'), icone: 'computador', acao: () => abrir('explorador', { pasta: pastaDocs() }) },

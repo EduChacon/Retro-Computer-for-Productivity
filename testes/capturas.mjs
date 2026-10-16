@@ -1429,6 +1429,18 @@ const ROTEIROS = {
   },
 
   // Os programas do Linux na barra de tarefas (com RETRO_JANELAS_FALSAS=1).
+  async firefox() {
+    // O Firefox com o visual do Retro Computer (com RETRO_FIREFOX: o caminho de um Firefox, e no
+    // modo sistema com o openbox): o ícone do Navegador o abre, e a barra o mostra como Navegador.
+    // A tela inteira vem do X (import), porque o Firefox é outra janela.
+    await fecharTudo();
+    await abrir('navegador', { url: 'https://example.com/' });
+    await pagina.waitForTimeout(15000);
+    const tela = path.join(SAIDA, `${String(++n).padStart(2, '0')}-firefox-tela.png`);
+    try { execFileSync('import', ['-window', 'root', tela]); console.log('captura:', tela); } catch (e) { console.log('sem o import:', e.message); }
+    await foto('firefox-barra');
+    console.log('na barra:', JSON.stringify(await pagina.evaluate(() => [...document.querySelectorAll('#tarefas button')].map((b) => b.title))));
+  },
   async janelasLinux() {
     await fecharTudo();
     await abrir('bloco');

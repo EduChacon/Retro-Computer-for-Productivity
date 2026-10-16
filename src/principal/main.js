@@ -37,6 +37,7 @@ const { Tela, TelaFalsa } = require('./tela');
 const { Mouse, MouseFalso, limparEscolhas } = require('./mouse');
 const { Diario } = require('./diario');
 const { CopiaSeguranca, destinoValido, venceu } = require('./copia');
+const { Firefox, CLASSE: CLASSE_FIREFOX } = require('./firefox');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -107,6 +108,7 @@ let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
 let diario = null; // o Diário de trabalho (diario.js)
 let copia = null; // a cópia de segurança do disco C: (copia.js)
+let firefox = null; // o Firefox com o visual do Retro Computer (firefox.js)
 let historico = null; // o histórico da área de transferência (transferencia.js)
 let pararObservar = () => { };
 
@@ -349,12 +351,17 @@ async function baixarDoSite(url, limite, como) {
 }
 const enderecoDaWeb = (url) => /^https?:\/\//i.test(url) || url === 'about:blank';
 
+/** A pasta dos downloads: Meus documentos › Recebidos (o caminho interno). */
+function pastaRecebidos() {
+  const p = config.obter().pastas || idioma.PASTAS[idioma.idioma()];
+  return `${p.documentos}/${p.recebidos || idioma.PASTAS[idioma.idioma()].recebidos}`;
+}
+
 /** Os downloads vão para "Meus documentos/Recebidos" (com um nome livre) e avisam a área de trabalho. */
 function receberDownloads(s) {
   s.on('will-download', (_e, item) => {
     try {
-      const p = config.obter().pastas || idioma.PASTAS[idioma.idioma()];
-      const relPasta = `${p.documentos}/${p.recebidos || idioma.PASTAS[idioma.idioma()].recebidos}`;
+      const relPasta = pastaRecebidos();
       const pasta = disco.real(relPasta);
       fs.mkdirSync(pasta, { recursive: true });
       const nome = item.getFilename() || 'arquivo';
@@ -703,6 +710,16 @@ function registrarPonte() {
     return { pasta, hoje: diario.arquivoDeHoje() };
   });
   tratar('diario:hoje', () => diario.garantirHoje());
+  // O Firefox com o visual do Retro Computer (o navegador padrão quando instalado).
+  tratar('firefox:estado', () => firefox.estado());
+  tratar('firefox:abrir', async (url, o = {}) => {
+    const n = config.obter().navegador || {};
+    const downloads = disco.real(pastaRecebidos());
+    await fsp.mkdir(downloads, { recursive: true }).catch(() => { });
+    const endereco = typeof url === 'string' && enderecoDaWeb(url) ? url : '';
+    const inicio = typeof o.inicio === 'string' && enderecoDaWeb(o.inicio) ? o.inicio : '';
+    return firefox.abrir(endereco, { downloads, soHttps: n.soHttps !== false, limparAoFechar: !!n.limparAoFechar, idioma: idioma.idioma(), inicio, escala: Number(o.escala) || 1 });
+  });
   // A cópia de segurança (Painel › Cópia de segurança).
   tratar('copia:escolher', async () => {
     const r = await dialog.showOpenDialog(janela, { title: tr('Copiar o disco C: para qual pasta?'), properties: ['openDirectory', 'createDirectory'] });
@@ -1092,7 +1109,8 @@ app.whenReady().then(async () => {
   if (MODO_SISTEMA || process.env.RETRO_JANELAS_FALSAS) {
     janelasLinux = new (process.env.RETRO_JANELAS_FALSAS ? JanelasFalsas : JanelasLinux)({
       pidsProprios: () => new Set([process.pid, ...app.getAppMetrics().map((m) => m.pid)]),
-      programaDe: (j) => { try { return aplicativos.idPorJanela(j); } catch { return null; } },
+      // As janelas do Firefox do Retro Computer são as do Navegador (o mesmo botão e o mesmo ícone).
+      programaDe: (j) => { if (j.classe === CLASSE_FIREFOX) return 'retro:navegador'; try { return aplicativos.idPorJanela(j); } catch { return null; } },
       aoMudar: (r) => enviar('janelasLinux:mudou', r),
       // Sem o _NET_WORKAREA, a área da tela do Electron (já sem a barra de tarefas do Openbox).
       areaPadrao: () => { const a = screen.getPrimaryDisplay().workArea; return { x: a.x, y: a.y, w: a.width, h: a.height }; },
@@ -1142,6 +1160,7 @@ app.whenReady().then(async () => {
   historico = new HistoricoTransferencia({ clipboard, parado: () => powerMonitor.getSystemIdleTime(), aoMudar: () => enviar('transferencia:mudou') });
   historico.ligar((config.obter().transferencia || {}).historico !== false);
   copia = new CopiaSeguranca({ origem: () => disco.raiz });
+  firefox = new Firefox({ dados: app.getPath('userData'), fontes: path.join(RAIZ_APP, 'src', 'sistema', 'fontes') });
   agendarCopia();
   diario = new Diario({
     disco: () => disco, pasta: pastaDiario, ligado: () => !!(config.obter().diario || {}).ligado,

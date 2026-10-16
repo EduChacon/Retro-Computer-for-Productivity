@@ -13,7 +13,7 @@ import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparen
 import { tocar } from '../sons.js';
 import { esvaziarLixeira } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
-import { BUSCAS, CORREIOS, paraEndereco } from './navegador.js';
+import { BUSCAS, CORREIOS, paraEndereco, conferirFirefox } from './navegador.js';
 import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
 import { comSenhaAdmin } from '../admin.js';
 import { aplicarLuzNoturna } from '../luz-noturna.js';
@@ -935,18 +935,47 @@ function dialogoInternet() {
   selCorreio.value = n.correio && CORREIOS.some((c) => c.url === n.correio) ? n.correio : '';
   const selBusca = h('select', { style: { width: '100%' } }, ...Object.entries(BUSCAS).map(([k, b]) => h('option', { value: k }, b.nome)));
   selBusca.value = BUSCAS[n.busca] ? n.busca : 'duckduckgo';
-  const rRetro = h('input', { type: 'radio', name: 'links', checked: n.links !== 'principal' });
-  const rPrincipal = h('input', { type: 'radio', name: 'links', checked: n.links === 'principal', disabled: !!estado.config.modoSistema });
+  // O navegador padrão: o Firefox (quando instalado), o daqui ou o do computador principal.
+  const links = n.links || 'auto';
+  const rFirefox = h('input', { type: 'radio', name: 'links', checked: links === 'auto' || links === 'firefox', disabled: true });
+  const rRetro = h('input', { type: 'radio', name: 'links', checked: links === 'retro' });
+  const rPrincipal = h('input', { type: 'radio', name: 'links', checked: links === 'principal', disabled: !!estado.config.modoSistema });
+  const notaFirefox = h('div', { style: { color: '#808080', margin: '2px 0 6px 18px', lineHeight: '13px' } }, tr('Lendo…'));
+  const btFirefox = h('button', { type: 'button', hidden: true });
+  const lerFirefox = async () => {
+    const tem = await conferirFirefox();
+    rFirefox.disabled = !tem;
+    if (!tem && rFirefox.checked) rRetro.checked = true;
+    const linux = estado.config.plataforma === 'linux';
+    notaFirefox.textContent = tem
+      ? tr('O Firefox do computador, com o visual do Retro Computer e um perfil próprio. Ele toca também os vídeos com proteção (Netflix, Prime Video, Disney+, o Spotify na web).')
+      : tr('O Firefox não está instalado neste computador. Sem ele, os vídeos com proteção (Netflix, Prime Video, Disney+) não tocam no Navegador.');
+    btFirefox.hidden = tem;
+    btFirefox.textContent = linux ? tr('Instalar o Firefox') : tr('Baixar o Firefox…');
+  };
+  btFirefox.addEventListener('click', async () => {
+    if (estado.config.plataforma !== 'linux') return retro.sistema.abrirLink('https://www.mozilla.org/firefox/').catch(() => { });
+    btFirefox.disabled = true;
+    notaFirefox.textContent = tr('Instalando o Firefox pelo Flathub… (pode levar alguns minutos)');
+    const r = await retro.loja.instalar('org.mozilla.firefox').catch((e) => ({ ok: false, erro: e.message }));
+    btFirefox.disabled = false;
+    if (r && r.ok === false) erro(tr('Não foi possível instalar o Firefox: {erro}', { erro: r.erro || '?' }));
+    await lerFirefox();
+    if (!rFirefox.disabled) rFirefox.checked = true;
+  });
+  lerFirefox();
   const linha = (rot, campo) => h('div', { style: { display: 'grid', gridTemplateColumns: '110px 1fr', alignItems: 'center', gap: '6px', marginBottom: '6px' } }, h('span', rot), campo);
   const conteudo = h('div',
-    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('navegador', 32), h('div', tr('O Navegador abre páginas da internet em janelas do Retro Computer. O E-mail é o Navegador aberto no seu e-mail da web.'))),
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('navegador', 32), h('div', tr('O navegador padrão abre os links e o ícone do Navegador. O E-mail e os sites instalados como programas abrem sempre no Navegador do Retro Computer.'))),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('E-mail')),
       linha(tr('Serviço:'), h('div.select-caixa', { style: { width: '100%' } }, selCorreio)),
       linha(tr('Ou o endereço:'), outro)),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Pesquisa')),
       linha(tr('Pesquisar com:'), h('div.select-caixa', { style: { width: '100%' } }, selBusca))),
-    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Links dos programas')),
-      h('div', { style: { marginBottom: '4px' } }, h('label', rRetro, h('span', tr('Abrir no Navegador do Retro Computer')))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Navegador padrão')),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, h('label', rFirefox, h('span', tr('Firefox, com o visual do Retro Computer (recomendado)'))), btFirefox),
+      notaFirefox,
+      h('div', { style: { marginBottom: '4px' } }, h('label', rRetro, h('span', tr('Navegador do Retro Computer')))),
       h('div', h('label', rPrincipal, h('span', tr('Abrir no navegador do computador principal'))))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Dados de navegação')),
       h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
@@ -973,7 +1002,7 @@ function dialogoInternet() {
       h('div', h('b', w.nome), h('div.webapp-endereco', w.url)),
       h('button', { on: { click: () => abrir('webapp:' + w.id) } }, tr('Abrir')),
       h('button', { on: { click: async () => { const m = await import('../webapps.js'); if (await m.removerWebapp(w.id)) desenharApps(); } } }, tr('Desinstalar…'))))
-      : [h('div', { style: { padding: '8px' } }, tr('Nenhum site instalado. Para instalar, abra o site no Navegador e use Arquivo › Instalar como programa.'))]));
+      : [h('div', { style: { padding: '8px' } }, tr('Nenhum site instalado. Para instalar, abra o site no Navegador do Retro Computer e use Arquivo › Instalar como programa.'))]));
   };
   desenharApps();
   const conteudoApps = h('div',
@@ -984,7 +1013,7 @@ function dialogoInternet() {
     abas: [{ titulo: tr('Geral'), conteudo }, { titulo: tr('Programas da internet'), conteudo: conteudoApps }],
     aoAplicar: () => {
       const correio = outro.value.trim() ? paraEndereco(outro.value) : (selCorreio.value || null);
-      return definirConfig({ navegador: { correio, busca: selBusca.value, links: rPrincipal.checked ? 'principal' : 'retro' } });
+      return definirConfig({ navegador: { correio, busca: selBusca.value, links: rPrincipal.checked ? 'principal' : rRetro.checked ? 'retro' : 'firefox' } });
     },
   });
 }

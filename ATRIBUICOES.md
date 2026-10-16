@@ -55,6 +55,8 @@ Feitos ponto a ponto em `ferramentas/icones.py`: `computador`, `logo` (o disquet
 
 Os programas Craft (WordCraft, GridCraft, DeckCraft, PdfCraft, PhotoCraft, LightCraft, VectorCraft, FigCraft, DesignCraft, FilmCraft, EffectCraft, SoundCraft, CADCraft) são do ArtCraft Team, licença MIT ou Apache-2.0 (<https://github.com/storytold>). Eles não fazem parte do Retro Computer: cada um é baixado do lançamento oficial, sem modificação, quando o usuário o instala. Os nomes e logotipos são marcas deles.
 
+O Firefox (Mozilla, MPL-2.0) também não faz parte do Retro Computer: é o instalado no computador (ou, no Linux, instalado pelo Flathub a pedido do usuário), aberto sem modificação, com um perfil próprio. O visual da época vem só de um `userChrome.css` escrito pelo Retro Computer nesse perfil, com a fonte Katica do SerenityOS. "Firefox" e o logotipo são marcas da Mozilla Foundation; a barra de tarefas mostra a janela dele com o ícone do Navegador do Retro Computer.
+
 Os programas da aba "Programas do Linux" vêm do [Flathub](https://flathub.org/), cada um com a sua licença (mostrada na ficha do programa); eles são instalados pelo Flatpak do próprio Linux, e os ícones e as capturas da loja são lidos do Flathub na hora, sem fazer parte do Retro Computer.
 
 Claude e Claude Code são da Anthropic. O Retro Computer só oferece instalar o Claude Code com o instalador oficial.

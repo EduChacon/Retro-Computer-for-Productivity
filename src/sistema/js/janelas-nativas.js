@@ -29,8 +29,9 @@ export function janelasNativas() {
     nativa: true,
     id: j.id,
     titulo: j.titulo,
-    icone: 'programa',
-    programa: j.programa ? 'nativo:' + j.programa : null,
+    // As do Firefox do Retro Computer são do Navegador (o mesmo ícone e o mesmo botão fixado).
+    icone: j.programa === 'retro:navegador' ? 'navegador' : 'programa',
+    programa: j.programa === 'retro:navegador' ? 'navegador' : j.programa ? 'nativo:' + j.programa : null,
     ativa: !!j.ativa,
     minimizada: false,
     maximizada: false,

@@ -198,35 +198,41 @@ const TOPICOS = [
   {
     id: 'internet', icone: 'navegador',
     'pt-BR': ['Navegador e e-mail', `
-<h2>O Navegador</h2>
+<h2>O Firefox, o navegador padrão</h2>
+<p>Com o Firefox instalado no computador, o ícone <b>Navegador</b> e os links dos programas abrem nele, com o visual do Retro Computer (o cinza, as abas retas, a fonte da época) e um perfil próprio: os downloads vão para <b>Meus documentos › Recebidos</b>, e as escolhas de Painel de controle › Segurança valem também para ele. Ele toca os vídeos com proteção (Netflix, Prime Video, Disney+, o Spotify na web). Para escolher outro, use Painel de controle › Internet; no Linux sem o Firefox, o mesmo lugar o instala.</p>
+<h2>O Navegador do Retro Computer</h2>
 <p>Abre os sites em janelas do Retro Computer, com favoritos, pesquisa, zoom, Localizar e Imprimir. Os downloads vão para <b>Meus documentos › Recebidos</b>. A câmera, o microfone, a localização e as notificações de cada site pedem a sua permissão; para esquecer as respostas, use Painel de controle › Internet.</p>
 <p>Os endereços <b>http://</b> abrem na versão segura (https://). O site que não a tiver mostra um aviso, com a escolha de abri-lo assim mesmo; os aparelhos da rede de casa (o roteador, a impressora) ficam de fora. Para desligar: Painel de controle › Segurança › Privacidade.</p>
 <h2>Vídeos e músicas</h2>
-<p>Os sites de vídeo e de música comuns, como o YouTube, funcionam. Os serviços com proteção contra cópia (Netflix, Prime Video, Disney+ e o Spotify na web) não tocam no Navegador: use para eles o navegador do computador principal (no Linux, o Firefox ou o Chrome da aba Programas do Linux).</p>
+<p>Os sites de vídeo e de música comuns, como o YouTube, funcionam nos dois. Os serviços com proteção contra cópia (Netflix, Prime Video, Disney+ e o Spotify na web) tocam só no Firefox.</p>
 <h2>O e-mail</h2>
 <p>O <b>E-mail</b> abre o seu e-mail da web (escolhido na primeira vez) numa janela própria. Para trocar, use Painel de controle › Internet.</p>
 <h2>Sites como programas</h2>
-<p>No Navegador, <b>Arquivo › Instalar como programa</b> transforma o site aberto num programa: ele ganha ícone, janela própria (sem a barra de endereço) e lugar no menu Iniciar, na área de trabalho e, se você quiser, na barra de tarefas. Para desinstalar, use o menu <b>Página</b> da janela dele ou Painel de controle › Internet › <b>Programas da internet</b>.</p>`],
+<p>No Navegador do Retro Computer (Iniciar › Programas, quando o Firefox é o padrão), <b>Arquivo › Instalar como programa</b> transforma o site aberto num programa: ele ganha ícone, janela própria (sem a barra de endereço) e lugar no menu Iniciar, na área de trabalho e, se você quiser, na barra de tarefas. Para desinstalar, use o menu <b>Página</b> da janela dele ou Painel de controle › Internet › <b>Programas da internet</b>.</p>`],
     en: ['Browser and e-mail', `
-<h2>The Browser</h2>
+<h2>Firefox, the default browser</h2>
+<p>With Firefox installed on the computer, the <b>Browser</b> icon and the programs' links open in it, with Retro Computer's look (the gray, the straight tabs, the period font) and a profile of its own: downloads go to <b>Documents › Received</b>, and the choices in Control Panel › Security also apply to it. It plays protected videos (Netflix, Prime Video, Disney+, Spotify on the web). To choose another one, use Control Panel › Internet; on Linux without Firefox, the same place installs it.</p>
+<h2>Retro Computer's Browser</h2>
 <p>It opens websites in Retro Computer windows, with favorites, search, zoom, Find and Print. Downloads go to <b>Documents › Received</b>. Each site's access to the camera, the microphone, the location and notifications asks for your permission; to forget the answers, use Control Panel › Internet.</p>
 <p><b>http://</b> addresses open in the secure version (https://). A site without one shows a warning, with the choice to open it anyway; the devices on the home network (the router, the printer) are left out. To turn this off: Control Panel › Security › Privacy.</p>
 <h2>Videos and music</h2>
-<p>The usual video and music sites, such as YouTube, work. Services with copy protection (Netflix, Prime Video, Disney+ and Spotify on the web) do not play in the Browser: for them, use the main computer's browser (on Linux, Firefox or Chrome from the Linux programs tab).</p>
+<p>The usual video and music sites, such as YouTube, work in both. Services with copy protection (Netflix, Prime Video, Disney+ and Spotify on the web) play only in Firefox.</p>
 <h2>E-mail</h2>
 <p><b>E-mail</b> opens your web e-mail (chosen the first time) in a window of its own. To change it, use Control Panel › Internet.</p>
 <h2>Sites as programs</h2>
-<p>In the Browser, <b>File › Install as Program</b> turns the open site into a program: it gets an icon, its own window (without the address bar) and a place in the Start menu, on the desktop and, if you want, on the taskbar. To uninstall it, use the <b>Page</b> menu of its window or Control Panel › Internet › <b>Internet programs</b>.</p>`],
+<p>In Retro Computer's Browser (Start › Programs, when Firefox is the default), <b>File › Install as Program</b> turns the open site into a program: it gets an icon, its own window (without the address bar) and a place in the Start menu, on the desktop and, if you want, on the taskbar. To uninstall it, use the <b>Page</b> menu of its window or Control Panel › Internet › <b>Internet programs</b>.</p>`],
     es: ['Navegador y correo', `
-<h2>El Navegador</h2>
+<h2>Firefox, el navegador predeterminado</h2>
+<p>Con Firefox instalado en la computadora, el icono <b>Navegador</b> y los enlaces de los programas se abren en él, con el aspecto de Retro Computer (el gris, las pestañas rectas, la fuente de la época) y un perfil propio: las descargas van a <b>Mis documentos › Recibidos</b>, y las opciones de Panel de control › Seguridad también valen para él. Reproduce los videos protegidos (Netflix, Prime Video, Disney+, Spotify en la web). Para elegir otro, usa Panel de control › Internet; en Linux sin Firefox, el mismo lugar lo instala.</p>
+<h2>El Navegador de Retro Computer</h2>
 <p>Abre los sitios en ventanas de Retro Computer, con favoritos, búsqueda, zoom, Buscar e Imprimir. Las descargas van a <b>Mis documentos › Recibidos</b>. La cámara, el micrófono, la ubicación y las notificaciones de cada sitio piden tu permiso; para olvidar las respuestas, usa Panel de control › Internet.</p>
 <p>Las direcciones <b>http://</b> se abren en la versión segura (https://). El sitio que no la tenga muestra un aviso, con la opción de abrirlo de todos modos; los aparatos de la red de casa (el router, la impresora) quedan fuera. Para desactivarlo: Panel de control › Seguridad › Privacidad.</p>
 <h2>Videos y música</h2>
-<p>Los sitios de video y de música comunes, como YouTube, funcionan. Los servicios con protección contra copia (Netflix, Prime Video, Disney+ y Spotify en la web) no se reproducen en el Navegador: para ellos, usa el navegador de la computadora principal (en Linux, Firefox o Chrome de la pestaña Programas de Linux).</p>
+<p>Los sitios de video y de música comunes, como YouTube, funcionan en los dos. Los servicios con protección contra copia (Netflix, Prime Video, Disney+ y Spotify en la web) se reproducen solo en Firefox.</p>
 <h2>El correo</h2>
 <p>El <b>Correo</b> abre tu correo de la web (elegido la primera vez) en una ventana propia. Para cambiarlo, usa Panel de control › Internet.</p>
 <h2>Sitios como programas</h2>
-<p>En el Navegador, <b>Archivo › Instalar como programa</b> convierte el sitio abierto en un programa: recibe un icono, ventana propia (sin la barra de dirección) y lugar en el menú Inicio, en el escritorio y, si quieres, en la barra de tareas. Para desinstalarlo, usa el menú <b>Página</b> de su ventana o Panel de control › Internet › <b>Programas de internet</b>.</p>`],
+<p>En el Navegador de Retro Computer (Inicio › Programas, cuando Firefox es el predeterminado), <b>Archivo › Instalar como programa</b> convierte el sitio abierto en un programa: recibe un icono, ventana propia (sin la barra de dirección) y lugar en el menú Inicio, en el escritorio y, si quieres, en la barra de tareas. Para desinstalarlo, usa el menú <b>Página</b> de su ventana o Panel de control › Internet › <b>Programas de internet</b>.</p>`],
   },
   {
     id: 'acessorios', icone: 'pasta-programas',

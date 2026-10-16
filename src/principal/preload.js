@@ -67,6 +67,11 @@ contextBridge.exposeInMainWorld('retro', {
     definir: (saida, modo) => chamar('tela:definir', saida, modo),
     luzNoturna: (k) => chamar('tela:luzNoturna', k),
   },
+  // O Firefox com o visual do Retro Computer.
+  firefox: {
+    estado: () => chamar('firefox:estado'),
+    abrir: (url, o) => chamar('firefox:abrir', url, o),
+  },
   // A cópia de segurança do disco C:.
   copia: {
     escolher: () => chamar('copia:escolher'),

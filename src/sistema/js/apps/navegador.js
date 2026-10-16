@@ -139,6 +139,7 @@ class Navegador {
           { rotulo: tr('&Nova janela'), atalho: 'Ctrl+N', acao: () => abrirNavegador() },
           { rotulo: tr('&Abrir endereço…'), atalho: 'Ctrl+L', acao: () => this.focarEndereco() },
           { rotulo: tr('Instalar como &programa…'), desativado: !this.visivel(), acao: () => this.instalarComoPrograma() },
+          ...(firefoxInstalado ? [{ rotulo: tr('Abrir no Fi&refox'), desativado: !this.visivel(), acao: () => abrirNoFirefox(this.url) }] : []),
           { separador: true },
           { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.visivel(), acao: () => this.wv.print().catch(() => { }) },
           { separador: true },
@@ -627,7 +628,43 @@ export async function abrirCorreio() {
   return new Navegador({ url, correio: true });
 }
 
-registrarApp('navegador', { nome: 'Navegador', icone: 'navegador', abrir: (args = {}) => (args.reaproveitar ? abrirEndereco(args.url) : abrirNavegador(args)) });
+/* ---------- O Firefox como navegador padrão ---------- */
+
+// O Firefox do computador, aberto com o visual do Retro Computer (firefox.js do processo principal):
+// o padrão quando instalado (Painel › Internet), porque toca os vídeos com proteção. O Navegador
+// daqui continua para os sites instalados como programas, o E-mail e quando não há Firefox.
+let firefoxInstalado = false;
+export async function conferirFirefox() {
+  firefoxInstalado = !!(await retro.firefox.estado().catch(() => ({}))).instalado;
+  return firefoxInstalado;
+}
+conferirFirefox();
+
+/** Os links e o ícone do Navegador vão para o Firefox? ('auto': quando ele existe) */
+export function usaFirefox() {
+  const l = cfg().links || 'auto';
+  return firefoxInstalado && (l === 'auto' || l === 'firefox');
+}
+
+/** A página inicial do Firefox: a do serviço de pesquisa escolhido. */
+const inicioFirefox = () => { try { return new URL(busca().url).origin + '/'; } catch { return ''; } };
+
+export async function abrirNoFirefox(url = '') {
+  const escala = Math.round(zoomInterface() * (window.devicePixelRatio || 1));
+  const r = await retro.firefox.abrir(url, { inicio: inicioFirefox(), escala }).catch(() => null);
+  if (r && r.ok) return true;
+  if (r && r.erro === 'semFirefox') firefoxInstalado = false;
+  return false;
+}
+
+registrarApp('navegador', {
+  nome: 'Navegador', icone: 'navegador',
+  abrir: async (args = {}) => {
+    // "interno": o Navegador daqui de propósito (Iniciar › Internet › Navegador do Retro Computer).
+    if (!args.interno && usaFirefox() && await abrirNoFirefox(args.url || '')) return null;
+    return args.reaproveitar ? abrirEndereco(args.url) : abrirNavegador(args);
+  },
+});
 registrarApp('correio', { nome: 'E-mail', icone: 'correio', abrir: () => abrirCorreio() });
 
 // As janelas novas pedidas pelas páginas (window.open, links com target).
