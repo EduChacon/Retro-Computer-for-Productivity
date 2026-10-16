@@ -61,6 +61,9 @@ let zoomAtual = 1;
 /** O zoom da área de trabalho (pixels da interface por pixel da tela, sobre a escala do monitor). */
 export const zoomInterface = () => zoomAtual;
 
+// Os tamanhos dos pixels do Painel › Aparência: os inteiros e os do meio, entre eles.
+export const ESCALAS = [1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
+
 // A menor área que a interface precisa (as caixas do Painel e as janelas cabem nela).
 const AREA_MINIMA = { w: 1024, h: 720 };
 

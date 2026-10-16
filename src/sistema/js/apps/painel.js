@@ -9,7 +9,7 @@ import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco, programasPara } from '../sistema.js';
 import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada } from '../dialogos.js';
 import { deslizante } from '../controles.js';
-import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparencia.js';
+import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS } from '../aparencia.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
@@ -277,8 +277,25 @@ function dialogoAparencia() {
 
   const radioCheia = h('input', { type: 'radio', name: 'modo-tela', checked: telaCheia });
   const radioJanela = h('input', { type: 'radio', name: 'modo-tela', checked: !telaCheia });
-  const selEscala = h('select', h('option', { value: 'auto' }, tr('Automático')), h('option', { value: '1' }, tr('1 × (pequeno)')), h('option', { value: '2' }, tr('2 × (grande)')), h('option', { value: '3' }, tr('3 × (muito grande)')));
+  // Os tamanhos dos pixels: os inteiros (as letras mais nítidas) e os do meio, entre eles. Cada um
+  // mostra a área que a tela fica tendo (os pixels do monitor divididos pelo tamanho).
+  const numero = (n) => n.toLocaleString(localidade(), { maximumFractionDigits: 2 });
+  const rotuloEscala = (n, tela) => (tela && tela.w && tela.h
+    ? tr('{n} × (área de {l} por {a})', { n: numero(n), l: Math.floor(tela.w / n), a: Math.floor(tela.h / n) })
+    : tr('{n} ×', { n: numero(n) }));
+  const opcoesEscala = ESCALAS.map((n) => h('option', { value: String(n) }, rotuloEscala(n)));
+  const opcaoAuto = h('option', { value: 'auto' }, tr('Automático'));
+  const selEscala = h('select', opcaoAuto, ...opcoesEscala);
+  // Um tamanho guardado que não está na lista (de outra versão ou do Claude) continua escolhível.
+  if (escala !== 'auto' && !ESCALAS.includes(Number(escala)) && Number(escala) > 0) selEscala.append(h('option', { value: String(escala) }, rotuloEscala(Number(escala))));
   selEscala.value = String(escala);
+  retro.sistema.telaFisica().then((tela) => {
+    if (!tela) return;
+    for (const o of selEscala.options) {
+      if (o.value === 'auto') o.textContent = tr('Automático ({n} ×)', { n: numero(pixelsAutomaticos(tela)) });
+      else o.textContent = rotuloEscala(Number(o.value), tela);
+    }
+  }).catch(() => { });
   const chkRapido = h('input', { type: 'checkbox', checked: !!c.inicioRapido });
   // A área da tela (a resolução), como no Windows 95: só no Retro Computer como sistema do Linux.
   const res = { saida: null, antes: null, modos: [], escolhido: null };
@@ -335,7 +352,7 @@ function dialogoAparencia() {
       areaTela, varias.el),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tamanho dos pixels')),
       h('div.linha', h('div.select-caixa', { style: { flex: '1' } }, selEscala)),
-      h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Cada pixel da interface usa um número inteiro de pixels da tela, para as letras e os ícones ficarem nítidos.'))),
+      h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Nos tamanhos inteiros (1, 2, 3 e 4), cada pixel da interface usa um número inteiro de pixels da tela, e as letras e os ícones ficam mais nítidos; os do meio dão um tamanho entre eles.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Inicialização')),
       h('label', chkRapido, h('span', tr('Pular a tela de abertura'))),
       inicioComComputador()),

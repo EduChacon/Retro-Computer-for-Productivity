@@ -14,6 +14,7 @@ import { registrarApp, estado, definirConfig, avisar, eventos, abrir } from '../
 import { entrada, confirmar, mensagem, ajustarAoConteudo } from '../dialogos.js';
 import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
+import { reorganizavel, arrastando } from '../reorganizar.js';
 
 const SESSAO = 'persist:navegador';
 
@@ -188,7 +189,7 @@ class Navegador {
       status: [tr('Pronto'), ''],
     });
     abertos.add(this);
-    this.j.ev.on('fechada', () => abertos.delete(this));
+    this.j.ev.on('fechada', () => { abertos.delete(this); if (this.cheia) this.sairTelaCheia(this.cheia); });
     // Os botões laterais do mouse sobre a moldura (sobre a página, quem avisa é o navegador-preload.js).
     this.j.el.addEventListener('mouseup', (e) => {
       if (e.button === 3) { e.preventDefault(); this.voltar(); }
@@ -598,13 +599,39 @@ class Navegador {
     });
     wv.addEventListener('context-menu', (e) => this.menuDaPagina(e.params));
     // Um site em tela cheia: o aviso de como sair, por cima dele (senão ele poderia imitar a tela de bloqueio).
-    wv.addEventListener('enter-html-full-screen', () => avisoTelaCheia());
+    wv.addEventListener('enter-html-full-screen', () => { avisoTelaCheia(); this.entrarTelaCheia(wv); });
+    wv.addEventListener('leave-html-full-screen', () => this.sairTelaCheia(wv));
     wv.addEventListener('ipc-message', (e) => { if (e.channel === 'navegador') this.acao(aba, ...e.args); });
     wv.addEventListener('found-in-page', (e) => {
       const r = e.result || {};
       if (r.finalUpdate && daFrente()) this.j.definirStatus([r.matches ? tr('{n} de {total}', { n: r.activeMatchOrdinal, total: r.matches }) : tr('Não foi possível localizar "{texto}".', { texto: aba.busca }), this.textoZoom()]);
     });
     aba.el.append(wv);
+  }
+
+  /**
+   * A tela cheia de um site. A da página inteira o Chromium já faz (o webview vai para a camada de
+   * cima da tela). A de um quadro de outro site dentro da página (o vídeo do Vimeo numa página de
+   * curso) ele não faz: o quadro só enche o webview. Aí o webview vai sozinho para a camada de cima
+   * (como um popover), cobrindo a tela inteira, e a janela do Retro Computer fica em tela cheia.
+   */
+  entrarTelaCheia(wv) {
+    setTimeout(() => {
+      if (!wv.isConnected || document.fullscreenElement === wv || this.cheia === wv) return;
+      this.cheia = wv;
+      wv.classList.add('nav-tela-cheia');
+      try { wv.popover = 'manual'; wv.showPopover(); } catch { }
+      retro.navegador.telaCheia(true).catch(() => { });
+    }, 150);
+  }
+
+  sairTelaCheia(wv) {
+    if (this.cheia !== wv) return;
+    this.cheia = null;
+    try { wv.hidePopover(); } catch { }
+    wv.removeAttribute('popover');
+    wv.classList.remove('nav-tela-cheia');
+    retro.navegador.telaCheia(false).catch(() => { });
   }
 
   definirCarregando(v, aba = this.aba) {
@@ -892,6 +919,8 @@ class Navegador {
   }
 
   desenharLinks() {
+    // No meio de um arrasto, a barra só é refeita depois de soltar (o botão arrastado sumiria).
+    if (arrastando()) { this.linksDepois = true; return; }
     const lista = favoritos();
     this.links.replaceChildren(...(lista.length ? lista.map((f, i) => {
       const el = h('button.ferramenta.nav-link', { type: 'button', title: `${f.nome}\n${f.url}` }, imgFavorito(f), h('span', f.nome));
@@ -901,10 +930,22 @@ class Navegador {
       el.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
       el.addEventListener('contextmenu', (e) => { e.preventDefault(); this.menuFavorito(f, i, e); });
       el.dataset.i = i;
+      // Arrastar muda a ordem (os que estão no », por não caberem, continuam no fim).
+      reorganizavel(el, this.links, (bs) => this.reordenarFavoritos(bs.map((b) => Number(b.dataset.i))), {
+        depois: () => { if (this.linksDepois) { this.linksDepois = false; this.desenharLinks(); } },
+      });
       return el;
     }) : [h('span.nav-links-vazio', tr('Para pôr uma página aqui, clique na estrela do endereço.'))]));
     completarIcones();
     this.ajustarLinks();
+  }
+
+  /** A ordem nova dos favoritos, pelos índices dos botões à vista; os do » ficam no fim, na ordem deles. */
+  reordenarFavoritos(ordem) {
+    const lista = favoritos();
+    const nova = [...ordem, ...lista.map((_, i) => i).filter((i) => !ordem.includes(i))].map((i) => lista[i]).filter(Boolean);
+    if (nova.length !== lista.length || nova.every((f, i) => f === lista[i])) return this.desenharLinks();
+    salvarFavoritos(nova).catch(() => this.desenharLinks());
   }
 
   /** Os favoritos que não cabem na barra vão para o » (como nos navegadores). */

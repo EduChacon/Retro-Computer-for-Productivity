@@ -813,6 +813,119 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   // A troca de jeito no login do Google (precisa da internet): a recusa do Google é imitada no
   // processo principal (o did-navigate da página de recusa), e o Navegador passa do Firefox para o
   // Chrome, recomeça o login e, recusado de novo, sugere o Firefox de verdade.
+  // A tela cheia de um site (a página inteira e o vídeo de dentro de um quadro de outro site, como o
+  // Vimeo numa página de curso) e a aba nova logo que abre.
+  async telaCheiaSite() {
+    const quadro = '<!doctype html><meta charset="utf-8"><body style="margin:0;background:#123"><div id="v" style="width:100%;height:100%;background:linear-gradient(90deg,#c33,#33c);color:#fff;font:40px sans-serif;display:flex;align-items:center;justify-content:center">VÍDEO</div>';
+    const pagina1 = (porta) => `<!doctype html><meta charset="utf-8"><title>Curso</title><body style="margin:0;font:16px sans-serif"><h1>Aula</h1><iframe id="q" src="http://localhost:${porta}/quadro" allow="fullscreen" allowfullscreen style="width:640px;height:360px;border:0"></iframe>`;
+    const servidor = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(req.url.startsWith('/quadro') ? quadro : pagina1(servidor.address().port));
+    });
+    await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+    const porta = servidor.address().port;
+    await fecharTudo();
+    await abrir('navegador', { url: `http://127.0.0.1:${porta}/`, interno: true });
+    await pagina.waitForTimeout(3000);
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const medir = (rotulo) => pagina.evaluate(([s, r]) => {
+      const w = document.querySelector(s);
+      const b = w && w.getBoundingClientRect();
+      return `${r}: webview ${b ? [b.x, b.y, b.width, b.height].map(Math.round).join(',') : '-'} | janela ${innerWidth}x${innerHeight} | tela cheia: ${document.fullscreenElement ? document.fullscreenElement.tagName : 'não'}`;
+    }, [wv, rotulo]);
+    console.log(await medir('antes'));
+    // 1) A página inteira em tela cheia.
+    await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('document.documentElement.requestFullscreen().then(() => "ok", (e) => String(e))', true), wv).then((r) => console.log('página:', r));
+    await pagina.waitForTimeout(1500);
+    console.log(await medir('página em tela cheia'));
+    await foto('tela-cheia-pagina');
+    await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('document.exitFullscreen()', true), wv).catch(() => { });
+    await pagina.waitForTimeout(1200);
+    // 2) O vídeo de dentro do quadro de outro site.
+    const r2 = await app.evaluate(async ({ webContents }) => {
+      const g = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && /127\.0\.0\.1/.test(w.getURL()));
+      if (!g) return 'sem a página';
+      const f = g.mainFrame.frames.find((x) => /\/quadro/.test(x.url));
+      if (!f) return 'sem o quadro';
+      return f.executeJavaScript('document.getElementById("v").requestFullscreen().then(() => "ok", (e) => String(e))', true);
+    });
+    console.log('quadro:', r2);
+    await pagina.waitForTimeout(1500);
+    console.log(await medir('quadro em tela cheia'), '| camada de cima:', await pagina.evaluate((s) => document.querySelector(s).matches(':popover-open'), wv));
+    await foto('tela-cheia-quadro');
+    // O Esc, na página (o teclado vai para ela), sai da tela cheia.
+    await app.evaluate(({ webContents }) => {
+      const g = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && /127\.0\.0\.1/.test(w.getURL()));
+      g.focus();
+      g.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      g.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+    });
+    await pagina.waitForTimeout(1500);
+    console.log(await medir('depois do Esc'), '| camada de cima:', await pagina.evaluate((s) => document.querySelector(s).matches(':popover-open'), wv));
+    await app.evaluate(async ({ webContents }) => {
+      const g = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && /127\.0\.0\.1/.test(w.getURL()));
+      const f = g && g.mainFrame.frames.find((x) => /\/quadro/.test(x.url));
+      if (f) await f.executeJavaScript('document.fullscreenElement && document.exitFullscreen()', true);
+    }).catch(() => { });
+    await pagina.waitForTimeout(1200);
+    await foto('tela-cheia-saiu');
+    // 3) A aba nova, logo que abre (o endereço ainda carregando).
+    await pagina.click('.janela.ativa .nav-aba-nova');
+    await pagina.waitForTimeout(300);
+    await pagina.fill('.janela.ativa .nav-endereco', `http://127.0.0.1:${porta}/devagar`);
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(150);
+    await foto('aba-nova-carregando');
+    await pagina.waitForTimeout(2500);
+    await foto('aba-nova-pronta');
+    servidor.close();
+  },
+
+  // A aba nova por cada caminho (o +, o link com target, o window.open, o favorito com o botão do
+  // meio, o Navegador aberto de fora) com os pixels em 2, como no Windows a 150%.
+  async abaNova() {
+    const servidor = http.createServer((req, res) => {
+      const pagina = (corpo) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(corpo); };
+      if (req.url.startsWith('/devagar')) return setTimeout(() => pagina('<!doctype html><title>Devagar</title><h1>Devagar</h1>'), 4000);
+      pagina(`<!doctype html><title>Início</title><a id="l" href="/devagar?alvo" target="_blank">abrir em outra aba</a><br><button id="b" onclick="window.open('/devagar?janela')">window.open</button>`);
+    });
+    await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+    const base = `http://127.0.0.1:${servidor.address().port}`;
+    await pagina.evaluate(() => retro.sistema.zoom(2));
+    await fecharTudo();
+    await abrir('navegador', { url: base + '/', interno: true });
+    await pagina.waitForTimeout(2500);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 0, y: 0, w: 500, h: 320 }; j.aplicarRet(); });
+    await pagina.waitForTimeout(500);
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const abas = () => pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .nav-aba')].map((a) => {
+      const r = a.getBoundingClientRect(); const i = a.querySelector('.nav-aba-icone').getBoundingClientRect(); const f = a.querySelector('.nav-aba-fechar').getBoundingClientRect();
+      return `[aba ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)} ícone ${Math.round(i.x)},${Math.round(i.y)} fechar ${Math.round(f.x)},${Math.round(f.y)} "${a.querySelector('.nav-aba-nome').textContent}"]`;
+    }).join(' ') + ' | rolagem ' + [...document.querySelectorAll('.janela.ativa *')].filter((e) => e.scrollTop || e.scrollLeft).map((e) => e.className + ':' + e.scrollLeft + ',' + e.scrollTop).join(';'));
+    // 1) O link com target="_blank".
+    await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('document.getElementById("l").click()', true), wv);
+    await pagina.waitForTimeout(400);
+    console.log('1) link:', await abas());
+    await foto('aba-nova-link');
+    // 2) O window.open.
+    await pagina.evaluate(() => { const n = window.__retro.janelas.janelaAtiva().navegador; if (n) n.escolherAba(n.abas[0]); });
+    await pagina.waitForTimeout(300);
+    await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('document.getElementById("b").click()', true), wv).catch(() => { });
+    await pagina.waitForTimeout(400);
+    console.log('2) window.open:', await abas());
+    await foto('aba-nova-janela');
+    // 3) O Navegador aberto de fora (um link de outro programa).
+    await pagina.evaluate((u) => import('./js/sistema.js').then((s) => s.abrirEndereco(u)), base + '/devagar?fora').catch((e) => console.log('fora:', e.message));
+    await pagina.waitForTimeout(400);
+    console.log('3) de fora:', await abas());
+    await foto('aba-nova-fora');
+    await pagina.waitForTimeout(4500);
+    console.log('depois de carregar:', await abas());
+    await foto('aba-nova-carregada');
+    await pagina.evaluate(() => retro.sistema.zoom(1));
+    servidor.close();
+  },
+
   async loginTroca() {
     await fecharTudo();
     await pagina.evaluate(() => retro.config.definir({ navegador: { loginGoogle: 'firefox' } }));
@@ -2173,6 +2286,58 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.waitForTimeout(400);
     console.log('clique simples:', await estados());
     await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'nomes' } }));
+  },
+
+  // Arrastar para reorganizar a barra de favoritos do Navegador: a ordem fica guardada, e o clique de
+  // soltar não abre o favorito.
+  async reorganizarFavoritos() {
+    await fecharTudo();
+    await pagina.evaluate(() => retro.config.definir({ navegador: { favoritos: [
+      { nome: 'Gmail', url: 'https://mail.google.com/' }, { nome: 'Wikipédia', url: 'https://pt.wikipedia.org/' },
+      { nome: 'YouTube', url: 'https://www.youtube.com/' }, { nome: 'FMB', url: 'https://cursos.cursofmbonline.com.br/' },
+    ] } }));
+    await pagina.evaluate(async () => { const s = await import('./js/sistema.js'); await s.definirConfig({}); });
+    await abrir('navegador');
+    await pagina.waitForTimeout(1500);
+    const nomes = () => pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .nav-link span')].map((s) => s.textContent).join(', '));
+    const guardados = () => pagina.evaluate(() => window.__retro.estado.config.navegador.favoritos.map((f) => f.nome).join(', '));
+    const arrastar = async (de, ateX, foto1) => {
+      const r = await pagina.locator(de).boundingBox();
+      await pagina.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+      await pagina.mouse.down();
+      for (let i = 1; i <= 12; i++) { await pagina.mouse.move(r.x + r.width / 2 + ((ateX - (r.x + r.width / 2)) * i) / 12, r.y + r.height / 2); await pagina.waitForTimeout(30); }
+      if (foto1) await foto(foto1);
+      await pagina.mouse.up();
+      await pagina.waitForTimeout(800);
+    };
+    console.log('antes:', await nomes());
+    const primeiro = await pagina.locator('.janela.ativa .nav-link >> nth=0').boundingBox();
+    await arrastar('.janela.ativa .nav-link >> nth=3', primeiro.x + 2, 'favoritos-arrastando');
+    console.log('depois:', await nomes(), '| guardados:', await guardados(), '| abriu algo:', await pagina.evaluate(() => { const n = document.querySelector('.janela.ativa .nav-endereco'); return n ? n.value || '(nada)' : '?'; }));
+    const ultimo = await pagina.locator('.janela.ativa .nav-link >> nth=-1').boundingBox();
+    await arrastar('.janela.ativa .nav-link >> nth=1', ultimo.x + ultimo.width - 2);
+    console.log('de novo:', await nomes(), '| guardados:', await guardados());
+    await foto('favoritos-reorganizados');
+  },
+
+  // Os tamanhos dos pixels do Painel › Aparência › Configurações (os inteiros e os do meio, com a área de cada um).
+  async pixels() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(600);
+    await pagina.click('.janela.ativa .abas > div >> nth=4');
+    await pagina.waitForTimeout(800);
+    console.log('opções:', await pagina.evaluate(() => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === 'auto')); return [...s.options].map((o) => o.textContent).join(' | '); }));
+    await foto('pixels');
+    // Escolher o 1,5 e aplicar: o zoom da tela segue.
+    await pagina.evaluate(() => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === 'auto')); s.value = '1.5'; s.dispatchEvent(new Event('change')); });
+    await pagina.click('.janela.ativa button >> text=' + T('Aplicar'));
+    await pagina.waitForTimeout(1200);
+    console.log('guardado:', await pagina.evaluate(() => window.__retro.estado.config.escala), '| área:', await pagina.evaluate(() => `${innerWidth} x ${innerHeight}`));
+    await foto('pixels-1-5');
+    await pagina.evaluate(() => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === 'auto')); s.value = 'auto'; s.dispatchEvent(new Event('change')); });
+    await pagina.click('.janela.ativa button >> text=' + T('Aplicar'));
+    await pagina.waitForTimeout(800);
   },
 
   // O modo sistema (com RETRO_SISTEMA=1 e RETRO_ENERGIA_FALSA=1: a energia só é anotada, nunca desliga).

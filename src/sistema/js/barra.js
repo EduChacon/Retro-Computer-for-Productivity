@@ -17,6 +17,7 @@ import { bloquear, temSenha } from './bloqueio.js';
 import { variosPerfis, perfilAtual, nomeDoPerfil } from './perfis.js';
 import { usaFirefox as firefoxPadrao } from './apps/navegador.js';
 import { naMesa, adicionarAtalho, removerAtalho } from './mesa.js';
+import { reorganizavel as reorganizavelFaixa, arrastando } from './reorganizar.js';
 
 let btIniciar;
 let tarefas;
@@ -239,8 +240,6 @@ async function fecharTodas(js) {
  * fixados fica guardada (barra.fixados); a das janelas e a dos programas abertos que não estão
  * fixados vale até o Retro Computer fechar.
  */
-const LIMIAR_ARRASTO = 5; // pontos antes de o clique virar arrasto
-let arrasto = null; // { b, faixa, x0, y0, id, movido, aoSoltar }
 let redesenharDepois = false;
 let proximaPosicao = 0;
 const posicaoJanela = new Map(); // a janela (ou o id da do Linux) -> a posição na barra
@@ -258,49 +257,10 @@ function emOrdem(js) {
   return js.slice().sort((a, b) => posicaoJanela.get(chaveJanela(a)) - posicaoJanela.get(chaveJanela(b)));
 }
 
-/** Um botão que se reorganiza arrastando dentro da faixa dele; aoSoltar recebe os botões na ordem nova. */
-function reorganizavel(b, faixa, aoSoltar) {
-  b.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    arrasto = { b, faixa, x0: e.clientX, y0: e.clientY, id: e.pointerId, movido: false, aoSoltar };
-  });
-}
-
-function moverArrasto(e) {
-  const a = arrasto;
-  if (!a || e.pointerId !== a.id) return;
-  if (!a.b.isConnected) { arrasto = null; return; }
-  if (!a.movido) {
-    if (Math.abs(e.clientX - a.x0) < LIMIAR_ARRASTO && Math.abs(e.clientY - a.y0) < LIMIAR_ARRASTO) return;
-    a.movido = true;
-    try { a.b.setPointerCapture(a.id); } catch { }
-    a.b.classList.add('arrastado');
-    document.body.classList.add('arrastando-barra');
-  }
-  // O lugar novo: antes do primeiro vizinho cujo meio fica à direita do ponteiro.
-  const outros = [...a.faixa.children].filter((x) => x !== a.b && x.tagName === 'BUTTON');
-  const depois = outros.find((x) => { const r = x.getBoundingClientRect(); return e.clientX < r.left + r.width / 2; }) || null;
-  if (depois ? a.b.nextElementSibling !== depois : a.b !== a.faixa.lastElementChild) a.faixa.insertBefore(a.b, depois);
-}
-
-function soltarArrasto(e) {
-  const a = arrasto;
-  if (!a || e.pointerId !== a.id) return;
-  arrasto = null;
-  if (!a.movido) return;
-  a.b.classList.remove('arrastado');
-  document.body.classList.remove('arrastando-barra');
-  // O clique que vem depois de soltar não abre nem minimiza nada.
-  const parar = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
-  window.addEventListener('click', parar, { capture: true, once: true });
-  setTimeout(() => window.removeEventListener('click', parar, { capture: true }), 0);
-  if (e.type === 'pointerup') a.aoSoltar([...a.faixa.children].filter((x) => x.tagName === 'BUTTON'));
-  if (redesenharDepois || e.type !== 'pointerup') { redesenharDepois = false; desenharTarefas(); }
-}
-
-window.addEventListener('pointermove', moverArrasto);
-window.addEventListener('pointerup', soltarArrasto);
-window.addEventListener('pointercancel', soltarArrasto);
+/** Um botão da barra que se reorganiza arrastando (reorganizar.js); a barra se refaz no fim, se mudou no meio. */
+const reorganizavel = (b, faixa, aoSoltar) => reorganizavelFaixa(b, faixa, aoSoltar, {
+  depois: (soltou) => { if (redesenharDepois || !soltou) { redesenharDepois = false; desenharTarefas(); } },
+});
 
 /** Grava a ordem nova dos fixados (os que não estão na barra agora, como um programa removido, ficam no fim). */
 function gravarFixados(chaves) {
@@ -318,7 +278,7 @@ const naFrente = (j, ativa) => (j.nativa ? j.ativa : j === ativa && !j.minimizad
 function desenharTarefas() {
   if (!tarefas || !estado.config) return;
   // No meio de um arrasto, a barra só é refeita depois de soltar (o botão arrastado sumiria).
-  if (arrasto && arrasto.movido) { redesenharDepois = true; return; }
+  if (arrastando()) { redesenharDepois = true; return; }
   // Com um programa do Linux na frente, nenhuma janela do Retro Computer fica apertada.
   const ativa = retroAtivo() ? janelaAtiva() : null;
   // As janelas dos programas do Linux (modo sistema) vêm depois das do Retro Computer.

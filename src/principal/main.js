@@ -182,6 +182,7 @@ let terminais = null;
 let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
+let cheiaPeloSite = false; // a janela entrou em tela cheia por um site do Navegador
 let loja = null; // a loja de programas: o Flathub no Linux (loja.js), o winget no Windows e o Homebrew no Mac (lojas.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let energiaOpcoes = null; // as opções de energia do modo sistema (energia.js)
@@ -1444,6 +1445,14 @@ function registrarPonte() {
   tratar('navegador:baixarIcone', (url) => baixarDoSite(url, 1 << 20, 'binario'));
   tratar('navegador:manifesto', (url) => baixarDoSite(url, 256 << 10, 'json'));
   tratar('navegador:limparDados', () => limparNavegador());
+  // A tela cheia de um site do Navegador: a janela fica em tela cheia enquanto ele estiver, e volta
+  // a como estava depois (sem mudar a escolha do Painel › Aparência).
+  tratar('navegador:telaCheia', (v) => {
+    if (!janela || janela.isDestroyed()) return false;
+    if (v && !janela.isFullScreen()) { cheiaPeloSite = true; janela.setFullScreen(true); }
+    else if (!v && cheiaPeloSite) { cheiaPeloSite = false; janela.setFullScreen(false); }
+    return true;
+  });
   // A página que não abriu era a versão segura de um http:// (ou um http:// recusado)? Devolve o endereço sem segurança.
   tratar('navegador:semSeguranca', (url) => {
     const u = String(url || '');

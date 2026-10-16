@@ -100,7 +100,7 @@ function userJs({ downloads, soHttps = true, limparAoFechar = false, idioma = 'p
     pref('privacy.clearOnShutdown.cache', !!limparAoFechar),
     pref('privacy.clearOnShutdown.offlineApps', !!limparAoFechar),
     // O tamanho dos pixels do Retro Computer (Painel › Aparência), para o Firefox não ficar miúdo.
-    pref('layout.css.devPixelsPerPx', escala > 1 ? `${Number(escala).toFixed(1)}` : '-1.0'),
+    pref('layout.css.devPixelsPerPx', escala > 1 ? Number(escala).toFixed(2).replace(/0$/, '') : '-1.0'), // 2.0, 1.5, 1.25
   ];
   if (downloads) p.push(pref('browser.download.dir', downloads));
   if (inicio) p.push(pref('browser.startup.homepage', inicio), pref('browser.startup.page', 1));
