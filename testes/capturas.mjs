@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import http from 'node:http';
 
 const require = createRequire(import.meta.url);
@@ -82,6 +82,15 @@ if ((ROTEIRO === 'unidades' || ROTEIRO === 'antivirus') && !process.env.RETRO_UN
   fs.writeFileSync(path.join(pen, 'Planilha.csv'), 'a;b\n1;2\n');
   fs.writeFileSync(path.join(pen, 'Fotos', 'praia.txt'), 'x');
   process.env.RETRO_UNIDADES_FALSAS = pen;
+}
+// Roteiro "computador": as pastas de um computador principal de mentira (RETRO_COMPUTADOR_FALSO).
+if (ROTEIRO === 'computador' && !process.env.RETRO_COMPUTADOR_FALSO) {
+  const casa = path.join(tmp, 'casa');
+  for (const p of ['desktop', 'documents/Projetos', 'downloads', 'pictures', 'music', 'videos']) fs.mkdirSync(path.join(casa, p), { recursive: true });
+  fs.writeFileSync(path.join(casa, 'documents', 'Contrato.txt'), 'O contrato do computador principal.\n');
+  fs.writeFileSync(path.join(casa, 'documents', 'Orçamento.csv'), 'item;valor\nmesa;300\n');
+  fs.writeFileSync(path.join(casa, 'downloads', 'Manual.txt'), 'x');
+  process.env.RETRO_COMPUTADOR_FALSO = casa;
 }
 // Arquivos de exemplo no disco.
 fs.mkdirSync(path.join(disco, DOCS), { recursive: true });
@@ -508,6 +517,59 @@ const ROTEIROS = {
     await abrir('painel', { secao: 'padroes' });
     await pagina.waitForTimeout(700);
     await foto('padroes-painel-vazio');
+  },
+
+  // A ida e a volta com o computador principal (RETRO_COMPUTADOR_FALSO, posto pelo próprio roteiro): o
+  // Meu computador, as pastas de lá, trazer, levar sem gravar por cima, soltar numa pasta de lá e
+  // receber um arquivo mandado de fora (uma segunda abertura com o arquivo, como o "Enviar para").
+  async computador() {
+    const casa = process.env.RETRO_COMPUTADOR_FALSO;
+    await fecharTudo();
+    await abrir('explorador', { pasta: '::computador' });
+    await pagina.waitForTimeout(1000);
+    await foto('computador-meu');
+    await pagina.dblclick(`.janela.ativa .item:has(.rotulo:text-is("${T('Computador principal')}"))`);
+    await pagina.waitForTimeout(1000);
+    await foto('computador-pastas');
+    await pagina.dblclick(`.janela.ativa .item:has(.rotulo:text-is("${T('Documentos')}"))`);
+    await pagina.waitForTimeout(1000);
+    await pagina.click('.janela.ativa .item:has-text("Contrato")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('computador-documentos');
+    await pagina.click(`.menu .opcao:has-text("${T('Copiar para Meus &documentos')}")`);
+    await pagina.waitForTimeout(1000);
+    console.log('trazido para o C:?', fs.existsSync(path.join(disco, DOCS, 'Contrato.txt')), '| ainda lá?', fs.existsSync(path.join(casa, 'documents', 'Contrato.txt')));
+    // Levar duas vezes: o segundo ganha "(2)".
+    for (let i = 0; i < 2; i++) await pagina.evaluate((r) => retro.unidades.levar('pc:mesa', [r], ''), `${DOCS}/Teste.md`);
+    console.log('na área de trabalho de lá:', JSON.stringify(fs.readdirSync(path.join(casa, 'desktop')).sort()));
+    // A pasta do disco C: não vai e não vem por aqui.
+    console.log('trazer de fora da pasta recusado?', await pagina.evaluate(() => retro.unidades.trazer('pc:documentos', ['../x'], '').then(() => false, () => true)));
+    // A janela da área de trabalho de lá, com o Contrato da janela de Meus documentos solto nela.
+    await fecharTudo();
+    await abrir('explorador', { pasta: '::unidade:pc%3Amesa' });
+    await pagina.waitForTimeout(1000);
+    await foto('computador-mesa');
+    // Receber de fora: uma segunda abertura com o arquivo (o "Enviar para" do Windows faz assim).
+    const enviado = path.join(casa, 'documents', 'Orçamento.csv');
+    const segundo = spawn(require('electron'), ['--no-sandbox', RAIZ, enviado], {
+      env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: '1' }, stdio: 'ignore',
+    });
+    await new Promise((r) => { segundo.once('exit', r); setTimeout(r, 15000); });
+    await pagina.waitForTimeout(2000);
+    await foto('computador-recebido');
+    console.log('recebido em Recebidos?', fs.existsSync(path.join(disco, DOCS, PASTAS[IDIOMA].recebidos, 'Orçamento.csv')), '| o original ficou?', fs.existsSync(enviado));
+    // O Painel › Disco C: › Computador principal.
+    await fecharTudo();
+    await abrir('painel', { secao: 'disco' });
+    await pagina.waitForTimeout(800);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Computador principal') }).dispatchEvent('mousedown');
+    await pagina.waitForTimeout(400);
+    await foto('computador-painel');
+    // Desligar as pastas: somem do Meu computador e as rotas recusam.
+    await pagina.locator('.janela.ativa .painel-aba input[type=checkbox] >> nth=0').uncheck();
+    await pagina.click(`.janela.ativa .acoes button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(500);
+    console.log('desligadas: pastas', JSON.stringify(await pagina.evaluate(() => retro.computador.pastas())), '| rota recusa?', await pagina.evaluate(() => retro.unidades.pasta('pc:mesa', '').then(() => false, () => true)));
   },
 
   async vitrine() {

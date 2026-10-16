@@ -92,3 +92,15 @@ test('pastas do computador principal: só as que existem, sem a pasta do disco C
   await assert.rejects(fora.listarPasta('pc:outra', ''));
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test('o que o computador principal manda pela linha de comando: só os arquivos de verdade', () => {
+  const app = path.resolve('/opt/Retro Computer');
+  const existe = (p) => !p.includes('sumiu');
+  const argv = [path.join(app, 'retro-computer'), '--no-sandbox', '--allow-file-access-from-files', '.', 'relativo.txt',
+    path.resolve('/home/eu/Documentos/contrato.docx'), path.resolve('/home/eu/sumiu.txt'), path.join(app, 'resources', 'app.asar'), app, path.resolve('/home/eu/Fotos')];
+  assert.deepStrictEqual(u.caminhosDaLinha(argv, { proprios: [path.join(app, 'retro-computer'), app], existe }),
+    [path.resolve('/home/eu/Documentos/contrato.docx'), path.resolve('/home/eu/Fotos')]);
+  // No primeiro, o próprio programa (o argv[0]) nunca conta, nem uma lista vazia quebra.
+  assert.deepStrictEqual(u.caminhosDaLinha([path.resolve('/home/eu/a.txt')], { existe }), []);
+  assert.deepStrictEqual(u.caminhosDaLinha(undefined, { existe }), []);
+});

@@ -1161,7 +1161,59 @@ async function dialogoDisco() {
       document.dispatchEvent(new CustomEvent('retro-disco-trocado'));
     }
   }
-  dialogoBase({ titulo: tr('Propriedades de Disco local (C:)'), icone: 'disco', larg: 360, abas: [{ titulo: tr('Geral'), conteudo }] });
+  // A aba do computador principal (fora do modo sistema): as pastas de lá no Meu computador e os
+  // caminhos de lá para cá. Os atalhos lá fora só são criados quando o usuário pede.
+  const pc = await retro.computador.estado().catch(() => null);
+  const abas = [{ titulo: tr('Geral'), conteudo }];
+  let chkFora = null;
+  let chkEnviar = null;
+  if (pc && pc.disponivel) {
+    chkFora = h('input', { type: 'checkbox', checked: pc.visivel });
+    chkEnviar = pc.plataforma === 'win32' ? h('input', { type: 'checkbox', checked: pc.enviarPara }) : null;
+    const btAtalho = h('button', { type: 'button', disabled: pc.atalhoMesa }, pc.atalhoMesa ? tr('O atalho já está lá') : rotulo(tr('Criar o a&talho do disco C: na área de trabalho de lá')));
+    btAtalho.addEventListener('click', async () => {
+      const r = await retro.computador.atalhoMesa().catch((e) => ({ ok: false, erro: e.message }));
+      if (r.ok || r.existe) { btAtalho.disabled = true; btAtalho.textContent = tr('O atalho já está lá'); }
+      if (r.ok) avisar(tr('Atalho criado'), r.caminho, { icone: 'rede', som: null });
+      else if (!r.existe) erro(tr('Não foi possível criar o atalho: {erro}', { erro: r.erro || '?' }));
+    });
+    const deLa = pc.plataforma === 'win32'
+      ? [h('label', chkEnviar, h('span', tr('Mostrar o Retro Computer no "Enviar para" do Windows'))),
+        h('div.nota-pc', tr('No Explorador de Arquivos do Windows, botão direito num arquivo › Enviar para › Retro Computer: uma cópia vai para Meus documentos › Recebidos.'))]
+      : pc.plataforma === 'darwin'
+        ? [h('div.nota-pc', tr('Solte os arquivos no ícone do Retro Computer no Dock, ou use, no Finder, botão direito › Abrir com › Retro Computer: uma cópia vai para Meus documentos › Recebidos.'))]
+        : [h('div.nota-pc', tr('Arraste os arquivos para a janela do Retro Computer: uma cópia vai para a pasta em que forem soltos.'))];
+    abas.push({
+      titulo: tr('Computador principal'),
+      conteudo: h('div',
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' } }, img('rede', 32),
+          h('div', { style: { lineHeight: '13px' } }, tr('Os arquivos vão e voltam entre o Retro Computer e o computador principal sempre como cópias: nada é apagado nem gravado por cima, de nenhum dos lados.'))),
+        h('fieldset', { style: { margin: '0 0 8px' } }, h('legend', tr('Pastas de lá no Meu computador')),
+          h('label', chkFora, h('span', tr('Mostrar a área de trabalho, os documentos e os downloads do computador principal'))),
+          h('div.nota-pc', pc.principal
+            ? tr('Em Meu computador › Computador principal. Para os outros usuários do Retro Computer, elas começam escondidas.')
+            : tr('Em Meu computador › Computador principal. Elas são as pastas do usuário do computador principal, não as suas.'))),
+        h('fieldset', { style: { margin: '0' } }, h('legend', tr('De lá para cá')),
+          ...deLa,
+          h('div', { style: { marginTop: '8px' } }, btAtalho),
+          h('div.nota-pc', tr('O atalho abre o disco C: no computador principal, para pôr ou tirar arquivos de lá.')))),
+    });
+  }
+  dialogoBase({
+    titulo: tr('Propriedades de Disco local (C:)'), icone: 'disco', larg: 380, abas,
+    aoAplicar: chkFora ? async () => {
+      if (chkFora.checked !== pc.visivel) {
+        await definirConfig({ computador: { pastas: chkFora.checked } });
+        pc.visivel = chkFora.checked;
+        document.dispatchEvent(new CustomEvent('retro-fora-mudou'));
+      }
+      if (chkEnviar && chkEnviar.checked !== pc.enviarPara) {
+        const r = await retro.computador.enviarPara(chkEnviar.checked).catch((e) => ({ ok: false, erro: e.message }));
+        if (r.ok) pc.enviarPara = chkEnviar.checked;
+        else { chkEnviar.checked = pc.enviarPara; erro(tr('Não foi possível mudar o "Enviar para" do Windows: {erro}', { erro: r.erro || '?' })); }
+      }
+    } : undefined,
+  });
 }
 
 /* Claude */

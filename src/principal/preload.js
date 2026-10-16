@@ -273,6 +273,16 @@ contextBridge.exposeInMainWorld('retro', {
     aoAndamento: ouvir('loja:andamento'),
   },
   // Os pendrives e cartões de memória.
+  // As pastas do computador principal no Meu computador e o que ele manda (ids 'pc:…' nas rotas das unidades).
+  computador: {
+    pastas: () => chamar('computador:pastas'),
+    estado: () => chamar('computador:estado'),
+    mostrar: (id, rel) => chamar('computador:mostrar', id, rel),
+    pronto: () => chamar('computador:pronto'),
+    atalhoMesa: () => chamar('computador:atalhoMesa'),
+    enviarPara: (ligar) => chamar('computador:enviarPara', !!ligar),
+    aoReceber: ouvir('computador:recebidos'),
+  },
   unidades: {
     listar: () => chamar('unidades:listar'),
     pasta: (id, rel) => chamar('unidades:pasta', id, rel),

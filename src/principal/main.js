@@ -11,7 +11,7 @@
  */
 const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard, ClipboardItem, webContents } = require('electron');
 const fs = require('node:fs');
-const { spawn, execFileSync } = require('node:child_process');
+const { spawn, execFile, execFileSync } = require('node:child_process');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 
@@ -25,7 +25,7 @@ const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
-const { Unidades, UnidadesFalsas } = require('./unidades');
+const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
 const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
@@ -185,6 +185,7 @@ let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let energiaOpcoes = null; // as opções de energia do modo sistema (energia.js)
 let acessLinux = null; // as teclas de aderência e as do mouse do modo sistema (acessibilidade.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
+let pastasFora = null; // as pastas do computador principal no Meu computador (unidades.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
@@ -227,6 +228,7 @@ async function abrirDisco() {
     config.definir({ disco: raiz });
   }
   disco = new Disco(raiz);
+  disco.aoExportar = copiarMarcas;
   // A primeira vez com este disco: a configuração ainda não sabe os nomes das pastas dele.
   const primeiraVez = !(config.obter().pastas && config.obter().pastas.documentos);
   const pastas = nomesDasPastas(raiz);
@@ -545,6 +547,49 @@ function marcarDaInternet(arquivo, url) {
     } else if (process.platform === 'darwin') {
       const quando = Math.floor(Date.now() / 1000).toString(16);
       spawn('xattr', ['-w', 'com.apple.quarantine', `0081;${quando};Retro Computer;`, arquivo], { stdio: 'ignore' }).on('error', () => { });
+    }
+  } catch { }
+}
+
+/**
+ * A marca de "baixado da internet" vai junto quando um arquivo sai do disco C: (para o computador
+ * principal ou um pendrive): o sistema de lá continua avisando antes de abrir um programa baixado.
+ * O Windows guarda a marca no fluxo Zone.Identifier; o Mac, no atributo com.apple.quarantine.
+ */
+async function copiarMarcas(origem, destino) {
+  try {
+    if (process.platform === 'win32') {
+      let n = 0;
+      const andar = async (o, d) => {
+        if (++n > 20000) return;
+        const st = await fsp.stat(o);
+        if (st.isDirectory()) {
+          for (const nome of await fsp.readdir(o)) await andar(path.join(o, nome), path.join(d, nome));
+          return;
+        }
+        let marca = null;
+        try { marca = await fsp.readFile(o + ':Zone.Identifier'); } catch { return; }
+        await fsp.writeFile(d + ':Zone.Identifier', marca).catch(() => { });
+      };
+      await andar(origem, destino);
+    } else if (process.platform === 'darwin') {
+      const xattr = (args) => new Promise((resolve) => execFile('xattr', args, { maxBuffer: 16 << 20 }, (e, s) => resolve(e && !s ? '' : String(s || ''))));
+      const pasta = (await fsp.stat(origem)).isDirectory();
+      const marcas = [];
+      if (!pasta) {
+        const v = (await xattr(['-p', 'com.apple.quarantine', origem])).trim();
+        if (v) marcas.push([destino, v]);
+      } else {
+        // "caminho: valor" para cada arquivo marcado (o valor não tem ": ").
+        for (const linha of (await xattr(['-r', '-p', 'com.apple.quarantine', origem])).split('\n')) {
+          const i = linha.lastIndexOf(': ');
+          if (i < 0) continue;
+          const rel = path.relative(origem, linha.slice(0, i));
+          if (rel.startsWith('..') || path.isAbsolute(rel)) continue;
+          marcas.push([path.join(destino, rel), linha.slice(i + 2).trim()]);
+        }
+      }
+      for (const [d, v] of marcas.slice(0, 20000)) await xattr(['-w', 'com.apple.quarantine', v, d]);
     }
   } catch { }
 }
@@ -945,6 +990,8 @@ function registrarPonte() {
     else if ('bloqueio' in parte) delete parte.bloqueio;
     // As permissões dos programas só mudam pela pergunta (ou pelo Painel, que as tira com null).
     if (parte.permissoesProgramas && typeof parte.permissoesProgramas !== 'object') delete parte.permissoesProgramas;
+    // As pastas do computador principal: só ligar ou desligar.
+    if ('computador' in parte && !(parte.computador && typeof parte.computador === 'object' && typeof parte.computador.pastas === 'boolean')) delete parte.computador;
     // Os programas padrão: a extensão → o identificador do programa (ou null, o de sempre).
     if ('abrirCom' in parte) {
       const a = parte.abrirCom;
@@ -958,11 +1005,12 @@ function registrarPonte() {
   });
   // Os pendrives: listar, abrir, trazer para o C:, levar do C: e remover com segurança.
   tratar('unidades:listar', () => unidades.listar());
-  tratar('unidades:pasta', (id, rel) => unidades.listarPasta(String(id), String(rel || '')));
-  tratar('unidades:montar', (id) => unidades.montar(String(id)));
+  tratar('unidades:pasta', (id, rel) => unidadeDe(id).listarPasta(String(id), String(rel || '')));
+  tratar('unidades:montar', (id) => unidadeDe(id).montar(String(id)));
   tratar('unidades:ejetar', (id) => unidades.ejetar(String(id)));
-  tratar('unidades:trazer', (id, rels, destino) => unidades.trazer(String(id), (rels || []).map(String), String(destino || '')));
-  tratar('unidades:levar', (id, rels, destino) => unidades.levar(String(id), (rels || []).map(String), String(destino || '')));
+  tratar('unidades:trazer', (id, rels, destino) => unidadeDe(id).trazer(String(id), (rels || []).map(String), String(destino || '')));
+  tratar('unidades:levar', (id, rels, destino) => unidadeDe(id).levar(String(id), (rels || []).map(String), String(destino || '')));
+  registrarComputador();
   // Formatar o pendrive (Linux, com a senha de administrador). Nunca o que guarda o disco C: (o modo
   // portátil) nem o que está em uso pelo sistema.
   tratar('unidades:formatar', async (id, opcoes, senha) => {
@@ -992,7 +1040,7 @@ function registrarPonte() {
   tratar('antivirus:estado', () => antivirus.estado());
   tratar('antivirus:verificar', async (alvo = {}) => {
     let abs;
-    if (alvo.tipo === 'unidade') abs = dentroDaUnidade((await unidades.unidade(String(alvo.id))).raiz, String(alvo.rel || ''));
+    if (alvo.tipo === 'unidade') abs = dentroDaUnidade((await unidadeDe(alvo.id).unidade(String(alvo.id))).raiz, String(alvo.rel || ''));
     else abs = disco.real(String(alvo.rel || ''));
     // O que fica dentro do disco C: volta como caminho interno (para a Lixeira); o resto, como está.
     const relDe = (arq) => {
@@ -1580,13 +1628,135 @@ function registrarPerfis() {
   tratar('perfis:disco', (id) => (perfis.perfil(String(id || '')) ? discoDe(String(id)) : null));
 }
 
-/* ---------- Início ---------- */
+/* ---------- O computador principal (fora do modo sistema) ---------- */
 
-app.on('second-instance', () => {
+/**
+ * As pastas do computador principal ficam à vista do usuário principal (os outros usuários do
+ * Retro Computer não são uma barreira de segurança: cada um liga as dele, se quiser), nunca no
+ * modo sistema, e só a área de trabalho as alcança (a ponte não atende os programas nem o Navegador).
+ */
+function foraVisivel() {
+  if (MODO_SISTEMA || !pastasFora) return false;
+  const c = (config.obter().computador || {}).pastas;
+  return typeof c === 'boolean' ? c : PERFIL === PRINCIPAL;
+}
+
+/** Os ids 'pc:…' são as pastas do computador principal; os outros, os pendrives. */
+function unidadeDe(id) {
+  if (!String(id).startsWith('pc:')) return unidades;
+  if (!foraVisivel()) throw new Error('unidade');
+  return pastasFora;
+}
+
+// Os arquivos mandados de fora (o "Enviar para" do Windows e soltar no ícone do programa, pela linha
+// de comando; o ícone do Dock e o "Abrir com" do Mac, pelo open-file) esperam a área de trabalho
+// ficar pronta (depois da tela de entrada). Uma cópia vai para Meus documentos › Recebidos (o que já
+// está no disco C: só é mostrado); nada abre sozinho.
+const foraEsperando = [];
+let foraPronta = false;
+const proprios = () => [process.execPath, app.getAppPath(), RAIZ_APP, process.resourcesPath];
+
+function receberDeFora(caminhos) {
+  if (!caminhos || !caminhos.length) return;
+  foraEsperando.push(...caminhos);
+  if (foraPronta) entregarFora().catch(() => { });
+}
+
+async function entregarFora() {
+  const lista = foraEsperando.splice(0, foraEsperando.length);
+  if (!lista.length || !disco) return;
+  const destino = pastaRecebidos();
+  const doDisco = lista.filter((p) => noDisco(disco.raiz, p)).map((p) => path.relative(disco.raiz, path.resolve(p)).split(path.sep).join('/'));
+  const deFora = lista.filter((p) => !noDisco(disco.raiz, p));
+  let rels = [];
+  let erro = null;
+  try {
+    fs.mkdirSync(disco.real(destino), { recursive: true });
+    if (deFora.length) rels = (await disco.importar(deFora, destino)).map((f) => f.rel);
+  } catch (e) {
+    erro = String(e.message || e);
+  }
+  enviar('computador:recebidos', { pasta: destino, rels, doDisco, erro });
   if (janela) {
     if (janela.isMinimized()) janela.restore();
     janela.focus();
   }
+}
+
+// O Mac entrega os arquivos soltos no ícone do Dock (e o "Abrir com" do Finder) por este evento,
+// às vezes antes de o aplicativo ficar pronto.
+app.on('open-file', (e, caminho) => {
+  e.preventDefault();
+  receberDeFora([String(caminho)]);
+});
+
+// O nome dos atalhos no computador principal (sem ":", que o Windows não aceita em nomes).
+const nomeAtalhoDisco = () => tr('Disco C do Retro Computer');
+const atalhoEnviarPara = () => path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'SendTo', 'Retro Computer.lnk');
+const atalhoMesa = () => path.join(app.getPath('desktop'), nomeAtalhoDisco() + (process.platform === 'win32' ? '.lnk' : ''));
+const existeLink = (p) => { try { fs.lstatSync(p); return true; } catch { return false; } };
+
+function registrarComputador() {
+  tratar('computador:pastas', () => (foraVisivel() ? pastasFora.listar() : []));
+  tratar('computador:estado', () => ({
+    disponivel: !MODO_SISTEMA, visivel: foraVisivel(), principal: PERFIL === PRINCIPAL, plataforma: process.platform,
+    atalhoMesa: !MODO_SISTEMA && existeLink(atalhoMesa()),
+    enviarPara: process.platform === 'win32' && existeLink(atalhoEnviarPara()),
+  }));
+  // Mostrar uma das pastas no gerenciador de arquivos de lá (só pastas: nada é aberto como programa).
+  tratar('computador:mostrar', async (id, rel) => {
+    const u = await unidadeDe(String(id)).unidade(String(id));
+    const p = dentroDaUnidade(u.raiz, String(rel || ''));
+    if (!fs.statSync(p).isDirectory()) throw new Error('pasta');
+    return shell.openPath(p);
+  });
+  // A área de trabalho ficou pronta: entrega o que chegou de fora até agora.
+  tratar('computador:pronto', () => { foraPronta = true; entregarFora().catch(() => { }); return true; });
+  // Um atalho do disco C: na área de trabalho do computador principal (só quando o usuário pede).
+  tratar('computador:atalhoMesa', () => {
+    if (MODO_SISTEMA) return { ok: false };
+    const alvo = atalhoMesa();
+    if (existeLink(alvo)) return { ok: false, existe: true, caminho: alvo };
+    try {
+      if (process.platform === 'win32') {
+        if (!shell.writeShortcutLink(alvo, 'create', { target: disco.raiz, description: tr('O disco C: do Retro Computer') })) return { ok: false };
+      } else {
+        fs.symlinkSync(disco.raiz, alvo, 'dir');
+      }
+      return { ok: true, caminho: alvo };
+    } catch (e) {
+      return { ok: false, erro: String(e.message || e) };
+    }
+  });
+  // O Retro Computer no "Enviar para" do Windows: os arquivos mandados são copiados para Recebidos.
+  // Tirar o atalho o manda para a Lixeira do Windows.
+  tratar('computador:enviarPara', async (ligar) => {
+    if (process.platform !== 'win32') return { ok: false };
+    const lnk = atalhoEnviarPara();
+    try {
+      if (ligar) {
+        const args = app.isPackaged ? '' : `"${app.getAppPath()}"`;
+        const ok = shell.writeShortcutLink(lnk, existeLink(lnk) ? 'replace' : 'create', {
+          target: process.execPath, args, description: tr('Copia para Meus documentos › Recebidos, no Retro Computer'), icon: process.execPath, iconIndex: 0,
+        });
+        return { ok };
+      }
+      if (existeLink(lnk)) await shell.trashItem(lnk);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: String(e.message || e) };
+    }
+  });
+}
+
+/* ---------- Início ---------- */
+
+app.on('second-instance', (_e, argv) => {
+  if (janela) {
+    if (janela.isMinimized()) janela.restore();
+    janela.focus();
+  }
+  receberDeFora(caminhosDaLinha(argv, { proprios: proprios() }));
 });
 
 app.whenReady().then(async () => {
@@ -1648,6 +1818,10 @@ app.whenReady().then(async () => {
   unidades = process.env.RETRO_UNIDADES_FALSAS
     ? new UnidadesFalsas({ disco: () => disco }, process.env.RETRO_UNIDADES_FALSAS)
     : new Unidades({ disco: () => disco, sistema: MODO_SISTEMA });
+  // As pastas do computador principal (RETRO_COMPUTADOR_FALSO: uma pasta com desktop, documents… dentro).
+  const casaFalsa = process.env.RETRO_COMPUTADOR_FALSO;
+  pastasFora = new PastasDoComputador({ caminho: (n) => (casaFalsa ? path.join(casaFalsa, n) : app.getPath(n)), disco: () => disco });
+  receberDeFora(caminhosDaLinha(process.argv, { proprios: proprios() }));
   vigiarUnidades();
   podarMiniaturas();
   menuDoSistema();

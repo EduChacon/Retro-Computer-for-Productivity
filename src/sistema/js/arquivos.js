@@ -9,7 +9,7 @@ import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputado
 import { Janela } from './janelas.js';
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
-import { listarUnidades, levarParaUnidade, nomeUnidade } from './unidades.js';
+import { listarUnidades, levarParaUnidade, nomeUnidade, lerPastaUnidade, unidadeConhecida } from './unidades.js';
 import { ehCompactado, extrairEMostrar, compactarItens } from './compactados.js';
 import { ehFixada, alternarFixada, seguirPasta } from './acesso.js';
 
@@ -184,6 +184,16 @@ export async function colar(destino) {
 export async function soltarEm(e, destino) {
   const dt = e.dataTransfer;
   const internos = dt.getData(TIPO_ARRASTO);
+  // Numa pasta de um pendrive ou do computador principal: uma cópia do que veio do disco C: (o que
+  // veio de fora já está no computador principal).
+  const un = lerPastaUnidade(destino);
+  if (un) {
+    const u = unidadeConhecida(un.id);
+    if (!internos || !u) return 0;
+    const rels = JSON.parse(internos);
+    await levarParaUnidade(u, rels, un.rel);
+    return rels.length;
+  }
   if (internos) {
     const rels = JSON.parse(internos);
     if (destino === '::lixeira') return excluir(rels);

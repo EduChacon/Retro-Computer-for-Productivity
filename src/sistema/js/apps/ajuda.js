@@ -61,6 +61,9 @@ const TOPICOS = [
 <p>Arraste arquivos do computador principal para uma janela de pasta ou para a área de trabalho. Eles são copiados para o disco C:. Também dá para usar o menu Arquivo › Trazer do computador principal.</p>
 <h2>Levar arquivos</h2>
 <p>Botão direito no arquivo › <b>Enviar para</b> › Área de trabalho ou Downloads do computador principal. Ou <b>Mostrar no computador principal</b>, para abrir a pasta lá.</p>
+<h2>O computador principal</h2>
+<p>Em <b>Meu computador › Computador principal</b> ficam a área de trabalho, os documentos, os downloads, as imagens, as músicas e os vídeos do computador principal. Funcionam como um pendrive: botão direito › <b>Copiar para Meus documentos</b> traz uma cópia, e arrastar um arquivo do disco C: para uma dessas pastas (ou <b>Colar aqui</b>) leva uma cópia. Nada é apagado nem gravado por cima lá.</p>
+<p>De lá para cá: no Windows, ligue em <b>Painel de controle › Disco C: › Computador principal</b> o Retro Computer no <b>Enviar para</b> do Explorador de Arquivos; no Mac, solte os arquivos no ícone do Retro Computer no Dock ou use <b>Abrir com › Retro Computer</b> no Finder. Uma cópia vai para Meus documentos › Recebidos. A mesma aba cria um atalho do disco C: na área de trabalho de lá e esconde essas pastas (para os outros usuários do Retro Computer, elas começam escondidas).</p>
 <h2>Pastas compactadas</h2>
 <p>Um arquivo .zip abre como uma pasta. Botão direito › <b>Extrair tudo</b> cria uma pasta nova ao lado, com o que há dentro (vale também para os .tar). Para compactar: botão direito › <b>Enviar para › Pasta compactada (zip)</b>.</p>
 <h2>Nada se perde</h2>
@@ -82,6 +85,9 @@ const TOPICOS = [
 <p>Drag files from the main computer onto a folder window or onto the desktop. They are copied to drive C:. You can also use the File › Bring from the main computer menu.</p>
 <h2>Taking files out</h2>
 <p>Right-click the file › <b>Send to</b> › Desktop or Downloads of the main computer. Or <b>Show on the main computer</b>, to open the folder there.</p>
+<h2>The main computer</h2>
+<p><b>Computer › Main computer</b> shows the main computer's desktop, documents, downloads, pictures, music and videos. They work like a USB drive: right-click › <b>Copy to Documents</b> brings a copy, and dragging a file from drive C: onto one of these folders (or <b>Paste here</b>) takes a copy there. Nothing is deleted or overwritten there.</p>
+<p>From there to here: on Windows, turn on Retro Computer in the File Explorer <b>Send to</b> menu in <b>Control Panel › Drive C: › Main computer</b>; on a Mac, drop the files on the Retro Computer icon in the Dock or use <b>Open With › Retro Computer</b> in the Finder. A copy goes to Documents › Received. The same tab creates a drive C: shortcut on its desktop and hides these folders (for the other Retro Computer users, they start hidden).</p>
 <h2>Compressed folders</h2>
 <p>A .zip file opens like a folder. Right-click › <b>Extract all</b> creates a new folder next to it with what is inside (it also works for .tar files). To compress: right-click › <b>Send to › Compressed folder (zip)</b>.</p>
 <h2>Nothing gets lost</h2>
@@ -103,6 +109,9 @@ const TOPICOS = [
 <p>Arrastra archivos de la computadora principal a una ventana de carpeta o al escritorio. Se copian al disco C:. También puedes usar el menú Archivo › Traer de la computadora principal.</p>
 <h2>Llevar archivos</h2>
 <p>Clic derecho en el archivo › <b>Enviar a</b> › Escritorio o Descargas de la computadora principal. O <b>Mostrar en la computadora principal</b>, para abrir la carpeta allí.</p>
+<h2>La computadora principal</h2>
+<p>En <b>Mi computadora › Computadora principal</b> están el escritorio, los documentos, las descargas, las imágenes, la música y los videos de la computadora principal. Funcionan como una memoria USB: clic derecho › <b>Copiar a Mis documentos</b> trae una copia, y arrastrar un archivo del disco C: a una de esas carpetas (o <b>Pegar aquí</b>) lleva una copia. Nada se borra ni se sobrescribe allí.</p>
+<p>De allá para acá: en Windows, activa Retro Computer en <b>Enviar a</b> del Explorador de archivos en <b>Panel de control › Disco C: › Computadora principal</b>; en Mac, suelta los archivos en el icono de Retro Computer en el Dock o usa <b>Abrir con › Retro Computer</b> en el Finder. Una copia va a Mis documentos › Recibidos. La misma pestaña crea un acceso directo al disco C: en su escritorio y oculta esas carpetas (para los demás usuarios de Retro Computer, empiezan ocultas).</p>
 <h2>Carpetas comprimidas</h2>
 <p>Un archivo .zip se abre como una carpeta. Clic derecho › <b>Extraer todo</b> crea una carpeta nueva al lado con lo que hay dentro (también sirve para los .tar). Para comprimir: clic derecho › <b>Enviar a › Carpeta comprimida (zip)</b>.</p>
 <h2>Nada se pierde</h2>

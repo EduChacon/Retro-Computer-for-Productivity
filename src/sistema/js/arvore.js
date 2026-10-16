@@ -5,7 +5,7 @@
  */
 import { h, img, paiDe } from './util.js';
 import { pastaDocs, pastaMesa, iconeDaPasta } from './sistema.js';
-import { listarUnidades, nomeUnidade, pastaDaUnidade, lerPastaUnidade } from './unidades.js';
+import { listarUnidades, nomeUnidade, pastaDaUnidade, lerPastaUnidade, listarPastasFora, ehDoComputador, iconeUnidade } from './unidades.js';
 import { lerPastaZip } from './compactados.js';
 import { tr } from './idioma.js';
 import { fixadas } from './acesso.js';
@@ -17,12 +17,13 @@ export function caminhoNaArvore(pasta) {
   if (pasta === '::acesso') return ['::acesso'];
   if (pasta === '::computador') return ['::computador'];
   if (pasta === '::lixeira') return ['::computador', '::lixeira'];
+  if (pasta === '::fora') return ['::computador', '::fora'];
   const zip = lerPastaZip(pasta);
   if (zip) return caminhoNaArvore(paiDe(zip.rel));
   const un = lerPastaUnidade(pasta);
   if (un) {
     const partes = un.rel ? un.rel.split('/') : [];
-    return ['::computador', pastaDaUnidade(un.id), ...partes.map((_, i) => pastaDaUnidade(un.id, partes.slice(0, i + 1).join('/')))];
+    return ['::computador', ...(ehDoComputador(un.id) ? ['::fora'] : []), pastaDaUnidade(un.id), ...partes.map((_, i) => pastaDaUnidade(un.id, partes.slice(0, i + 1).join('/')))];
   }
   const partes = String(pasta || '').split('/').filter(Boolean);
   return ['::computador', '', ...partes.map((_, i) => partes.slice(0, i + 1).join('/'))];
@@ -64,13 +65,18 @@ export class Arvore {
         pasta: f.rel, rotulo: f.nome || 'C:', icone: f.rel ? iconeDaPasta(f.rel) : 'disco', temFilhos: true, atalho: true, prefixo: '★',
       }));
     }
+    // As pastas do computador principal (a área de trabalho, os documentos… de lá).
+    if (pasta === '::fora') {
+      return (await listarPastasFora()).map((u) => ({ pasta: pastaDaUnidade(u.id), rotulo: nomeUnidade(u), icone: iconeUnidade(u), temFilhos: true }));
+    }
     if (pasta === '::computador') {
-      const unidades = await listarUnidades();
+      const [unidades, fora] = await Promise.all([listarUnidades(), listarPastasFora()]);
       return [
         { pasta: '', rotulo: tr('Disco local (C:)'), icone: 'disco', temFilhos: true },
         { pasta: pastaDocs(), rotulo: tr('Meus documentos'), icone: 'documentos', temFilhos: true, atalho: true },
         { pasta: pastaMesa(), rotulo: pastaMesa(), icone: 'pasta-mesa', temFilhos: true, atalho: true },
         ...unidades.filter((u) => u.montada).map((u) => ({ pasta: pastaDaUnidade(u.id), rotulo: nomeUnidade(u), icone: 'removivel', temFilhos: true })),
+        ...(fora.length ? [{ pasta: '::fora', rotulo: tr('Computador principal'), icone: 'rede', temFilhos: true }] : []),
         { pasta: '::lixeira', rotulo: tr('Lixeira'), icone: 'lixeira', temFilhos: false },
       ];
     }

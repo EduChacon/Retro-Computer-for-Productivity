@@ -168,6 +168,8 @@ async function iniciar() {
   boot.classList.remove('visivel');
   boot.replaceChildren();
   if (!rapido) tocar('inicio');
+  // O que o computador principal mandou antes de a área de trabalho ficar pronta (o Dock do Mac, o "Enviar para" do Windows).
+  retro.computador.pronto().catch(() => { });
   // Os programas que ficaram para depois carregam com o computador parado: a primeira vez que abrem já é rápida.
   setTimeout(carregarOsQueFaltam, 4000);
 

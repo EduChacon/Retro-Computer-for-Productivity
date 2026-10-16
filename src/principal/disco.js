@@ -252,6 +252,7 @@ class Disco {
       const ext = path.extname(nome);
       for (let i = 2; fs.existsSync(alvo); i++) alvo = path.join(pastaExterna, `${path.basename(nome, ext)} (${i})${ext}`);
       await fsp.cp(this.real(n), alvo, { recursive: true, errorOnExist: true, force: false });
+      if (this.aoExportar) await this.aoExportar(this.real(n), alvo);
       feitos.push(alvo);
     }
     return feitos;

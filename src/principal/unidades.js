@@ -316,6 +316,18 @@ class PastasDoComputador extends Unidades {
   }
 }
 
+/**
+ * Os arquivos que o computador principal manda pela linha de comando (o "Enviar para" do Windows,
+ * soltar no ícone do programa): só os caminhos completos que existem, sem as opções (--…) e sem o
+ * próprio programa (nem o que fica dentro dele, como a pasta do aplicativo que o Electron recebe
+ * nos testes). Eles são só copiados para Meus documentos › Recebidos; nada abre sozinho.
+ */
+function caminhosDaLinha(argv, { proprios = [], existe = fs.existsSync } = {}) {
+  const meus = proprios.filter(Boolean).map((p) => path.resolve(p));
+  return (argv || []).slice(1).filter((a) => typeof a === 'string' && a && !a.startsWith('-') && path.isAbsolute(a)
+    && !meus.some((m) => noDisco(m, a)) && existe(a));
+}
+
 /** Para os testes e as capturas (RETRO_UNIDADES_FALSAS=pasta): um "pendrive" que é uma pasta comum. */
 class UnidadesFalsas extends Unidades {
   constructor(o, pasta) {
@@ -343,4 +355,4 @@ class UnidadesFalsas extends Unidades {
   }
 }
 
-module.exports = { Unidades, UnidadesFalsas, PastasDoComputador, PASTAS_FORA, noDisco, lerLsblk, lerMontagem, dentro, escondida, comandoFormatar };
+module.exports = { Unidades, UnidadesFalsas, PastasDoComputador, PASTAS_FORA, noDisco, caminhosDaLinha, lerLsblk, lerMontagem, dentro, escondida, comandoFormatar };

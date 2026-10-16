@@ -49,7 +49,7 @@ export class VistaIcones {
     raiz.addEventListener('dragover', (e) => {
       if (!aceitaSoltar(e) || o.pastaSoltar == null) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = [...e.dataTransfer.types].includes('Files') ? 'copy' : (e.ctrlKey ? 'copy' : 'move');
+      e.dataTransfer.dropEffect = [...e.dataTransfer.types].includes('Files') || String(o.pastaSoltar).startsWith('::unidade:') ? 'copy' : (e.ctrlKey ? 'copy' : 'move');
     });
     raiz.addEventListener('drop', (e) => {
       if (o.pastaSoltar == null) return;

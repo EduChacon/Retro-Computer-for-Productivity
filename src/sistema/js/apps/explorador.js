@@ -4,6 +4,8 @@
  *   pasta '::lixeira'     a Lixeira
  *   pasta '::acesso'      o Acesso rápido (as pastas fixadas e os arquivos usados por último)
  *   pasta '::unidade:…'   um pendrive ou cartão (unidades.js): ver, trazer para o C:, levar do C:
+ *   pasta '::fora'        as pastas do computador principal (a área de trabalho, os documentos… de lá),
+ *                         que abrem como '::unidade:pc:…', no mesmo molde dos pendrives
  *   pasta '::zip:…'       por dentro de uma pasta compactada (compactados.js): ver e extrair
  *   qualquer outra        uma pasta do disco ('' é a raiz C:\)
  */
@@ -17,7 +19,7 @@ import { erro, confirmar, propriedades, mensagem } from '../dialogos.js';
 import { esvaziarLixeira } from '../mesa.js';
 import { tocar } from '../sons.js';
 import { tr, marcar } from '../idioma.js';
-import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos } from '../unidades.js';
+import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos, listarPastasFora, ehDoComputador, iconeUnidade } from '../unidades.js';
 import { pastaDoZip, lerPastaZip, itensDoZip, extrairEMostrar, abrirDoZip } from '../compactados.js';
 import { Arvore } from '../arvore.js';
 import { PainelVisualizacao } from '../visualizar.js';
@@ -30,6 +32,7 @@ const ESPECIAIS = {
   '::computador': { titulo: marcar('Meu computador'), icone: 'computador' },
   '::lixeira': { titulo: marcar('Lixeira'), icone: 'lixeira' },
   '::acesso': { titulo: marcar('Acesso rápido'), icone: 'favoritos' },
+  '::fora': { titulo: marcar('Computador principal'), icone: 'rede' },
 };
 
 function tituloDe(pasta) {
@@ -44,7 +47,7 @@ function tituloDe(pasta) {
 
 function iconeDe(pasta, cheia) {
   if (pasta === '::lixeira') return cheia ? 'lixeira-cheia' : 'lixeira';
-  if (lerPastaUnidade(pasta)) return lerPastaUnidade(pasta).rel ? 'pasta-aberta' : 'removivel';
+  if (lerPastaUnidade(pasta)) return lerPastaUnidade(pasta).rel ? 'pasta-aberta' : iconeUnidade(unidadeConhecida(lerPastaUnidade(pasta).id));
   if (lerPastaZip(pasta)) return lerPastaZip(pasta).dentro ? 'pasta-aberta' : 'compactado';
   if (ESPECIAIS[pasta]) return ESPECIAIS[pasta].icone;
   if (!pasta) return 'disco';
@@ -150,12 +153,25 @@ class Explorador {
     const aoMudarUnidades = (e) => {
       const un = lerPastaUnidade(this.pasta);
       if (this.pasta === '::computador') this.carregar();
-      else if (un && !e.detail.some((u) => u.id === un.id)) this.navegar('::computador');
+      else if (un && !ehDoComputador(un.id) && !e.detail.some((u) => u.id === un.id)) this.navegar('::computador');
       if (this.comArvore) this.arvore.recarregar('::computador');
     };
     document.addEventListener('retro-unidades', aoMudarUnidades);
+    // Uma cópia levada para a unidade (ou a pasta do computador principal) desta janela: a lista se refaz.
+    const aoCopiarUnidade = (e) => { const un = lerPastaUnidade(this.pasta); if (un && un.id === e.detail.id) this.carregar(); };
+    document.addEventListener('retro-unidade-copiou', aoCopiarUnidade);
+    // As pastas do computador principal ligadas ou desligadas (Painel › Disco C:).
+    const aoMudarFora = () => {
+      const un = lerPastaUnidade(this.pasta);
+      if (this.pasta === '::fora' || (un && ehDoComputador(un.id))) this.navegar('::computador');
+      else if (this.pasta === '::computador') this.carregar();
+      if (this.comArvore) this.arvore.recarregar('::computador');
+    };
+    document.addEventListener('retro-fora-mudou', aoMudarFora);
     this.j.ev.on('fechada', () => {
       this.paraDeOuvir();
+      document.removeEventListener('retro-fora-mudou', aoMudarFora);
+      document.removeEventListener('retro-unidade-copiou', aoCopiarUnidade);
       document.removeEventListener('retro-unidades', aoMudarUnidades);
       document.removeEventListener('retro-acesso', aoMudarAcesso);
       clearTimeout(this.esperaVis);
@@ -360,6 +376,8 @@ class Explorador {
     if (pasta === '::computador') return [pc];
     if (pasta === '::lixeira') return [{ rotulo: tr('Lixeira'), pasta, icone: 'lixeira' }];
     if (pasta === '::acesso') return [{ rotulo: tr('Acesso rápido'), pasta, icone: 'favoritos' }];
+    const fora = { rotulo: tr('Computador principal'), pasta: '::fora', icone: 'rede' };
+    if (pasta === '::fora') return [pc, fora];
     const disco = (rel) => {
       const partes = String(rel || '').split('/').filter(Boolean);
       return [pc, { rotulo: 'C:', pasta: '', icone: 'disco' }, ...partes.map((p, i) => ({ rotulo: p, pasta: partes.slice(0, i + 1).join('/') }))];
@@ -367,7 +385,7 @@ class Explorador {
     const un = lerPastaUnidade(pasta);
     if (un) {
       const partes = un.rel ? un.rel.split('/') : [];
-      return [pc, { rotulo: nomeUnidade(unidadeConhecida(un.id)), pasta: pastaDaUnidade(un.id), icone: 'removivel' },
+      return [pc, ...(ehDoComputador(un.id) ? [fora] : []), { rotulo: nomeUnidade(unidadeConhecida(un.id)), pasta: pastaDaUnidade(un.id), icone: iconeUnidade(unidadeConhecida(un.id)) },
         ...partes.map((p, i) => ({ rotulo: p, pasta: pastaDaUnidade(un.id, partes.slice(0, i + 1).join('/')) }))];
     }
     const zip = lerPastaZip(pasta);
@@ -432,7 +450,8 @@ class Explorador {
     const de = this.pasta;
     if (this.pasta === '' || this.pasta === '::lixeira' || this.pasta === '::acesso') return this.navegar('::computador', de === '' ? 'disco' : de === '::lixeira' ? 'lixeira' : undefined);
     const un = lerPastaUnidade(this.pasta);
-    if (un) return un.rel ? this.navegar(pastaDaUnidade(un.id, paiDe(un.rel)), 'un:' + un.rel) : this.navegar('::computador', 'unidade:' + un.id);
+    if (this.pasta === '::fora') return this.navegar('::computador', 'fora');
+    if (un) return un.rel ? this.navegar(pastaDaUnidade(un.id, paiDe(un.rel)), 'un:' + un.rel) : this.navegar(ehDoComputador(un.id) ? '::fora' : '::computador', 'unidade:' + un.id);
     const zip = lerPastaZip(this.pasta);
     if (zip) return zip.dentro ? this.navegar(pastaDoZip(zip.rel, paiDe(zip.dentro)), 'zip:' + zip.dentro) : this.navegar(paiDe(zip.rel), 'arq:' + zip.rel);
     this.navegar(paiDe(this.pasta), 'arq:' + de);
@@ -459,7 +478,7 @@ class Explorador {
     const un = lerPastaUnidade(pasta);
     const zip = lerPastaZip(pasta);
     this.endereco.value = ESPECIAIS[pasta] ? tr(ESPECIAIS[pasta].titulo)
-      : un ? nomeUnidade(unidadeConhecida(un.id)) + (un.rel ? '\\' + un.rel.replace(/\//g, '\\') : '')
+      : un ? (ehDoComputador(un.id) ? tr('Computador principal') + '\\' : '') + nomeUnidade(unidadeConhecida(un.id)) + (un.rel ? '\\' + un.rel.replace(/\//g, '\\') : '')
         : zip ? caminhoTela(zip.rel) + (zip.dentro ? '\\' + zip.dentro.replace(/\//g, '\\') : '')
           : caminhoTela(pasta);
     this.desenharMigalhas();
@@ -471,6 +490,7 @@ class Explorador {
       if (pasta === '::computador') itens = await this.itensComputador();
       else if (pasta === '::lixeira') itens = await this.itensLixeira();
       else if (pasta === '::acesso') itens = await this.itensAcesso();
+      else if (pasta === '::fora') itens = await this.itensFora();
       else if (un) itens = await this.itensUnidade(un.id, un.rel);
       else if (zip) itens = await this.itensZip(zip.rel, zip.dentro);
       else itens = await this.itensPasta(pasta);
@@ -482,7 +502,8 @@ class Explorador {
     }
     if (pasta !== this.pasta) return;
     this.j.definirIcone(iconeDe(pasta, pasta === '::lixeira' && itens.length > 0));
-    this.vista.o.pastaSoltar = pasta.startsWith('::') ? (pasta === '::lixeira' ? '::lixeira' : null) : pasta;
+    // Na pasta de um pendrive ou do computador principal, soltar leva uma cópia para lá.
+    this.vista.o.pastaSoltar = pasta.startsWith('::') ? (pasta === '::lixeira' || un ? pasta : null) : pasta;
     this.vista.desenhar(itens, { selecionarChaves: selecionar ? [selecionar] : undefined });
     if (selecionar) this.vista.selecionarChave(selecionar);
     this.atualizarStatus();
@@ -542,12 +563,25 @@ class Explorador {
       { chave: 'lixeira', rotulo: tr('Lixeira'), icone: 'lixeira', alvo: '::lixeira', especial: () => this.navegar('::lixeira'), arrastavel: false, colunas: ['', tr('Lixeira'), ''] },
       // Os pendrives e cartões ligados agora.
       ...(await listarUnidades()).map((u) => ({
-        chave: 'unidade:' + u.id, rotulo: nomeUnidade(u), icone: 'removivel', unidadeRaiz: u, arrastavel: false,
+        chave: 'unidade:' + u.id, rotulo: nomeUnidade(u), icone: 'removivel', unidadeRaiz: u, arrastavel: false, alvo: u.montada ? pastaDaUnidade(u.id) : null,
         especial: () => this.navegar(pastaDaUnidade(u.id)),
         dica: u.total ? tr('Espaço livre: {livre}\nCapacidade: {total}', { livre: tamanho(u.livre), total: tamanho(u.total) }) : tr('Disco removível'),
         colunas: ['', tr('Disco removível'), ''],
       })),
+      // As pastas do computador principal (fora do modo sistema).
+      ...((await listarPastasFora()).length ? [{
+        chave: 'fora', rotulo: tr('Computador principal'), icone: 'rede', arrastavel: false, especial: () => this.navegar('::fora'),
+        dica: tr('A área de trabalho, os documentos e os downloads do computador principal'), colunas: ['', tr('Pastas do computador principal'), ''],
+      }] : []),
     ];
+  }
+
+  /** As pastas do computador principal: abrem como um pendrive (ver, trazer e levar cópias). */
+  async itensFora() {
+    return (await listarPastasFora()).map((u) => ({
+      chave: 'unidade:' + u.id, rotulo: nomeUnidade(u), icone: iconeUnidade(u), unidadeRaiz: u, arrastavel: false, alvo: pastaDaUnidade(u.id),
+      especial: () => this.navegar(pastaDaUnidade(u.id)), dica: u.raiz, colunas: ['', tr('Pasta do computador principal'), ''],
+    }));
   }
 
   /** O conteúdo de um pendrive (só para ver e copiar: nada é apagado nem renomeado nele por aqui). */
@@ -558,7 +592,7 @@ class Explorador {
       const t = tipoDe(f.nome, f.pasta);
       return {
         chave: 'un:' + f.rel, rotulo: f.nome, icone: t.icone, nome: f.nome, pasta: f.pasta, arrastavel: false,
-        unidade: { id, rel: f.rel },
+        unidade: { id, rel: f.rel }, alvo: f.pasta ? pastaDaUnidade(id, f.rel) : null,
         dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],
         tamanho: f.tamanho,
@@ -660,6 +694,14 @@ class Explorador {
         { rotulo: tr('P&ropriedades'), desativado: sel.length !== 1, acao: () => propriedadesLixo(sel[0].lixo) },
       ], pos);
     }
+    if (this.pasta === '::fora') {
+      if (!sel.length) return abrirMenu([...this.itensExibir(), { rotulo: tr('&Atualizar'), acao: () => this.carregar() }], pos);
+      const u = sel[0].unidadeRaiz;
+      return abrirMenu([
+        { rotulo: tr('&Abrir'), negrito: true, acao: () => this.abrirItem(sel[0]) },
+        { rotulo: tr('&Mostrar no computador principal'), acao: () => retro.computador.mostrar(u.id, '').catch((e) => erro(e.message)) },
+      ], pos);
+    }
     if (this.pasta === '::computador') {
       if (!sel.length) return abrirMenu(this.itensExibir(), pos);
       const it = sel[0];
@@ -689,12 +731,15 @@ class Explorador {
     const un = lerPastaUnidade(this.pasta);
     if (un) {
       const u = unidadeConhecida(un.id);
+      const doComputador = ehDoComputador(un.id);
       if (!sel.length) {
         return abrirMenu([
           { rotulo: tr('C&olar aqui (copiar do disco C:)'), desativado: !transferencia.rels.length, acao: () => levarParaUnidade(u, transferencia.rels, un.rel).then(() => this.carregar()) },
           { rotulo: tr('&Atualizar'), acao: () => this.carregar() },
           { separador: true },
-          { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(u) },
+          doComputador
+            ? { rotulo: tr('&Mostrar no computador principal'), acao: () => retro.computador.mostrar(un.id, un.rel).catch((e) => erro(e.message)) }
+            : { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(u) },
         ], pos);
       }
       const rels = sel.map((s) => s.unidade.rel);

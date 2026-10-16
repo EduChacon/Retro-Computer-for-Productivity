@@ -1061,6 +1061,7 @@ button.cm-rosto:active { padding: 1px 0 0 1px; }
 
 /* Painel › Barra de tarefas e menu Iniciar: as listas dos fixados */
 .lp-topo { display: flex; gap: 6px; }
+.nota-pc { color: #404040; line-height: 13px; margin: 4px 0 0 20px; }
 .lp-lista { flex: 1; min-width: 0; height: 92px; overflow-y: auto; padding: 2px; user-select: none; }
 .lp-linha { display: flex; align-items: center; gap: 5px; padding: 1px 3px; white-space: nowrap; cursor: var(--cur-default, default); }
 .lp-linha span { overflow: hidden; text-overflow: ellipsis; }
