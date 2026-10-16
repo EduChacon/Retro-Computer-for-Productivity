@@ -25,6 +25,7 @@ const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
 const loginGoogle = require('./login-google');
 const { LojaWinget, LojaBrew, LojaWingetFalsa, LojaBrewFalsa } = require('./lojas');
+const { PapeisDeParede } = require('./papel');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
 const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
@@ -317,6 +318,10 @@ function soConteudo(resp) {
   return resp;
 }
 
+// Os papéis de parede, na pasta de dados do usuário em uso (perfis.js troca o userData logo na abertura).
+let papeisDeParede = null;
+const papeis = () => papeisDeParede || (papeisDeParede = new PapeisDeParede(path.join(app.getPath('userData'), 'papeis-de-parede')));
+
 function registrarProtocolos() {
   protocol.handle('sistema', async (pedido) => {
     const url = new URL(pedido.url);
@@ -338,6 +343,8 @@ function registrarProtocolos() {
       try { arquivo = disco.real(rel.slice('/miniatura/'.length)); } catch { return new Response('404', { status: 404 }); }
       return soConteudo(await miniatura(arquivo, path.join(app.getPath('userData'), 'miniaturas'), nativeImage));
     }
+    // Os papéis de parede do usuário (as cópias em papeis-de-parede, nos dados de cada usuário).
+    if (rel.startsWith('/papel/')) return soConteudo(await papeis().servir(rel.slice('/papel/'.length)));
     if (rel === '/' || rel === '') rel = '/index.html';
     const arquivo = path.resolve(PASTA_SISTEMA, '.' + rel);
     if (!arquivo.startsWith(PASTA_SISTEMA + path.sep) || !fs.existsSync(arquivo)) {
@@ -1136,6 +1143,8 @@ function registrarPonte() {
   tratar('disco:ler', (rel) => disco.ler(rel).then((b) => new Uint8Array(b)));
   tratar('disco:lerAtalho', (rel) => disco.lerAtalho(String(rel)));
   tratar('disco:criarAtalho', (pai, nome, chave) => disco.criarAtalho(String(pai), String(nome), String(chave)));
+  tratar('papel:adicionar', (rel) => papeis().adicionar(disco.real(String(rel)), { tr }));
+  tratar('papel:remover', (arquivo) => papeis().remover(String(arquivo)));
   tratar('disco:lerTexto', (rel) => disco.ler(rel).then((b) => b.toString('utf8')));
   tratar('disco:gravar', (rel, dados, o) => disco.gravar(rel, dados, o));
   tratar('disco:criarPasta', (pai, nome) => disco.criarPasta(pai, nome));

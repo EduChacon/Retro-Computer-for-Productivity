@@ -957,7 +957,7 @@ body.barra-alta { --altura-barra: 34px; }
   background: url('icones/32/computador.png') no-repeat 0 -6px / 192px 192px;
   image-rendering: pixelated;
 }
-.monitor-previa .tela-previa { position: absolute; left: 60px; top: 36px; width: 78px; height: 54px; }
+.monitor-previa .tela-previa { position: absolute; left: 60px; top: 36px; width: 78px; height: 54px; image-rendering: auto; }
 
 .texto-ajuda { user-select: text; line-height: 15px; }
 .texto-ajuda h2 { font-size: 10px; font-weight: bold; margin: 12px 0 4px; color: var(--titulo); }

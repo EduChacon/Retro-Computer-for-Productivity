@@ -5,7 +5,8 @@
  */
 import { h, img, nomeDe, paiDe, juntar, caminhoTela, extensao } from './util.js';
 import { confirmar, entrada, erro, mensagem, propriedades, ajustarAoConteudo } from './dialogos.js';
-import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputador, padraoPara, definirConfig, estado } from './sistema.js';
+import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputador, padraoPara, definirConfig, estado, adicionarPapel } from './sistema.js';
+import { EXTS_PAPEL, aplicarFundo } from './aparencia.js';
 import { Janela } from './janelas.js';
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
@@ -346,6 +347,15 @@ function pedidosAoClaude(um) {
  * @param {Array<{rel:string, nome:string, pasta:boolean}>} sel
  * @param {{ aoRenomear?: Function, abrirPasta?: Function }} o
  */
+/** Botão direito numa imagem › Usar como papel de parede, no jeito escolhido em Painel › Aparência. */
+async function usarComoPapel(rel) {
+  try {
+    const p = await adicionarPapel(rel);
+    await definirConfig({ papel: { imagem: p.arquivo } });
+    aplicarFundo(estado.config.papel);
+  } catch (e) { erro(e.message); }
+}
+
 export function menuDeItens(sel, o = {}) {
   const rels = sel.map((s) => s.rel);
   const um = sel.length === 1 ? sel[0] : null;
@@ -375,6 +385,7 @@ export function menuDeItens(sel, o = {}) {
       ],
     });
     if (ehCompactado(um.nome)) itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(um.rel) });
+    if (EXTS_PAPEL.includes(extensao(um.nome))) itens.push({ rotulo: tr('Usar como papel de &parede'), icone: 'aparencia', acao: () => usarComoPapel(um.rel) });
     itens.push({ rotulo: tr('Pe&dir ao Claude'), icone: 'claude', sub: () => pedidosAoClaude(um) });
   }
   // O antivírus: um arquivo ou uma pasta de cada vez.

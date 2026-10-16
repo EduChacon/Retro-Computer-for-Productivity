@@ -6,10 +6,10 @@ import { h, img, icone, tamanho, caminhoTela, rotulo, tipoDe } from '../util.js'
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco, programasPara } from '../sistema.js';
-import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada } from '../dialogos.js';
+import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco, programasPara, pastaDocs, adicionarPapel, removerPapel } from '../sistema.js';
+import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada, caixaArquivo } from '../dialogos.js';
 import { deslizante } from '../controles.js';
-import { CORES, PADROES, FUNDO_INICIO, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS } from '../aparencia.js';
+import { CORES, PADROES, FUNDO_INICIO, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS } from '../aparencia.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
@@ -269,11 +269,52 @@ function dialogoAparencia() {
   let protecao = { ...c.protecaoTela };
 
   const previa = h('div.tela-previa');
-  const atualizarPrevia = () => Object.assign(previa.style, fundoCss(papel));
+  // A prévia é o monitor pequeno: a imagem centralizada encolhe na mesma proporção da tela.
+  const atualizarPrevia = () => aplicarFundo(papel, previa, { escala: 78 / Math.max(1, innerWidth) });
   const monitor = h('div.monitor-previa', previa);
+
+  // O papel de parede: uma imagem do disco C: por cima da cor (a cópia fica na pasta do usuário).
+  const selImagem = h('select', { style: { width: '100%' } });
+  const selModo = h('select', Object.entries(MODOS_PAPEL).map(([k, r]) => h('option', { value: k }, tr(r))));
+  selModo.value = MODOS_PAPEL[papel.modo] ? papel.modo : 'preencher';
+  const btRemover = h('button', { type: 'button' }, tr('Remover…'));
+  const desenharImagens = () => {
+    const lista = estado.config.papeis || [];
+    if (papel.imagem && !lista.some((p) => p.arquivo === papel.imagem)) papel.imagem = null;
+    selImagem.replaceChildren(h('option', { value: '' }, tr('(Nenhum)')), ...lista.map((p) => h('option', { value: p.arquivo }, p.nome)));
+    selImagem.value = papel.imagem || '';
+    selModo.disabled = btRemover.disabled = !papel.imagem;
+  };
+  selImagem.addEventListener('change', () => { papel.imagem = selImagem.value || null; desenharImagens(); atualizarPrevia(); });
+  selModo.addEventListener('change', () => { papel.modo = selModo.value; atualizarPrevia(); });
+  const btProcurar = h('button', { type: 'button', on: { click: async () => {
+    const rel = await caixaArquivo({ modo: 'abrir', titulo: tr('Procurar'), pasta: pastaDocs(), tipos: [{ rotulo: tr('Imagens'), exts: EXTS_PAPEL }] });
+    if (!rel) return;
+    try {
+      const p = await adicionarPapel(rel);
+      papel.imagem = p.arquivo;
+      papel.modo = selModo.value;
+    } catch (e) { erro(e.message); }
+    desenharImagens();
+    atualizarPrevia();
+  } } }, tr('Procurar…'));
+  btRemover.addEventListener('click', async () => {
+    const atual = (estado.config.papeis || []).find((p) => p.arquivo === papel.imagem);
+    if (!atual || !(await confirmar(tr('Tirar "{nome}" da lista dos papéis de parede? O arquivo do disco C: não é apagado.', { nome: atual.nome }), { titulo: tr('Papel de parede') }))) return;
+    await removerPapel(atual.arquivo).catch((e) => erro(e.message));
+    if (!estado.config.papel || !estado.config.papel.imagem) aplicarFundo(estado.config.papel);
+    papel.imagem = null;
+    desenharImagens();
+    atualizarPrevia();
+  });
+  desenharImagens();
   atualizarPrevia();
 
-  const abaFundo = h('div', monitor, escolhaDeFundo(papel, atualizarPrevia).el);
+  const abaFundo = h('div', monitor,
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Papel de parede')),
+      h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, h('div.select-caixa', { style: { flex: '1', minWidth: '0' } }, selImagem), btProcurar, btRemover),
+      h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' } }, h('span', tr('Ajuste:')), h('div.select-caixa', selModo))),
+    escolhaDeFundo(papel, atualizarPrevia).el);
 
   const chkProt = h('input', { type: 'checkbox', checked: protecao.ligada });
   const minProt = h('input', { type: 'number', min: 1, max: 120, value: protecao.minutos, style: { width: '56px' } });

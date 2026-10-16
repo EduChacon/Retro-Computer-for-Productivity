@@ -152,6 +152,7 @@ No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw
 
 ### A tela e a energia
 
+- **Papel de parede** (Painel de controle › Aparência › Plano de fundo): a cor, o padrão 8×8 e, se quiser, uma imagem sua. "Procurar…" escolhe uma imagem do disco C: (PNG, JPEG, GIF, WebP ou BMP, conferida pelo conteúdo, até 50 MB), e o "Ajuste" a deixa centralizada (um pixel dela por pixel do monitor, com a cor e o padrão em volta), lado a lado ou preenchendo a tela sem deformar. O botão direito numa imagem do Explorador › "Usar como papel de parede" faz o mesmo. O Retro Computer guarda uma cópia na pasta de dados do usuário (`papeis-de-parede`): o fundo continua se o arquivo do disco for movido ou apagado, e "Remover…" tira só a cópia. Cada usuário tem os seus.
 - **Luz noturna** (Painel de controle › Aparência › Efeitos): as cores mais quentes, com menos azul, das 20h às 7h (as horas se escolhem) ou o dia todo, na intensidade escolhida. No Retro Computer como sistema, ela vale também para os programas do Linux.
 - **Cantos magnéticos** (Aparência › Efeitos, ligados): arrastar a janela até a borda a encaixa; a tecla do logotipo com as setas faz o mesmo.
 - **Área da tela** (Aparência › Configurações, no Retro Computer como sistema): a resolução do monitor; se a tela nova não aparecer bem, ela volta à anterior em 15 segundos.

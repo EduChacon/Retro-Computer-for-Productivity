@@ -74,6 +74,11 @@ contextBridge.exposeInMainWorld('retro', {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }
     },
   },
+  // Os papéis de parede: copiar uma imagem do disco C: para a pasta do usuário e tirar a cópia.
+  papel: {
+    adicionar: (rel) => chamar('papel:adicionar', rel),
+    remover: (arquivo) => chamar('papel:remover', arquivo),
+  },
   tela: {
     modos: () => chamar('tela:modos'),
     definir: (saida, modo) => chamar('tela:definir', saida, modo),

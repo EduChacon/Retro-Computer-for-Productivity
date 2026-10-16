@@ -2501,6 +2501,72 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('fundo-aparencia');
   },
 
+  // O papel de parede com uma imagem do usuário: Procurar… no Painel (a prévia, Preencher e
+  // Centralizado), o botão direito numa imagem do Explorador (Lado a lado), um arquivo que não é
+  // imagem recusado e o Remover…, que tira a cópia e deixa o arquivo do disco C:.
+  async papelDeParede() {
+    const docs = path.join(disco, DOCS);
+    const foto1 = path.join(docs, 'Fractal.png');
+    const ladrilho = path.join(docs, 'Ladrilho.png');
+    execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'mandelbrot=size=1600x1000', '-frames:v', '1', foto1]);
+    execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=96x96', '-frames:v', '1', ladrilho]);
+    fs.writeFileSync(path.join(docs, 'Falso.png'), 'isto não é uma imagem');
+    const estadoPapel = () => pagina.evaluate(() => { const c = window.__retro.estado.config; const t = document.getElementById('tela').style; return `papel ${JSON.stringify(c.papel)} | lista ${JSON.stringify((c.papeis || []).map((p) => p.nome))} | tela: ${t.backgroundImage.slice(0, 60)}… ${t.backgroundRepeat} ${t.backgroundSize}`; });
+    const aplicar = () => pagina.click('.janela.ativa button >> text=' + T('&Aplicar').replace('&', ''));
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(600);
+    await foto('papel-painel-antes');
+    await pagina.click(`.janela.ativa button:text-is("${T('Procurar…')}")`);
+    await pagina.waitForTimeout(800);
+    await pagina.dblclick('.janela.ativa .lista-arquivos .item:has-text("Fractal")');
+    await pagina.waitForTimeout(1200);
+    await foto('papel-painel-preencher');
+    await aplicar();
+    await pagina.waitForTimeout(800);
+    console.log('preencher:', await estadoPapel());
+    // Centralizado: a imagem no tamanho do arquivo, um pixel dela por pixel da tela.
+    await pagina.evaluate((m) => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === m)); s.value = m; s.dispatchEvent(new Event('change')); }, 'centro');
+    await pagina.waitForTimeout(600);
+    await foto('papel-painel-centro');
+    await aplicar();
+    await pagina.waitForTimeout(800);
+    console.log('centralizado:', await estadoPapel(), '| devicePixelRatio', await pagina.evaluate(() => devicePixelRatio));
+    await fecharTudo();
+    await foto('papel-mesa-centro');
+    // O botão direito numa imagem do Explorador, com o Lado a lado.
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ papel: { modo: 'lado' } })));
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(800);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 20, y: 20, w: 520, h: 360 }; j.aplicarRet(); });
+    await pagina.click('.janela.ativa .item:has-text("Ladrilho")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('papel-menu');
+    await pagina.click(`.menu .opcao:has-text("${T('Usar como papel de &parede').replace('&', '')}")`);
+    await pagina.waitForTimeout(1200);
+    console.log('lado a lado:', await estadoPapel());
+    await foto('papel-mesa-lado');
+    // Um arquivo que só tem o nome de imagem é recusado.
+    await pagina.click('.janela.ativa .item:has-text("Falso")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.menu .opcao:has-text("${T('Usar como papel de &parede').replace('&', '')}")`);
+    await pagina.waitForTimeout(800);
+    console.log('falso:', await pagina.evaluate(() => document.querySelector('.janela.ativa').innerText.replace(/\s+/g, ' ').slice(0, 160)));
+    await foto('papel-falso');
+    await pagina.keyboard.press('Enter');
+    // Remover…: tira a cópia e a imagem da lista; o arquivo do disco C: fica.
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(600);
+    await pagina.click(`.janela.ativa button:text-is("${T('Remover…')}")`);
+    await pagina.waitForTimeout(400);
+    await foto('papel-remover');
+    await pagina.click(`.janela.ativa button >> text=${T('&Sim').replace('&', '')}`);
+    await pagina.waitForTimeout(800);
+    console.log('removido:', await estadoPapel(), '| o arquivo do C: ficou:', fs.existsSync(ladrilho), '| cópias:', fs.readdirSync(path.join(dados, 'papeis-de-parede')).join(','));
+    await foto('papel-painel-depois');
+  },
+
   // O modo sistema (com RETRO_SISTEMA=1 e RETRO_ENERGIA_FALSA=1: a energia só é anotada, nunca desliga).
   async sistema() {
     if (!process.env.RETRO_ENERGIA_FALSA) throw new Error('rode com RETRO_ENERGIA_FALSA=1');

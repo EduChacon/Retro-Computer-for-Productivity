@@ -92,6 +92,25 @@ export async function definirConfig(parte) {
   return estado.config;
 }
 
+/**
+ * Uma imagem do disco C: na lista dos papéis de parede do usuário (papel.js guarda uma cópia na
+ * pasta dele). Devolve { arquivo, nome }; a mesma imagem duas vezes fica uma só na lista.
+ */
+export async function adicionarPapel(rel) {
+  const p = await retro.papel.adicionar(rel);
+  const lista = (estado.config.papeis || []).filter((x) => x.arquivo !== p.arquivo);
+  await definirConfig({ papeis: [...lista, p] });
+  return p;
+}
+
+/** Tira uma imagem da lista (e a cópia dela); o arquivo do disco C: fica. Em uso, o fundo volta à cor. */
+export async function removerPapel(arquivo) {
+  await retro.papel.remover(arquivo);
+  const parte = { papeis: (estado.config.papeis || []).filter((x) => x.arquivo !== arquivo) };
+  if (estado.config.papel && estado.config.papel.imagem === arquivo) parte.papel = { imagem: null };
+  await definirConfig(parte);
+}
+
 export async function atualizarProgramas() {
   estado.instalados = await retro.programas.instalados();
   estado.catalogo = await retro.programas.catalogo();

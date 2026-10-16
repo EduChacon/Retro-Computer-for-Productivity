@@ -46,15 +46,68 @@ export function escurecer(hex, f = 0.55) {
 /** O fundo de sempre da página inicial do Navegador (Painel › Internet › Página inicial). */
 export const FUNDO_INICIO = Object.freeze({ cor: '#3a6ea5', padrao: 'losangos' });
 
-export function fundoCss(papel) {
+/** Os jeitos de mostrar a imagem do papel de parede (Painel › Aparência › Plano de fundo). */
+export const MODOS_PAPEL = { centro: marcar('Centralizado'), lado: marcar('Lado a lado'), preencher: marcar('Preencher') };
+
+/** As imagens que o papel de parede aceita (papel.js confere pelo conteúdo). */
+export const EXTS_PAPEL = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
+
+/** O endereço da cópia de uma imagem do papel de parede (papel.js, na pasta do usuário). */
+export const urlPapel = (arquivo) => `sistema://retro/papel/${encodeURIComponent(arquivo)}`;
+
+/**
+ * O fundo em CSS: a cor, o padrão 8×8 e, se houver, a imagem do papel de parede. Centralizada, a
+ * imagem fica por cima do padrão; preenchendo, cobre tudo sem deformar. tam é o tamanho da imagem em
+ * pontos da tela (sem ele, a imagem centralizada e a lado a lado ficam no tamanho do arquivo).
+ */
+export function fundoCss(papel, { tam = null } = {}) {
   const cor = (papel && papel.cor) || '#008080';
-  const img = imagemPadrao(papel && papel.padrao, escurecer(cor));
-  return { backgroundColor: cor, backgroundImage: img || 'none' };
+  const padrao = imagemPadrao(papel && papel.padrao, escurecer(cor));
+  const base = { backgroundColor: cor, backgroundImage: padrao || 'none', backgroundRepeat: 'repeat', backgroundPosition: '0 0', backgroundSize: 'auto' };
+  if (!papel || !papel.imagem) return base;
+  const url = `url("${urlPapel(papel.imagem)}")`;
+  const modo = MODOS_PAPEL[papel.modo] ? papel.modo : 'preencher';
+  const tamanho = modo === 'preencher' ? 'cover' : tam ? `${tam.w}px ${tam.h}px` : 'auto';
+  if (modo === 'centro' && padrao) {
+    return { ...base, backgroundImage: `${url}, ${padrao}`, backgroundRepeat: 'no-repeat, repeat', backgroundPosition: 'center, 0 0', backgroundSize: `${tamanho}, auto` };
+  }
+  return { ...base, backgroundImage: url, backgroundRepeat: modo === 'lado' ? 'repeat' : 'no-repeat', backgroundPosition: modo === 'lado' ? '0 0' : 'center', backgroundSize: tamanho };
 }
 
-export function aplicarFundo(papel, el = document.getElementById('tela')) {
-  Object.assign(el.style, fundoCss(papel));
+// O tamanho de cada imagem em pixels, lido uma vez.
+const pixelsDasImagens = new Map();
+function pixelsDe(arquivo) {
+  if (!pixelsDasImagens.has(arquivo)) {
+    pixelsDasImagens.set(arquivo, new Promise((ok) => {
+      const i = new Image();
+      i.onload = () => ok({ w: i.naturalWidth, h: i.naturalHeight });
+      i.onerror = () => ok(null);
+      i.src = urlPapel(arquivo);
+    }));
+  }
+  return pixelsDasImagens.get(arquivo);
 }
+
+/**
+ * Pinta o fundo num elemento. A imagem centralizada ou lado a lado aparece com um pixel do arquivo
+ * por pixel do monitor, como no Windows (qualquer que seja o tamanho dos pixels da interface);
+ * escala encolhe tudo (a prévia do monitor no Painel).
+ */
+export function aplicarFundo(papel, el = document.getElementById('tela'), { escala = 1 } = {}) {
+  const vez = (el._vezFundo = (el._vezFundo || 0) + 1);
+  if (el.id === 'tela') ultimoFundo = papel;
+  Object.assign(el.style, fundoCss(papel));
+  if (!papel || !papel.imagem || !MODOS_PAPEL[papel.modo] || papel.modo === 'preencher') return;
+  pixelsDe(papel.imagem).then((px) => {
+    if (!px || el._vezFundo !== vez) return;
+    const k = escala / (window.devicePixelRatio || 1);
+    Object.assign(el.style, fundoCss(papel, { tam: { w: Math.max(1, px.w * k), h: Math.max(1, px.h * k) } }));
+  });
+}
+
+// Mudar o tamanho dos pixels muda o devicePixelRatio: a imagem centralizada volta ao tamanho certo.
+let ultimoFundo = null;
+if (typeof window !== 'undefined') window.addEventListener('resize', () => { if (ultimoFundo && ultimoFundo.imagem && ultimoFundo.modo !== 'preencher') aplicarFundo(ultimoFundo); });
 
 /**
  * O tamanho dos pixels: a tela usa um número inteiro de pixels físicos por
