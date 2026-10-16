@@ -8,6 +8,7 @@ import { h, img } from './util.js';
 import { lista, recentes, janelaAtiva, opcoes, mostrarAreaDeTrabalho, minimizarTodas } from './janelas.js';
 import { estado, abrir } from './sistema.js';
 import { janelasNativas, retroAtivo, minimizarNativas } from './janelas-nativas.js';
+import { iconeNativoJa } from './nativos.js';
 import { estaBloqueado } from './bloqueio.js';
 import { tr } from './idioma.js';
 
@@ -27,6 +28,9 @@ function janelasParaAlternar() {
 }
 
 function iconeDe(j) {
+  // Os programas do Linux com o ícone deles (o mesmo da barra de tarefas), quando se sabe qual é.
+  const url = j.nativa && j.programa ? iconeNativoJa(j.programa.slice('nativo:'.length)) : null;
+  if (url) return h('img.de-fora', { src: url, width: 32, height: 32, alt: '' });
   return img(j.icone || 'programa', 32);
 }
 
