@@ -2,7 +2,7 @@
  * O estado do sistema: as configurações, os programas (embutidos e instalados),
  * qual programa abre cada tipo de arquivo, os documentos recentes e os avisos.
  */
-import { h, img, extensao, nomeDe, ehTexto, Eventos, caminhoTela } from './util.js';
+import { h, img, extensao, nomeDe, ehTexto, Eventos, caminhoTela, EXECUTAVEIS } from './util.js';
 import { configurar as configurarSons, tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
 import { comPrograma } from './janelas.js';
@@ -198,7 +198,27 @@ export async function abrirArquivo(rel, { com } = {}) {
     botoes,
   });
   if (v === 'instalar') abrir('programas', { instalar: sug[0].id, depois: rel });
-  else if (v === 'fora') retro.disco.abrirFora(rel).catch(() => { });
+  else if (v === 'fora') abrirNoComputador(rel).catch(() => { });
+}
+
+/**
+ * Abre o arquivo com o programa do computador principal. Um programa, um instalador ou um roteiro
+ * roda direto lá, fora do Retro Computer: antes, a pergunta (com o Cancelar como padrão).
+ */
+export async function abrirNoComputador(rel) {
+  const nome = nomeDe(rel);
+  if (EXECUTAVEIS.test(nome)) {
+    const { mensagem } = await import('./dialogos.js');
+    const v = await mensagem({
+      titulo: tr('Abrir no computador principal'),
+      tipo: 'aviso',
+      texto: tr('"{nome}" é um programa ou um roteiro: ele roda direto no computador principal, fora do Retro Computer, com acesso aos seus arquivos.\n\nAbra só se você confia em quem o fez. Os arquivos baixados da internet são os mais perigosos.', { nome }),
+      botoes: [{ texto: tr('Abrir mesmo assim'), valor: true }, { texto: tr('Cancelar'), valor: false, padrao: true }],
+    });
+    if (v !== true) return false;
+  }
+  await retro.disco.abrirFora(rel);
+  return true;
 }
 
 /* ---------- Documentos recentes ---------- */

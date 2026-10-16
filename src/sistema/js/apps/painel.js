@@ -663,7 +663,9 @@ function dialogoUsuarios() {
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Usuários deste computador')),
       h('div.lp-topo', caixa, h('div.lp-botoes', btNovo, btRenomear, btTirar, btSenha)),
       discoEl, emUso),
-    h('label', chkPerguntar, h('span', tr('Perguntar quem vai usar ao abrir o Retro Computer'))));
+    h('label', chkPerguntar, h('span', tr('Perguntar quem vai usar ao abrir o Retro Computer'))),
+    // Os usuários não são uma barreira de segurança: o Prompt de qualquer um alcança os arquivos de todos.
+    h('div', { style: { color: '#808080', marginTop: '8px', lineHeight: '13px' } }, tr('Os usuários separam as áreas de trabalho de quem divide o computador, mas não são uma proteção: o Prompt de comando de qualquer um deles alcança os arquivos de todos.')));
   return dialogoBase({
     titulo: tr('Propriedades de Usuários'), icone: 'usuarios', larg: 420,
     abas: [{ titulo: tr('Usuários'), conteudo }],

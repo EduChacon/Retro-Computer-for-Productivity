@@ -15,7 +15,11 @@ async function chamar(canal, ...args) {
 
 function ouvir(canal) {
   return (fn) => {
-    const f = (_e, ...args) => fn(...args);
+    // A ponte copia o retorno da função da página, que aqui não serve para nada: um retorno que não
+    // pode ser copiado (uma janela, por exemplo) não é erro, porque a função já rodou.
+    const f = (_e, ...args) => {
+      try { fn(...args); } catch (e) { if (!/could not be cloned/i.test(String(e && e.message))) throw e; }
+    };
     ipcRenderer.on(canal, f);
     return () => ipcRenderer.removeListener(canal, f);
   };

@@ -62,6 +62,9 @@ export const nomeDe = (rel) => String(rel || '').split('/').filter(Boolean).pop(
 export const paiDe = (rel) => String(rel || '').split('/').filter(Boolean).slice(0, -1).join('/');
 export const juntar = (pai, nome) => (pai ? `${pai}/${nome}` : nome);
 /** O endereço de um arquivo do disco para <img> e <video> (só leitura; servido pelo processo principal). */
+// Os arquivos que rodam como programa no computador principal (a mesma lista de src/principal/executaveis.js).
+export const EXECUTAVEIS = /\.(exe|msi|msix|msixbundle|appx|appxbundle|bat|cmd|com|scr|pif|cpl|msc|hta|js|jse|vbs|vbe|wsf|wsh|ps1|psm1|psd1|reg|lnk|url|scf|inf|jar|app|pkg|mpkg|dmg|command|tool|sh|bash|zsh|csh|run|bin|appimage|deb|rpm|flatpakref|desktop|py|pyw|pl|rb)$/i;
+
 export const urlDoDisco = (rel) => 'disco/' + String(rel || '').split('/').filter(Boolean).map(encodeURIComponent).join('/');
 /** A miniatura de uma foto do disco (o Explorador); "v" muda quando o arquivo muda. */
 export const urlMiniatura = (rel, v = 0) => 'miniatura/' + String(rel || '').split('/').filter(Boolean).map(encodeURIComponent).join('/') + '?v=' + Math.round(v);

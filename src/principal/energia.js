@@ -145,16 +145,15 @@ class Energia {
       this.tampaFalsa = acao;
       return { ok: true };
     }
-    const tmp = path.join(os.tmpdir(), `retro-logind-${process.pid}.conf`);
-    await fsp.writeFile(tmp, textoTampa(acao));
+    const tmp = await require('./sistema-linux').temporario('logind.conf', textoTampa(acao));
     try {
-      const r = await this.comoAdmin(senha, 'install', ['-D', '-m', '0644', tmp, TAMPA_ARQ]);
+      const r = await this.comoAdmin(senha, 'install', ['-D', '-m', '0644', tmp.arquivo, TAMPA_ARQ]);
       if (!r.ok) return r;
       // O logind relê as configurações com o HUP (sem fechar a sessão); se não der, vale depois de reiniciar.
       const hup = await this.comoAdmin(senha, 'systemctl', ['kill', '-s', 'HUP', 'systemd-logind']);
       return { ok: true, reiniciar: !hup.ok };
     } finally {
-      fsp.rm(tmp, { force: true }).catch(() => { });
+      tmp.apagar();
     }
   }
 

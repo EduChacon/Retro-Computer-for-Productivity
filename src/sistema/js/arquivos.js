@@ -5,7 +5,7 @@
  */
 import { h, nomeDe, paiDe, juntar, caminhoTela, extensao } from './util.js';
 import { confirmar, entrada, erro, mensagem, propriedades } from './dialogos.js';
-import { abrir, abrirArquivo, programasPara, avisar, pastaMesa } from './sistema.js';
+import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputador } from './sistema.js';
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
 import { listarUnidades, levarParaUnidade, nomeUnidade } from './unidades.js';
@@ -235,7 +235,7 @@ export function menuDeItens(sel, o = {}) {
       rotulo: tr('Abrir c&om'), sub: () => [
         ...progs.map((p) => ({ rotulo: p.nome, icone: p.icone, acao: () => abrirArquivo(um.rel, { com: p.id }) })),
         ...(progs.length ? [{ separador: true }] : []),
-        { rotulo: tr('Programa do computador principal'), acao: () => retro.disco.abrirFora(um.rel).catch((e) => erro(e.message)) },
+        { rotulo: tr('Programa do computador principal'), acao: () => abrirNoComputador(um.rel).catch((e) => erro(e.message)) },
       ],
     });
     if (ehCompactado(um.nome)) itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(um.rel) });

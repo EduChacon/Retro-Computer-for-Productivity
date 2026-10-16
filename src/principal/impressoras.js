@@ -12,9 +12,9 @@
 const fs = require('node:fs');
 const { execFile, spawn } = require('node:child_process');
 
-function rodar(cmd, args, { timeout = 10000 } = {}) {
+function rodar(cmd, args, { timeout = 10000, env = {} } = {}) {
   return new Promise((resolve, reject) => {
-    execFile(cmd, args, { timeout, windowsHide: true, env: { ...process.env, LC_ALL: 'C' } }, (erro, saida, serr) => {
+    execFile(cmd, args, { timeout, windowsHide: true, env: { ...process.env, LC_ALL: 'C', ...env } }, (erro, saida, serr) => {
       if (erro) { erro.saida = String(serr || saida || '').trim(); return reject(erro); }
       resolve(String(saida));
     });
@@ -50,7 +50,8 @@ function lerFila(texto) {
   return r;
 }
 
-const nomeValido = (n) => typeof n === 'string' && /^[^\s/'"`$\\]{1,127}$/.test(n);
+// Sem espaços, barras, aspas (também as curvas, que o PowerShell lê como aspas) e cifrão.
+const nomeValido = (n) => typeof n === 'string' && /^[^\s/'"`$\\\u2018-\u201F]{1,127}$/.test(n);
 
 class Impressoras {
   constructor({ plataforma = process.platform, webContents = () => null, BrowserWindow, shell } = {}) {
@@ -71,7 +72,7 @@ class Impressoras {
     if (!nomeValido(nome)) return { ok: false, erro: 'nome' };
     try {
       if (this.plataforma === 'win32') {
-        await rodar('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `(New-Object -ComObject WScript.Network).SetDefaultPrinter('${nome.replace(/'/g, "''")}')`]);
+        await rodar('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', '(New-Object -ComObject WScript.Network).SetDefaultPrinter($env:RETRO_IMPRESSORA)'], { env: { RETRO_IMPRESSORA: nome } });
       } else {
         await rodar('lpoptions', ['-d', nome]);
       }

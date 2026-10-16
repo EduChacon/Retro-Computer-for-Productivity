@@ -38,7 +38,9 @@ window.addEventListener('message', (e) => {
 
 const avisar = (acao) => ipcRenderer.sendToHost('navegador', acao);
 
+// Só as teclas e os cliques de verdade (uma página não dispara os atalhos com eventos inventados).
 window.addEventListener('mouseup', (e) => {
+  if (!e.isTrusted) return;
   if (e.button === 3) { e.preventDefault(); avisar('voltar'); }
   else if (e.button === 4) { e.preventDefault(); avisar('avancar'); }
 }, true);
@@ -67,12 +69,13 @@ function atalho(e) {
 
 // Ctrl+roda do mouse (e o pinçar do touchpad) muda o zoom da página, como nos navegadores.
 window.addEventListener('wheel', (e) => {
-  if (!e.ctrlKey || !e.deltaY) return;
+  if (!e.isTrusted || !e.ctrlKey || !e.deltaY) return;
   e.preventDefault();
   avisar(e.deltaY < 0 ? 'aumentar' : 'diminuir');
 }, { passive: false, capture: true });
 
 window.addEventListener('keydown', (e) => {
+  if (!e.isTrusted) return;
   const a = atalho(e);
   if (!a) return;
   e.preventDefault();

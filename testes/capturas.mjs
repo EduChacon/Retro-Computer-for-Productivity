@@ -300,6 +300,37 @@ const ROTEIROS = {
 
   // As imagens dos READMEs que não saem de outro roteiro: o Xadrez no meio de uma partida (o
   // gambito italiano, com as peças tomadas à vista), contra o computador.
+  // A auditoria de segurança (sem fotos): um "programa Craft" de mentira tenta (1) rodar um .svg com
+  // script do disco, (2) abrir a página da área de trabalho dentro dele e (3) ler a pasta de dados
+  // por programa://../. Nada disso pode dar certo.
+  async auditoria() {
+    fs.writeFileSync(path.join(disco, DOCS, 'teste.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><script>top.postMessage({ invadido: location.origin, ponte: typeof top.retro }, "*")</script></svg>');
+    const prog = path.join(dados, 'programas', 'auditoria');
+    fs.mkdirSync(prog, { recursive: true });
+    fs.writeFileSync(path.join(prog, 'programa.json'), JSON.stringify({ id: 'auditoria', nome: 'Auditoria', versao: '1.0.0' }));
+    const svg = `sistema://retro/disco/${encodeURIComponent(DOCS)}/teste.svg`;
+    fs.writeFileSync(path.join(prog, 'index.html'), `<!doctype html><body><script>
+      const a = document.createElement('iframe'); a.src = ${JSON.stringify(svg)}; document.body.append(a);
+      const b = document.createElement('iframe'); b.src = 'sistema://retro/index.html'; document.body.append(b);
+      fetch('programa://../config.json').then((r) => r.text()).then((x) => parent.postMessage({ leu: x.slice(0, 40) }, '*'), () => parent.postMessage({ leu: 'recusado' }, '*'));
+    </script></body>`);
+    const r = await pagina.evaluate(async () => {
+      const msgs = [];
+      window.addEventListener('message', (e) => msgs.push(e.data));
+      const q = document.createElement('iframe');
+      q.src = 'programa://auditoria/';
+      document.body.append(q);
+      await new Promise((ok) => setTimeout(ok, 4000));
+      q.dataset.auditoria = '1';
+      return msgs;
+    });
+    const quadros = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.mainFrame.framesInSubtree.map((f) => f.url));
+    console.log('mensagens:', JSON.stringify(r));
+    console.log('quadros:', JSON.stringify(quadros));
+    const invadido = r.some((m) => m && m.invadido) || quadros.filter((u) => u.startsWith('sistema:')).length > 1 || r.some((m) => m && m.leu && m.leu.trim().startsWith('{'));
+    console.log(invadido ? 'AUDITORIA: FALHOU' : 'AUDITORIA: ok');
+  },
+
   async vitrine() {
     await fecharTudo();
     const lances = ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5', 'c2c3', 'g8f6', 'd2d4', 'e5d4', 'c3d4', 'c5b4', 'b1c3', 'f6e4', 'e1g1', 'e4c3', 'b2c3', 'b4c3'];
@@ -2340,7 +2371,7 @@ const ROTEIROS = {
     await foto('mesa');
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
-    await pagina.hover('.menu.iniciar .opcao >> nth=0');
+    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
     await pagina.waitForTimeout(500);
     await pagina.hover('.menu:not(.iniciar) .opcao >> nth=0');
     await pagina.waitForTimeout(500);

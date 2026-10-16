@@ -12,7 +12,7 @@ const fsp = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { execFile, spawn } = require('node:child_process');
-const { comoAdmin } = require('./sistema-linux');
+const { comoAdmin, temporario } = require('./sistema-linux');
 
 const AUTO = '/etc/apt/apt.conf.d/20auto-upgrades';
 const REINICIAR = '/var/run/reboot-required';
@@ -112,12 +112,11 @@ class AtualizacoesLinux {
       const r = await comoAdmin(senha, 'apt-get', [...ESPERA, 'install', '-y', 'unattended-upgrades'], { timeout: 10 * 60 * 1000, aoAndar: (s) => this.aoAndar(s) });
       if (!r.ok) return erroApt(r);
     }
-    const tmp = path.join(os.tmpdir(), `retro-auto-upgrades-${process.pid}`);
-    await fsp.writeFile(tmp, textoAutomaticas(ligar));
+    const tmp = await temporario('auto-upgrades', textoAutomaticas(ligar));
     try {
-      return await comoAdmin(senha, 'install', ['-m', '0644', tmp, AUTO]);
+      return await comoAdmin(senha, 'install', ['-m', '0644', tmp.arquivo, AUTO]);
     } finally {
-      fsp.rm(tmp, { force: true }).catch(() => { });
+      tmp.apagar();
     }
   }
 }

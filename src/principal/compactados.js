@@ -55,12 +55,17 @@ function grandeDemais() {
 async function tirarLinksDeFora(raiz) {
   let tirados = 0;
   const base = path.resolve(raiz);
+  const baseReal = await fsp.realpath(base).catch(() => base);
   const andar = async (pasta) => {
     for (const d of await fsp.readdir(pasta, { withFileTypes: true })) {
       const abs = path.join(pasta, d.name);
       if (d.isSymbolicLink()) {
         const alvo = path.resolve(pasta, await fsp.readlink(abs));
-        if (alvo !== base && !alvo.startsWith(base + path.sep)) { await fsp.unlink(abs); tirados++; }
+        // Também o link encadeado em outros (a -> ., b -> a/a/a/..): vale onde ele chega de verdade.
+        let real = null;
+        try { real = await fsp.realpath(abs); } catch { }
+        const dentro = (x) => x === base || x.startsWith(base + path.sep) || x === baseReal || x.startsWith(baseReal + path.sep);
+        if (!dentro(alvo) || (real && !dentro(real))) { await fsp.unlink(abs); tirados++; }
       } else if (d.isDirectory()) {
         await andar(abs);
       }

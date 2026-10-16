@@ -12,6 +12,7 @@
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { tr } = require('./idioma');
 const yauzl = require('yauzl');
 
@@ -30,6 +31,20 @@ const MIME = {
 
 // Procura versões novas no máximo a cada 6 horas (por programa).
 const INTERVALO_BUSCA = 6 * 3600 * 1000;
+// O maior download aceito (os pacotes dos Craft têm algumas dezenas de MB).
+const MAX_DOWNLOAD = 1024 * 1024 * 1024;
+// O nome de um programa: o do catálogo e o da pasta dele.
+const ID_VALIDO = /^[a-z0-9-]{2,40}$/;
+
+/** O endereço do download só pode ser o dos lançamentos do próprio repositório no GitHub. */
+function downloadDoRepo(url, repo) {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && u.hostname === 'github.com' && u.pathname.startsWith(`/${repo}/releases/download/`);
+  } catch {
+    return false;
+  }
+}
 
 /** Compara versões "0.10.2" e "0.9.0": positivo se a > b. */
 function compararVersoes(a, b) {
@@ -148,6 +163,7 @@ class Programas {
   }
 
   instalado(id) {
+    if (!ID_VALIDO.test(String(id))) return null;
     try {
       return JSON.parse(fs.readFileSync(path.join(this.pasta, id, 'programa.json'), 'utf8'));
     } catch {
@@ -171,7 +187,9 @@ class Programas {
         const j = await r.json();
         const re = new RegExp(`^${prog.id}-web-.*\\.zip$`);
         const ativo = (j.assets || []).find((a) => re.test(a.name));
-        if (ativo) return { versao: String(j.tag_name || '').replace(/^v/, ''), url: ativo.browser_download_url, tamanho: ativo.size };
+        // O resumo SHA-256 que o GitHub publica para cada arquivo do lançamento confere o download.
+        const digest = /^sha256:[0-9a-f]{64}$/.test(String(ativo && ativo.digest || '')) ? ativo.digest.slice(7) : null;
+        if (ativo && downloadDoRepo(ativo.browser_download_url, prog.repo)) return { versao: String(j.tag_name || '').replace(/^v/, ''), url: ativo.browser_download_url, tamanho: ativo.size, sha256: digest };
       }
     } catch { }
     try {
@@ -198,9 +216,15 @@ class Programas {
     if (this.emAndamento.has(id)) return this.emAndamento.get(id);
     const tarefa = (async () => {
       aoProgresso({ etapa: 'versao' });
-      const { versao, url, tamanho } = await this.ultimaVersao(prog, { semReserva: atualizar });
+      const { versao, url, tamanho, sha256 } = await this.ultimaVersao(prog, { semReserva: atualizar });
       const inst = this.instalado(id);
-      if (atualizar && inst && inst.versao !== 'local' && compararVersoes(versao, inst.versao) <= 0) {
+      // O que veio de um .zip escolhido pelo usuário só é trocado por ele (Instalar, sem "atualizar").
+      if (atualizar && inst && (inst.versao === 'local' || inst.origem === 'arquivo local')) {
+        const e = new Error(tr('O {programa} foi instalado de um arquivo: ele só é trocado por outro arquivo ou pelo botão Instalar.', { programa: prog.nome }));
+        e.codigo = 'sem-novidade';
+        throw e;
+      }
+      if (atualizar && inst && compararVersoes(versao, inst.versao) <= 0) {
         const e = new Error(tr('O {programa} já está na versão mais recente ({versao}).', { programa: prog.nome, versao: inst.versao }));
         e.codigo = 'sem-novidade';
         throw e;
@@ -215,10 +239,20 @@ class Programas {
       let recebido = 0;
       let ultimo = 0;
       const leitor = resp.body.getReader();
+      const resumo = crypto.createHash('sha256');
+      // Nunca mais que o tamanho anunciado pelo GitHub (ou o limite geral).
+      const limite = Math.min(MAX_DOWNLOAD, tamanho ? tamanho + 1024 : MAX_DOWNLOAD);
       for (; ;) {
         const { done, value } = await leitor.read();
         if (done) break;
         recebido += value.length;
+        if (recebido > limite) {
+          await leitor.cancel().catch(() => { });
+          await new Promise((r) => escrita.end(r));
+          await fsp.rm(tmpZip, { force: true });
+          throw new Error(tr('O download é maior que o esperado e foi interrompido.'));
+        }
+        resumo.update(value);
         if (!escrita.write(Buffer.from(value))) await new Promise((r) => escrita.once('drain', r));
         if (Date.now() - ultimo > 120) {
           ultimo = Date.now();
@@ -226,6 +260,11 @@ class Programas {
         }
       }
       await new Promise((r, j) => escrita.end((e) => (e ? j(e) : r())));
+      // O pacote baixado tem que ser o publicado: o resumo SHA-256 confere (quando o GitHub o informa).
+      if (sha256 && resumo.digest('hex') !== sha256) {
+        await fsp.rm(tmpZip, { force: true });
+        throw new Error(tr('O pacote baixado não confere com o publicado no GitHub. Nada foi instalado.'));
+      }
       aoProgresso({ etapa: 'instalando', versao });
       const info = await this.instalarZip(tmpZip, { id, versao, origem: url });
       await fsp.rm(tmpZip, { force: true });
@@ -246,7 +285,7 @@ class Programas {
     const m = nomeZip.replace(/^\./, '').match(/^([a-z0-9]+)-web-([\w.-]+?)\.zip$/i);
     id = (id || (m && m[1]) || '').toLowerCase();
     versao = versao || (m && m[2]) || 'local';
-    if (!/^[a-z0-9-]{2,40}$/.test(id)) throw new Error(tr('Não reconheci o programa pelo nome do arquivo (esperado: nome-web-versão.zip).'));
+    if (!ID_VALIDO.test(id)) throw new Error(tr('Não reconheci o programa pelo nome do arquivo (esperado: nome-web-versão.zip).'));
     const tmp = path.join(this.pasta, `.${id}-extraindo-${Date.now()}`);
     await fsp.mkdir(tmp, { recursive: true });
     try {
@@ -297,7 +336,7 @@ class Programas {
     const prog = this.doCatalogo(id);
     if (!inst || !prog) return { id, temAtualizacao: false };
     // O que veio de um .zip escolhido pelo usuário não é trocado sozinho.
-    if (inst.versao === 'local') return { id, atual: inst.versao, temAtualizacao: false };
+    if (inst.versao === 'local' || inst.origem === 'arquivo local') return { id, atual: inst.versao, temAtualizacao: false };
     const buscas = this.lerBuscas();
     let b = buscas[id];
     if (forcar || !b || Date.now() - b.verificadoEm > INTERVALO_BUSCA) {
@@ -316,7 +355,7 @@ class Programas {
   }
 
   async remover(id) {
-    if (!/^[a-z0-9-]{2,40}$/.test(id)) throw new Error(tr('Programa inválido.'));
+    if (!ID_VALIDO.test(id)) throw new Error(tr('Programa inválido.'));
     await fsp.rm(path.join(this.pasta, id), { recursive: true, force: true });
   }
 
@@ -324,10 +363,16 @@ class Programas {
   async servir(pedido) {
     const url = new URL(pedido.url);
     const id = url.hostname;
+    // Só o nome de um programa instalado: o Chromium entrega "programa://../x" com o host "..",
+    // que levaria à pasta de dados (as configurações, a chave do Claude, os cookies).
+    if (!ID_VALIDO.test(id) || !this.instalado(id)) {
+      return new Response('404', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
     const base = path.join(this.pasta, id);
     let rel = decodeURIComponent(url.pathname);
     const cabecalhos = {
-      'Access-Control-Allow-Origin': '*',
+      // Só o próprio programa lê as respostas (um programa não lê os arquivos de outro).
+      'Access-Control-Allow-Origin': `programa://${id}`,
       'Cache-Control': 'no-cache',
       'X-Content-Type-Options': 'nosniff',
     };

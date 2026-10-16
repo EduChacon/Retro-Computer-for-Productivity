@@ -304,6 +304,8 @@ class Navegador {
       this.mostrarErro(url, e.errorDescription);
     });
     wv.addEventListener('context-menu', (e) => this.menuDaPagina(e.params));
+    // Um site em tela cheia: o aviso de como sair, por cima dele (senão ele poderia imitar a tela de bloqueio).
+    wv.addEventListener('enter-html-full-screen', () => avisoTelaCheia());
     wv.addEventListener('ipc-message', (e) => { if (e.channel === 'navegador') this.acao(...e.args); });
     wv.addEventListener('found-in-page', (e) => {
       const r = e.result || {};
@@ -668,7 +670,7 @@ registrarApp('navegador', {
 registrarApp('correio', { nome: 'E-mail', icone: 'correio', abrir: () => abrirCorreio() });
 
 // As janelas novas pedidas pelas páginas (window.open, links com target).
-retro.navegador.aoJanela((url) => abrirNavegador({ url }));
+retro.navegador.aoJanela((url) => { abrirNavegador({ url }); });
 // O site cuja versão segura manda de volta para o http (Só conexões seguras): o aviso, na janela da página.
 retro.navegador.aoSemSeguranca(({ id, url }) => {
   for (const n of abertos) {
@@ -695,6 +697,15 @@ function nomeDoSite(endereco) {
   try { return new URL(endereco).host || endereco; } catch { return endereco || '?'; }
 }
 
+/** O aviso de como sair da tela cheia de um site: um balão por cima de tudo (a camada do topo). */
+function avisoTelaCheia() {
+  const el = h('div.nav-aviso-cheia', tr('O site está em tela cheia. Pressione Esc para sair.'));
+  el.popover = 'manual';
+  document.body.append(el);
+  try { el.showPopover(); } catch { }
+  setTimeout(() => { try { el.hidePopover(); } catch { } el.remove(); }, 4500);
+}
+
 /** Traz para a frente a janela do Navegador que mostra o site (a pergunta é sobre ela). */
 function focarSite(origem) {
   const nav = [...abertos].reverse().find((n) => {
@@ -708,18 +719,19 @@ function focarSite(origem) {
 let filaPerguntas = Promise.resolve();
 const naFila = (f) => { filaPerguntas = filaPerguntas.then(f, f); return filaPerguntas; };
 
-function perguntarPermissao({ origem, permissao }) {
-  focarSite(origem);
+function perguntarPermissao({ origem, permissao, programa }) {
+  if (!programa) focarSite(origem);
   return new Promise((resolve) => {
     let feito = false;
     const fim = (v) => { if (!feito) { feito = true; j.fechar(true); resolve(v); } };
-    const j = new Janela({ titulo: tr('Permissão do site'), icone: 'navegador', dialogo: true, largura: 380, altura: 160, aoFechar: () => { if (!feito) { feito = true; resolve(null); } } });
+    // Um programa Craft (código de fora) também pergunta antes de ler o que o usuário copiou.
+    const j = new Janela({ titulo: programa ? tr('Permissão do programa') : tr('Permissão do site'), icone: programa ? 'programa' : 'navegador', dialogo: true, largura: 380, altura: 160, aoFechar: () => { if (!feito) { feito = true; resolve(null); } } });
     const lembrar = h('input', { type: 'checkbox' });
     const permitir = h('button.padrao', { type: 'button', on: { click: () => fim({ permitir: true, lembrar: lembrar.checked }) } }, tr('Permitir'));
     j.corpo.append(
       h('div.mensagem', img('msg-pergunta', 32), h('div',
-        h('div.texto', tr(PEDIDOS[permissao] || PEDIDOS.outra, { site: nomeDoSite(origem) })),
-        h('label.nav-lembrar', lembrar, h('span', tr('Lembrar a resposta para este site'))))),
+        h('div.texto', programa ? tr('O {programa} quer ler o que você copiou (a área de transferência).', { programa }) : tr(PEDIDOS[permissao] || PEDIDOS.outra, { site: nomeDoSite(origem) })),
+        h('label.nav-lembrar', lembrar, h('span', programa ? tr('Lembrar a resposta para este programa') : tr('Lembrar a resposta para este site'))))),
       h('div.acoes', permitir, h('button', { type: 'button', on: { click: () => fim({ permitir: false, lembrar: lembrar.checked }) } }, tr('Bloquear'))),
     );
     ajustarAoConteudo(j, { minLarg: 380 });

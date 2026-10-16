@@ -54,6 +54,7 @@ const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
 const { Perfis, PRINCIPAL } = require('./perfis');
+const { ehExecutavel } = require('./executaveis');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -271,6 +272,20 @@ async function criarBoasVindas(pastas) {
 
 /* ---------- Protocolos ---------- */
 
+/**
+ * Um arquivo do disco é só conteúdo: aberto como página (um .svg ou um .html com script, num quadro
+ * de um programa), ele fica numa caixa de areia, sem script e sem a origem da área de trabalho, e
+ * só a própria área de trabalho o embute.
+ */
+function soConteudo(resp) {
+  try {
+    resp.headers.set('Content-Security-Policy', "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'");
+    resp.headers.set('X-Content-Type-Options', 'nosniff');
+    resp.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  } catch { }
+  return resp;
+}
+
 function registrarProtocolos() {
   protocol.handle('sistema', async (pedido) => {
     const url = new URL(pedido.url);
@@ -284,13 +299,13 @@ function registrarProtocolos() {
     if (rel.startsWith('/disco/')) {
       let arquivo;
       try { arquivo = disco.real(rel.slice('/disco/'.length)); } catch { return new Response('404', { status: 404 }); }
-      return servirArquivo(arquivo, pedido.headers.get('range'));
+      return soConteudo(await servirArquivo(arquivo, pedido.headers.get('range')));
     }
     // As miniaturas das fotos no Explorador (num cache dos dados do programa).
     if (rel.startsWith('/miniatura/')) {
       let arquivo;
       try { arquivo = disco.real(rel.slice('/miniatura/'.length)); } catch { return new Response('404', { status: 404 }); }
-      return miniatura(arquivo, path.join(app.getPath('userData'), 'miniaturas'), nativeImage);
+      return soConteudo(await miniatura(arquivo, path.join(app.getPath('userData'), 'miniaturas'), nativeImage));
     }
     if (rel === '/' || rel === '') rel = '/index.html';
     const arquivo = path.resolve(PASTA_SISTEMA, '.' + rel);
@@ -345,7 +360,12 @@ function criarJanela() {
   const wc = janela.webContents;
   // A área de trabalho não navega para fora; links externos abrem no navegador do sistema.
   wc.on('will-navigate', (e, url) => {
-    if (!url.startsWith('sistema://')) e.preventDefault();
+    if (!PAGINA_SISTEMA.test(url)) e.preventDefault();
+  });
+  // Um quadro dentro dela (um programa Craft, o DOS) nunca abre uma página de sistema://: ela
+  // teria a origem da área de trabalho e alcançaria a ponte.
+  wc.on('will-frame-navigate', (d) => {
+    if (!d.isMainFrame && /^sistema:/i.test(String(d.url || ''))) d.preventDefault();
   });
   wc.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) enviar('sistema:link', url);
@@ -460,13 +480,15 @@ function pastaRecebidos() {
 }
 
 /** Os downloads vão para "Meus documentos/Recebidos" (com um nome livre) e avisam a área de trabalho. */
-function receberDownloads(s) {
+function receberDownloads(s, { deProgramas = false } = {}) {
   s.on('will-download', (_e, item) => {
     try {
+      const nome = path.basename(String(item.getFilename() || '').replace(/\\/g, '/')) || 'arquivo';
+      // Um programa Craft não tem por que baixar um programa ou um roteiro.
+      if (deProgramas && ehExecutavel(nome)) { item.cancel(); return; }
       const relPasta = pastaRecebidos();
       const pasta = disco.real(relPasta);
       fs.mkdirSync(pasta, { recursive: true });
-      const nome = item.getFilename() || 'arquivo';
       let alvo = path.join(pasta, nome);
       for (let i = 2; fs.existsSync(alvo); i++) {
         const ext = path.extname(nome);
@@ -474,12 +496,31 @@ function receberDownloads(s) {
       }
       item.setSavePath(alvo);
       item.once('done', (_ev, estado) => {
-        if (estado === 'completed') enviar('sistema:recebido', `${relPasta}/${path.basename(alvo)}`);
+        if (estado !== 'completed') return;
+        marcarDaInternet(alvo, item.getURL());
+        enviar('sistema:recebido', `${relPasta}/${path.basename(alvo)}`);
       });
     } catch {
       item.cancel();
     }
   });
+}
+
+/**
+ * A marca de "veio da internet", que o computador principal confere ao abrir o arquivo (o
+ * SmartScreen do Windows, o Gatekeeper do macOS): o Zone.Identifier no Windows e o atributo de
+ * quarentena no macOS.
+ */
+function marcarDaInternet(arquivo, url) {
+  try {
+    const origem = /^https?:\/\//i.test(String(url || '')) ? String(url).replace(/[\r\n]/g, '') : '';
+    if (process.platform === 'win32') {
+      fs.writeFileSync(arquivo + ':Zone.Identifier', `[ZoneTransfer]\r\nZoneId=3\r\n${origem ? `HostUrl=${origem}\r\n` : ''}`);
+    } else if (process.platform === 'darwin') {
+      const quando = Math.floor(Date.now() / 1000).toString(16);
+      spawn('xattr', ['-w', 'com.apple.quarantine', `0081;${quando};Retro Computer;`, arquivo], { stdio: 'ignore' }).on('error', () => { });
+    }
+  } catch { }
 }
 
 /**
@@ -721,15 +762,30 @@ function vigiarUnidades() {
 function configurarSessao() {
   const s = session.defaultSession;
   const permitidas = new Set(['clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'local-fonts']);
+  // Ler o que o usuário copiou: a área de trabalho, sempre; um programa Craft (código de fora),
+  // só depois de perguntar (a resposta lembrada por programa, em permissoesProgramas).
+  const idDoPrograma = (url) => { const m = /^programa:\/\/([a-z0-9-]{2,40})(?:[/?#]|$)/.exec(String(url || '')); return m ? m[1] : null; };
+  const salvaDoPrograma = (id) => ((config.obter().permissoesProgramas || {})[id] || {})['clipboard-read'];
   s.setPermissionRequestHandler((_wc, permissao, responder, detalhes) => {
     const origem = String(detalhes.requestingUrl || '');
-    responder(permitidas.has(permissao) && /^(sistema|programa):\/\//.test(origem));
+    if (!permitidas.has(permissao) || !/^(sistema|programa):\/\//.test(origem)) return responder(false);
+    const id = idDoPrograma(origem);
+    if (permissao !== 'clipboard-read' || !id) return responder(true);
+    const salva = salvaDoPrograma(id);
+    if (typeof salva === 'boolean') return responder(salva);
+    const inst = programas && programas.instalado(id);
+    pedirAoUsuario('navegador:permissao', { origem: `programa://${id}`, permissao: 'clipboard-read', programa: (inst && inst.nome) || id }).then((r) => {
+      if (r && r.lembrar) config.definir({ permissoesProgramas: { [id]: { 'clipboard-read': !!r.permitir } } });
+      responder(!!(r && r.permitir));
+    });
   });
   s.setPermissionCheckHandler((_wc, permissao, origem) => {
-    return permitidas.has(permissao) && /^(sistema|programa):\/\//.test(String(origem || ''));
+    if (!permitidas.has(permissao) || !/^(sistema|programa):\/\//.test(String(origem || ''))) return false;
+    const id = idDoPrograma(origem);
+    return permissao !== 'clipboard-read' || !id || salvaDoPrograma(id) === true;
   });
   // Um download que escapar do adaptador vai para "Meus documentos/Recebidos".
-  receberDownloads(s);
+  receberDownloads(s, { deProgramas: true });
 }
 
 /* ---------- Ponte com a área de trabalho ---------- */
@@ -739,10 +795,13 @@ function configurarSessao() {
  * o quadro principal em sistema://retro (os programas Craft rodam em quadros dentro dela e falam
  * só por mensagens; as páginas do Navegador ficam noutro webContents).
  */
+// A página da área de trabalho (com o "?rapido" e a âncora, se houver).
+const PAGINA_SISTEMA = /^sistema:\/\/retro\/(index\.html)?([?#].*)?$/;
+
 function deQuemPode(e) {
   if (!janela || janela.isDestroyed() || e.sender !== janela.webContents) return false;
   const q = e.senderFrame;
-  return !!q && !q.parent && /^sistema:\/\/retro\//.test(q.url || '');
+  return !!q && !q.parent && PAGINA_SISTEMA.test(q.url || '');
 }
 
 function tratar(canal, fn) {
@@ -815,7 +874,8 @@ async function executarMcp(nome, a) {
     }
     case 'instalar_programa': {
       const id = String(a.programa || '').replace(/^craft:/, '');
-      const r = await programas.instalar(id, (p) => enviar('programas:progresso', id, p), {});
+      // Um programa já instalado só sobe de versão (nunca volta atrás nem troca o que veio de um .zip).
+      const r = await programas.instalar(id, (p) => enviar('programas:progresso', id, p), { atualizar: !!programas.instalado(id) });
       await pedirTela('programasMudaram', {}).catch(() => { });
       return r;
     }
@@ -856,6 +916,9 @@ function registrarPonte() {
     for (const k of proibidas) delete parte[k];
     // A senha da tela de bloqueio só muda por bloqueio:definir (conferindo a atual).
     if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
+    else if ('bloqueio' in parte) delete parte.bloqueio;
+    // As permissões dos programas só mudam pela pergunta (ou pelo Painel, que as tira com null).
+    if (parte.permissoesProgramas && typeof parte.permissoesProgramas !== 'object') delete parte.permissoesProgramas;
     const r = config.definir(parte);
     if (parte.transferencia && historico) historico.ligar(r.transferencia.historico !== false);
     if (parte.papel && MODO_SISTEMA) fundoDaRaiz();

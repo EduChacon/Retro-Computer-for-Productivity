@@ -20,6 +20,9 @@ jobs:
       publicar: ${{ steps.v.outputs.publicar }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # O código não guarda o token do GitHub no .git (os scripts de instalação das dependências rodam depois).
+          persist-credentials: false
       - id: v
         name: Há versão nova?
         env:
@@ -49,6 +52,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # O código não guarda o token do GitHub no .git (os scripts de instalação das dependências rodam depois).
+          persist-credentials: false
 
       - name: Baixar os instaladores
         uses: actions/download-artifact@v4

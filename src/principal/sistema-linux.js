@@ -145,17 +145,28 @@ function infoSessao() {
   };
 }
 
+/**
+ * Um arquivo temporário para o "install" do administrador copiar para o sistema: numa pasta nova,
+ * só do usuário (outra conta do computador não consegue trocá-lo no meio). Devolve o caminho e o
+ * jeito de apagá-lo.
+ */
+async function temporario(nome, conteudo) {
+  const pasta = await fsp.mkdtemp(path.join(os.tmpdir(), 'retro-'));
+  const arquivo = path.join(pasta, nome);
+  await fsp.writeFile(arquivo, conteudo, { flag: 'wx', mode: 0o600 });
+  return { arquivo, apagar: () => fsp.rm(pasta, { recursive: true, force: true }).catch(() => { }) };
+}
+
 /** Liga ou desliga a entrada direta (o LightDM entra sozinho na sessão "Retro Computer"). */
 async function definirEntrarDireto(ligar, senha) {
   const usuario = os.userInfo().username;
   if (!/^[a-z_][a-z0-9_.-]*$/i.test(usuario)) return { ok: false, erro: 'usuario' };
   if (!ligar) return comoAdmin(senha, 'rm', ['-f', LIGHTDM]);
-  const tmp = path.join(os.tmpdir(), `retro-lightdm-${process.pid}.conf`);
-  await fsp.writeFile(tmp, `# Feito pelo Retro Computer (Painel de controle › Inicialização).\n[Seat:*]\nautologin-user=${usuario}\nautologin-session=retro-computer\n`);
+  const tmp = await temporario('lightdm.conf', `# Feito pelo Retro Computer (Painel de controle › Inicialização).\n[Seat:*]\nautologin-user=${usuario}\nautologin-session=retro-computer\n`);
   try {
-    return await comoAdmin(senha, 'install', ['-D', '-m', '0644', tmp, LIGHTDM]);
+    return await comoAdmin(senha, 'install', ['-D', '-m', '0644', tmp.arquivo, LIGHTDM]);
   } finally {
-    fsp.rm(tmp, { force: true }).catch(() => { });
+    tmp.apagar();
   }
 }
 
@@ -183,4 +194,4 @@ async function aplicarTeclado(layout, variante = '') {
   }
 }
 
-module.exports = { lerQuery, lerTeclado, aplicarTeclado, ehModoSistema, energia, abrirAoEntrar, definirAbrirAoEntrar, comoAdmin, infoSessao, definirEntrarDireto, comandoDoApp };
+module.exports = { lerQuery, lerTeclado, aplicarTeclado, ehModoSistema, energia, abrirAoEntrar, definirAbrirAoEntrar, comoAdmin, infoSessao, definirEntrarDireto, comandoDoApp, temporario };

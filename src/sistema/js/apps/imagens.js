@@ -5,7 +5,7 @@
  */
 import { h, img, nomeDe, paiDe, juntar, extensao, tamanho, urlDoDisco } from '../util.js';
 import { Janela } from '../janelas.js';
-import { registrarApp, abrir, programasPara, adicionarRecente, pastaDocs } from '../sistema.js';
+import { registrarApp, abrir, programasPara, adicionarRecente, pastaDocs, abrirNoComputador } from '../sistema.js';
 import { caixaArquivo, erro, info, propriedades } from '../dialogos.js';
 import { excluir } from '../arquivos.js';
 import { tr, marcar } from '../idioma.js';
@@ -143,7 +143,7 @@ class Visualizador {
     return [
       ...outros.map((p) => ({ rotulo: p.nome, icone: p.icone, acao: () => abrir(p.id, { arquivo: this.rel }) })),
       ...(outros.length ? [{ separador: true }] : []),
-      { rotulo: tr('Programa do computador principal'), icone: 'computador', acao: () => retro.disco.abrirFora(this.rel).catch((e) => erro(e.message)) },
+      { rotulo: tr('Programa do computador principal'), icone: 'computador', acao: () => abrirNoComputador(this.rel).catch((e) => erro(e.message)) },
     ];
   }
 

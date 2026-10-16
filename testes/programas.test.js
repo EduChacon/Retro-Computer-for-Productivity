@@ -28,7 +28,7 @@ function cenario(instalada, publicada) {
   const pedidos = [];
   const buscar = async (url) => {
     pedidos.push(url);
-    return { ok: true, status: 200, json: async () => ({ tag_name: 'v' + publicada, html_url: 'https://exemplo', assets: [{ name: `wordcraft-web-${publicada}.zip`, browser_download_url: 'https://exemplo/w.zip', size: 1 }] }), headers: new Map() };
+    return { ok: true, status: 200, json: async () => ({ tag_name: 'v' + publicada, html_url: 'https://exemplo', assets: [{ name: `wordcraft-web-${publicada}.zip`, browser_download_url: `https://github.com/storytold/wordcraft/releases/download/v${publicada}/wordcraft-web-${publicada}.zip`, size: 1 }] }), headers: new Map() };
   };
   return { prog: new Programas(pasta, buscar), pedidos };
 }

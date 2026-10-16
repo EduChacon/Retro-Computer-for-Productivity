@@ -1261,6 +1261,12 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 .bloq-linha input { flex: 1; }
 .bloq-aviso { min-height: 13px; margin: 6px 0 4px; color: #800000; }
 
+/* O aviso da tela cheia de um site (um popover, por cima do site). */
+.nav-aviso-cheia {
+  position: fixed; inset: 16px auto auto 50%; transform: translateX(-50%); margin: 0; border: 0;
+  padding: 6px 12px; background: var(--dica); color: #000; box-shadow: 1px 1px 0 var(--escuro), inset 0 0 0 1px var(--escuro);
+}
+
 /* A tela de entrada (vários usuários): a cor de sempre da área de trabalho e a caixa da época. */
 #entrada {
   position: absolute; inset: 0; z-index: 799000; background: #008080;

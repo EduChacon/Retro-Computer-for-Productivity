@@ -45,8 +45,10 @@ class Atualizador {
     // Baixada e não instalada na hora: entra quando o Retro Computer for desligado.
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = false;
-    // Para os testes: um servidor local no lugar dos lançamentos do GitHub.
-    if (process.env.RETRO_ATUALIZACAO_URL) autoUpdater.setFeedURL({ provider: 'generic', url: process.env.RETRO_ATUALIZACAO_URL });
+    // Para os testes: um servidor local no lugar dos lançamentos do GitHub (só neste computador,
+    // nunca um endereço da internet: senão uma variável trocada levaria a atualização para outro lugar).
+    const local = String(process.env.RETRO_ATUALIZACAO_URL || '');
+    if (/^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?\//.test(local)) autoUpdater.setFeedURL({ provider: 'generic', url: local });
     autoUpdater.on('update-available', (i) => this.mudar({ etapa: 'disponivel', versao: i.version }));
     autoUpdater.on('update-not-available', (i) => this.mudar({ etapa: 'atual', versao: i.version }));
     autoUpdater.on('download-progress', (p) => this.mudar({ etapa: 'baixando', versao: this.estado.versao, progresso: Math.round(p.percent || 0) }));

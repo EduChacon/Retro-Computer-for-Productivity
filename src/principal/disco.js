@@ -78,7 +78,36 @@ class Disco {
     const n = this.normalizar(rel, opcoes);
     const r = path.resolve(this.raiz, n);
     if (r !== this.raiz && !r.startsWith(this.raiz + path.sep)) throw new ErroDisco(tr('Caminho fora do disco.'), 'fora');
+    if (r !== this.raiz) this.semLinksParaFora(r);
     return r;
+  }
+
+  /**
+   * O caminho, seguindo os links que já existem, continua no disco: um link (mesmo encadeado em
+   * outros, ou quebrado à espera de o alvo existir) não leva para fora dele.
+   */
+  semLinksParaFora(r) {
+    let raizReal;
+    try { raizReal = fs.realpathSync.native(this.raiz); } catch { return; }
+    const noDisco = (x) => x === raizReal || x.startsWith(raizReal + path.sep) || x === this.raiz || x.startsWith(this.raiz + path.sep);
+    const fora = () => new ErroDisco(tr('Caminho fora do disco.'), 'fora');
+    for (let p = r; p !== this.raiz && p.startsWith(this.raiz + path.sep); p = path.dirname(p)) {
+      let real;
+      try {
+        real = fs.realpathSync.native(p);
+      } catch {
+        // Ainda não existe (vai ser criado) ou é um link quebrado: o alvo do link quebrado também conta.
+        let st = null;
+        try { st = fs.lstatSync(p); } catch { }
+        if (st && st.isSymbolicLink()) {
+          const alvo = path.resolve(path.dirname(p), fs.readlinkSync(p));
+          if (!noDisco(alvo)) throw fora();
+        }
+        continue;
+      }
+      if (!noDisco(real)) throw fora();
+      return;
+    }
   }
 
   async existe(rel) {
