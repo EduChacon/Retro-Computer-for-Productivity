@@ -202,6 +202,24 @@ const ROTEIROS = {
   async boot() {
     // Com RETRO_BOOT=1: a tela do BIOS e a abertura (capturadas logo no início).
   },
+  // As várias telas (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e RETRO_TELA_FALSA=2: o notebook e um
+  // monitor pela HDMI): duplicar, estender ou uma só, com a pergunta de manter.
+  async variasTelas() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(500);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Configurações') }).click();
+    await pagina.waitForTimeout(600);
+    await foto('varias-telas');
+    await pagina.selectOption('.janela.ativa select:has(option[value=duplicar])', 'duplicar');
+    await pagina.locator('.janela.ativa button', { hasText: T('&Aplicar').replace('&', '') }).click();
+    await pagina.waitForTimeout(1800);
+    await foto('varias-telas-manter');
+    await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim').replace('&', '') }).click();
+    await pagina.waitForTimeout(400);
+    console.log('telas:', JSON.stringify(await pagina.evaluate(() => Promise.all([retro.tela.telas().then((e) => e.arranjo), window.__retro.estado.config.tela]))));
+  },
+
   async resolucao() {
     // A área da tela (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e RETRO_TELA_FALSA=1) e a aba Efeitos.
     await fecharTudo();

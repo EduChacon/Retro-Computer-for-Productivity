@@ -282,10 +282,16 @@ function registrarProtocolos() {
 
 function criarJanela() {
   const c = config.obter();
-  const area = screen.getPrimaryDisplay().workAreaSize;
+  // O monitor escolhido em Painel › Aparência (fora do modo sistema), se ainda estiver ligado.
+  const monitor = (!MODO_SISTEMA && c.tela && c.tela.monitor != null && screen.getAllDisplays().find((d) => d.id === c.tela.monitor)) || screen.getPrimaryDisplay();
+  const area = monitor.workArea;
+  const largura = Math.min(1280, area.width);
+  const altura = Math.min(800, area.height);
   janela = new BrowserWindow({
-    width: Math.min(1280, area.width),
-    height: Math.min(800, area.height),
+    x: area.x + Math.round((area.width - largura) / 2),
+    y: area.y + Math.round((area.height - altura) / 2),
+    width: largura,
+    height: altura,
     minWidth: 640,
     minHeight: 480,
     fullscreen: MODO_SISTEMA || (!!c.telaCheia && !process.env.RETRO_JANELA),
@@ -304,6 +310,7 @@ function criarJanela() {
     },
   });
   janela.once('ready-to-show', () => janela.show());
+  if (MODO_SISTEMA) for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(ajustarNaPrincipal, 300));
   // No modo sistema, o Retro Computer é a tela inteira: não há para onde sair.
   if (MODO_SISTEMA) janela.on('leave-full-screen', () => setImmediate(() => janela && !janela.isDestroyed() && janela.setFullScreen(true)));
   janela.loadURL('sistema://retro/index.html' + (process.env.RETRO_RAPIDO ? '?rapido' : ''));
@@ -349,6 +356,37 @@ function criarJanela() {
     }
   });
   janela.on('closed', () => { janela = null; });
+}
+
+/** Leva a janela para um monitor (na tela cheia, ela sai e volta nele). */
+function levarParaMonitor(d) {
+  const cheia = janela.isFullScreen();
+  const ir = () => {
+    const a = d.workArea;
+    const w = Math.min(janela.getBounds().width, a.width);
+    const hh = Math.min(janela.getBounds().height, a.height);
+    janela.setBounds({ x: a.x + Math.round((a.width - w) / 2), y: a.y + Math.round((a.height - hh) / 2), width: w, height: hh });
+    if (cheia) janela.setFullScreen(true);
+  };
+  if (cheia) { janela.once('leave-full-screen', () => setTimeout(ir, 50)); janela.setFullScreen(false); } else ir();
+}
+
+/** No modo sistema, a janela fica sempre na tela principal, inteira (também depois de uma troca de telas). */
+function ajustarNaPrincipal() {
+  if (!janela || janela.isDestroyed()) return;
+  const b = screen.getPrimaryDisplay().bounds;
+  const j = janela.getBounds();
+  if (j.x === b.x && j.y === b.y && j.width === b.width && j.height === b.height) return;
+  janela.setFullScreen(false);
+  janela.setBounds(b);
+  janela.setFullScreen(true);
+}
+
+/** No modo sistema, a outra tela (estendida) mostra a cor da área de trabalho, e não o preto do X. */
+function fundoDaRaiz() {
+  const cor = String((config.obter().papel || {}).cor || '#008080');
+  if (!/^#[0-9a-f]{6}$/i.test(cor) || process.env.RETRO_ENERGIA_FALSA) return;
+  require('node:child_process').execFile('xsetroot', ['-solid', cor], () => { });
 }
 
 function alternarTelaCheia() {
@@ -712,6 +750,7 @@ function registrarPonte() {
     if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
     const r = config.definir(parte);
     if (parte.transferencia && historico) historico.ligar(r.transferencia.historico !== false);
+    if (parte.papel && MODO_SISTEMA) fundoDaRaiz();
     return semSegredos(r);
   });
   // Os pendrives: listar, abrir, trazer para o C:, levar do C: e remover com segurança.
@@ -944,6 +983,21 @@ function registrarPonte() {
   tratar('tela:modos', () => tela.modos());
   tratar('tela:definir', (saida, modo) => tela.definir(String(saida), String(modo)));
   tratar('tela:luzNoturna', (k) => tela.luzNoturna(Number(k) || 0));
+  // As várias telas: no modo sistema, o arranjo pelo xrandr; fora dele, em qual monitor o Retro Computer fica.
+  tratar('tela:telas', () => tela.telas());
+  tratar('tela:arranjo', (modo) => tela.definirArranjo(String(modo || '')));
+  tratar('tela:monitores', () => {
+    const p = screen.getPrimaryDisplay();
+    const atual = janela ? screen.getDisplayMatching(janela.getBounds()) : p;
+    return screen.getAllDisplays().map((d) => ({ id: d.id, w: Math.round(d.size.width * d.scaleFactor), h: Math.round(d.size.height * d.scaleFactor), principal: d.id === p.id, atual: d.id === atual.id }));
+  });
+  tratar('tela:usarMonitor', (id) => {
+    const d = screen.getAllDisplays().find((x) => x.id === Number(id));
+    if (!d || !janela || MODO_SISTEMA) return false;
+    levarParaMonitor(d);
+    config.definir({ tela: { monitor: d.id } });
+    return true;
+  });
   // O mouse e o touchpad (Painel › Mouse): as escolhas ficam guardadas e voltam a cada abertura.
   tratar('mouse:estado', () => mouse.estado());
   tratar('mouse:aplicar', async (escolhas) => {
@@ -1308,7 +1362,13 @@ app.whenReady().then(async () => {
   // A resolução escolhida em Painel › Aparência volta antes de a janela abrir (modo sistema).
   tela = new (process.env.RETRO_TELA_FALSA ? TelaFalsa : Tela)({ sistema: MODO_SISTEMA });
   const t = config.obter().tela;
+  // O arranjo das várias telas (duplicar, estender, uma só) volta antes da resolução da principal.
+  if (MODO_SISTEMA && t && t.arranjo) {
+    const e = await tela.telas().catch(() => ({ disponivel: false }));
+    if (e.disponivel && e.telas.length > 1 && e.arranjo !== t.arranjo) await tela.definirArranjo(t.arranjo).catch(() => { });
+  }
   if (MODO_SISTEMA && t && t.modo) await tela.definir(t.saida, t.modo).catch(() => { });
+  if (MODO_SISTEMA) fundoDaRaiz();
   // As escolhas do mouse e do touchpad (modo sistema), também para os aparelhos ligados depois.
   mouse = new (process.env.RETRO_MOUSE_FALSO ? MouseFalso : Mouse)({ sistema: MODO_SISTEMA });
   if (config.obter().mouse) mouse.aplicar(config.obter().mouse).catch(() => { });

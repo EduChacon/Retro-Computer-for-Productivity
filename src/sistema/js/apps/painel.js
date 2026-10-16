@@ -198,12 +198,42 @@ function dialogoAparencia() {
       h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' } }, h('span', tr('Menos')), desl.el, h('span', tr('Mais'))), texto);
     areaTela.hidden = false;
   }).catch(() => { });
+  // As várias telas: no modo sistema, o arranjo (duplicar, estender, uma só); fora dele, o monitor.
+  const varias = { el: h('div', { hidden: true, style: { marginTop: '8px' } }), antes: null, escolhido: null, monitor: null, monitorAntes: null };
+  const notaVarias = (texto) => h('div', { style: { color: '#808080', lineHeight: '13px', marginTop: '4px' } }, texto);
+  if (c.modoSistema) {
+    retro.tela.telas().then((e) => {
+      if (!e || !e.disponivel || e.telas.length < 2) return;
+      varias.antes = e.arranjo;
+      varias.escolhido = e.arranjo;
+      const sel = h('select', { style: { width: '100%' } },
+        h('option', { value: 'duplicar' }, tr('Duplicar estas telas')),
+        h('option', { value: 'estender' }, tr('Estender estas telas')),
+        ...e.telas.map((x, i) => h('option', { value: 'so:' + x.saida }, tr('Mostrar só na tela {n} ({saida})', { n: i + 1, saida: x.saida }))));
+      sel.value = e.arranjo || 'estender';
+      sel.addEventListener('change', () => { varias.escolhido = sel.value; });
+      varias.el.replaceChildren(h('div', tr('Várias telas')), h('div.select-caixa', { style: { width: '100%', marginTop: '4px' } }, sel),
+        notaVarias(tr('Estendidas, o Retro Computer fica na tela principal, e os programas do Linux podem ir para a outra (arraste a janela até lá).')));
+      varias.el.hidden = false;
+    }).catch(() => { });
+  } else {
+    retro.tela.monitores().then((ms) => {
+      if (!ms || ms.length < 2) return;
+      const atual = ms.find((m) => m.atual) || ms[0];
+      varias.monitorAntes = String(atual.id);
+      const sel = h('select', { style: { width: '100%' } }, ...ms.map((m, i) => h('option', { value: m.id, selected: m === atual },
+        m.principal ? tr('Tela {n}: {l} por {a} (a principal)', { n: i + 1, l: m.w, a: m.h }) : tr('Tela {n}: {l} por {a}', { n: i + 1, l: m.w, a: m.h }))));
+      sel.addEventListener('change', () => { varias.monitor = sel.value; });
+      varias.el.replaceChildren(h('div', tr('Mostrar o Retro Computer na tela:')), h('div.select-caixa', { style: { width: '100%', marginTop: '4px' } }, sel));
+      varias.el.hidden = false;
+    }).catch(() => { });
+  }
   const abaConfig = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tela')),
       h('div', h('label', radioCheia, h('span', tr('Tela cheia (recomendado para o foco)')))),
       h('div', { style: { marginTop: '6px' } }, h('label', radioJanela, h('span', tr('Numa janela do computador principal')))),
       c.modoSistema ? null : h('div', { style: { marginTop: '6px', color: '#808080' } }, tr('A tecla F11 alterna a qualquer momento.')),
-      areaTela),
+      areaTela, varias.el),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tamanho dos pixels')),
       h('div.linha', h('div.select-caixa', { style: { flex: '1' } }, selEscala)),
       h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Cada pixel da interface usa um número inteiro de pixels da tela, para as letras e os ícones ficarem nítidos.'))),
@@ -286,6 +316,11 @@ function dialogoAparencia() {
         await retro.sistema.telaCheia(telaCheia);
       }
       if (res.escolhido && res.escolhido !== res.antes) await trocarResolucao(res);
+      if (varias.escolhido && varias.escolhido !== varias.antes) await trocarArranjo(varias);
+      if (varias.monitor && varias.monitor !== varias.monitorAntes) {
+        await retro.tela.usarMonitor(Number(varias.monitor)).catch(() => { });
+        varias.monitorAntes = varias.monitor;
+      }
     },
   });
   // A prévia da luz noturna que não foi aplicada volta ao que estava.
@@ -307,6 +342,23 @@ async function trocarResolucao(res) {
   } else {
     await retro.tela.definir(res.saida, res.antes);
     res.escolhido = res.antes;
+  }
+}
+
+/** Troca o arranjo das telas e pergunta se fica; sem resposta em 15 segundos, volta ao anterior. */
+async function trocarArranjo(v) {
+  const r = await retro.tela.arranjo(v.escolhido);
+  if (!r || !r.ok) {
+    erro(tr('Não foi possível mudar as telas: {erro}', { erro: (r && r.erro) || '?' }));
+    return;
+  }
+  await new Promise((ok) => setTimeout(ok, 1200));
+  if (await confirmarComPrazo(tr('A tela foi reconfigurada. Manter esta configuração?'), 15, { titulo: tr('Configurações da tela') })) {
+    await definirConfig({ tela: { arranjo: v.escolhido } });
+    v.antes = v.escolhido;
+  } else if (v.antes) {
+    await retro.tela.arranjo(v.antes);
+    v.escolhido = v.antes;
   }
 }
 

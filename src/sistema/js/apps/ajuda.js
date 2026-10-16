@@ -355,7 +355,7 @@ const TOPICOS = [
     id: 'painel', icone: 'painel',
     'pt-BR': ['Painel de controle', `
 <h2>Configurações</h2>
-<p><b>Aparência</b>: a cor e o padrão do fundo, a proteção de tela (Voando pelas estrelas, Linhas coloridas ou Relógio), os efeitos (os cantos magnéticos das janelas e a luz noturna, com menos azul à noite), a tela cheia, o tamanho dos pixels (para as letras ficarem nítidas em qualquer monitor), a área da tela (a resolução, no Retro Computer como sistema) e abrir o Retro Computer ao entrar no computador.</p>
+<p><b>Aparência</b>: a cor e o padrão do fundo, a proteção de tela (Voando pelas estrelas, Linhas coloridas ou Relógio), os efeitos (os cantos magnéticos das janelas e a luz noturna, com menos azul à noite), a tela cheia, o tamanho dos pixels (para as letras ficarem nítidas em qualquer monitor), a área da tela (a resolução, no Retro Computer como sistema), as <b>várias telas</b> (com dois monitores: duplicar, estender ou usar uma só, no Retro Computer como sistema; fora dele, em qual monitor o Retro Computer fica) e abrir o Retro Computer ao entrar no computador.</p>
 <p><b>Disco C:</b>: a pasta do disco no computador principal, o espaço livre e a troca de pasta.</p>
 <p><b>Claude</b>: a instalação do Claude Code e a chave de API.</p>
 <p><b>Internet</b>: o e-mail, a pesquisa, em qual navegador os links abrem, as permissões dos sites e os programas da internet.</p>
@@ -374,7 +374,7 @@ const TOPICOS = [
 <p><b>Data e hora</b>: com o Retro Computer como sistema, acertar a hora pela internet ou à mão e escolher o fuso horário (pede a senha de administrador). <b>Adicionar ou remover programas</b>, <b>Foco</b> e <b>Sobre o Retro Computer</b>.</p>`],
     en: ['Control Panel', `
 <h2>Settings</h2>
-<p><b>Appearance</b>: the background color and pattern, the screen saver (Flying through the stars, Colored lines or Clock), the effects (the magnetic corners of the windows and the night light, with less blue at night), full screen, the pixel size (so the letters stay sharp on any monitor), the screen area (the resolution, with Retro Computer as the system) and opening Retro Computer when signing in to the computer.</p>
+<p><b>Appearance</b>: the background color and pattern, the screen saver (Flying through the stars, Colored lines or Clock), the effects (the magnetic corners of the windows and the night light, with less blue at night), full screen, the pixel size (so the letters stay sharp on any monitor), the screen area (the resolution, with Retro Computer as the system), <b>multiple screens</b> (with two monitors: duplicate, extend or use only one, with Retro Computer as the system; otherwise, which monitor Retro Computer stays on) and opening Retro Computer when signing in to the computer.</p>
 <p><b>Drive C:</b>: the disk folder on the main computer, the free space and changing the folder.</p>
 <p><b>Claude</b>: installing Claude Code and the API key.</p>
 <p><b>Internet</b>: e-mail, search, where links open, site permissions and the internet programs.</p>
@@ -393,7 +393,7 @@ const TOPICOS = [
 <p><b>Date and Time</b>: with Retro Computer as the system, setting the time from the internet or by hand and choosing the time zone (it asks for the administrator password). <b>Add or Remove Programs</b>, <b>Focus</b> and <b>About Retro Computer</b>.</p>`],
     es: ['Panel de control', `
 <h2>Configuración</h2>
-<p><b>Apariencia</b>: el color y el patrón del fondo, el protector de pantalla (Volando entre estrellas, Líneas de colores o Reloj), los efectos (las esquinas magnéticas de las ventanas y la luz nocturna, con menos azul de noche), la pantalla completa, el tamaño de los píxeles (para que las letras queden nítidas en cualquier monitor), el área de la pantalla (la resolución, con Retro Computer como sistema) y abrir Retro Computer al entrar en la computadora.</p>
+<p><b>Apariencia</b>: el color y el patrón del fondo, el protector de pantalla (Volando entre estrellas, Líneas de colores o Reloj), los efectos (las esquinas magnéticas de las ventanas y la luz nocturna, con menos azul de noche), la pantalla completa, el tamaño de los píxeles (para que las letras queden nítidas en cualquier monitor), el área de la pantalla (la resolución, con Retro Computer como sistema), las <b>varias pantallas</b> (con dos monitores: duplicar, extender o usar solo una, con Retro Computer como sistema; si no, en qué monitor queda Retro Computer) y abrir Retro Computer al entrar en la computadora.</p>
 <p><b>Disco C:</b>: la carpeta del disco en la computadora principal, el espacio libre y el cambio de carpeta.</p>
 <p><b>Claude</b>: la instalación de Claude Code y la clave de API.</p>
 <p><b>Internet</b>: el correo, la búsqueda, dónde abrir los enlaces, los permisos de los sitios y los programas de internet.</p>

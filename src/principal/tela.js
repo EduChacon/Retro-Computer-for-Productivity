@@ -50,6 +50,66 @@ function lerXrandr(texto) {
   return t;
 }
 
+/**
+ * Todas as telas ligadas ao computador (para as Várias telas): a saída, se é a principal, se está
+ * em uso (com a posição e o tamanho) e os modos dela.
+ */
+function lerTodas(texto) {
+  const telas = [];
+  let tela = null;
+  for (const linha of String(texto).split('\n')) {
+    const c = /^(\S+) connected( primary)?(?: (\d+)x(\d+)\+(\d+)\+(\d+))?/.exec(linha);
+    if (c) {
+      tela = { saida: c[1], principal: !!c[2], ligada: !!c[3], x: Number(c[5] || 0), y: Number(c[6] || 0), w: Number(c[3] || 0), h: Number(c[4] || 0), modos: [], preferido: null };
+      telas.push(tela);
+      continue;
+    }
+    if (/^\S/.test(linha)) { tela = null; continue; }
+    const m = tela && /^\s+(\d+x\d+)i?\s+(.*)$/.exec(linha);
+    if (!m) continue;
+    if (!tela.modos.includes(m[1])) tela.modos.push(m[1]);
+    if (m[2].includes('+')) tela.preferido = tela.preferido || m[1];
+  }
+  return telas;
+}
+
+/** Como as telas estão agora: 'duplicar', 'estender' ou 'so:SAIDA' (null com uma tela só). */
+function arranjoDe(telas) {
+  if (!telas || telas.length < 2) return null;
+  const ligadas = telas.filter((x) => x.ligada);
+  if (ligadas.length === 1) return 'so:' + ligadas[0].saida;
+  if (!ligadas.length) return null;
+  return ligadas.every((x) => x.x === ligadas[0].x && x.y === ligadas[0].y) ? 'duplicar' : 'estender';
+}
+
+/**
+ * Os argumentos do xrandr para um arranjo. A principal (onde o Retro Computer fica) é a marcada
+ * como primary, ou a primeira; ao duplicar, as duas usam o maior modo que ambas aceitam.
+ */
+function comandoArranjo(modo, telas) {
+  if (!telas || telas.length < 2 || !telas.every((x) => saidaValida(x.saida))) return null;
+  const principal = telas.find((x) => x.principal) || telas[0];
+  const outras = telas.filter((x) => x !== principal);
+  if (modo === 'estender') {
+    const args = ['--output', principal.saida, '--auto', '--primary', '--pos', '0x0'];
+    let antes = principal.saida;
+    for (const o of outras) { args.push('--output', o.saida, '--auto', '--right-of', antes); antes = o.saida; }
+    return args;
+  }
+  if (modo === 'duplicar') {
+    const area = (m) => m.split('x').reduce((a, b) => a * b, 1);
+    const comuns = principal.modos.filter((m) => outras.every((o) => o.modos.includes(m))).sort((a, b) => area(b) - area(a));
+    const modoDe = comuns.length ? ['--mode', comuns[0]] : ['--auto'];
+    const args = ['--output', principal.saida, ...modoDe, '--primary', '--pos', '0x0'];
+    for (const o of outras) args.push('--output', o.saida, ...modoDe, '--same-as', principal.saida);
+    return args;
+  }
+  const so = /^so:(.+)$/.exec(String(modo || ''));
+  const alvo = so && telas.find((x) => x.saida === so[1]);
+  if (!alvo) return null;
+  return ['--output', alvo.saida, '--auto', '--primary', '--pos', '0x0', ...telas.filter((x) => x !== alvo).flatMap((x) => ['--output', x.saida, '--off'])];
+}
+
 /** As saídas ligadas (todos os monitores recebem a luz noturna). */
 function lerSaidas(texto) {
   return String(texto).split('\n').map((l) => /^(\S+) connected/.exec(l)).filter(Boolean).map((m) => m[1]);
@@ -97,6 +157,29 @@ class Tela {
     }
   }
 
+  /** As telas ligadas e o arranjo de agora (as Várias telas). */
+  async telas() {
+    if (!this.disponivel()) return { disponivel: false };
+    try {
+      const telas = lerTodas(await rodar(['--query']));
+      return { disponivel: true, telas, arranjo: arranjoDe(telas) };
+    } catch {
+      return { disponivel: false };
+    }
+  }
+
+  async definirArranjo(modo) {
+    const e = await this.telas();
+    const args = e.disponivel && comandoArranjo(modo, e.telas);
+    if (!args) return { ok: false, erro: 'modo' };
+    try {
+      await rodar(args, { timeout: 20000 });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, erro: (err.saida || err.message || '').split('\n').pop() };
+    }
+  }
+
   async definir(saida, modo) {
     if (!saidaValida(saida) || !modoValido(modo)) return { ok: false, erro: 'modo' };
     const t = await this.modos();
@@ -126,6 +209,23 @@ class TelaFalsa extends Tela {
     this.atual = modo;
     return { ok: true };
   }
+
+  // Com RETRO_TELA_FALSA=2, um monitor ligado pela HDMI ao lado do notebook.
+  async telas() {
+    if (process.env.RETRO_TELA_FALSA !== '2') return { disponivel: true, telas: [], arranjo: null };
+    const telas = [
+      { saida: 'eDP-1', principal: true, ligada: true, x: 0, y: 0, w: 1440, h: 900, modos: ['1440x900', '1280x800', '1024x768'], preferido: '1440x900' },
+      { saida: 'HDMI-1', principal: false, ligada: this.arranjoFalso !== 'so:eDP-1', x: this.arranjoFalso === 'duplicar' ? 0 : 1440, y: 0, w: 1920, h: 1080, modos: ['1920x1080', '1280x800', '1024x768'], preferido: '1920x1080' },
+    ];
+    return { disponivel: true, telas, arranjo: this.arranjoFalso || 'estender' };
+  }
+
+  async definirArranjo(modo) {
+    const e = await this.telas();
+    if (!comandoArranjo(modo, e.telas)) return { ok: false, erro: 'modo' };
+    this.arranjoFalso = modo;
+    return { ok: true };
+  }
 }
 
-module.exports = { Tela, TelaFalsa, lerXrandr, lerSaidas, gamaDe, modoValido, saidaValida };
+module.exports = { Tela, TelaFalsa, lerXrandr, lerSaidas, lerTodas, arranjoDe, comandoArranjo, gamaDe, modoValido, saidaValida };

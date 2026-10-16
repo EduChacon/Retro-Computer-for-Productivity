@@ -66,6 +66,10 @@ contextBridge.exposeInMainWorld('retro', {
     modos: () => chamar('tela:modos'),
     definir: (saida, modo) => chamar('tela:definir', saida, modo),
     luzNoturna: (k) => chamar('tela:luzNoturna', k),
+    telas: () => chamar('tela:telas'),
+    arranjo: (modo) => chamar('tela:arranjo', modo),
+    monitores: () => chamar('tela:monitores'),
+    usarMonitor: (id) => chamar('tela:usarMonitor', id),
   },
   // O Firefox com o visual do Retro Computer.
   firefox: {
