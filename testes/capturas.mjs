@@ -410,6 +410,30 @@ const ROTEIROS = {
     await pagina.waitForTimeout(2500);
     await foto('claude-maximizado');
   },
+  async mesa() {
+    // A área de trabalho padrão (sem o Prompt), o botão direito num programa do Iniciar e a aba
+    // Área de trabalho de Painel › Aparência.
+    await fecharTudo();
+    await foto('mesa-padrao');
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('&Programas')}")`);
+    await pagina.waitForTimeout(700);
+    await pagina.hover(`.menu .opcao:has-text("${T('Acessórios')}")`);
+    await pagina.waitForTimeout(700);
+    await pagina.click(`.menu .opcao:has-text("${T('Calculadora')}")`, { button: 'right' });
+    await pagina.waitForTimeout(400);
+    await foto('mesa-iniciar-contexto');
+    await pagina.click(`.menu .opcao:has-text("${T('Adicionar à área de &trabalho')}")`);
+    await pagina.waitForTimeout(800);
+    await foto('mesa-com-calculadora');
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(500);
+    await pagina.click(`.janela.ativa .abas > div:has-text("${T('Ícones')}")`);
+    await pagina.waitForTimeout(300);
+    await foto('mesa-aparencia');
+    console.log('na mesa:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.mesa.atalhos)));
+  },
   async copia() {
     // A cópia de segurança: o destino (a caixa de escolher pasta é a do sistema, por isso vem
     // pela configuração), a cópia na hora e o aviso do fim.

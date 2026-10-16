@@ -3,7 +3,8 @@
  * submenus em cascata, com o teclado (setas, Enter, Esc, a letra sublinhada).
  *
  * Item: { rotulo: '&Abrir', icone, acao, sub: itens | () => itens | async () => itens,
- *         separador, desativado, marcado, radio, negrito, atalho }
+ *         separador, desativado, marcado, radio, negrito, atalho,
+ *         contexto: () => itens (o botão direito no item, como nos programas do Iniciar) }
  */
 import { h, img, rotulo, letraAtalho, limitar } from './util.js';
 import { tr } from './idioma.js';
@@ -100,6 +101,16 @@ export async function abrirMenu(itens, o = {}) {
       e.stopPropagation();
       escolher(registro, idx);
     });
+    if (item.contexto) {
+      op.addEventListener('contextmenu', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        clearTimeout(registro.subTimer);
+        const pos = cadeia.indexOf(registro);
+        const ctx = await abrirMenu(item.contexto, { nivel: pos + 1, x: e.clientX, y: e.clientY });
+        ctx.dono = idx;
+      });
+    }
     corpo.append(op);
   });
 

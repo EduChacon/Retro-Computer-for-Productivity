@@ -11,7 +11,7 @@ import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, er
 import { deslizante } from '../controles.js';
 import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparencia.js';
 import { tocar } from '../sons.js';
-import { esvaziarLixeira } from '../mesa.js';
+import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
 import { BUSCAS, CORREIOS, paraEndereco, conferirFirefox } from './navegador.js';
 import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
@@ -249,17 +249,33 @@ function dialogoAparencia() {
       h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' } }, h('span', tr('Menos')), intensidade.el, h('span', tr('Mais')))),
   );
 
+  // Os ícones da área de trabalho (como as "Configurações de ícones da área de trabalho" do Windows).
+  const NOMES_MESA = {
+    'meu-computador': [marcar('Meu computador'), 'computador'], 'meus-documentos': [marcar('Meus documentos'), 'documentos'],
+    lixeira: [marcar('Lixeira'), 'lixeira'], navegador: [marcar('Navegador'), 'navegador'], correio: [marcar('E-mail'), 'correio'],
+    claude: [marcar('Claude'), 'claude'], prompt: [marcar('Prompt de comando'), 'prompt'], painel: [marcar('Painel de controle'), 'painel'],
+    bloco: [marcar('Bloco de notas'), 'bloco'], foco: [marcar('Foco'), 'foco'],
+  };
+  const caixasMesa = ICONES_SISTEMA.map((k) => ({ k, c: h('input', { type: 'checkbox', checked: naMesa(k) }) }));
+  const abaMesa = h('div',
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Ícones da área de trabalho')),
+      h('div.mesa-icones', ...caixasMesa.map(({ k, c }) => h('label', c, img(NOMES_MESA[k][1], 16), h('span', tr(NOMES_MESA[k][0]))))),
+      h('div.acoes', { style: { marginTop: '8px' } }, h('button', { type: 'button', on: { click: () => { for (const { k, c } of caixasMesa) c.checked = ICONES_PADRAO.includes(k); } } }, rotulo(tr('Restaurar o &padrão'))))),
+    h('div', { style: { color: '#808080', lineHeight: '13px' } },
+      tr('Para pôr outro programa na área de trabalho, use o botão direito nele, no menu Iniciar › Adicionar à área de trabalho. Os arquivos e as pastas da área de trabalho ficam na pasta Área de trabalho do disco C:.')));
+
   const dlg = dialogoBase({
     titulo: tr('Propriedades de Aparência'),
     icone: 'aparencia',
     larg: 440,
     altMin: 540,
-    abas: [{ titulo: tr('Plano de fundo'), conteudo: abaFundo }, { titulo: tr('Proteção de tela'), conteudo: abaProtecao }, { titulo: tr('Efeitos'), conteudo: abaEfeitos }, { titulo: tr('Configurações'), conteudo: abaConfig }],
+    abas: [{ titulo: tr('Plano de fundo'), conteudo: abaFundo }, { titulo: tr('Ícones'), conteudo: abaMesa }, { titulo: tr('Proteção de tela'), conteudo: abaProtecao }, { titulo: tr('Efeitos'), conteudo: abaEfeitos }, { titulo: tr('Configurações'), conteudo: abaConfig }],
     aoAplicar: async () => {
       aplicarProt();
       escala = selEscala.value;
       previaLuz = false;
       await definirConfig({ papel, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
+      await definirIconesSistema(caixasMesa.filter((x) => x.c.checked).map((x) => x.k));
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);
       await aplicarEscala(escala);

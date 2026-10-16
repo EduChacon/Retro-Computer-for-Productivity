@@ -46,7 +46,17 @@ test('a 0.3.0 põe o Navegador e o E-mail na área de trabalho de quem já usava
   const antigo = mesclar(PADRAO, { versao: 1, mesa: { atalhos: ['meu-computador', 'lixeira', 'craft:wordcraft'] } });
   const d = migrar(antigo);
   assert.deepEqual(d.mesa.atalhos, ['meu-computador', 'lixeira', 'navegador', 'correio', 'craft:wordcraft']);
-  assert.equal(d.versao, 2);
-  // Quem já está na versão 2 não muda (nem se tirou os ícones).
+  assert.equal(d.versao, 3);
+  // Quem já está na versão 3 não muda (nem se tirou os ícones).
   assert.deepEqual(migrar({ ...d, mesa: { atalhos: ['lixeira'] } }).mesa.atalhos, ['lixeira']);
+});
+
+test('a 1.0.0 tira o Prompt de comando da área de trabalho só de quem tinha a lista padrão', () => {
+  const padraoAntigo = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt'];
+  assert.deepEqual(migrar({ versao: 2, mesa: { atalhos: padraoAntigo } }).mesa.atalhos, padraoAntigo.slice(0, 6));
+  // Quem mudou a lista (pôs ou tirou um ícone) fica com o Prompt.
+  const mudada = [...padraoAntigo, 'craft:wordcraft'];
+  assert.deepEqual(migrar({ versao: 2, mesa: { atalhos: mudada } }).mesa.atalhos, mudada);
+  assert.equal(migrar({ versao: 2, mesa: { atalhos: mudada } }).versao, 3);
+  assert.ok(!PADRAO.mesa.atalhos.includes('prompt'));
 });

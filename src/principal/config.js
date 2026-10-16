@@ -9,7 +9,7 @@ const path = require('node:path');
 const { tr } = require('./idioma');
 
 const PADRAO = {
-  versao: 2,
+  versao: 3,
   disco: null,
   idioma: 'auto',
   atualizacoes: 'automatico',
@@ -20,7 +20,8 @@ const PADRAO = {
   volume: 0.5,
   inicioRapido: false,
   protecaoTela: { ligada: true, minutos: 10, tipo: 'estrelas' },
-  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt'] },
+  // Os ícones da área de trabalho (Painel › Aparência › Área de trabalho); o Prompt fica no Iniciar.
+  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'] },
   // A tela de bloqueio (a senha fica em bloqueio.senha, só o resumo; ver bloqueio.js).
   bloqueio: { aoVoltar: true, aoAbrir: false, naProtecao: false },
   // A barra de tarefas: os programas fixados (ao lado da busca) e os botões das janelas ('nomes' ou 'icones').
@@ -64,6 +65,8 @@ function mesclar(base, extra) {
 /**
  * Leva as configurações de uma versão anterior para a atual, sem perder as escolhas do usuário.
  * 1 → 2 (0.3.0): os ícones do Navegador e do E-mail na área de trabalho, depois da Lixeira.
+ * 2 → 3 (1.0.0): sem o Prompt de comando na área de trabalho padrão (só para quem ainda tem a
+ * lista padrão de antes; quem a mudou fica como está).
  */
 function migrar(dados) {
   const d = JSON.parse(JSON.stringify(dados));
@@ -74,6 +77,12 @@ function migrar(dados) {
     at.splice(i >= 0 ? i + 1 : at.length, 0, ...novos);
     d.mesa = { ...(d.mesa || {}), atalhos: at };
     d.versao = 2;
+  }
+  if (d.versao < 3) {
+    const antes = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt'];
+    const at = d.mesa && Array.isArray(d.mesa.atalhos) ? d.mesa.atalhos : null;
+    if (at && at.length === antes.length && at.every((k, i) => k === antes[i])) d.mesa.atalhos = at.filter((k) => k !== 'prompt');
+    d.versao = 3;
   }
   return d;
 }

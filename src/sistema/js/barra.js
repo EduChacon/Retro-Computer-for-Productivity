@@ -15,6 +15,7 @@ import { alternarCalendario, montarBusca } from './barra-extras.js';
 import { montarBandeja } from './bandeja.js';
 import { bloquear, temSenha } from './bloqueio.js';
 import { usaFirefox as firefoxPadrao } from './apps/navegador.js';
+import { naMesa, adicionarAtalho, removerAtalho } from './mesa.js';
 
 let btIniciar;
 let tarefas;
@@ -283,34 +284,49 @@ function desenharGrupos(visiveis, ativa) {
 
 /* ---------- O menu Iniciar ---------- */
 
+// O botão direito num programa do Iniciar (como no Windows): abrir, a área de trabalho e a barra.
+function contextoPrograma(chave, acao) {
+  return () => [
+    { rotulo: tr('&Abrir'), negrito: true, acao },
+    { separador: true },
+    naMesa(chave)
+      ? { rotulo: tr('Remover da área de &trabalho'), acao: () => removerAtalho(chave) }
+      : { rotulo: tr('Adicionar à área de &trabalho'), acao: () => adicionarAtalho(chave) },
+    fixarOuDesafixar(chave),
+  ];
+}
+
+/** Um programa do Iniciar, com o botão direito. */
+const prog = (chave, rotulo, icone, acao = () => abrir(chave), extra = {}) => ({ rotulo, icone, acao, contexto: contextoPrograma(chave, acao), ...extra });
+
 async function itensProgramas() {
   await Promise.all(noMenu().map((id) => iconeNativo(id)));
   const craft = estado.instalados
     .slice()
     .sort((a, b) => a.nome.localeCompare(b.nome))
-    .map((p) => ({ rotulo: p.nome, icone: p.icone || 'programa', acao: () => abrir('craft:' + p.id) }))
+    .map((p) => prog('craft:' + p.id, p.nome, p.icone || 'programa'))
     // Os sites instalados como programas, entre eles, por nome.
-    .concat((estado.config.webapps || []).map((w) => ({ rotulo: w.nome.replace(/&/g, '&&'), icone: 'internet', iconeUrl: w.icone || null, acao: () => abrir('webapp:' + w.id), webapp: w.id })))
+    .concat((estado.config.webapps || []).map((w) => prog('webapp:' + w.id, w.nome.replace(/&/g, '&&'), 'internet', undefined, { iconeUrl: w.icone || null, webapp: w.id })))
     .sort((a, b) => a.rotulo.localeCompare(b.rotulo));
   return [
     {
       rotulo: tr('Acessórios'), icone: 'pasta-programas', sub: () => [
-        { rotulo: tr('Área de transferência'), icone: 'transferencia', acao: () => abrir('transferencia') },
-        { rotulo: tr('Bloco de notas'), icone: 'bloco', acao: () => abrir('bloco') },
-        { rotulo: tr('Calculadora'), icone: 'calculadora', acao: () => abrir('calculadora') },
-        { rotulo: tr('Captura de tela'), icone: 'captura', acao: () => abrir('captura') },
-        { rotulo: tr('Diário de trabalho'), icone: 'diario', acao: () => abrir('diario') },
-        { rotulo: tr('Foco (Pomodoro)'), icone: 'foco', acao: () => abrir('foco') },
-        { rotulo: tr('Mapa de caracteres'), icone: 'caracteres', acao: () => abrir('caracteres') },
-        { rotulo: tr('Monitor do sistema'), icone: 'monitor', acao: () => abrir('monitor') },
-        { rotulo: tr('Prompt de comando'), icone: 'prompt', acao: () => abrir('prompt') },
-        { rotulo: tr('Reprodutor de mídia'), icone: 'reprodutor', acao: () => abrir('midia') },
-        { rotulo: tr('Visualizador de imagens'), icone: 'imagens', acao: () => abrir('imagens') },
+        prog('transferencia', tr('Área de transferência'), 'transferencia'),
+        prog('bloco', tr('Bloco de notas'), 'bloco'),
+        prog('calculadora', tr('Calculadora'), 'calculadora'),
+        prog('captura', tr('Captura de tela'), 'captura'),
+        prog('diario', tr('Diário de trabalho'), 'diario'),
+        prog('foco', tr('Foco (Pomodoro)'), 'foco'),
+        prog('caracteres', tr('Mapa de caracteres'), 'caracteres'),
+        prog('monitor', tr('Monitor do sistema'), 'monitor'),
+        prog('prompt', tr('Prompt de comando'), 'prompt'),
+        prog('midia', tr('Reprodutor de mídia'), 'reprodutor'),
+        prog('imagens', tr('Visualizador de imagens'), 'imagens'),
         {
           rotulo: tr('Jogos'), icone: 'jogos', sub: () => [
-            { rotulo: tr('Paciência'), icone: 'paciencia', acao: () => abrir('paciencia') },
-            { rotulo: tr('Campo Minado'), icone: 'campo-minado', acao: () => abrir('campo-minado') },
-            { rotulo: 'Breakout', icone: 'breakout', acao: () => abrir('breakout') },
+            prog('paciencia', tr('Paciência'), 'paciencia'),
+            prog('campo-minado', tr('Campo Minado'), 'campo-minado'),
+            prog('breakout', 'Breakout', 'breakout'),
           ],
         },
       ],
@@ -319,15 +335,15 @@ async function itensProgramas() {
     ...craft,
     ...(craft.length ? [{ separador: true }] : []),
     // Os programas do computador principal que o usuário pôs no menu, e a janela com todos.
-    ...noMenu().map((id) => ({ rotulo: nomeNativo(id).replace(/&/g, '&&'), icone: 'programa', iconeUrl: iconeNativoJa(id), acao: () => abrirNativo(id) })),
+    ...noMenu().map((id) => prog('nativo:' + id, nomeNativo(id).replace(/&/g, '&&'), 'programa', () => abrirNativo(id), { iconeUrl: iconeNativoJa(id) })),
     { rotulo: tr('Programas do computador…'), icone: 'computador', acao: () => abrir('nativos') },
     { separador: true },
-    { rotulo: tr('Navegador'), icone: 'navegador', acao: () => abrir('navegador') },
+    prog('navegador', tr('Navegador'), 'navegador'),
     // Com o Firefox como padrão, o Navegador daqui (o dos sites instalados como programas) continua à mão.
     ...(firefoxPadrao() ? [{ rotulo: tr('Navegador do Retro Computer'), icone: 'internet', acao: () => abrir('navegador', { interno: true }) }] : []),
-    { rotulo: tr('E-mail'), icone: 'correio', acao: () => abrir('correio') },
-    { rotulo: tr('Claude'), icone: 'claude', acao: () => abrir('claude') },
-    { rotulo: tr('Explorador de arquivos'), icone: 'computador', acao: () => abrir('explorador', { pasta: pastaDocs() }) },
+    prog('correio', tr('E-mail'), 'correio'),
+    prog('claude', tr('Claude'), 'claude'),
+    prog('explorador', tr('Explorador de arquivos'), 'computador', () => abrir('explorador', { pasta: pastaDocs() })),
     ...(craft.length ? [] : [{ rotulo: tr('Instalar programas…'), icone: 'programas-caixa', acao: () => abrir('programas') }]),
   ];
 }

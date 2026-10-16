@@ -6,7 +6,7 @@
 import { tipoDe, juntar } from './util.js';
 import { VistaIcones } from './vista.js';
 import { abrirMenu } from './menus.js';
-import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado, pastaMesa, pastaDocs } from './sistema.js';
+import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado, pastaMesa, pastaDocs, app } from './sistema.js';
 import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir } from './arquivos.js';
 import { confirmar } from './dialogos.js';
 import { tocar } from './sons.js';
@@ -46,7 +46,25 @@ function atalhoDe(chave) {
     if (!w) return null;
     return { rotulo: w.nome, semTraducao: true, icone: 'internet', iconeUrl: w.icone || null, abrir: () => abrir(chave), atalhoSeta: true };
   }
+  // Os outros programas do Retro Computer (pelo botão direito no Iniciar): o atalho para eles.
+  const p = app(chave);
+  if (p) return { rotulo: p.nome, icone: p.icone || 'programa', abrir: () => abrir(chave), atalhoSeta: true };
   return null;
+}
+
+/** Os ícones do sistema que Painel › Aparência › Área de trabalho liga e desliga, na ordem da mesa. */
+export const ICONES_SISTEMA = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt', 'painel', 'bloco', 'foco'];
+export const ICONES_PADRAO = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'];
+export const naMesa = (chave) => ((estado.config.mesa && estado.config.mesa.atalhos) || []).includes(chave);
+
+/** Liga e desliga os ícones do sistema de uma vez, mantendo os outros atalhos e a ordem. */
+export async function definirIconesSistema(ligados) {
+  const atuais = (estado.config.mesa && estado.config.mesa.atalhos) || [];
+  const outros = atuais.filter((k) => !ICONES_SISTEMA.includes(k));
+  const atalhos = [...ICONES_SISTEMA.filter((k) => ligados.includes(k)), ...outros];
+  estado.config.mesa.atalhos = atalhos;
+  await definirConfig({ mesa: { atalhos } });
+  await atualizar();
 }
 
 export async function montarMesa() {
@@ -196,7 +214,7 @@ export async function esvaziarLixeira() {
   atualizarLixeira();
 }
 
-function removerAtalho(chave) {
+export function removerAtalho(chave) {
   const atalhos = (estado.config.mesa.atalhos || []).filter((k) => k !== chave);
   estado.config.mesa.atalhos = atalhos;
   definirConfig({ mesa: { atalhos } }).then(() => atualizar());

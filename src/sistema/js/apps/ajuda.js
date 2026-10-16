@@ -17,6 +17,7 @@ const TOPICOS = [
 <p>2. Instale os programas em <b>Iniciar › Configurações › Adicionar ou remover programas</b>.</p>
 <p>3. Para a internet, use o <b>Navegador</b> e o <b>E-mail</b>, na barra de tarefas.</p>
 <p>4. Para o Claude, use o ícone <b>Claude</b> na área de trabalho.</p>
+<p>Os ícones da área de trabalho se escolhem em <b>Painel de controle › Aparência › Ícones</b>; para pôr outro programa nela, use o botão direito nele, no menu Iniciar › <b>Adicionar à área de trabalho</b>.</p>
 <p>5. Para trabalhar sem interrupções, use o <b>Foco</b> (Iniciar › Programas › Acessórios).</p>
 <p>O idioma (português, inglês ou espanhol) fica em <b>Painel de controle › Idioma</b>. Os tópicos ao lado explicam cada parte; <b>F1</b> abre esta Ajuda de qualquer lugar.</p>`],
     en: ['Welcome', `
@@ -28,6 +29,7 @@ const TOPICOS = [
 <p>2. Install programs from <b>Start › Settings › Add or Remove Programs</b>.</p>
 <p>3. For the internet, use the <b>Browser</b> and <b>E-mail</b>, on the taskbar.</p>
 <p>4. For Claude, use the <b>Claude</b> icon on the desktop.</p>
+<p>The desktop icons are chosen in <b>Control Panel › Appearance › Icons</b>; to put another program on it, right-click the program in the Start menu › <b>Add to the desktop</b>.</p>
 <p>5. To work without interruptions, use <b>Focus</b> (Start › Programs › Accessories).</p>
 <p>The language (Portuguese, English or Spanish) is in <b>Control Panel › Language</b>. The topics on the left explain each part; <b>F1</b> opens this Help from anywhere.</p>`],
     es: ['Bienvenido', `
@@ -39,6 +41,7 @@ const TOPICOS = [
 <p>2. Instala los programas en <b>Inicio › Configuración › Agregar o quitar programas</b>.</p>
 <p>3. Para internet, usa el <b>Navegador</b> y el <b>Correo</b>, en la barra de tareas.</p>
 <p>4. Para Claude, usa el icono <b>Claude</b> del escritorio.</p>
+<p>Los iconos del escritorio se eligen en <b>Panel de control › Apariencia › Iconos</b>; para poner otro programa en él, haz clic derecho en el programa, en el menú Inicio › <b>Agregar al escritorio</b>.</p>
 <p>5. Para trabajar sin interrupciones, usa <b>Enfoque</b> (Inicio › Programas › Accesorios).</p>
 <p>El idioma (portugués, inglés o español) está en <b>Panel de control › Idioma</b>. Los temas de la izquierda explican cada parte; <b>F1</b> abre esta Ayuda desde cualquier lugar.</p>`],
   },

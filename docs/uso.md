@@ -49,6 +49,12 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 | Sair de perto | Iniciar › Bloquear o computador (com uma senha em Painel de controle › Senhas) |
 | Sair | Iniciar › Desligar (cada programa pergunta se há algo por salvar) |
 
+### A área de trabalho
+
+- **Os ícones** de início: Meu computador, Meus documentos, a Lixeira, o Navegador, o E-mail e o Claude. Painel de controle › Aparência › **Ícones** liga e desliga os do sistema (também o Prompt de comando, o Painel de controle, o Bloco de notas e o Foco), com "Restaurar o padrão".
+- **Outro programa**: botão direito nele, no menu Iniciar › "Adicionar à área de trabalho" (ou "Remover da área de trabalho"); o mesmo menu fixa o programa na barra de tarefas. Botão direito num ícone da área de trabalho › "Remover da área de trabalho".
+- **Os arquivos e as pastas** da área de trabalho ficam na pasta `Área de trabalho` do disco C:.
+
 ### A barra de tarefas
 
 - **À esquerda**: o Iniciar, a caixa de busca (programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados (de início, o Explorador de arquivos, o Navegador, o E-mail e o Bloco de notas). Botão direito num programa › "Fixar na barra de tarefas" ou "Desafixar".
