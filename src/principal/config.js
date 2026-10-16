@@ -40,6 +40,9 @@ const PADRAO = {
   diario: { ligado: false },
   // A cópia de segurança do disco C: (todo dia ou toda semana), para uma pasta fora dele.
   copia: { ligada: false, destino: '', quando: 'diaria', ultima: 0, resultado: null },
+  // A acessibilidade: o alto contraste, o cursor grande, o aviso visual dos sons ('nada', 'titulo',
+  // 'janela' ou 'tela') e, no modo sistema, as teclas de aderência e as do mouse.
+  acessibilidade: { altoContraste: false, cursorGrande: false, avisoVisual: 'nada', aderencia: false, teclasMouse: false },
   // As opções de energia do modo sistema (minutos; 0 = nunca): a tela e a suspensão, na tomada e na bateria.
   energia: { telaTomada: 15, telaBateria: 5, suspenderTomada: 0, suspenderBateria: 30 },
   recentes: [],

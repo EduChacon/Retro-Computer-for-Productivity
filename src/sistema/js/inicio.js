@@ -15,6 +15,7 @@ import { programasAbertos } from './apps/craft.js';
 import { procurarAtualizacao } from './atualizacao.js';
 import { bloquearAoAbrir } from './bloqueio.js';
 import { iniciarLuzNoturna } from './luz-noturna.js';
+import { iniciarAcessibilidade } from './acessibilidade.js';
 
 import './apps/explorador.js';
 import './apps/bloco.js';
@@ -124,6 +125,7 @@ async function iniciar() {
   aplicarFundo(estado.config.papel);
   await aplicarEscala(estado.config.escala);
   iniciarLuzNoturna();
+  iniciarAcessibilidade();
   // O fim da cópia de segurança (a automática e a feita na hora): um aviso, e o erro quando houver.
   retro.copia.aoFim(async (r) => {
     await carregarConfig();

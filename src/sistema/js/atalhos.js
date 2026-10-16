@@ -132,6 +132,10 @@ const ACOES = {
   'area-de-trabalho': () => { if (mostrarAreaDeTrabalho() === 'escondeu') minimizarNativas(); },
   'minimizar-tudo': () => { minimizarTodas(); minimizarNativas(); },
   'area-transferencia': () => import('./apps/transferencia.js').then((m) => m.abrirHistorico()),
+  // A lupa da Acessibilidade.
+  'lupa+': () => import('./acessibilidade.js').then((m) => m.mudarLupa(1)),
+  'lupa-': () => import('./acessibilidade.js').then((m) => m.mudarLupa(-1)),
+  'lupa-sair': () => import('./acessibilidade.js').then((m) => { if (m.nivelLupa() > 1) m.mudarLupa(0); }),
 };
 
 retro.sistema.aoTecla((acao) => {

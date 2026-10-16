@@ -60,6 +60,7 @@ DO_SERENITY = {
     'planilha': ('filetype-spreadsheet', 'filetype-spreadsheet'),
     'apresentacao': ('filetype-presenter', 'filetype-presenter'),
     'som': ('filetype-sound', 'filetype-sound'),
+    'acessibilidade': ('app-magnifier', 'app-magnifier'),
     'video': ('filetype-video', 'filetype-video'),
     'compactado': ('filetype-archive', 'filetype-archive'),
     'markdown': ('filetype-markdown', 'filetype-markdown'),

@@ -4,8 +4,8 @@ O Retro Computer é de código aberto (licença MIT, veja [LICENSE](LICENSE)). E
 
 ## Ícones e fontes: SerenityOS
 
-- **Origem:** <https://github.com/SerenityOS/serenity> (`Base/res/icons` e `Base/res/fonts`).
-- **Uso:** os ícones de `src/sistema/icones/` (exceto os desenhos próprios listados abaixo), com as pastas recoloridas de amarelo por `ferramentas/icones.py`; as fontes Katica (interface) e Csilla (Prompt de comando), convertidas de bitmap para WOFF2 por `ferramentas/fonte-serenity.py`, só com o alfabeto latino.
+- **Origem:** <https://github.com/SerenityOS/serenity> (`Base/res/icons`, `Base/res/fonts` e `Base/res/cursor-themes/Default`).
+- **Uso:** os ícones de `src/sistema/icones/` (exceto os desenhos próprios listados abaixo), com as pastas recoloridas de amarelo por `ferramentas/icones.py`; as fontes Katica (interface) e Csilla (Prompt de comando), convertidas de bitmap para WOFF2 por `ferramentas/fonte-serenity.py`, só com o alfabeto latino; os cursores grandes da Acessibilidade (`src/sistema/cursores/`, as versões em dobro do tema "Default" e a mão ampliada, por `ferramentas/cursores.py`).
 - **Licença:** BSD-2-Clause.
 
 ```

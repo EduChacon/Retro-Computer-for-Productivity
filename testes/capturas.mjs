@@ -379,7 +379,7 @@ const ROTEIROS = {
   },
   async caixas() {
     // Cada caixa do Painel de controle, aba a aba: o conteúdo cabe sem rolar? (sem fotos)
-    for (const secao of ['aparencia', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'copia', 'impressoras', 'sobre']) {
+    for (const secao of ['aparencia', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'acessibilidade', 'copia', 'impressoras', 'sobre']) {
       await fecharTudo();
       await abrir('painel', { secao });
       await pagina.waitForTimeout(1200);
@@ -944,6 +944,46 @@ const ROTEIROS = {
 
   // A bandeja (com RETRO_BANDEJA_FALSA=1: o volume, o brilho, a bateria e o Wi-Fi de mentira):
   // as caixinhas, conectar a uma rede protegida, as notificações e a data no relógio.
+  // A acessibilidade (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e RETRO_ACESSIBILIDADE_FALSA=1):
+  // as abas, o alto contraste com o cursor grande, a lupa e o aviso visual de um som.
+  async acessibilidade() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'acessibilidade' });
+    await pagina.waitForTimeout(900);
+    await foto('acessibilidade-teclado');
+    for (const [aba, nome] of [['Som', 'som'], ['Vídeo', 'video'], ['Mouse', 'mouse']]) {
+      await pagina.click(`.janela.ativa .abas > div:has-text("${T(aba)}")`);
+      await pagina.waitForTimeout(300);
+      await foto('acessibilidade-' + nome);
+    }
+    await pagina.locator('.janela.ativa input[type=checkbox] >> nth=0').check(); // o cursor grande (aba Mouse)
+    await pagina.click(`.janela.ativa .abas > div:has-text("${T('Vídeo')}")`);
+    await pagina.locator('.janela.ativa input[type=checkbox] >> nth=0').check(); // o alto contraste
+    await pagina.click(`.janela.ativa button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(500);
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.mouse.move(300, 200);
+    await pagina.waitForTimeout(300);
+    await foto('acessibilidade-contraste');
+    console.log('classes:', await pagina.evaluate(() => document.documentElement.className));
+    // A lupa em 200%, com o ponteiro sobre a janela.
+    await tecla('lupa+');
+    await tecla('lupa+');
+    await pagina.waitForTimeout(200);
+    await pagina.mouse.move(320, 140);
+    await pagina.waitForTimeout(600);
+    await foto('acessibilidade-lupa');
+    await tecla('lupa-sair');
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ acessibilidade: { altoContraste: false, cursorGrande: false, avisoVisual: 'janela' } })));
+    await pagina.waitForTimeout(300);
+    // O aviso visual: a janela ativa pisca com o som do erro.
+    await pagina.evaluate(() => import('./js/sons.js').then((m) => m.tocar('erro')));
+    await pagina.waitForTimeout(120);
+    await foto('acessibilidade-aviso');
+    console.log('linux:', JSON.stringify(await pagina.evaluate(() => retro.acessibilidade.estado())));
+  },
+
   // As opções de energia e a data e a hora do modo sistema (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1
   // e RETRO_DATAHORA_FALSA=1; a senha de teste é "certa").
   async energia() {

@@ -33,6 +33,7 @@ const ITENS = [
   { chave: 'impressoras', rotulo: marcar('Impressoras'), icone: 'impressora', descricao: marcar('As impressoras, a padrão, a fila de impressão e a página de teste.'), abrir: () => dialogoImpressoras() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'mouse', rotulo: marcar('Mouse'), icone: 'mouse', descricao: marcar('A velocidade do ponteiro, o botão principal, a rolagem e o touchpad.'), abrir: () => dialogoMouse() },
+  { chave: 'acessibilidade', rotulo: marcar('Opções de acessibilidade'), icone: 'acessibilidade', descricao: marcar('O alto contraste, a lupa, o cursor grande, os avisos visuais dos sons e as teclas de aderência.'), abrir: () => dialogoAcessibilidade() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Os sons do sistema, a saída de som e o microfone.'), abrir: (args) => dialogoSons(args) },
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('A data, a hora e o fuso horário do computador.'), abrir: () => dialogoData() },
   { chave: 'energia', rotulo: marcar('Opções de energia'), icone: 'energia', descricao: marcar('Quando apagar a tela e suspender o computador parado, e o que a tampa do notebook faz.'), abrir: () => dialogoEnergia() },
@@ -1168,6 +1169,80 @@ async function dialogoFila(p) {
 }
 
 /* Data e hora */
+
+/* Opções de acessibilidade */
+
+async function dialogoAcessibilidade() {
+  const titulo = tr('Propriedades de Opções de acessibilidade');
+  const aberta = janelas.find((x) => x.titulo === titulo);
+  if (aberta) return aberta.focar();
+  const ac = await import('../acessibilidade.js');
+  const linux = await retro.acessibilidade.estado().catch(() => ({ disponivel: false }));
+  const a = estado.config.acessibilidade || {};
+  const plat = estado.config.plataforma;
+  const nota = (texto) => h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '6px' } }, texto);
+  const caixa = (marcado, rot, desligada = false) => {
+    const c = h('input', { type: 'checkbox', checked: !!marcado, disabled: desligada });
+    return { c, el: h('label', c, h('span', rot)) };
+  };
+  const grupo = (legenda, ...filhos) => h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', legenda), ...filhos);
+  // O que é do Linux (o xkbset): fora do modo sistema, o computador principal cuida disso.
+  const doSistema = () => (plat === 'win32' || plat === 'darwin'
+    ? [nota(tr('Fora do Retro Computer como sistema, estas opções são as do computador principal.')),
+      h('div', { style: { marginTop: '6px' } }, h('button', { type: 'button', on: { click: () => retro.acessibilidade.configuracoesDoSistema().catch(() => { }) } }, tr('Abrir as configurações do sistema…')))]
+    : [nota(!estado.config.modoSistema
+      ? tr('Fora do Retro Computer como sistema, estas opções são as do computador principal.')
+      : tr('O Linux não respondeu pelo xkbset: instale o pacote "xkbset" para usar estas opções.'))]);
+
+  const aderencia = caixa(linux.disponivel && (a.aderencia || linux.aderencia), tr('Usar as teclas de aderência'), !linux.disponivel);
+  const abaTeclado = h('div',
+    grupo(tr('Teclas de aderência'), aderencia.el,
+      nota(tr('Shift, Ctrl, Alt e a tecla do logotipo valem para a próxima tecla, sem precisar segurá-las. Apertada duas vezes, a tecla fica travada até ser apertada de novo.')),
+      ...(linux.disponivel ? [] : doSistema())));
+
+  const selAviso = h('select', { style: { width: '100%' } },
+    h('option', { value: 'nada' }, tr('Nada')),
+    h('option', { value: 'titulo' }, tr('A barra de título da janela ativa')),
+    h('option', { value: 'janela' }, tr('A janela ativa')),
+    h('option', { value: 'tela' }, tr('A tela inteira')));
+  selAviso.value = a.avisoVisual || 'nada';
+  const abaSom = h('div',
+    grupo(tr('Avisos visuais'),
+      h('div', { style: { marginBottom: '6px' } }, tr('Quando o sistema tocar um som, piscar:')),
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
+        h('div.select-caixa', { style: { flex: '1', minWidth: '0' } }, selAviso),
+        h('button', { type: 'button', on: { click: () => ac.piscar(selAviso.value) } }, tr('Testar'))),
+      nota(tr('Vale também com os sons desligados: os avisos, os erros e as perguntas ficam visíveis.'))));
+
+  const contraste = caixa(a.altoContraste, tr('Usar o alto contraste (fundo escuro e letras claras)'));
+  const abaVideo = h('div',
+    grupo(tr('Alto contraste'), contraste.el,
+      nota(tr('As fotos, os vídeos e os programas continuam com as cores de verdade.'))),
+    grupo(tr('Lupa'),
+      h('div', { style: { lineHeight: '13px' } }, tr('Logotipo + "+" amplia a tela em volta do ponteiro, logotipo + "-" diminui e logotipo + Esc fecha a lupa.')),
+      h('div', { style: { marginTop: '6px', display: 'flex', gap: '6px' } },
+        h('button', { type: 'button', on: { click: () => ac.mudarLupa(1) } }, tr('Ampliar')),
+        h('button', { type: 'button', on: { click: () => ac.mudarLupa(0) } }, tr('Fechar a lupa')))),
+    nota(tr('Para deixar tudo maior de vez: Aparência › Configurações › Tamanho dos pixels.')));
+
+  const cursor = caixa(a.cursorGrande, tr('Usar o cursor grande'));
+  const teclasMouse = caixa(linux.disponivel && (a.teclasMouse || linux.teclasMouse), tr('Mover o ponteiro com o teclado numérico'), !linux.disponivel);
+  const abaMouse = h('div',
+    grupo(tr('Cursor'), h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+      h('img', { src: 'cursores/seta.png', width: 30, height: 42, alt: '', style: { imageRendering: 'pixelated' } }), cursor.el)),
+    grupo(tr('Teclas do mouse'), teclasMouse.el,
+      nota(tr('Com o Num Lock ligado, as setas do teclado numérico (8, 2, 4, 6 e as diagonais) movem o ponteiro, o 5 clica e o "+" clica duas vezes.')),
+      ...(linux.disponivel ? [] : doSistema())));
+
+  dialogoBase({
+    titulo, icone: 'acessibilidade', larg: 420,
+    abas: [{ titulo: tr('Teclado'), conteudo: abaTeclado }, { titulo: tr('Som'), conteudo: abaSom }, { titulo: tr('Vídeo'), conteudo: abaVideo }, { titulo: tr('Mouse'), conteudo: abaMouse }],
+    aoAplicar: async () => {
+      if (linux.disponivel) await retro.acessibilidade.aplicar({ aderencia: aderencia.c.checked, teclasMouse: teclasMouse.c.checked });
+      await definirConfig({ acessibilidade: { altoContraste: contraste.c.checked, cursorGrande: cursor.c.checked, avisoVisual: selAviso.value } });
+    },
+  });
+}
 
 /* Opções de energia */
 

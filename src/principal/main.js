@@ -42,6 +42,7 @@ const { Visualizador } = require('./visualizar');
 const { Som, SomFalso } = require('./som');
 const { Energia } = require('./energia');
 const { DataHora, DataHoraFalsa } = require('./datahora');
+const { AcessibilidadeLinux } = require('./acessibilidade');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -125,6 +126,7 @@ let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja
 let loja = null; // os programas do Linux pelo Flathub (loja.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let energiaOpcoes = null; // as opções de energia do modo sistema (energia.js)
+let acessLinux = null; // as teclas de aderência e as do mouse do modo sistema (acessibilidade.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
@@ -915,6 +917,18 @@ function registrarPonte() {
     if (process.platform === 'darwin') return shell.openExternal('x-apple.systempreferences:com.apple.preference.battery').then(() => true);
     return false;
   });
+  // A acessibilidade do teclado e do mouse (só no modo sistema, pelo xkbset); o resto é da tela.
+  tratar('acessibilidade:estado', () => (acessLinux ? acessLinux.estado() : { disponivel: false }));
+  tratar('acessibilidade:aplicar', async (escolhas = {}) => {
+    const e = { aderencia: !!escolhas.aderencia, teclasMouse: !!escolhas.teclasMouse };
+    config.definir({ acessibilidade: e });
+    return acessLinux ? acessLinux.aplicar(e) : { ok: false };
+  });
+  tratar('acessibilidade:configuracoesDoSistema', () => {
+    if (process.platform === 'win32') return shell.openExternal('ms-settings:easeofaccess-keyboard').then(() => true);
+    if (process.platform === 'darwin') return shell.openExternal('x-apple.systempreferences:com.apple.preference.universalaccess').then(() => true);
+    return false;
+  });
   // A data, a hora e o fuso (só no modo sistema, pelo timedatectl).
   const dataHora = MODO_SISTEMA ? (process.env.RETRO_DATAHORA_FALSA ? new DataHoraFalsa() : new DataHora({ comoAdmin: sistemaLinux.comoAdmin })) : null;
   tratar('datahora:estado', () => (dataHora ? dataHora.estado() : { disponivel: false }));
@@ -1212,6 +1226,10 @@ app.whenReady().then(async () => {
       falso: !!process.env.RETRO_ENERGIA_FALSA,
     });
     energiaOpcoes.iniciar();
+    // As teclas de aderência e as do mouse escolhidas voltam a cada entrada (o X as esquece).
+    acessLinux = new AcessibilidadeLinux({ falso: !!process.env.RETRO_ACESSIBILIDADE_FALSA });
+    const a = config.obter().acessibilidade || {};
+    if (a.aderencia || a.teclasMouse) acessLinux.aplicar(a).catch(() => { });
   }
   await abrirDisco();
   // Os pendrives e cartões (RETRO_UNIDADES_FALSAS: uma pasta comum, para os testes).

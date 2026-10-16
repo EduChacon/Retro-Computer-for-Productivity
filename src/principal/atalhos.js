@@ -12,6 +12,7 @@
  *   logotipo + Shift+S    captura-regiao
  *   logotipo + 1…9        fixado:N (o programa fixado nessa posição)
  *   logotipo + seta       encaixe:ArrowLeft… (os cantos magnéticos)
+ *   logotipo + "+" e "-"  lupa+, lupa- (a lupa da Acessibilidade); logotipo + Esc: lupa-sair
  */
 
 const DO_LOGOTIPO = { e: 'explorador', r: 'executar', d: 'area-de-trabalho', m: 'minimizar-tudo', i: 'painel', s: 'busca', q: 'busca', v: 'area-transferencia', l: 'bloquear' };
@@ -19,6 +20,10 @@ const DO_LOGOTIPO = { e: 'explorador', r: 'executar', d: 'area-de-trabalho', m: 
 function acaoDoLogotipo(input) {
   if (!input.meta || input.control || input.alt) return null;
   const k = input.key && input.key.length === 1 ? input.key.toLowerCase() : input.key;
+  // A lupa: o "+" (com ou sem o Shift, que o "+" pede em alguns teclados), o "-" e o Esc.
+  if (/^(Equal|NumpadAdd)$/.test(input.code || '') || k === '+') return 'lupa+';
+  if (/^(Minus|NumpadSubtract)$/.test(input.code || '')) return 'lupa-';
+  if (k === 'Escape') return 'lupa-sair';
   if (input.shift) return k === 's' ? 'captura-regiao' : null;
   const digito = /^Digit([1-9])$/.exec(input.code || '');
   if (digito) return 'fixado:' + digito[1];

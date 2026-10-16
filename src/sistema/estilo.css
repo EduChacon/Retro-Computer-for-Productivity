@@ -61,7 +61,7 @@ html, body {
   font-smooth: never;
   text-rendering: optimizeSpeed;
   user-select: none;
-  cursor: default;
+  cursor: var(--cur-default, default);
 }
 
 img, canvas { image-rendering: pixelated; }
@@ -321,7 +321,7 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
 .cm-linha label { gap: 6px; }
 .cm-area { position: relative; background: #fff; height: 242px; overflow: hidden; }
 .cm-grade { display: grid; height: 100%; overflow-y: auto; outline: none; align-content: start; }
-.cm-c { height: 22px; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: inset -1px -1px 0 #c0c0c0; cursor: default; user-select: none; }
+.cm-c { height: 22px; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: inset -1px -1px 0 #c0c0c0; cursor: var(--cur-default, default); user-select: none; }
 .cm-c.sel { background: var(--selecao, #000080); color: #fff; }
 .cm-grade:focus .cm-c.sel { outline: 1px dotted #fff; outline-offset: -3px; }
 .cm-lupa { position: absolute; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: #fff; border: 2px solid #000; box-shadow: 2px 2px 0 #808080; pointer-events: none; }
@@ -350,7 +350,7 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
 .historico-transf > .titulo { background: var(--titulo); color: var(--titulo-texto); }
 .ht-corpo { padding: 6px 4px 4px; display: flex; flex-direction: column; gap: 6px; }
 .ht-lista { height: 286px; overflow-y: auto; background: #fff; box-shadow: var(--campo); padding: 3px; outline: none; }
-.ht-item { padding: 3px 4px 4px; margin-bottom: 3px; box-shadow: var(--raso-alto); background: var(--face); cursor: default; }
+.ht-item { padding: 3px 4px 4px; margin-bottom: 3px; box-shadow: var(--raso-alto); background: var(--face); cursor: var(--cur-default, default); }
 .ht-item.sel { box-shadow: inset 0 0 0 1px var(--titulo), var(--raso-alto); background: #dcdcf0; }
 .ht-lista:focus .ht-item.sel { background: var(--titulo); color: var(--titulo-texto); }
 .ht-cabeca { display: flex; align-items: center; gap: 6px; color: #404040; }
@@ -487,14 +487,14 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
 /* No toque: a barra de título arrasta a janela, e a área de trabalho não rola (o dedo faz o laço). */
 .titulo { touch-action: none; }
 #mesa { touch-action: none; }
-.alca.n { top: -2px; left: 6px; right: 6px; height: 6px; cursor: ns-resize; }
-.alca.s { bottom: -2px; left: 6px; right: 6px; height: 6px; cursor: ns-resize; }
-.alca.l { right: -2px; top: 6px; bottom: 6px; width: 6px; cursor: ew-resize; }
-.alca.o { left: -2px; top: 6px; bottom: 6px; width: 6px; cursor: ew-resize; }
-.alca.ne { top: -2px; right: -2px; width: 10px; height: 10px; cursor: nesw-resize; }
-.alca.no { top: -2px; left: -2px; width: 10px; height: 10px; cursor: nwse-resize; }
-.alca.se { bottom: -2px; right: -2px; width: 14px; height: 14px; cursor: nwse-resize; }
-.alca.so { bottom: -2px; left: -2px; width: 10px; height: 10px; cursor: nesw-resize; }
+.alca.n { top: -2px; left: 6px; right: 6px; height: 6px; cursor: var(--cur-ns-resize, ns-resize); }
+.alca.s { bottom: -2px; left: 6px; right: 6px; height: 6px; cursor: var(--cur-ns-resize, ns-resize); }
+.alca.l { right: -2px; top: 6px; bottom: 6px; width: 6px; cursor: var(--cur-ew-resize, ew-resize); }
+.alca.o { left: -2px; top: 6px; bottom: 6px; width: 6px; cursor: var(--cur-ew-resize, ew-resize); }
+.alca.ne { top: -2px; right: -2px; width: 10px; height: 10px; cursor: var(--cur-nesw-resize, nesw-resize); }
+.alca.no { top: -2px; left: -2px; width: 10px; height: 10px; cursor: var(--cur-nwse-resize, nwse-resize); }
+.alca.se { bottom: -2px; right: -2px; width: 14px; height: 14px; cursor: var(--cur-nwse-resize, nwse-resize); }
+.alca.so { bottom: -2px; left: -2px; width: 10px; height: 10px; cursor: var(--cur-nesw-resize, nesw-resize); }
 .janela.maximizada .alca, .janela.fixa .alca { display: none; }
 .pegador {
   width: 12px; height: 12px;
@@ -896,7 +896,7 @@ body.barra-alta { --altura-barra: 34px; }
 .loja-topo .select-caixa select { width: 100%; }
 .loja-meio { flex: 1; min-height: 0; display: flex; gap: 8px; }
 .loja-lista { flex: 0 0 46%; min-width: 0; background: #fff; box-shadow: var(--campo); padding: 2px; overflow-y: auto; outline: none; }
-.loja-item { display: flex; gap: 8px; align-items: center; padding: 4px 5px; cursor: default; }
+.loja-item { display: flex; gap: 8px; align-items: center; padding: 4px 5px; cursor: var(--cur-default, default); }
 .loja-item img { flex: none; }
 .loja-item .info { flex: 1; min-width: 0; }
 .loja-item .nome { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1047,7 +1047,7 @@ button.cm-rosto:active { padding: 1px 0 0 1px; }
 .cm-grade { display: grid; grid-auto-rows: 16px; border: 3px solid; border-color: var(--sombra) var(--luz) var(--luz) var(--sombra); width: max-content; user-select: none; }
 .cm-c {
   width: 16px; height: 16px; box-shadow: inset -2px -2px var(--sombra), inset 2px 2px var(--luz);
-  display: grid; place-items: center; font-weight: bold; font-size: 12px; line-height: 1; cursor: default;
+  display: grid; place-items: center; font-weight: bold; font-size: 12px; line-height: 1; cursor: var(--cur-default, default);
 }
 .cm-c.aberta, .cm-c.apertada { box-shadow: inset 1px 1px var(--sombra); padding: 1px 0 0 1px; }
 .cm-c.explodiu { background: #ff0000; }
@@ -1073,7 +1073,7 @@ button.cm-rosto:active { padding: 1px 0 0 1px; }
   content: ''; position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -17px 0 0 -17px;
   border: 4px solid #00c000; border-radius: 50%;
 }
-.pac-carta { position: absolute; width: 71px; height: 96px; border-radius: 4px; cursor: default; }
+.pac-carta { position: absolute; width: 71px; height: 96px; border-radius: 4px; cursor: var(--cur-default, default); }
 .pac-mesa.animar .pac-carta { transition: left 0.12s, top 0.12s; }
 .pac-carta .frente { display: none; }
 .pac-carta.aberta .frente { display: block; }
@@ -1168,7 +1168,7 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 /* As redes Wi-Fi e as notificações: listas brancas, afundadas. */
 .lista-redes, .lista-avisos { background: #fff; box-shadow: var(--campo); padding: 2px; max-height: 170px; overflow-y: auto; outline: none; }
 .lista-redes { height: 120px; }
-.lista-redes .rede { display: flex; align-items: center; gap: 5px; padding: 1px 3px; cursor: default; white-space: nowrap; }
+.lista-redes .rede { display: flex; align-items: center; gap: 5px; padding: 1px 3px; cursor: var(--cur-default, default); white-space: nowrap; }
 .lista-redes .rede img { flex: none; }
 .rede-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; }
 .rede-vazio { width: 16px; flex: none; }
@@ -1179,7 +1179,7 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 .lista-redes:focus .rede.escolhida { outline: 1px dotted #fff; outline-offset: -1px; }
 .rede-vazia { padding: 6px; color: #808080; }
 .lista-avisos { max-height: 260px; }
-.aviso-item { display: flex; gap: 6px; padding: 4px; align-items: flex-start; cursor: default; border-bottom: 1px solid var(--luz2); }
+.aviso-item { display: flex; gap: 6px; padding: 4px; align-items: flex-start; cursor: var(--cur-default, default); border-bottom: 1px solid var(--luz2); }
 .aviso-item:last-child { border-bottom: none; }
 .aviso-item:hover { background: var(--selecao); color: var(--selecao-texto); }
 .aviso-item:hover .aviso-hora { color: #c0c0ff; }
@@ -1234,8 +1234,8 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 
 /* O Visualizador de imagens. */
 .vis-area { flex: 1 1 auto; min-height: 0; display: flex; overflow: auto; padding: 4px; background: #808080; box-shadow: var(--campo); outline: none; }
-.vis-area.rola { cursor: grab; }
-.vis-area.arrastando { cursor: grabbing; }
+.vis-area.rola { cursor: var(--cur-grab, grab); }
+.vis-area.arrastando { cursor: var(--cur-grabbing, grabbing); }
 .vis-palco { position: relative; flex: none; margin: auto; }
 .vis-img { position: absolute; left: 50%; top: 50%; max-width: none; background: repeating-conic-gradient(#c8c8c8 0 25%, #fff 0 50%) 0 0 / 16px 16px; }
 .vis-img.pixelada { image-rendering: pixelated; }
@@ -1274,7 +1274,7 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .cap-area.com-imagem .cap-vazio { display: none; }
 .cap-vazio { margin: auto; padding: 8px; color: #fff; text-align: center; }
 .janela.captura .barra-ferramentas select { height: 22px; }
-#captura-regiao { position: fixed; inset: 0; z-index: 2147482000; cursor: crosshair; background-size: 100% 100%; touch-action: none; }
+#captura-regiao { position: fixed; inset: 0; z-index: 2147482000; cursor: var(--cur-crosshair, crosshair); background-size: 100% 100%; touch-action: none; }
 .cap-escuro { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); }
 .cap-caixa { display: none; position: absolute; outline: 1px dashed #fff; box-shadow: 0 0 0 1px #000; background-repeat: no-repeat; }
 .cap-dica { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 3px 10px; background: var(--face); box-shadow: var(--relevo); }
@@ -1285,7 +1285,7 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .mon-painel[hidden] { display: none; }
 .mon-tabela { flex: 1 1 auto; min-height: 60px; display: flex; flex-direction: column; background: #fff; box-shadow: var(--campo); padding: 2px; }
 .mon-cab { flex: none; display: flex; }
-.mon-cab > div { padding: 1px 6px; background: var(--face); box-shadow: var(--relevo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+.mon-cab > div { padding: 1px 6px; background: var(--face); box-shadow: var(--relevo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: var(--cur-default, default); }
 .mon-cab > div:active { box-shadow: var(--raso); padding: 2px 5px 0 7px; }
 .mon-corpo { flex: 1 1 auto; min-height: 0; overflow: auto; outline: none; }
 .mon-linha { display: flex; height: 18px; align-items: center; }
@@ -1333,7 +1333,7 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .exp-corpo { flex: 1 1 auto; min-height: 0; display: flex; }
 .exp-corpo > .lista-arquivos { flex: 1 1 auto; min-width: 0; }
 .exp-arvore { flex: none; min-width: 100px; overflow: auto; background: #fff; box-shadow: var(--campo); }
-.exp-divisoria { flex: none; width: 4px; cursor: col-resize; touch-action: none; }
+.exp-divisoria { flex: none; width: 4px; cursor: var(--cur-col-resize, col-resize); touch-action: none; }
 .exp-corpo:not(.com-arvore) .exp-divisoria:not(.vis-div) { display: none; }
 /* O painel de visualização (Exibir › Painel de visualização): o arquivo em cima, os dados embaixo. */
 .exp-vis { flex: none; min-width: 140px; display: flex; background: #fff; box-shadow: var(--campo); padding: 2px; overflow: hidden; }
@@ -1362,7 +1362,7 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .vis-dados > div { min-width: 0; }
 .vis-dados b { display: block; margin-bottom: 2px; }
 .arvore { min-width: max-content; padding: 2px; outline: none; }
-.arv-linha { display: flex; align-items: center; gap: 3px; height: 18px; white-space: nowrap; cursor: default; }
+.arv-linha { display: flex; align-items: center; gap: 3px; height: 18px; white-space: nowrap; cursor: var(--cur-default, default); }
 .arv-linha img { flex: none; }
 .arv-rotulo { padding: 0 2px 1px; }
 .arv-linha.sel .arv-rotulo { background: var(--selecao); color: var(--selecao-texto); }
@@ -1371,8 +1371,8 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .arv-botao.vazio { border-color: transparent; background: none; }
 .exp-endereco { flex: 1 1 auto; min-width: 60px; height: 20px; display: flex; background: #fff; box-shadow: var(--campo); }
 .exp-endereco input { flex: 1 1 auto; min-width: 0; height: 100%; box-shadow: none; }
-.migalhas { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 0 2px; overflow: hidden; white-space: nowrap; cursor: text; }
-button.migalha { flex: none; min-width: 0; min-height: 0; height: 16px; padding: 0 3px; display: inline-flex; align-items: center; gap: 3px; background: none; box-shadow: none; cursor: default; }
+.migalhas { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 0 2px; overflow: hidden; white-space: nowrap; cursor: var(--cur-text, text); }
+button.migalha { flex: none; min-width: 0; min-height: 0; height: 16px; padding: 0 3px; display: inline-flex; align-items: center; gap: 3px; background: none; box-shadow: none; cursor: var(--cur-default, default); }
 button.migalha:hover { box-shadow: var(--raso-alto); }
 button.migalha:active { box-shadow: var(--raso); padding: 1px 2px 0 4px; }
 .migalha-sep { flex: none; padding: 0 1px; color: var(--sombra); }
@@ -1437,3 +1437,41 @@ button.ferramenta.apertado { box-shadow: var(--raso); background: var(--face) va
 
 /* Um programa do Linux na frente: a janela do Retro Computer perde a cor do título, como na época. */
 body.fora-de-foco .janela.ativa > .titulo { background: var(--titulo-inativo); color: var(--titulo-inativo-texto); }
+
+/* Acessibilidade › Mouse › Cursor grande: os cursores do SerenityOS em dobro (ferramentas/cursores.py).
+   As regras do estilo usam var(--cur-…); sem a opção, valem os cursores do sistema. */
+html.cursor-grande {
+  --cur-default: url(cursores/seta.png) 4 4, default;
+  --cur-text: url(cursores/texto.png) 15 25, text;
+  --cur-pointer: url(cursores/mao.png) 16 8, pointer;
+  --cur-col-resize: url(cursores/horizontal.png) 23 13, col-resize;
+  --cur-ew-resize: url(cursores/horizontal.png) 23 13, ew-resize;
+  --cur-ns-resize: url(cursores/vertical.png) 13 23, ns-resize;
+  --cur-nwse-resize: url(cursores/diagonal-1.png) 21 21, nwse-resize;
+  --cur-nesw-resize: url(cursores/diagonal-2.png) 21 21, nesw-resize;
+  --cur-crosshair: url(cursores/mira.png) 21 21, crosshair;
+  --cur-grab: url(cursores/mover.png) 25 25, grab;
+  --cur-grabbing: url(cursores/mover.png) 25 25, grabbing;
+  --cur-move: url(cursores/mover.png) 25 25, move;
+  cursor: var(--cur-default);
+}
+/* Sem especificidade: vence só o padrão do navegador (os botões e as listas), não as regras daqui. */
+:where(html.cursor-grande) * { cursor: inherit; }
+html.cursor-grande :is(input:not([type=checkbox], [type=radio], [type=range], [type=button], [type=submit], [type=color], [type=file]), textarea, [contenteditable=true], .xterm-screen) { cursor: var(--cur-text); }
+html.cursor-grande :is(a[href], .cxb-links a) { cursor: var(--cur-pointer); }
+
+/* Acessibilidade › Vídeo › Alto contraste: as cores invertidas e mais fortes (o cinza vira quase
+   preto e o texto, branco); as fotos, os vídeos e os programas voltam às cores de verdade. */
+html.alto-contraste #tela { filter: invert(1) hue-rotate(180deg) contrast(1.35); }
+html.alto-contraste #tela :is(img, video, canvas, iframe, .vis-moldura, .xterm) { filter: invert(1) hue-rotate(180deg); }
+html.alto-contraste #mesa { background: #fff !important; }
+/* Os nomes da área de trabalho, brancos de costume, ficam pretos antes da inversão (brancos na tela). */
+html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
+
+/* Acessibilidade › Som › Avisos visuais: o que pisca quando o sistema toca um som. */
+@keyframes piscar-aviso { 0%, 100% { filter: none; } 50% { filter: invert(1); } }
+.janela.piscar-titulo .titulo, .janela.piscar-janela, #tela.piscar-tela { animation: piscar-aviso 0.25s steps(1) 2; }
+
+/* A lupa (logotipo + "+"): a tela inteira ampliada em volta do ponteiro. */
+#tela.com-lupa { transform-origin: var(--lupa-x, 50%) var(--lupa-y, 50%); transform: scale(var(--lupa, 1)); }
+.lupa-aviso { position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 100000; padding: 3px 8px; background: var(--dica); color: #000; box-shadow: 1px 1px 0 var(--escuro), inset 0 0 0 1px var(--escuro); pointer-events: none; }

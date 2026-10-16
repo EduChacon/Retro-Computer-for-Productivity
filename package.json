@@ -111,6 +111,8 @@
         "xinput",
         "network-manager",
         "pipewire-pulse | pulseaudio-utils | alsa-utils",
+      "pulseaudio-utils",
+      "xkbset",
         "flatpak",
         "lxpolkit",
         "wmctrl",

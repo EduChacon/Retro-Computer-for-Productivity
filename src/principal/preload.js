@@ -93,6 +93,12 @@ contextBridge.exposeInMainWorld('retro', {
     pasta: () => chamar('diario:pasta'),
     hoje: () => chamar('diario:hoje'),
   },
+  // A acessibilidade do teclado e do mouse (modo sistema).
+  acessibilidade: {
+    estado: () => chamar('acessibilidade:estado'),
+    aplicar: (escolhas) => chamar('acessibilidade:aplicar', escolhas),
+    configuracoesDoSistema: () => chamar('acessibilidade:configuracoesDoSistema'),
+  },
   // As opções de energia e a data e a hora (modo sistema).
   energia: {
     estado: () => chamar('energia:estado'),

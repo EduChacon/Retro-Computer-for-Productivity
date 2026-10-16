@@ -131,6 +131,16 @@ No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw
 - **Área da tela** (Aparência › Configurações, no Retro Computer como sistema): a resolução do monitor; se a tela nova não aparecer bem, ela volta à anterior em 15 segundos.
 - **Modo de energia** (a caixa da bateria, no Linux com o `power-profiles-daemon`): economia de energia, equilibrado ou desempenho.
 
+### Acessibilidade
+
+Painel de controle › **Opções de acessibilidade**, com as abas da época:
+
+- **Vídeo**: o **alto contraste** (o fundo escuro e as letras claras; as fotos, os vídeos e os programas mantêm as cores) e a **lupa**: logotipo + "+" amplia a tela inteira em volta do ponteiro (150%, 200%, 300% e 400%), logotipo + "-" diminui e logotipo + Esc fecha. O ponto debaixo do ponteiro é o mesmo de sem a lupa: para ver a beira da tela, basta levar o ponteiro até ela.
+- **Mouse**: o **cursor grande** (os cursores do SerenityOS em dobro) e, no Retro Computer como sistema, as **teclas do mouse** (o teclado numérico move o ponteiro).
+- **Som**: os **avisos visuais**: quando o sistema toca um som, a barra de título, a janela ativa ou a tela inteira piscam (também com os sons desligados).
+- **Teclado**: no Retro Computer como sistema, as **teclas de aderência** (Shift, Ctrl, Alt e o logotipo valem para a próxima tecla; duas vezes seguidas, ficam travadas). Fora dele, valem as do computador principal (o botão abre as configurações do Windows ou do macOS).
+- Para deixar tudo maior de vez: Aparência › Configurações › Tamanho dos pixels.
+
 ### Impressoras, Bluetooth e teclado
 
 - **Painel de controle › Impressoras**: as impressoras do computador, a padrão, a fila de impressão (no Linux e no macOS, pelo CUPS), a página de teste e "Adicionar impressora…" (o configurador do sistema; no Linux sem ele, a página do CUPS no Navegador).
@@ -244,6 +254,7 @@ Na sessão:
 - O teclado segue o layout do Linux (ou o escolhido em Painel de controle › Teclado); o touchpad do notebook ganha o "tocar para clicar"; as teclas do logotipo, de volume, de brilho, de calculadora e Print Screen funcionam.
 - A bandeja mostra a rede Wi-Fi, o volume, a bateria e o brilho, o Bluetooth e as notificações; os avisos de bateria fraca aparecem aos 10% e aos 5%.
 - **Painel de controle › Sons › Áudio**: a saída de som preferida (os alto-falantes, o fone Bluetooth, a tela pela HDMI; o que está tocando passa para ela) e o microfone preferido, com o volume e o mudo, pelo pactl (o PulseAudio ou o PipeWire). No Windows e no macOS, o botão abre as configurações de som do sistema.
+- Painel de controle › **Opções de acessibilidade** › Teclado e Mouse: as teclas de aderência (Shift, Ctrl, Alt e o logotipo valem para a próxima tecla) e as teclas do mouse (o teclado numérico move o ponteiro), pelo `xkbset`, também nos programas do Linux.
 - Painel de controle › **Opções de energia**: depois de quanto tempo parado a tela apaga (o DPMS, pelo `xset`) e o computador suspende, na tomada e na bateria (com um som tocando, ele espera), e o que a tampa do notebook faz (um arquivo do logind em `/etc/systemd/logind.conf.d/`, com a senha de administrador). Na volta da suspensão, a tela de bloqueio pede a senha (se houver).
 - Painel de controle › **Data e hora**: a hora pela internet (o NTP) ou à mão, e a aba **Fuso horário**, pelo `timedatectl` (com a senha de administrador).
 - Os programas do Linux (os da aba Programas do Linux e os outros) abrem em janelas comuns e aparecem na barra de tarefas, com os do Retro Computer: o clique traz para a frente ou minimiza, e o botão direito fixa e fecha.

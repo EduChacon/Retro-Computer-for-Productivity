@@ -201,7 +201,12 @@ function saidaSeca() {
   return g;
 }
 
+// Quem quer saber de cada som do sistema (os avisos visuais da Acessibilidade), mesmo sem som.
+const ouvintes = [];
+export const aoTocar = (f) => ouvintes.push(f);
+
 export function tocar(nome) {
+  if (SONS[nome]) for (const f of ouvintes) { try { f(nome); } catch { } }
   if (!ligado || volume <= 0 || !SONS[nome]) return;
   try { SONS[nome](); } catch (e) { console.warn('som', nome, e); }
 }
