@@ -73,6 +73,13 @@ if (process.env.RETRO_SEM_BOAS_VINDAS) {
   fs.mkdirSync(dados, { recursive: true });
   fs.writeFileSync(path.join(dados, 'config.json'), JSON.stringify({ primeiraVez: false }));
 }
+// RETRO_BOOT=1: com a tela do BIOS e a abertura (desde a 1.1, a área de trabalho aparece direto).
+if (process.env.RETRO_BOOT) {
+  fs.mkdirSync(dados, { recursive: true });
+  const arq = path.join(dados, 'config.json');
+  const atual = fs.existsSync(arq) ? JSON.parse(fs.readFileSync(arq, 'utf8')) : {};
+  fs.writeFileSync(arq, JSON.stringify({ ...atual, inicioRapido: false }));
+}
 // Roteiro "unidades": um "pendrive" que é uma pasta comum (RETRO_UNIDADES_FALSAS), com arquivos.
 if ((ROTEIRO === 'unidades' || ROTEIRO === 'antivirus') && !process.env.RETRO_UNIDADES_FALSAS) {
   const pen = path.join(tmp, 'pendrive');
@@ -118,6 +125,8 @@ async function lancar() {
   pagina = await app.firstWindow();
   pagina.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') erros.push(`[${m.type()}] ${m.text()}`); });
   pagina.on('pageerror', (e) => erros.push(`[pageerror] ${e.message}\n${e.stack}`));
+  // O console só diz "404"; o endereço ajuda a achar o recurso que falta.
+  pagina.on('response', (r) => { if (r.status() >= 400) erros.push(`[resposta ${r.status()}] ${r.url()}`); });
   await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; w.setContentSize(1024, 700); });
 }
 /** Espera o Retro Computer fechar sozinho (a troca de usuário, o logoff) e o abre de novo. */
@@ -444,11 +453,11 @@ const ROTEIROS = {
     await pagina.fill('.janela.ativa .nav-endereco', `http://127.0.0.1:${servidor.address().port}/`);
     await pagina.keyboard.press('Enter');
     await pagina.waitForTimeout(2500);
-    const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa webview').getBoundingClientRect(); return { x: b.left + 40, y: b.top + 30 }; });
+    const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').getBoundingClientRect(); return { x: b.left + 40, y: b.top + 30 }; });
     await pagina.mouse.click(r.x, r.y);
     await pagina.waitForTimeout(400);
     await teclar(SEQ);
-    conferir('Navegador', await pagina.evaluate(() => document.querySelector('.janela.ativa webview').executeJavaScript("document.getElementById('t').value")));
+    conferir('Navegador', await pagina.evaluate(() => document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').executeJavaScript("document.getElementById('t').value")));
     console.log('LANG=' + (process.env.LANG || ''), '| GTK_IM_MODULE do aplicativo:', await app.evaluate(() => process.env.GTK_IM_MODULE));
   },
 
@@ -697,12 +706,89 @@ const ROTEIROS = {
     await fecharTudo();
     await abrir('navegador', { url: 'https://accounts.google.com/', interno: true });
     await pagina.waitForTimeout(9000);
-    const ler = () => pagina.evaluate(() => document.querySelector('.janela.ativa webview').executeJavaScript('[location.host, navigator.userAgent, !!navigator.userAgentData && navigator.userAgentData.brands.map((b) => b.brand).join(",")]'));
+    const ler = () => pagina.evaluate(() => document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').executeJavaScript('[location.host, navigator.userAgent, !!navigator.userAgentData && navigator.userAgentData.brands.map((b) => b.brand).join(",")]'));
     console.log('no login do Google:', JSON.stringify(await ler()));
     await foto('login-google');
-    await pagina.evaluate(() => document.querySelector('.janela.ativa webview').loadURL('https://www.wikipedia.org/'));
+    await pagina.evaluate(() => document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').loadURL('https://www.wikipedia.org/'));
     await pagina.waitForTimeout(6000);
     console.log('noutro site:', JSON.stringify(await ler()));
+  },
+
+  // As abas e a barra de favoritos do Navegador (com uma página de teste local, com ícone): a estrela,
+  // o Ctrl+T, o botão do meio num link (a aba por trás), o Ctrl+Tab, o Ctrl+W, o Ctrl+Shift+T e o »
+  // numa janela estreita. E o painel de visualização numa janela estreita, que não sai da janela.
+  async abas() {
+    const http = await import('node:http');
+    const icone = fs.readFileSync(path.join(RAIZ, 'src', 'sistema', 'icones', '32', 'xadrez.png'));
+    const pag = (titulo, corpo) => `<!doctype html><meta charset="utf-8"><title>${titulo}</title><body style="font-family:sans-serif;padding:20px"><h1>${titulo}</h1>${corpo}</body>`;
+    const servidor = http.createServer((req, res) => {
+      if (req.url === '/favicon.ico') { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(icone); }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      if (req.url === '/b') return res.end(pag('Página B', '<p><a id="l" href="/c">Abrir a página C</a></p>'));
+      if (req.url === '/c') return res.end(pag('Página C', ''));
+      res.end(pag('Página A', '<p>A primeira página.</p>'));
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    servidor.unref();
+    const base = `http://127.0.0.1:${servidor.address().port}`;
+    const abas = () => pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .nav-aba')].map((a) => (a.classList.contains('ativa') ? '*' : '') + a.textContent.trim()));
+    await fecharTudo();
+    await pagina.evaluate(() => window.__retro.definirConfig({ navegador: { favoritos: null } }));
+    await abrir('navegador', { interno: true });
+    await pagina.waitForTimeout(800);
+    await pagina.evaluate((j) => { const w = window.__retro.janelas.janelaAtiva(); w.ret = { x: 10, y: 10, w: 900, h: 560 }; w.aplicarRet(); }, null);
+    await pagina.fill('.janela.ativa .nav-endereco', base + '/a');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2500);
+    // A estrela: guarda a página nos favoritos (com o ícone do site).
+    await pagina.click('.janela.ativa .nav-estrela');
+    await pagina.waitForTimeout(500);
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1200);
+    console.log('favoritos:', JSON.stringify(await pagina.evaluate(() => (window.__retro.estado.config.navegador.favoritos || []).map((f) => [f.nome, !!f.icone]))));
+    // Ctrl+T (com o foco no endereço) e a página B.
+    await pagina.click('.janela.ativa .nav-endereco');
+    await pagina.keyboard.press('Control+t');
+    await pagina.waitForTimeout(600);
+    await pagina.keyboard.type(base + '/b');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2500);
+    // O botão do meio no link: a página C abre numa aba por trás.
+    const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').getBoundingClientRect(); return { x: b.left, y: b.top }; });
+    const p = await pagina.evaluate(() => document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').executeJavaScript("(() => { const b = document.getElementById('l').getBoundingClientRect(); return { x: b.left + 10, y: b.top + b.height / 2 }; })()"));
+    await pagina.mouse.click(r.x + p.x, r.y + p.y, { button: 'middle' });
+    await pagina.waitForTimeout(2500);
+    console.log('abas:', JSON.stringify(await abas()));
+    await foto('navegador-abas');
+    await pagina.click('.janela.ativa .nav-endereco');
+    await pagina.keyboard.press('Control+Tab');
+    await pagina.waitForTimeout(400);
+    console.log('Ctrl+Tab:', JSON.stringify(await abas()));
+    await pagina.click('.janela.ativa .nav-endereco');
+    await pagina.keyboard.press('Control+w');
+    await pagina.waitForTimeout(400);
+    console.log('Ctrl+W:', JSON.stringify(await abas()));
+    await pagina.click('.janela.ativa .nav-endereco');
+    await pagina.keyboard.press('Control+Shift+T');
+    await pagina.waitForTimeout(1500);
+    console.log('Ctrl+Shift+T:', JSON.stringify(await abas()));
+    // Mais favoritos e a janela estreita: o ».
+    await pagina.evaluate((b) => window.__retro.definirConfig({ navegador: { favoritos: [...window.__retro.estado.config.navegador.favoritos, ...['Notícias', 'Tribunal', 'Pesquisa de jurisprudência', 'Agenda do gabinete', 'Biblioteca', 'Vídeos'].map((n, i) => ({ nome: n, url: b + '/a?' + i }))] } }), base);
+    await pagina.evaluate(() => { const w = window.__retro.janelas.janelaAtiva(); w.ret.w = 560; w.aplicarRet(); w.ev.emit('tamanho'); });
+    await pagina.waitForTimeout(800);
+    console.log('na barra:', await pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .nav-link')].filter((b) => !b.hidden).length), '| » à vista:', await pagina.evaluate(() => !document.querySelector('.janela.ativa .nav-mais').hidden));
+    await foto('navegador-abas-estreita');
+    servidor.close();
+    // O painel de visualização largo numa janela estreita (como ele ficava na Lixeira).
+    await fecharTudo();
+    await pagina.evaluate(() => window.__retro.definirConfig({ explorador: { visualizar: true, largVis: 1000 } }));
+    await abrir('explorador', { pasta: '::lixeira' });
+    await pagina.waitForTimeout(900);
+    await pagina.evaluate(() => { const w = window.__retro.janelas.janelaAtiva(); w.ret = { x: 40, y: 30, w: 620, h: 360 }; w.aplicarRet(); });
+    await pagina.waitForTimeout(500);
+    console.log('painel dentro da janela:', JSON.stringify(await pagina.evaluate(() => { const j = document.querySelector('.janela.ativa').getBoundingClientRect(); const v = document.querySelector('.janela.ativa .exp-vis').getBoundingClientRect(); const l = document.querySelector('.janela.ativa .lista-arquivos').getBoundingClientRect(); return { dentro: v.right <= j.right, lista: Math.round(l.width) }; })));
+    await foto('lixeira-visualizar-estreita');
+    await pagina.evaluate(() => window.__retro.definirConfig({ explorador: { visualizar: false, largVis: null } }));
   },
 
   async vitrine() {
@@ -1315,26 +1401,27 @@ const ROTEIROS = {
     await pagina.keyboard.press('Enter');
     await pagina.waitForTimeout(2500);
     await foto('navegador-pagina');
-    const wv = async (js) => pagina.evaluate(([c]) => document.querySelector('.janela.ativa webview').executeJavaScript(c), [js]);
+    const wv = async (js) => pagina.evaluate(([c]) => document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').executeJavaScript(c), [js]);
     console.log('título:', await pagina.textContent('.janela.ativa .titulo .texto'));
     // Um clique de verdade (o Chromium não guarda no histórico a página anterior a um clique feito por código).
     const clicar = async (id) => {
-      const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa webview').getBoundingClientRect(); return { x: b.left, y: b.top }; });
+      const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').getBoundingClientRect(); return { x: b.left, y: b.top }; });
       const p = await wv(`(() => { const b = document.getElementById('${id}').getBoundingClientRect(); return { x: b.left + 10, y: b.top + b.height / 2 }; })()`);
       await pagina.mouse.click(r.x + p.x, r.y + p.y);
     };
     await clicar('link');
     await pagina.waitForTimeout(1500);
-    console.log('depois do link:', await pagina.inputValue('.janela.ativa .nav-endereco'), '| voltar ativo:', !(await pagina.isDisabled('.janela.ativa .nav-botoes button >> nth=0')),
-      '| canGoBack:', await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa webview'); try { return [w.canGoBack(), w.getURL(), w.hidden]; } catch (e) { return String(e); } }));
-    await pagina.click('.janela.ativa .nav-botoes button >> nth=0');
+    console.log('depois do link:', await pagina.inputValue('.janela.ativa .nav-endereco'), '| voltar ativo:', !(await pagina.isDisabled('.janela.ativa .nav-linha .nav-bt >> nth=0')),
+      '| canGoBack:', await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview'); try { return [w.canGoBack(), w.getURL(), w.hidden]; } catch (e) { return String(e); } }));
+    await pagina.click('.janela.ativa .nav-linha .nav-bt >> nth=0');
     await pagina.waitForTimeout(1500);
     console.log('depois de voltar:', await pagina.inputValue('.janela.ativa .nav-endereco'));
-    const antes = await pagina.evaluate(() => document.querySelectorAll('.janela.navegador').length);
+    // O link com target abre numa aba nova da mesma janela (como nos navegadores de hoje).
+    const antes = await pagina.evaluate(() => document.querySelectorAll('.janela.ativa .nav-aba').length);
     await clicar('nova');
     await pagina.waitForTimeout(2500);
-    console.log('janelas do Navegador:', antes, '→', await pagina.evaluate(() => document.querySelectorAll('.janela.navegador').length));
-    await pagina.evaluate(() => { const j = window.__retro.janelas.lista.filter((x) => x.el.classList.contains('navegador')); j[j.length - 1].fechar(true); });
+    console.log('abas do Navegador:', antes, '→', await pagina.evaluate(() => document.querySelectorAll('.janela.ativa .nav-aba').length));
+    await pagina.click('.janela.ativa .nav-aba.ativa .nav-aba-fechar');
     await pagina.waitForTimeout(500);
     await clicar('proibido');
     await pagina.waitForTimeout(1200);
@@ -1348,21 +1435,21 @@ const ROTEIROS = {
     console.log('agente:', await wv('navigator.userAgent'));
     console.log('node na página?', await wv('typeof require + "/" + typeof process'));
     // O menu do botão direito no campo de texto.
-    const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa webview').getBoundingClientRect(); return { x: b.left, y: b.top }; });
+    const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').getBoundingClientRect(); return { x: b.left, y: b.top }; });
     const campo = await wv("(() => { const b = document.getElementById('campo').getBoundingClientRect(); return { x: b.left + 20, y: b.top + 8 }; })()");
     await pagina.mouse.click(r.x + campo.x, r.y + campo.y, { button: 'right' });
     await pagina.waitForTimeout(800);
     await foto('navegador-menu');
     await pagina.keyboard.press('Escape');
     // Um site de verdade (se a rede deixar).
-    await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa webview'); window.__falhas = []; w.addEventListener('did-fail-load', (e) => window.__falhas.push([e.errorCode, e.errorDescription, e.validatedURL])); });
+    await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview'); window.__falhas = []; w.addEventListener('did-fail-load', (e) => window.__falhas.push([e.errorCode, e.errorDescription, e.validatedURL])); });
     // Um clique de verdade no campo (o foco do teclado sai da página).
     await pagina.click('.janela.ativa .nav-endereco');
     await pagina.keyboard.press('Control+a');
     await pagina.keyboard.type('example.com');
     await pagina.keyboard.press('Enter');
     await pagina.waitForTimeout(3000);
-    console.log('example.com, depois de 3 s:', JSON.stringify(await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa webview'); return { url: w.getURL(), carregando: w.isLoading(), falhas: window.__falhas, campo: document.querySelector('.janela.ativa .nav-endereco').value }; })));
+    console.log('example.com, depois de 3 s:', JSON.stringify(await pagina.evaluate(() => { const w = document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview'); return { url: w.getURL(), carregando: w.isLoading(), falhas: window.__falhas, campo: document.querySelector('.janela.ativa .nav-endereco').value }; })));
     await pagina.waitForFunction(() => !document.querySelector('.janela.ativa').classList.contains('carregando-pagina'), null, { timeout: 20000 }).catch(() => console.log('example.com ainda carregando'));
     await pagina.waitForTimeout(1000);
     console.log('example.com:', await pagina.textContent('.janela.ativa .titulo .texto'), '|', await pagina.evaluate(() => !document.querySelector('.janela.ativa .nav-erro').hidden ? 'erro' : 'ok'));

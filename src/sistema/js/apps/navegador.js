@@ -1,15 +1,16 @@
 /*
- * O Navegador: páginas da internet numa janela, com os favoritos (o e-mail na
- * web, a agenda…) e uma página inicial com eles. Cada janela é um <webview> da
- * sessão "persist:navegador", separada da área de trabalho e dos programas: só
+ * O Navegador: páginas da internet numa janela com abas, com a barra de favoritos
+ * (com os ícones dos sites) e uma página inicial com eles. Cada aba é um <webview>
+ * da sessão "persist:navegador", separada da área de trabalho e dos programas: só
  * abre endereços http e https, sem acesso ao Node (o processo principal confere).
- * O "E-mail" é o Navegador aberto no e-mail escolhido.
+ * O "E-mail" é o Navegador aberto no e-mail escolhido; um site instalado como
+ * programa é uma janela de uma aba só, sem as barras.
  */
 import { h, img, rotulo, barraAdaptavel } from '../util.js';
 import { zoomInterface } from '../aparencia.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, estado, definirConfig, avisar } from '../sistema.js';
+import { registrarApp, estado, definirConfig, avisar, eventos } from '../sistema.js';
 import { entrada, confirmar, ajustarAoConteudo } from '../dialogos.js';
 import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
@@ -68,14 +69,112 @@ export function paraEndereco(texto, urlBusca = BUSCAS.duckduckgo.url) {
 
 const abertos = new Set();
 
+/* ---------- Os ícones dos sites ---------- */
+
+// Os ícones dos sites (o favicon), guardados enquanto o Retro Computer está aberto: o endereço do
+// ícone → a imagem já reduzida a 16 × 16. O processo principal os baixa com a sessão do Navegador
+// (a área de trabalho não carrega nada de fora), e a redução num PNG tira o que não é imagem (um SVG).
+const icones = new Map();
+function iconeDoSite(url) {
+  if (!url || !/^https?:\/\//i.test(url)) return Promise.resolve(null);
+  if (!icones.has(url)) icones.set(url, retro.navegador.baixarIcone(url).then((r) => reduzirIcone(r.dados)).catch(() => null));
+  return icones.get(url);
+}
+
+function reduzirIcone(dados) {
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 16;
+        c.height = 16;
+        const ctx = c.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(im, 0, 0, 16, 16);
+        resolve(c.toDataURL('image/png'));
+      } catch { resolve(null); }
+    };
+    im.onerror = () => resolve(null);
+    im.src = dados;
+  });
+}
+
+const origemDe = (url) => { try { return new URL(url).origin; } catch { return ''; } };
+
+// Os favoritos sem ícone: o /favicon.ico do site é procurado uma vez por abertura do Retro Computer.
+const procurados = new Set();
+function completarIcones() {
+  const lista = favoritos();
+  const faltam = lista.filter((f) => !f.icone && origemDe(f.url) && !procurados.has(origemDe(f.url)));
+  for (const f of faltam) {
+    const origem = origemDe(f.url);
+    procurados.add(origem);
+    iconeDoSite(origem + '/favicon.ico').then((icone) => { if (icone) guardarIcone(origem, icone); });
+  }
+}
+
+/** Guarda o ícone nos favoritos do site que ainda não têm um. */
+function guardarIcone(origem, icone) {
+  const lista = favoritos();
+  if (!lista.some((f) => !f.icone && origemDe(f.url) === origem)) return;
+  salvarFavoritos(lista.map((f) => (!f.icone && origemDe(f.url) === origem ? { ...f, icone } : f))).catch(() => { });
+}
+
+/** Os favoritos mudaram (por aqui, por outra janela ou pelo Claude): a barra e a página inicial de todas as janelas. */
+eventos.on('config', (_c, parte) => { if (parte && parte.navegador && 'favoritos' in parte.navegador) redesenharFavoritos(); });
+function redesenharFavoritos() {
+  for (const n of abertos) {
+    if (n.j.fechada) continue;
+    n.desenharLinks();
+    for (const a of n.abas) n.desenharInicio(a);
+    n.atualizarEstrela();
+  }
+}
+
+/** O ícone de um favorito (o do site ou o desenho do Retro Computer) e o de uma aba. */
+const imgFavorito = (f) => (f.icone ? h('img', { src: f.icone, width: 16, height: 16, alt: '' }) : img(iconeDe(f.url), 16));
+
+/* ---------- Uma aba ---------- */
+
+/**
+ * Uma aba do Navegador: a página (o webview), a página inicial e o aviso de erro, com o endereço,
+ * o título, o ícone, o zoom e a busca de cada uma. Só a aba da frente fica à vista; as outras
+ * continuam carregando e tocando por trás.
+ */
+class Aba {
+  constructor() {
+    this.wv = null;
+    this.url = '';
+    this.pronto = false;
+    this.carregando = false;
+    this.zoom = 1;
+    this.busca = '';
+    this.titulo = '';
+    this.icone = null;
+    this.inicio = h('div.nav-inicio');
+    this.erroEl = h('div.nav-erro', { hidden: true });
+    this.el = h('div.nav-conteudo', this.inicio, this.erroEl);
+    this.botao = null;
+  }
+
+  /** O nome na aba: o título da página, o site ou "Nova aba". */
+  nome() {
+    if (this.titulo) return this.titulo;
+    if (this.url && this.inicio.hidden) { try { return new URL(this.url).host || this.url; } catch { return this.url; } }
+    return tr('Nova aba');
+  }
+}
+
 class Navegador {
-  /** app: um site instalado como programa (webapps.js): só a página, sem a barra de endereço. */
+  /** app: um site instalado como programa (webapps.js): só a página, sem as abas e a barra de endereço. */
   constructor({ url, correio = false, app = null } = {}) {
     this.correio = correio;
     this.app = app;
     this.base = app ? app.nome : correio ? tr('E-mail') : tr('Navegador');
-    this.zoom = 1;
-    this.busca = '';
+    this.abas = [];
+    this.aba = null;
+    this.fechadas = []; // os endereços das abas fechadas (Ctrl+Shift+T reabre)
     const t = document.getElementById('janelas').getBoundingClientRect();
     this.j = new Janela({
       titulo: this.base,
@@ -95,14 +194,20 @@ class Navegador {
       if (e.button === 3) { e.preventDefault(); this.voltar(); }
       else if (e.button === 4) { e.preventDefault(); this.avancar(); }
     });
+    // As teclas com o foco fora da página (no endereço, nas abas); as da página vêm do navegador-preload.js.
+    this.j.el.addEventListener('keydown', (e) => {
+      const a = atalhoDoNavegador(e);
+      if (!a || (a === 'endereco' && e.target === this.campo)) return;
+      e.preventDefault();
+      this.acao(this.aba, a);
+    });
 
-    const bt = (icone, texto, acao, dica) => h('button.ferramenta.grande', { title: dica || texto, on: { click: acao } }, img(icone, 16), h('span', texto));
-    this.btVoltar = bt('voltar', tr('Voltar'), () => this.voltar(), tr('Voltar (Alt+Esquerda)'));
-    this.btAvancar = bt('avancar', tr('Avançar'), () => this.avancar(), tr('Avançar (Alt+Direita)'));
-    this.btParar = bt('parar', tr('Parar'), () => this.wv && this.wv.stop(), tr('Parar (Esc)'));
-    this.btAtualizar = bt('atualizar', tr('Atualizar'), () => this.atualizar(), tr('Atualizar (F5)'));
-    this.btInicio = bt('inicio', tr('Início'), () => this.mostrarInicio(), tr('Página inicial (Alt+Home)'));
-    this.btFavoritos = bt('favoritos', tr('Favoritos'), (e) => this.menuFavoritos(e.currentTarget));
+    // A linha de navegação: os botões, o endereço e a estrela dos favoritos.
+    const bt = (icone, dica, acao) => h('button.ferramenta.nav-bt', { type: 'button', title: dica, on: { click: acao } }, img(icone, 16));
+    this.btVoltar = bt('voltar', tr('Voltar (Alt+Esquerda)'), () => this.voltar());
+    this.btAvancar = bt('avancar', tr('Avançar (Alt+Direita)'), () => this.avancar());
+    this.btAtualizar = bt('atualizar', tr('Atualizar (F5)'), () => (this.carregando ? this.wv && this.wv.stop() : this.atualizar()));
+    this.btInicio = bt('inicio', tr('Página inicial (Alt+Home)'), () => this.mostrarInicio());
     this.campo = h('input.nav-endereco', { type: 'text', spellcheck: false, placeholder: tr('Digite um endereço ou o que quer pesquisar') });
     this.campo.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); this.ir(this.campo.value); }
@@ -114,28 +219,171 @@ class Navegador {
       if (this.cliqueNovo && this.campo.selectionStart === this.campo.selectionEnd) { e.preventDefault(); this.campo.select(); }
       this.cliqueNovo = false;
     });
-    const barra = barraAdaptavel(h('div.barra-ferramentas.nav-botoes',
-      this.btVoltar, this.btAvancar, this.btParar, this.btAtualizar, this.btInicio, h('div.sep'), this.btFavoritos));
-    const linhaEndereco = h('div.barra-ferramentas.nav-linha',
-      h('label', { on: { click: () => this.campo.focus() } }, rotulo(tr('En&dereço'))), this.campo,
-      h('button.ferramenta', { on: { click: () => this.ir(this.campo.value) } }, tr('Ir')));
+    this.btEstrela = bt('favoritos', tr('Adicionar aos favoritos (Ctrl+D)'), () => this.alternarFavorito());
+    this.btEstrela.classList.add('nav-estrela');
+    const linha = h('div.barra-ferramentas.nav-linha', this.btVoltar, this.btAvancar, this.btAtualizar, this.btInicio,
+      h('div.nav-campo', this.campo, this.btEstrela));
+
+    // As abas, no alto (como nos navegadores de hoje), e a barra de favoritos, embaixo do endereço.
+    this.listaAbas = h('div.nav-abas-lista');
+    this.btNovaAba = h('button.nav-aba-nova', { type: 'button', title: tr('Nova aba (Ctrl+T)'), on: { click: () => this.novaAba() } }, '+');
+    const faixa = h('div.nav-abas', this.listaAbas, this.btNovaAba);
+    faixa.addEventListener('dblclick', (e) => { if (e.target === faixa || e.target === this.listaAbas) this.novaAba(); });
+    this.links = h('div.nav-links');
+    this.btMaisLinks = h('button.ferramenta.nav-mais', { type: 'button', title: tr('Mais favoritos'), hidden: true }, '»');
+    this.btMaisLinks.addEventListener('click', () => {
+      const r = this.btMaisLinks.getBoundingClientRect();
+      abrirMenu(this.escondidos.map((f) => ({ rotulo: f.nome.replace(/&/g, '&&'), icone: f.icone || iconeDe(f.url), acao: () => this.ir(f.url) })), { x: r.left, y: r.bottom });
+    });
+    this.escondidos = [];
+    this.barraLinks = h('div.nav-barra-links', this.links, this.btMaisLinks);
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.ajustarLinks()).observe(this.barraLinks);
+
     this.area = h('div.nav-area');
-    this.inicio = h('div.nav-inicio');
-    this.erroEl = h('div.nav-erro', { hidden: true });
-    this.area.append(this.inicio, this.erroEl);
     if (app) this.j.corpo.append(this.area);
-    else this.j.corpo.append(barra, linhaEndereco, this.area);
-    this.j.ev.on('ativada', () => setTimeout(() => (this.wv && !this.wv.hidden ? this.wv.focus() : this.campo.focus()), 0));
-    this.desenharInicio();
-    this.atualizarBotoes();
-    if (url) this.ir(url);
-    else this.mostrarInicio();
+    else this.j.corpo.append(faixa, linha, this.barraLinks, this.area);
+    this.mostrarBarraLinks();
+    this.desenharLinks();
+    this.j.ev.on('ativada', () => setTimeout(() => this.focarPagina(), 0));
+    this.novaAba(url);
   }
+
+  /* ---------- As abas ---------- */
+
+  /** Uma aba nova (com o endereço, ou com a página inicial); frente: false a abre por trás. */
+  novaAba(url, { frente = true, depoisDe = null } = {}) {
+    const aba = new Aba();
+    if (this.app) aba.el.classList.add('so-pagina');
+    aba.botao = this.criarBotaoAba(aba);
+    const i = depoisDe ? this.abas.indexOf(depoisDe) + 1 : this.abas.length;
+    this.abas.splice(i, 0, aba);
+    this.listaAbas.insertBefore(aba.botao, this.listaAbas.children[i] || null);
+    aba.el.classList.add('escondida');
+    this.area.append(aba.el);
+    this.desenharInicio(aba);
+    if (frente || !this.aba) this.escolherAba(aba);
+    if (url) this.ir(url, aba);
+    else this.mostrarInicio(aba);
+    return aba;
+  }
+
+  criarBotaoAba(aba) {
+    const icone = h('span.nav-aba-icone', img('internet', 16));
+    const nome = h('span.nav-aba-nome');
+    const fechar = h('button.nav-aba-fechar', { type: 'button', title: tr('Fechar a aba (Ctrl+W)') });
+    fechar.addEventListener('click', (e) => { e.stopPropagation(); this.fecharAba(aba); });
+    const el = h('div.nav-aba', icone, nome, fechar);
+    el.addEventListener('mousedown', (e) => {
+      if (e.button === 1) { e.preventDefault(); return; }
+      if (e.button === 0 && e.target !== fechar) this.escolherAba(aba);
+    });
+    // O botão do meio fecha a aba (como nos navegadores).
+    el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.fecharAba(aba); } });
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      abrirMenu([
+        { rotulo: tr('Nova a&ba'), acao: () => this.novaAba(null, { depoisDe: aba }) },
+        { rotulo: tr('A&tualizar'), desativado: !aba.wv || !aba.pronto, acao: () => aba.wv && aba.wv.reload() },
+        { rotulo: tr('&Duplicar'), desativado: !aba.url, acao: () => this.novaAba(aba.url, { depoisDe: aba }) },
+        { separador: true },
+        { rotulo: tr('&Fechar a aba'), acao: () => this.fecharAba(aba) },
+        { rotulo: tr('Fechar as &outras abas'), desativado: this.abas.length < 2, acao: () => this.abas.filter((x) => x !== aba).forEach((x) => this.fecharAba(x)) },
+        { rotulo: tr('&Reabrir a aba fechada'), desativado: !this.fechadas.length, acao: () => this.reabrirAba() },
+      ], { x: e.clientX, y: e.clientY });
+    });
+    aba.nomeEl = nome;
+    aba.iconeEl = icone;
+    return el;
+  }
+
+  /** O nome e o ícone da aba (e o título da janela, se for a da frente). */
+  desenharAba(aba) {
+    if (!aba.botao) return;
+    aba.nomeEl.textContent = aba.nome();
+    aba.botao.title = aba.nome();
+    aba.iconeEl.replaceChildren(aba.icone && !aba.carregando
+      ? h('img', { src: aba.icone, width: 16, height: 16, alt: '' })
+      : img(aba.carregando ? 'atualizar' : (aba.inicio.hidden ? 'internet' : 'navegador'), 16));
+    aba.botao.classList.toggle('carregando', aba.carregando);
+    if (aba === this.aba) this.j.definirTitulo(aba.titulo ? `${aba.titulo} - ${this.base}` : this.base);
+  }
+
+  escolherAba(aba) {
+    if (!aba || aba === this.aba) return;
+    if (this.aba) this.aba.el.classList.add('escondida');
+    this.aba = aba;
+    aba.el.classList.remove('escondida');
+    for (const a of this.abas) a.botao.classList.toggle('ativa', a === aba);
+    aba.botao.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (document.activeElement !== this.campo || !this.campo.value) this.campo.value = aba.inicio.hidden ? aba.url || '' : '';
+    this.desenharAba(aba);
+    this.j.definirStatus([aba.carregando ? tr('Carregando…') : aba.pronto ? tr('Concluído') : tr('Pronto'), this.textoZoom()]);
+    this.atualizarBotoes();
+    this.atualizarEstrela();
+    setTimeout(() => this.focarPagina(), 0);
+  }
+
+  fecharAba(aba) {
+    const i = this.abas.indexOf(aba);
+    if (i < 0) return;
+    if (aba.url && aba.inicio.hidden) this.fechadas.push(aba.url);
+    if (this.fechadas.length > 20) this.fechadas.shift();
+    // A última aba fecha a janela.
+    if (this.abas.length === 1) { this.j.fechar(); return; }
+    this.abas.splice(i, 1);
+    aba.botao.remove();
+    if (aba.wv) { try { aba.wv.stop(); } catch { } }
+    aba.el.remove();
+    if (aba === this.aba) {
+      this.aba = null;
+      this.escolherAba(this.abas[Math.min(i, this.abas.length - 1)]);
+    }
+  }
+
+  reabrirAba() {
+    const url = this.fechadas.pop();
+    if (url) this.novaAba(url);
+  }
+
+  /** Ctrl+Tab e Ctrl+Shift+Tab; Ctrl+1 a Ctrl+8 vão para a aba, Ctrl+9 para a última. */
+  passarAba(passo) {
+    if (this.abas.length < 2) return;
+    const i = this.abas.indexOf(this.aba);
+    this.escolherAba(this.abas[(i + passo + this.abas.length) % this.abas.length]);
+  }
+
+  irParaAba(n) {
+    this.escolherAba(n >= 9 ? this.abas[this.abas.length - 1] : this.abas[n - 1]);
+  }
+
+  /** A aba do webview (pelo identificador da página), nesta janela. */
+  abaDaPagina(id) {
+    return this.abas.find((a) => { try { return !!a.wv && a.wv.getWebContentsId() === id; } catch { return false; } }) || null;
+  }
+
+  focarPagina() {
+    const a = this.aba;
+    if (!a) return;
+    if (a.wv && !a.wv.hidden && a.inicio.hidden) a.wv.focus();
+    else if (!this.app) this.campo.focus();
+  }
+
+  // O estado da aba da frente (os nomes de antes, usados em todo o resto).
+  get wv() { return this.aba ? this.aba.wv : null; }
+  get url() { return this.aba ? this.aba.url : ''; }
+  get pronto() { return !!(this.aba && this.aba.pronto); }
+  get carregando() { return !!(this.aba && this.aba.carregando); }
+  get zoom() { return this.aba ? this.aba.zoom : 1; }
+  get busca() { return this.aba ? this.aba.busca : ''; }
+  set busca(v) { if (this.aba) this.aba.busca = v; }
+
+  /* ---------- Os menus ---------- */
 
   menus() {
     return [
       {
         rotulo: tr('&Arquivo'), itens: () => [
+          { rotulo: tr('Nova a&ba'), atalho: 'Ctrl+T', acao: () => this.novaAba() },
           { rotulo: tr('&Nova janela'), atalho: 'Ctrl+N', acao: () => abrirNavegador() },
           { rotulo: tr('&Abrir endereço…'), atalho: 'Ctrl+L', acao: () => this.focarEndereco() },
           { rotulo: tr('Instalar como &programa…'), desativado: !this.visivel(), acao: () => this.instalarComoPrograma() },
@@ -143,7 +391,8 @@ class Navegador {
           { separador: true },
           { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.visivel(), acao: () => this.wv.print().catch(() => { }) },
           { separador: true },
-          { rotulo: tr('&Fechar'), atalho: 'Ctrl+W', acao: () => this.j.fechar() },
+          { rotulo: tr('F&echar a aba'), atalho: 'Ctrl+W', acao: () => this.fecharAba(this.aba) },
+          { rotulo: tr('&Fechar'), atalho: 'Alt+F4', acao: () => this.j.fechar() },
         ],
       },
       {
@@ -159,6 +408,8 @@ class Navegador {
       },
       {
         rotulo: tr('E&xibir'), itens: () => [
+          { rotulo: tr('Barra de &favoritos'), atalho: 'Ctrl+Shift+B', marcado: barraLinksLigada(), acao: () => alternarBarraLinks() },
+          { separador: true },
           { rotulo: tr('&Parar'), atalho: 'Esc', desativado: !this.carregando, acao: () => this.wv.stop() },
           { rotulo: tr('&Atualizar'), atalho: 'F5', desativado: !this.visivel(), acao: () => this.atualizar() },
           { separador: true },
@@ -177,6 +428,10 @@ class Navegador {
         rotulo: tr('&Ir'), itens: () => [
           { rotulo: tr('&Voltar'), atalho: 'Alt+←', desativado: !this.podeVoltar(), acao: () => this.voltar() },
           { rotulo: tr('&Avançar'), atalho: 'Alt+→', desativado: !this.podeAvancar(), acao: () => this.avancar() },
+          { separador: true },
+          { rotulo: tr('Próxima a&ba'), atalho: 'Ctrl+Tab', desativado: this.abas.length < 2, acao: () => this.passarAba(1) },
+          { rotulo: tr('Aba an&terior'), atalho: 'Ctrl+Shift+Tab', desativado: this.abas.length < 2, acao: () => this.passarAba(-1) },
+          { rotulo: tr('&Reabrir a aba fechada'), atalho: 'Ctrl+Shift+T', desativado: !this.fechadas.length, acao: () => this.reabrirAba() },
           { separador: true },
           { rotulo: tr('Página &inicial'), atalho: 'Alt+Home', acao: () => this.mostrarInicio() },
           { rotulo: tr('&E-mail'), icone: 'correio', acao: () => abrirCorreio() },
@@ -236,8 +491,8 @@ class Navegador {
 
   /* ---------- Navegar ---------- */
 
-  visivel() {
-    return !!(this.wv && !this.wv.hidden && this.pronto);
+  visivel(aba = this.aba) {
+    return !!(aba && aba.wv && !aba.wv.hidden && aba.pronto && aba.inicio.hidden && aba.erroEl.hidden);
   }
 
   podeVoltar() {
@@ -250,86 +505,119 @@ class Navegador {
     try { return this.wv.canGoForward(); } catch { return false; }
   }
 
-  ir(texto) {
+  ir(texto, aba = this.aba) {
     const url = paraEndereco(texto, busca().url);
-    if (!url) return;
-    this.erroEl.hidden = true;
-    this.inicio.hidden = true;
-    if (!this.wv) this.criarWebview(url);
+    if (!url || !aba) return;
+    aba.erroEl.hidden = true;
+    aba.inicio.hidden = true;
+    // Outro site: o título e o ícone do de antes saem da aba.
+    if (origemDe(url) !== origemDe(aba.url)) { aba.icone = null; aba.titulo = ''; }
+    if (!aba.wv) this.criarWebview(url, aba);
     else {
-      this.wv.hidden = false;
-      this.wv.loadURL(url).catch(() => { });
+      aba.wv.hidden = false;
+      aba.wv.loadURL(url).catch(() => { });
     }
-    this.url = url;
-    this.campo.value = url;
-    this.wv.focus();
-    this.atualizarBotoes();
+    aba.url = url;
+    if (aba === this.aba) {
+      this.campo.value = url;
+      aba.wv.focus();
+      this.atualizarBotoes();
+      this.atualizarEstrela();
+    }
+    this.desenharAba(aba);
   }
 
-  criarWebview(url) {
+  criarWebview(url, aba) {
     const wv = document.createElement('webview');
     // A partição antes do endereço: é ela que separa os dados do Navegador.
     wv.setAttribute('partition', SESSAO);
     wv.setAttribute('allowpopups', '');
     wv.setAttribute('src', url);
     wv.className = 'nav-pagina';
-    this.wv = wv;
+    aba.wv = wv;
+    const daFrente = () => aba === this.aba;
     wv.addEventListener('dom-ready', () => {
-      if (!this.pronto) {
-        this.pronto = true;
-        if (this.zoom !== 1) wv.setZoomFactor(this.zoom * zoomInterface());
+      if (!aba.pronto) {
+        aba.pronto = true;
+        if (aba.zoom !== 1) wv.setZoomFactor(aba.zoom * zoomInterface());
       }
-      this.atualizarBotoes();
+      if (daFrente()) this.atualizarBotoes();
     });
     wv.addEventListener('focus', () => this.j.focar());
-    wv.addEventListener('did-start-loading', () => this.definirCarregando(true));
-    wv.addEventListener('did-stop-loading', () => this.definirCarregando(false));
+    wv.addEventListener('did-start-loading', () => this.definirCarregando(true, aba));
+    wv.addEventListener('did-stop-loading', () => this.definirCarregando(false, aba));
     const navegou = (e) => {
       if (e.isMainFrame === false) return;
-      this.url = e.url;
-      if (document.activeElement !== this.campo) this.campo.value = e.url;
-      this.atualizarBotoes();
+      if (origemDe(e.url) !== origemDe(aba.url)) aba.icone = null;
+      aba.url = e.url;
+      if (daFrente()) {
+        if (document.activeElement !== this.campo) this.campo.value = e.url;
+        this.atualizarBotoes();
+        this.atualizarEstrela();
+      }
+      this.desenharAba(aba);
     };
     wv.addEventListener('did-navigate', navegou);
     wv.addEventListener('did-navigate-in-page', navegou);
-    wv.addEventListener('page-title-updated', (e) => this.j.definirTitulo(e.title ? `${e.title} - ${this.base}` : this.base));
-    wv.addEventListener('update-target-url', (e) => this.j.definirStatus([e.url || (this.carregando ? tr('Carregando…') : tr('Concluído')), this.textoZoom()]));
+    wv.addEventListener('page-title-updated', (e) => { aba.titulo = e.title || ''; this.desenharAba(aba); });
+    // O ícone do site: na aba e nos favoritos do site que ainda não têm um.
+    wv.addEventListener('page-favicon-updated', (e) => {
+      const lista = (e.favicons || []).filter((u) => /^https?:\/\//i.test(u));
+      if (!lista.length) return;
+      const pagina = aba.url;
+      iconeDoSite(lista[0]).then((icone) => {
+        if (!icone || aba.url !== pagina) return;
+        aba.icone = icone;
+        this.desenharAba(aba);
+        guardarIcone(origemDe(pagina), icone);
+      });
+    });
+    wv.addEventListener('update-target-url', (e) => { if (daFrente()) this.j.definirStatus([e.url || (aba.carregando ? tr('Carregando…') : tr('Concluído')), this.textoZoom()]); });
     wv.addEventListener('did-fail-load', async (e) => {
       // -3 é a carga interrompida (outro clique, o botão Parar): não é erro.
       if (e.errorCode === -3 || e.isMainFrame === false) return;
-      const url = e.validatedURL || this.url;
+      const endereco = e.validatedURL || aba.url;
       // A versão segura de um http:// não abriu (ou mandou de volta para o http): o aviso, com a escolha.
-      const semSeguranca = await retro.navegador.semSeguranca(url).catch(() => null);
-      if (semSeguranca) return this.mostrarSemSeguranca(semSeguranca);
-      this.mostrarErro(url, e.errorDescription);
+      const semSeguranca = await retro.navegador.semSeguranca(endereco).catch(() => null);
+      if (semSeguranca) return this.mostrarSemSeguranca(semSeguranca, aba);
+      this.mostrarErro(endereco, e.errorDescription, aba);
     });
     wv.addEventListener('context-menu', (e) => this.menuDaPagina(e.params));
     // Um site em tela cheia: o aviso de como sair, por cima dele (senão ele poderia imitar a tela de bloqueio).
     wv.addEventListener('enter-html-full-screen', () => avisoTelaCheia());
-    wv.addEventListener('ipc-message', (e) => { if (e.channel === 'navegador') this.acao(...e.args); });
+    wv.addEventListener('ipc-message', (e) => { if (e.channel === 'navegador') this.acao(aba, ...e.args); });
     wv.addEventListener('found-in-page', (e) => {
       const r = e.result || {};
-      if (r.finalUpdate) this.j.definirStatus([r.matches ? tr('{n} de {total}', { n: r.activeMatchOrdinal, total: r.matches }) : tr('Não foi possível localizar "{texto}".', { texto: this.busca }), this.textoZoom()]);
+      if (r.finalUpdate && daFrente()) this.j.definirStatus([r.matches ? tr('{n} de {total}', { n: r.activeMatchOrdinal, total: r.matches }) : tr('Não foi possível localizar "{texto}".', { texto: aba.busca }), this.textoZoom()]);
     });
-    this.area.append(wv);
+    aba.el.append(wv);
   }
 
-  definirCarregando(v) {
-    this.carregando = v;
+  definirCarregando(v, aba = this.aba) {
+    aba.carregando = v;
+    this.desenharAba(aba);
+    if (aba !== this.aba) return;
     this.j.el.classList.toggle('carregando-pagina', v);
     this.j.definirStatus([v ? tr('Carregando…') : tr('Concluído'), this.textoZoom()]);
     this.atualizarBotoes();
   }
 
   atualizarBotoes() {
-    this.btVoltar.disabled = !this.podeVoltar();
+    const a = this.aba;
+    this.btVoltar.disabled = !this.podeVoltar() && !(a && !a.inicio.hidden && a.wv);
     this.btAvancar.disabled = !this.podeAvancar();
-    this.btParar.disabled = !this.carregando;
-    this.btAtualizar.disabled = !this.visivel() && this.erroEl.hidden;
+    // Carregando, o Atualizar vira o Parar (como nos navegadores de hoje).
+    const parar = this.carregando;
+    this.btAtualizar.replaceChildren(img(parar ? 'parar' : 'atualizar', 16));
+    this.btAtualizar.title = parar ? tr('Parar (Esc)') : tr('Atualizar (F5)');
+    this.btAtualizar.disabled = !parar && !this.visivel() && !(a && !a.erroEl.hidden);
+    // A estrela depende de a página estar pronta (o dom-ready chega depois do ir).
+    this.atualizarEstrela();
   }
 
   voltar() {
-    if (!this.inicio.hidden && this.wv) return this.mostrarPagina();
+    const a = this.aba;
+    if (a && !a.inicio.hidden && a.wv) return this.mostrarPagina();
     if (this.podeVoltar()) this.wv.goBack();
   }
 
@@ -338,50 +626,59 @@ class Navegador {
   }
 
   atualizar() {
-    if (!this.erroEl.hidden && this.url) return this.ir(this.url);
+    const a = this.aba;
+    if (a && !a.erroEl.hidden && a.url) return this.ir(a.url);
     if (this.visivel()) this.wv.reload();
   }
 
   focarEndereco() {
+    if (this.app) return;
     this.campo.focus();
     this.campo.select();
   }
 
-  mostrarPagina() {
-    this.inicio.hidden = true;
-    this.erroEl.hidden = true;
-    if (this.wv) this.wv.hidden = false;
-    this.campo.value = this.url || '';
-    this.atualizarBotoes();
+  mostrarPagina(aba = this.aba) {
+    aba.inicio.hidden = true;
+    aba.erroEl.hidden = true;
+    if (aba.wv) aba.wv.hidden = false;
+    if (aba === this.aba) {
+      this.campo.value = aba.url || '';
+      this.atualizarBotoes();
+      this.atualizarEstrela();
+    }
+    this.desenharAba(aba);
   }
 
-  mostrarInicio() {
+  mostrarInicio(aba = this.aba) {
     // No site instalado como programa, o início é o próprio site.
-    if (this.app) return this.ir(this.app.url);
-    if (this.wv) {
-      this.wv.stop();
-      this.wv.hidden = true;
+    if (this.app) return this.ir(this.app.url, aba);
+    if (aba.wv) {
+      aba.wv.stop();
+      aba.wv.hidden = true;
     }
-    this.erroEl.hidden = true;
-    this.desenharInicio();
-    this.inicio.hidden = false;
+    aba.erroEl.hidden = true;
+    aba.titulo = '';
+    this.desenharInicio(aba);
+    aba.inicio.hidden = false;
+    this.desenharAba(aba);
+    if (aba !== this.aba) return;
     this.campo.value = '';
-    this.j.definirTitulo(this.base);
     this.j.definirStatus([tr('Pronto'), '']);
     this.atualizarBotoes();
+    this.atualizarEstrela();
     setTimeout(() => this.campo.focus(), 0);
   }
 
   /** O site não tem conexão segura (Painel › Segurança › Só conexões seguras): abrir só se o usuário quiser. */
-  mostrarSemSeguranca(url) {
-    if (this.wv) this.wv.hidden = true;
-    this.inicio.hidden = true;
+  mostrarSemSeguranca(url, aba = this.aba) {
+    if (aba.wv) aba.wv.hidden = true;
+    aba.inicio.hidden = true;
     let site = url;
     try { site = new URL(url).host; } catch { }
     const voltar = () => {
-      if (this.wv && this.wv.canGoBack()) { this.mostrarPagina(); this.wv.goBack(); } else this.mostrarInicio();
+      if (aba.wv && aba.wv.canGoBack()) { this.mostrarPagina(aba); aba.wv.goBack(); } else this.mostrarInicio(aba);
     };
-    this.erroEl.replaceChildren(
+    aba.erroEl.replaceChildren(
       h('div.nav-erro-caixa',
         img('msg-aviso', 32),
         h('div',
@@ -390,44 +687,57 @@ class Navegador {
           h('p', tr('O Navegador tentou a versão segura (HTTPS) de {site}, e ela não respondeu. Sem ela, o que você envia ao site (senhas, números de cartão) pode ser visto por outras pessoas na rede.', { site })),
           h('div.acoes',
             h('button.padrao', { on: { click: voltar } }, tr('Voltar')),
-            h('button', { on: { click: async () => { await retro.navegador.abrirSemSeguranca(url).catch(() => { }); this.ir(url); } } }, tr('Abrir assim mesmo'))))));
-    this.erroEl.hidden = false;
-    this.url = url;
+            h('button', { on: { click: async () => { await retro.navegador.abrirSemSeguranca(url).catch(() => { }); this.ir(url, aba); } } }, tr('Abrir assim mesmo'))))));
+    aba.erroEl.hidden = false;
+    aba.url = url;
+    aba.titulo = '';
+    this.desenharAba(aba);
+    if (aba !== this.aba) return;
     if (document.activeElement !== this.campo) this.campo.value = url;
-    this.j.definirTitulo(this.base);
     this.j.definirStatus([tr('Sem conexão segura'), '']);
     this.atualizarBotoes();
   }
 
-  mostrarErro(url, descricao) {
-    if (this.wv) this.wv.hidden = true;
-    this.inicio.hidden = true;
-    this.erroEl.replaceChildren(
+  mostrarErro(url, descricao, aba = this.aba) {
+    if (aba.wv) aba.wv.hidden = true;
+    aba.inicio.hidden = true;
+    aba.erroEl.replaceChildren(
       h('div.nav-erro-caixa',
         img('msg-aviso', 32),
         h('div',
           h('b', tr('Não foi possível abrir a página.')),
           h('p', url),
           h('p', tr('Verifique o endereço e a conexão com a internet. Detalhe: {erro}', { erro: descricao || '?' })),
-          h('div.acoes', h('button.padrao', { on: { click: () => this.ir(url) } }, tr('Tentar de novo')), h('button', { on: { click: () => this.mostrarInicio() } }, tr('Página inicial'))))));
-    this.erroEl.hidden = false;
+          h('div.acoes', h('button.padrao', { on: { click: () => this.ir(url, aba) } }, tr('Tentar de novo')), h('button', { on: { click: () => this.mostrarInicio(aba) } }, tr('Página inicial'))))));
+    aba.erroEl.hidden = false;
+    this.desenharAba(aba);
+    if (aba !== this.aba) return;
     this.j.definirStatus([tr('Erro'), '']);
     this.atualizarBotoes();
   }
 
   /** As teclas, os botões do mouse e as notificações que a página repassa (navegador-preload.js). */
-  acao(a, ...args) {
+  acao(aba, a, ...args) {
+    if (a === 'notificacao') return this.notificar(aba, ...args);
+    // As teclas só valem na aba da frente (a de trás não tem o foco).
+    if (aba && aba !== this.aba) return;
+    if (/^aba:\d$/.test(a)) return this.irParaAba(Number(a.slice(4)));
     switch (a) {
-      case 'notificacao': return this.notificar(...args);
       case 'voltar': return this.voltar();
       case 'avancar': return this.avancar();
       case 'atualizar': return this.atualizar();
+      case 'parar': return this.carregando && this.wv && this.wv.stop();
       case 'endereco': return this.focarEndereco();
       case 'inicio': return this.mostrarInicio();
       case 'localizar': return this.localizar(true);
       case 'proxima': return this.localizar(false);
       case 'nova': return abrirNavegador();
-      case 'fechar': return this.j.fechar();
+      case 'novaAba': return this.app ? null : this.novaAba();
+      case 'fechar': return this.app ? this.j.fechar() : this.fecharAba(this.aba);
+      case 'proximaAba': return this.passarAba(1);
+      case 'abaAnterior': return this.passarAba(-1);
+      case 'reabrirAba': return this.reabrirAba();
+      case 'barraFavoritos': return this.app ? null : alternarBarraLinks();
       case 'favorito': return this.adicionarFavorito();
       case 'imprimir': return this.visivel() && this.wv.print().catch(() => { });
       case 'aumentar': return this.mudarZoom(0.1);
@@ -439,11 +749,11 @@ class Navegador {
     }
   }
 
-  /** A notificação do site vira o balão da barra de tarefas; o clique traz a janela. */
-  notificar(titulo, corpo) {
-    avisar(String(titulo || nomeDoSite(this.url)), String(corpo || ''), {
+  /** A notificação do site vira o balão da barra de tarefas; o clique traz a janela e a aba. */
+  notificar(aba, titulo, corpo) {
+    avisar(String(titulo || nomeDoSite(aba ? aba.url : this.url)), String(corpo || ''), {
       icone: this.app ? this.app.icone || 'internet' : this.correio ? 'correio' : 'navegador', ms: 8000,
-      aoClicar: () => { if (!this.j.fechada) this.j.focar(); },
+      aoClicar: () => { if (!this.j.fechada) { this.j.focar(); if (aba && this.abas.includes(aba)) this.escolherAba(aba); } },
     });
   }
 
@@ -455,20 +765,22 @@ class Navegador {
 
   mudarZoom(passo) {
     if (!this.visivel()) return;
-    this.zoom = passo === 0 ? 1 : Math.min(3, Math.max(0.3, Math.round((this.zoom + passo) * 10) / 10));
-    this.wv.setZoomFactor(this.zoom * zoomInterface());
+    const a = this.aba;
+    a.zoom = passo === 0 ? 1 : Math.min(3, Math.max(0.3, Math.round((a.zoom + passo) * 10) / 10));
+    a.wv.setZoomFactor(a.zoom * zoomInterface());
     this.j.definirStatus([tr('Concluído'), this.textoZoom()]);
   }
 
   async localizar(perguntar) {
     if (!this.visivel()) return;
-    if (perguntar || !this.busca) {
-      const t = await entrada({ titulo: tr('Localizar'), texto: tr('Localizar nesta página:'), valor: this.busca, icone: 'localizar' });
+    const a = this.aba;
+    if (perguntar || !a.busca) {
+      const t = await entrada({ titulo: tr('Localizar'), texto: tr('Localizar nesta página:'), valor: a.busca, icone: 'localizar' });
       if (!t) return;
-      this.busca = t;
-      this.wv.findInPage(t);
+      a.busca = t;
+      a.wv.findInPage(t);
     } else {
-      this.wv.findInPage(this.busca, { findNext: true });
+      a.wv.findInPage(a.busca, { findNext: true });
     }
   }
 
@@ -479,23 +791,40 @@ class Navegador {
     return [
       { rotulo: tr('&Adicionar aos favoritos…'), atalho: 'Ctrl+D', desativado: !this.visivel(), acao: () => this.adicionarFavorito() },
       { rotulo: tr('&Organizar favoritos'), sub: () => lista.length ? lista.map((f, i) => ({ rotulo: tr('Remover "{nome}"', { nome: f.nome }), acao: () => this.removerFavorito(i) })) : [{ rotulo: tr('(Vazio)'), desativado: true }] },
+      { rotulo: tr('Barra de &favoritos'), marcado: barraLinksLigada(), acao: () => alternarBarraLinks() },
       { separador: true },
-      ...lista.map((f) => ({ rotulo: f.nome.replace(/&/g, '&&'), icone: iconeDe(f.url), acao: () => this.ir(f.url) })),
+      ...lista.map((f) => ({ rotulo: f.nome.replace(/&/g, '&&'), icone: f.icone || iconeDe(f.url), acao: () => this.ir(f.url) })),
     ];
   }
 
-  menuFavoritos(botao) {
-    const r = botao.getBoundingClientRect();
-    abrirMenu(this.itensFavoritos(), { x: r.left, y: r.bottom });
+  /** O endereço da aba da frente está nos favoritos? (o índice, ou -1) */
+  indiceFavorito() {
+    if (!this.url || !this.aba || !this.aba.inicio.hidden) return -1;
+    return favoritos().findIndex((f) => f.url === this.url);
+  }
+
+  atualizarEstrela() {
+    if (!this.btEstrela) return;
+    const i = this.indiceFavorito();
+    this.btEstrela.classList.toggle('apertado', i >= 0);
+    this.btEstrela.title = i >= 0 ? tr('Esta página está nos favoritos (clique para tirar)') : tr('Adicionar aos favoritos (Ctrl+D)');
+    this.btEstrela.disabled = !this.visivel() && i < 0;
+  }
+
+  /** A estrela do endereço: guarda a página nos favoritos ou a tira deles. */
+  alternarFavorito() {
+    const i = this.indiceFavorito();
+    if (i >= 0) return this.removerFavorito(i);
+    return this.adicionarFavorito();
   }
 
   async adicionarFavorito() {
     if (!this.visivel() || !this.url) return;
-    const titulo = (this.wv.getTitle() || this.url).slice(0, 80);
+    const a = this.aba;
+    const titulo = (a.wv.getTitle() || a.url).slice(0, 80);
     const nome = await entrada({ titulo: tr('Adicionar aos favoritos'), texto: tr('Nome do favorito:'), valor: titulo, icone: 'favoritos' });
     if (!nome) return;
-    await salvarFavoritos([...favoritos(), { nome: nome.trim() || titulo, url: this.url }]);
-    this.desenharInicio();
+    await salvarFavoritos([...favoritos(), { nome: nome.trim() || titulo, url: a.url, ...(a.icone ? { icone: a.icone } : {}) }]);
     avisar(tr('Favorito adicionado'), nome, { icone: 'favoritos', som: null, guardar: false });
   }
 
@@ -504,31 +833,84 @@ class Navegador {
     if (!lista[i]) return;
     if (!(await confirmar(tr('Remover "{nome}" dos favoritos?', { nome: lista[i].nome }), { titulo: tr('Favoritos') }))) return;
     await salvarFavoritos(lista.filter((_, k) => k !== i));
-    this.desenharInicio();
+  }
+
+  async renomearFavorito(i) {
+    const lista = favoritos();
+    if (!lista[i]) return;
+    const nome = await entrada({ titulo: tr('Renomear o favorito'), texto: tr('Nome do favorito:'), valor: lista[i].nome, icone: 'favoritos' });
+    if (!nome || !nome.trim()) return;
+    await salvarFavoritos(lista.map((f, k) => (k === i ? { ...f, nome: nome.trim() } : f)));
+  }
+
+  /** O menu de um favorito (na barra e na página inicial). */
+  menuFavorito(f, i, e) {
+    abrirMenu([
+      { rotulo: tr('&Abrir'), negrito: true, acao: () => this.ir(f.url) },
+      { rotulo: tr('Abrir em nova a&ba'), acao: () => this.novaAba(f.url) },
+      { rotulo: tr('Abrir em &nova janela'), acao: () => abrirNavegador({ url: f.url }) },
+      { separador: true },
+      { rotulo: tr('&Renomear…'), acao: () => this.renomearFavorito(i) },
+      { rotulo: tr('Re&mover dos favoritos'), acao: () => this.removerFavorito(i) },
+    ], { x: e.clientX, y: e.clientY });
+  }
+
+  /* ---------- A barra de favoritos ---------- */
+
+  mostrarBarraLinks() {
+    this.barraLinks.hidden = !!this.app || !barraLinksLigada();
+    this.ajustarLinks();
+  }
+
+  desenharLinks() {
+    const lista = favoritos();
+    this.links.replaceChildren(...(lista.length ? lista.map((f, i) => {
+      const el = h('button.ferramenta.nav-link', { type: 'button', title: `${f.nome}\n${f.url}` }, imgFavorito(f), h('span', f.nome));
+      el.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) this.novaAba(f.url, { frente: false }); else this.ir(f.url); });
+      // O botão do meio abre numa aba nova, por trás (como nos navegadores).
+      el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.novaAba(f.url, { frente: false }); } });
+      el.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+      el.addEventListener('contextmenu', (e) => { e.preventDefault(); this.menuFavorito(f, i, e); });
+      el.dataset.i = i;
+      return el;
+    }) : [h('span.nav-links-vazio', tr('Para pôr uma página aqui, clique na estrela do endereço.'))]));
+    completarIcones();
+    this.ajustarLinks();
+  }
+
+  /** Os favoritos que não cabem na barra vão para o » (como nos navegadores). */
+  ajustarLinks() {
+    if (this.barraLinks.hidden) return;
+    const botoes = [...this.links.querySelectorAll('.nav-link')];
+    for (const b of botoes) b.hidden = false;
+    this.btMaisLinks.hidden = true;
+    const largura = this.barraLinks.clientWidth;
+    if (!largura || this.links.scrollWidth <= this.links.clientWidth + 1) { this.escondidos = []; return; }
+    this.btMaisLinks.hidden = false;
+    const limite = this.links.getBoundingClientRect().right;
+    const lista = favoritos();
+    this.escondidos = [];
+    for (const b of botoes) {
+      if (b.getBoundingClientRect().right > limite + 0.5) { b.hidden = true; this.escondidos.push(lista[Number(b.dataset.i)]); }
+    }
   }
 
   /* ---------- A página inicial ---------- */
 
-  desenharInicio() {
+  desenharInicio(aba) {
     const campoBusca = h('input', { type: 'text', spellcheck: false, placeholder: tr('Pesquisar na internet') });
-    const pesquisar = () => { if (campoBusca.value.trim()) this.ir(busca().url + encodeURIComponent(campoBusca.value.trim())); };
+    const pesquisar = () => { if (campoBusca.value.trim()) this.ir(busca().url + encodeURIComponent(campoBusca.value.trim()), aba); };
     campoBusca.addEventListener('keydown', (e) => { if (e.key === 'Enter') pesquisar(); });
     const grade = h('div.nav-favoritos', favoritos().map((f, i) => {
-      const el = h('button.nav-fav', { title: f.url, on: { click: () => this.ir(f.url) } }, img(iconeDe(f.url), 32), h('span', f.nome));
-      el.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        abrirMenu([
-          { rotulo: tr('&Abrir'), negrito: true, acao: () => this.ir(f.url) },
-          { rotulo: tr('Abrir em &nova janela'), acao: () => abrirNavegador({ url: f.url }) },
-          { separador: true },
-          { rotulo: tr('&Remover dos favoritos'), acao: () => this.removerFavorito(i) },
-        ], { x: e.clientX, y: e.clientY });
-      });
+      const el = h('button.nav-fav', { title: f.url, on: { click: () => this.ir(f.url, aba) } },
+        f.icone ? h('img', { src: f.icone, width: 32, height: 32, alt: '', className: 'nav-fav-site' }) : img(iconeDe(f.url), 32), h('span', f.nome));
+      el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.novaAba(f.url, { frente: false }); } });
+      el.addEventListener('contextmenu', (e) => { e.preventDefault(); this.menuFavorito(f, i, e); });
       return el;
     }));
-    this.inicio.replaceChildren(
+    aba.inicio.replaceChildren(
       h('div.nav-inicio-caixa',
-        h('div.nav-inicio-titulo', img('navegador', 32), h('div', h('b', tr('Página inicial')), h('div', tr('Os seus favoritos e a pesquisa. Para guardar uma página, use Favoritos › Adicionar aos favoritos.')))),
+        h('div.nav-inicio-titulo', img('navegador', 32), h('div', h('b', tr('Página inicial')), h('div', tr('Os seus favoritos e a pesquisa. Para guardar uma página, clique na estrela do endereço (ou Ctrl+D).')))),
         h('fieldset', h('legend', tr('Pesquisar')), h('div.linha', campoBusca, h('button', { on: { click: pesquisar } }, tr('Pesquisar')))),
         h('fieldset', h('legend', tr('Favoritos')), grade)));
   }
@@ -543,6 +925,7 @@ class Navegador {
     if (p.linkURL) {
       itens.push(
         { rotulo: tr('&Abrir o link'), negrito: true, acao: () => this.ir(p.linkURL) },
+        ...(this.app ? [] : [{ rotulo: tr('Abrir o link em nova a&ba'), acao: () => this.novaAba(p.linkURL, { frente: false, depoisDe: this.aba }) }]),
         { rotulo: tr('Abrir o link em &nova janela'), acao: () => abrirNavegador({ url: p.linkURL }) },
         { rotulo: tr('Copiar o &endereço do link'), acao: () => navigator.clipboard.writeText(p.linkURL).catch(() => { }) },
         { separador: true },
@@ -559,7 +942,7 @@ class Navegador {
     } else if (p.selectionText) {
       itens.push(
         { rotulo: tr('&Copiar'), acao: () => this.wv.copy() },
-        { rotulo: tr('&Pesquisar "{texto}"', { texto: p.selectionText.trim().slice(0, 24) }), acao: () => this.ir(busca().url + encodeURIComponent(p.selectionText.trim())) },
+        { rotulo: tr('&Pesquisar "{texto}"', { texto: p.selectionText.trim().slice(0, 24) }), acao: () => (this.app ? this.ir(busca().url + encodeURIComponent(p.selectionText.trim())) : this.novaAba(busca().url + encodeURIComponent(p.selectionText.trim()), { depoisDe: this.aba })) },
       );
     } else {
       itens.push(
@@ -576,16 +959,44 @@ class Navegador {
 
 }
 
+/* ---------- A barra de favoritos ligada ou não (Exibir › Barra de favoritos, Ctrl+Shift+B) ---------- */
+
+const barraLinksLigada = () => cfg().barraFavoritos !== false;
+async function alternarBarraLinks() {
+  await definirConfig({ navegador: { barraFavoritos: !barraLinksLigada() } });
+  for (const n of abertos) if (!n.j.fechada) n.mostrarBarraLinks();
+}
+
+/** As teclas do Navegador com o foco fora da página (as de dentro dela: navegador-preload.js). */
+function atalhoDoNavegador(e) {
+  const ctrl = e.ctrlKey || e.metaKey;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (ctrl && e.key === 'Tab') return e.shiftKey ? 'abaAnterior' : 'proximaAba';
+  if (ctrl && e.shiftKey && k === 't') return 'reabrirAba';
+  if (ctrl && e.shiftKey && k === 'b') return 'barraFavoritos';
+  if (ctrl && /^[1-9]$/.test(e.key)) return 'aba:' + e.key;
+  if (ctrl && k === 't') return 'novaAba';
+  if (ctrl && k === 'w') return 'fechar';
+  if (ctrl && k === 'n') return 'nova';
+  if (ctrl && k === 'd') return 'favorito';
+  if (ctrl && k === 'l') return 'endereco';
+  if (e.key === 'F5' || (ctrl && k === 'r')) return 'atualizar';
+  if (e.altKey && e.key === 'ArrowLeft') return 'voltar';
+  if (e.altKey && e.key === 'ArrowRight') return 'avancar';
+  if (e.altKey && e.key === 'Home') return 'inicio';
+  return null;
+}
+
 export function abrirNavegador(args = {}) {
   return new Navegador(args);
 }
 
-/** Abre um endereço: numa janela do Navegador já aberta (a última usada) ou numa nova. */
+/** Abre um endereço numa aba nova da janela do Navegador usada por último (ou numa janela nova). */
 export function abrirEndereco(url) {
-  const ultimo = [...abertos].filter((n) => !n.correio).pop();
-  if (ultimo && !ultimo.j.fechada) {
+  const ultimo = [...abertos].filter((n) => !n.correio && !n.app && !n.j.fechada).pop();
+  if (ultimo) {
     ultimo.j.focar();
-    ultimo.ir(url);
+    ultimo.novaAba(url);
     return ultimo;
   }
   return abrirNavegador({ url });
@@ -669,14 +1080,23 @@ registrarApp('navegador', {
 });
 registrarApp('correio', { nome: 'E-mail', icone: 'correio', abrir: () => abrirCorreio() });
 
-// As janelas novas pedidas pelas páginas (window.open, links com target).
-retro.navegador.aoJanela((url) => { abrirNavegador({ url }); });
-// O site cuja versão segura manda de volta para o http (Só conexões seguras): o aviso, na janela da página.
+// Os links com target e o window.open sem medidas (o Ctrl+clique e o botão do meio também): numa
+// aba nova da janela da página (por trás, no botão do meio), como nos navegadores de hoje.
+retro.navegador.aoJanela((url, id, disposicao) => {
+  for (const n of abertos) {
+    const aba = id != null && !n.j.fechada && n.abaDaPagina(id);
+    if (!aba) continue;
+    if (n.app) break;
+    n.novaAba(url, { frente: disposicao !== 'background-tab', depoisDe: aba });
+    return;
+  }
+  abrirNavegador({ url });
+});
+// O site cuja versão segura manda de volta para o http (Só conexões seguras): o aviso, na aba da página.
 retro.navegador.aoSemSeguranca(({ id, url }) => {
   for (const n of abertos) {
-    let dela = false;
-    try { dela = !!n.wv && n.wv.getWebContentsId() === id; } catch { }
-    if (dela) n.mostrarSemSeguranca(url);
+    const aba = n.abaDaPagina(id);
+    if (aba) n.mostrarSemSeguranca(url, aba);
   }
 });
 
@@ -706,13 +1126,16 @@ function avisoTelaCheia() {
   setTimeout(() => { try { el.hidePopover(); } catch { } el.remove(); }, 4500);
 }
 
-/** Traz para a frente a janela do Navegador que mostra o site (a pergunta é sobre ela). */
+/** Traz para a frente a janela e a aba do Navegador que mostram o site (a pergunta é sobre elas). */
 function focarSite(origem) {
-  const nav = [...abertos].reverse().find((n) => {
-    if (n.j.fechada) return false;
-    try { return new URL(n.url).origin === origem; } catch { return false; }
-  });
-  if (nav) nav.j.focar();
+  for (const n of [...abertos].reverse()) {
+    if (n.j.fechada) continue;
+    const aba = n.aba && origemDe(n.aba.url) === origem ? n.aba : n.abas.find((a) => origemDe(a.url) === origem);
+    if (!aba) continue;
+    n.j.focar();
+    n.escolherAba(aba);
+    return;
+  }
 }
 
 // Uma pergunta de cada vez, na ordem em que chegam.

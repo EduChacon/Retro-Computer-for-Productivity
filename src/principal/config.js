@@ -18,7 +18,7 @@ const PADRAO = {
   papel: { cor: '#008080', padrao: 'nenhum' },
   sons: true,
   volume: 0.5,
-  inicioRapido: false,
+  inicioRapido: true, // a área de trabalho direto; o BIOS e a marca, em Painel › Aparência › Configurações
   protecaoTela: { ligada: true, minutos: 10, tipo: 'estrelas' },
   // Os ícones da área de trabalho (Painel › Aparência › Área de trabalho); o Prompt fica no Iniciar.
   mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'] },

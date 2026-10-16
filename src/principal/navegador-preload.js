@@ -61,6 +61,12 @@ function atalho(e) {
   if (e.altKey && e.key === 'Home') return 'inicio';
   if (ctrl && k === 'f') return 'localizar';
   if (e.key === 'F3') return 'proxima';
+  // As abas (Navegador.acao): nova, fechar, passar, reabrir a fechada e ir para a de número N.
+  if (ctrl && e.key === 'Tab') return e.shiftKey ? 'abaAnterior' : 'proximaAba';
+  if (ctrl && e.shiftKey && k === 't') return 'reabrirAba';
+  if (ctrl && e.shiftKey && k === 'b') return 'barraFavoritos';
+  if (ctrl && /^[1-9]$/.test(e.key)) return 'aba:' + e.key;
+  if (ctrl && k === 't') return 'novaAba';
   if (ctrl && k === 'n') return 'nova';
   if (ctrl && k === 'w') return 'fechar';
   if (ctrl && k === 'd') return 'favorito';

@@ -19,7 +19,7 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 ## 1. Instalar e abrir
 
 1. Baixe o instalador do seu sistema na página de [lançamentos](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest): `.exe` no Windows (10 ou mais novo), `.dmg` no macOS 12 Monterey ou mais novo (`x64` para Intel, `arm64` para Apple Silicon), `.AppImage` ou `.deb` no Linux (`x86_64`/`amd64` para PC, `arm64` para o Raspberry Pi). O guia [instalacao.md](instalacao.md) explica cada caso, inclusive o de um Mac antigo.
-2. Abra o Retro Computer. Aparecem a tela do BIOS, a abertura e a área de trabalho, com o som de início.
+2. Abra o Retro Computer. A área de trabalho aparece direto; a tela do BIOS e a abertura, com o som de início, voltam ao desmarcar Painel de controle › Aparência › Configurações › "Pular a tela de abertura".
 3. Na primeira vez, a Ajuda abre sozinha e o disco C: é criado em `Documentos/Retro Computer`, com o arquivo `Meus documentos/Leia-me.txt` (em inglês, `Documents/Read me.txt`; em espanhol, `Mis documentos/Léame.txt`).
 
 O Retro Computer procura a versão nova dele uma vez por dia. No Windows e no `.AppImage`, ele a baixa e oferece reiniciar para instalar; no `.deb`, a instalação pede a senha de administrador; no macOS (e no `.zip` do Windows), o aviso abre a página de download.

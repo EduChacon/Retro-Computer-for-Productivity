@@ -1000,7 +1000,55 @@ body.arrastando webview { pointer-events: none; }
 .nav-linha { gap: 4px; padding: 2px 4px; }
 .nav-linha label { white-space: nowrap; }
 .nav-endereco { flex: 1; min-width: 0; height: 21px; }
+/* As abas do Navegador: no alto, como nos navegadores de hoje, com o relevo das abas da época. A aba
+   da frente sobe e se junta à linha do endereço; as de trás ficam um pouco abaixo. */
+.nav-abas { flex: none; display: flex; align-items: flex-end; padding: 3px 4px 0 6px; min-width: 0; position: relative; z-index: 2; }
+.nav-abas-lista { display: flex; align-items: flex-end; min-width: 0; flex: 0 1 auto; overflow: hidden; padding: 0 2px; }
+.nav-aba {
+  /* A largura fixa faz a lista medir 190 por aba (sem ela, o Chromium mede pelo nome e encolhe todas). */
+  flex: 0 1 190px; width: 190px; min-width: 52px; height: 21px; margin-right: -1px; padding: 0 2px 0 6px;
+  display: flex; align-items: center; gap: 4px; background: var(--face); white-space: nowrap;
+  box-shadow: inset 1px 1px var(--luz), inset -1px 0 var(--escuro), inset -2px 0 var(--sombra);
+  border-radius: 3px 3px 0 0; position: relative; cursor: var(--cur-default, default);
+}
+.nav-aba.ativa { height: 24px; margin: 0 -2px -2px; padding: 0 4px 2px 8px; flex-basis: 194px; width: 194px; z-index: 3; }
+.nav-aba-icone { flex: none; width: 16px; height: 16px; display: flex; }
+.nav-aba-icone img { width: 16px; height: 16px; image-rendering: auto; }
+.nav-aba.carregando .nav-aba-icone img { opacity: .7; }
+.nav-aba-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+button.nav-aba-fechar {
+  flex: none; width: 16px; height: 14px; min-width: 0; min-height: 0; padding: 0; box-shadow: none;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='7' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v1h1v1h2V1h1V0h2v1H7v1H6v1H5v1h1v1h1v1h1v1H6V6H5V5H3v1H2v1H0V6h1V5h1V4h1V3H2V2H1V1H0z'/%3E%3C/svg%3E") no-repeat 4px 3px;
+}
+button.nav-aba-fechar:hover { box-shadow: var(--raso-alto); background-color: var(--face); }
+button.nav-aba-fechar:active { box-shadow: var(--raso); background-position: 5px 4px; }
+button.nav-aba-nova { flex: none; width: 22px; height: 19px; min-width: 0; min-height: 0; padding: 0; margin: 0 0 1px 3px; font-weight: bold; box-shadow: none; background: transparent; }
+button.nav-aba-nova:hover { box-shadow: var(--raso-alto); }
+button.nav-aba-nova:active { box-shadow: var(--raso); }
+/* A linha do endereço, logo embaixo das abas (a folha das abas da época), e os botões só com o ícone. */
+.janela.navegador:not(.webapp) .nav-linha { position: relative; z-index: 1; padding: 4px 4px 3px; gap: 2px; margin: 0 2px; box-shadow: inset 1px 1px var(--luz), inset -1px 0 var(--sombra); }
+button.ferramenta.nav-bt { width: 24px; height: 22px; padding: 0; justify-content: center; flex: none; }
+button.ferramenta.nav-bt:active:not(:disabled) { padding: 1px 0 0 1px; }
+button.ferramenta.nav-bt:disabled img { opacity: .4; filter: grayscale(1); }
+.nav-campo { flex: 1; min-width: 0; height: 22px; margin-left: 4px; display: flex; align-items: center; background: #fff; box-shadow: var(--campo); padding: 0 2px 0 0; }
+.nav-campo .nav-endereco { flex: 1; min-width: 0; height: 100%; box-shadow: none; background: transparent; }
+.nav-campo button.ferramenta.nav-estrela { width: 20px; height: 18px; min-height: 0; }
+.nav-campo .nav-estrela:not(.apertado) img { filter: grayscale(1); opacity: .55; }
+.nav-campo button.ferramenta.nav-estrela.apertado { background: none; box-shadow: none; }
+/* A barra de favoritos: os sites com o ícone de cada um; os que não cabem vão para o ». */
+.nav-barra-links { flex: none; display: flex; align-items: center; gap: 2px; padding: 1px 4px 3px; margin: 0 2px; min-width: 0; box-shadow: inset 1px 0 var(--luz), inset -1px 0 var(--sombra); }
+.nav-links { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1px; overflow: hidden; }
+button.ferramenta.nav-link { flex: none; max-width: 170px; height: 22px; gap: 5px; padding: 0 6px 0 4px; }
+button.ferramenta.nav-link img { width: 16px; height: 16px; flex: none; }
+button.ferramenta.nav-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.ferramenta.nav-mais { flex: none; width: 20px; height: 22px; justify-content: center; font-weight: bold; }
+.nav-links-vazio { color: #404040; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-area { position: relative; flex: 1; min-height: 0; box-shadow: var(--campo); padding: 2px; background: #fff; display: flex; }
+/* Cada aba é uma camada da área: só a da frente fica à vista (as de trás continuam carregando). */
+.nav-conteudo { position: absolute; inset: 2px; display: flex; z-index: 1; background: #fff; }
+.nav-conteudo.escondida { visibility: hidden; z-index: 0; pointer-events: none; }
+.janela.webapp .nav-conteudo { inset: 0; }
+img.nav-fav-site { image-rendering: auto; }
 .nav-pagina { flex: 1; width: 100%; height: 100%; border: none; background: #fff; }
 .nav-pagina[hidden] { display: none !important; }
 .nav-inicio, .nav-erro { flex: 1; overflow: auto; background: var(--mesa); padding: 24px 16px; }
@@ -1425,13 +1473,15 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .vista-miniaturas .item.sel .icone:not(.com-foto)::after { -webkit-mask: var(--ico) center / 32px 32px no-repeat; background: var(--xadrez-azul); }
 
 /* O Explorador: a barra de pastas, a divisória e o endereço em pedaços. */
-.exp-corpo { flex: 1 1 auto; min-height: 0; display: flex; }
-.exp-corpo > .lista-arquivos { flex: 1 1 auto; min-width: 0; }
-.exp-arvore { flex: none; min-width: 100px; overflow: auto; background: #fff; box-shadow: var(--campo); }
+/* Numa janela estreita, a barra de pastas e o painel de visualização encolhem antes da lista, e nada
+   passa da borda da janela (o painel largo de antes saía por fora e espremia a lista até sumir). */
+.exp-corpo { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
+.exp-corpo > .lista-arquivos { flex: 1 1 auto; min-width: 140px; }
+.exp-arvore { flex: 0 1 auto; min-width: 100px; overflow: auto; background: #fff; box-shadow: var(--campo); }
 .exp-divisoria { flex: none; width: 4px; cursor: var(--cur-col-resize, col-resize); touch-action: none; }
 .exp-corpo:not(.com-arvore) .exp-divisoria:not(.vis-div) { display: none; }
 /* O painel de visualização (Exibir › Painel de visualização): o arquivo em cima, os dados embaixo. */
-.exp-vis { flex: none; min-width: 140px; display: flex; background: #fff; box-shadow: var(--campo); padding: 2px; overflow: hidden; }
+.exp-vis { flex: 0 1 auto; min-width: 140px; display: flex; background: #fff; box-shadow: var(--campo); padding: 2px; overflow: hidden; }
 .exp-corpo:not(.com-vis) .exp-vis, .exp-corpo:not(.com-vis) .vis-div { display: none; }
 .vis { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .vis-corpo { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }

@@ -734,7 +734,8 @@ function configurarNavegador() {
           },
         };
       }
-      enviar('navegador:janela', url);
+      // Os links com target, o Ctrl+clique e o botão do meio: uma aba nova na janela da página.
+      enviar('navegador:janela', url, wc.id, disposition);
       return { action: 'deny' };
     });
     wc.on('will-navigate', (e, url) => { if (!enderecoDaWeb(url)) e.preventDefault(); });
