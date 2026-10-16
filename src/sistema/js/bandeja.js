@@ -58,7 +58,9 @@ export function mostrarIndicador(nomeIcone, texto, pct) {
   }
   trocarIcone(indicador.children[0], nomeIcone);
   indicador.children[1].textContent = texto;
-  indicador.children[2].firstChild.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  // Sem a porcentagem (um aviso curto, como o "Copiado" da busca), sem a barra.
+  indicador.children[2].hidden = pct == null;
+  if (pct != null) indicador.children[2].firstChild.style.width = Math.max(0, Math.min(100, pct)) + '%';
   indicador.hidden = false;
   clearTimeout(indicador.t);
   indicador.t = setTimeout(() => { indicador.hidden = true; }, 1500);
@@ -255,7 +257,25 @@ function caixaBateria() {
   }
   if (!bat) return corpo;
   const lugarBrilho = h('div');
-  corpo.append(lugarBrilho);
+  const lugarPerfil = h('div');
+  corpo.append(lugarBrilho, lugarPerfil);
+  // O modo de energia (o power-profiles-daemon do Linux, como no Zorin OS e no GNOME).
+  retro.bandeja.perfil().then((p) => {
+    if (!p || !p.disponivel || !p.perfis || p.perfis.length < 2) return;
+    const NOMES = { 'power-saver': tr('Economia de energia'), balanced: tr('Equilibrado'), performance: tr('Desempenho') };
+    const opcoes = p.perfis.map((nome) => {
+      const r = h('input', { type: 'radio', name: 'perfil-energia', checked: nome === p.atual });
+      r.addEventListener('change', async () => {
+        if (!r.checked) return;
+        const novo = await retro.bandeja.definirPerfil(nome).catch(() => null);
+        // Se o computador não aceitou, a marca volta para o modo de verdade.
+        if (novo && novo.atual) for (const [k, o] of opcoes) o.checked = k === novo.atual;
+      });
+      return [nome, r];
+    });
+    lugarPerfil.replaceChildren(h('hr.sulco'), h('div.cxb-titulo', h('span', tr('Modo de energia'))),
+      ...opcoes.map(([nome, r]) => h('label.cxb-linha', r, h('span', NOMES[nome]))));
+  }).catch(() => { });
   retro.bandeja.brilho().then((b) => {
     if (!b || !b.disponivel) return;
     const numero = h('span.vol-numero', b.nivel + '%');

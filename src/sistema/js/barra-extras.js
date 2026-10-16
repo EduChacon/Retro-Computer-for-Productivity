@@ -2,12 +2,14 @@
  * Dois extras da barra de tarefas: o calendário do mês (um clique no relógio)
  * e a caixa de busca, que procura nos programas, nas opções do Painel de
  * controle e nos arquivos do disco C:, e com Enter pesquisa na internet.
+ * Uma conta ("12*3,5") mostra o resultado primeiro; Enter o copia.
  */
 import { h, img, tipoDe, caminhoTela, paiDe } from './util.js';
 import { estado, abrir, abrirArquivo, abrirEndereco } from './sistema.js';
 import { fecharMenus } from './menus.js';
 import { abrirNativo, iconeNativo } from './nativos.js';
 import { tr, marcar, localidade } from './idioma.js';
+import { calcular, arredondar } from './conta.js';
 
 /* ---------- A caixinha que abre acima da barra (o calendário, o volume, a rede…) ---------- */
 
@@ -123,6 +125,7 @@ export function alternarCalendario(ancora) {
 const DO_SISTEMA = [
   { nome: marcar('Bloco de notas'), icone: 'bloco', abrir: () => abrir('bloco') },
   { nome: marcar('Calculadora'), icone: 'calculadora', abrir: () => abrir('calculadora') },
+  { nome: marcar('Área de transferência'), icone: 'transferencia', abrir: () => abrir('transferencia') },
   { nome: marcar('Navegador'), icone: 'navegador', abrir: () => abrir('navegador') },
   { nome: marcar('E-mail'), icone: 'correio', abrir: () => abrir('correio') },
   { nome: marcar('Prompt de comando'), icone: 'prompt', abrir: () => abrir('prompt') },
@@ -143,12 +146,36 @@ const simples = (s) => String(s).toLowerCase().normalize('NFD').replace(/\p{Diac
 
 let nativosGuardados = null;
 
+/** Um número como o idioma escreve (a vírgula no português e no espanhol); os enormes, com expoente. */
+export function numeroTexto(v, { agrupar = true } = {}) {
+  const n = arredondar(v);
+  const a = Math.abs(n);
+  if (a !== 0 && (a >= 1e15 || a < 1e-9)) {
+    const [m, e] = n.toExponential(8).split('e');
+    return new Intl.NumberFormat(localidade(), { maximumFractionDigits: 8 }).format(Number(m)) + 'E' + Number(e);
+  }
+  return new Intl.NumberFormat(localidade(), { maximumFractionDigits: 10, useGrouping: agrupar }).format(n);
+}
+
 /** Os resultados de um termo, por grupo. */
 export async function procurar(termo) {
   const t = simples(termo.trim());
   if (!t) return [];
   const casa = (nome) => simples(nome).includes(t);
   const r = [];
+  // Uma conta: o resultado vem primeiro, e Enter o copia (o "=" e os pontos de milhar não vão junto).
+  const conta = calcular(termo);
+  if (conta != null) {
+    r.push({
+      grupo: 'conta', rotulo: '= ' + numeroTexto(conta), icone: 'calculadora', dica: tr('Enter copia o resultado'),
+      abrir: async () => {
+        const texto = numeroTexto(conta, { agrupar: false });
+        await retro.transferencia.escrever(texto).catch(() => { });
+        const { mostrarIndicador } = await import('./bandeja.js');
+        mostrarIndicador('copiar', tr('Copiado: {valor}', { valor: texto }));
+      },
+    });
+  }
   const programas = DO_SISTEMA.filter((p) => casa(p.nome === 'Breakout' ? p.nome : tr(p.nome))).map((p) => ({ grupo: 'programas', rotulo: p.nome === 'Breakout' ? p.nome : tr(p.nome), icone: p.icone, abrir: p.abrir }));
   for (const p of estado.instalados || []) if (casa(p.nome)) programas.push({ grupo: 'programas', rotulo: p.nome, icone: p.icone || 'programa', abrir: () => abrir('craft:' + p.id) });
   if (!nativosGuardados) nativosGuardados = await retro.nativos.listar().catch(() => []);
@@ -170,7 +197,7 @@ export async function procurar(termo) {
   return r;
 }
 
-const GRUPOS = { programas: marcar('Programas'), configuracoes: marcar('Configurações'), arquivos: marcar('Arquivos') };
+const GRUPOS = { conta: marcar('Calculadora'), programas: marcar('Programas'), configuracoes: marcar('Configurações'), arquivos: marcar('Arquivos') };
 
 export function montarBusca() {
   const campo = h('input', { type: 'search', spellcheck: false, placeholder: tr('Pesquisar'), 'aria-label': tr('Pesquisar') });

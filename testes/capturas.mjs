@@ -216,6 +216,96 @@ const ROTEIROS = {
     await pagina.waitForTimeout(300);
     console.log('janelas antes e depois do Alt+F4:', antes, (await estado()).length);
   },
+  async produtividade() {
+    // O que veio das distribuições do Linux (com RETRO_BANDEJA_FALSA=1 e RETRO_FIREWALL_FALSO=1):
+    // o histórico da área de transferência, a conta na busca, a luz noturna, o modo de energia,
+    // o firewall e a aba de atalhos do Teclado.
+    await fecharTudo();
+    // Três textos copiados "em outro programa" (a área de transferência do computador).
+    for (const t of ['Reunião às 14h com a equipe de vendas', 'https://github.com/EduChacon/Retro-Computer-for-Productivity', 'Lista de compras:\n- café\n- pão\n- queijo']) {
+      await app.evaluate(({ clipboard }, x) => clipboard.writeText(x), t);
+      await pagina.waitForTimeout(1300);
+    }
+    await abrir('bloco');
+    await pagina.waitForTimeout(400);
+    await pagina.locator('.janela.bloco textarea').click();
+    await pagina.keyboard.type('Anotações: ');
+    await tecla('area-transferencia');
+    await pagina.waitForSelector('.historico-transf .ht-item', { timeout: 5000 });
+    await pagina.keyboard.press('ArrowDown');
+    await pagina.waitForTimeout(300);
+    await foto('transferencia-historico');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(600);
+    console.log('colado no Bloco:', JSON.stringify(await pagina.locator('.janela.bloco textarea').inputValue()));
+    await foto('transferencia-colado');
+    // O "…" de um item: fixar e excluir.
+    await tecla('area-transferencia');
+    await pagina.waitForSelector('.historico-transf .ht-item');
+    await pagina.locator('.historico-transf .ht-mais').first().dispatchEvent('mousedown');
+    await pagina.waitForTimeout(300);
+    await foto('transferencia-menu');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+    await fecharTudo();
+    const nao = pagina.locator('.janela.dialogo button', { hasText: T('&Não').replace('&', '') });
+    if (await nao.count()) await nao.first().click();
+    // A conta na caixa de busca: o resultado primeiro; Enter o copia.
+    await pagina.locator('#busca-barra input').click();
+    await pagina.keyboard.type('1280*0,15+√144');
+    await pagina.waitForSelector('.busca-resultados', { timeout: 5000 });
+    await pagina.waitForTimeout(400);
+    await foto('busca-conta');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(300);
+    console.log('copiado da busca:', JSON.stringify(await app.evaluate(({ clipboard }) => clipboard.readText())));
+    // A luz noturna: ligada o dia todo, na intensidade de 70.
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(500);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Efeitos') }).click();
+    await pagina.waitForTimeout(200);
+    await pagina.locator('.janela.ativa fieldset >> nth=1').locator('input[type=checkbox]').check();
+    await pagina.locator('.janela.ativa fieldset >> nth=1').locator('input[type=radio] >> nth=1').check();
+    await pagina.locator('.janela.ativa fieldset >> nth=1').locator('.deslizante').focus();
+    for (let i = 0; i < 4; i++) await pagina.keyboard.press('ArrowRight');
+    await pagina.waitForTimeout(1800);
+    await foto('luz-noturna-previa');
+    await pagina.locator('.janela.ativa .acoes button.padrao').click();
+    await pagina.waitForTimeout(1800);
+    console.log('luz noturna:', JSON.stringify(await pagina.evaluate(() => [window.__retro.estado.config.luzNoturna, (document.getElementById('luz-noturna') || {}).style?.background])));
+    await foto('luz-noturna-ligada');
+    await pagina.evaluate(() => window.__retro.definirConfig({ luzNoturna: { ligada: false } }));
+    await pagina.waitForTimeout(1800);
+    // O modo de energia na caixa da bateria.
+    await pagina.click('#bandeja img.bandeja-ico[src*="bateria"]');
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.caixa-bandeja label', { hasText: T('Economia de energia') }).click();
+    await pagina.waitForTimeout(300);
+    console.log('modo de energia:', JSON.stringify(await pagina.evaluate(() => retro.bandeja.perfil())));
+    await foto('bandeja-modo-energia');
+    await pagina.keyboard.press('Escape');
+    // O firewall: ligar pede a senha de administrador.
+    await abrir('painel');
+    await pagina.waitForTimeout(500);
+    await foto('painel-com-firewall');
+    await fecharTudo();
+    await abrir('painel', { secao: 'firewall' });
+    await pagina.waitForTimeout(500);
+    await pagina.locator('.janela.ativa input[type=radio] >> nth=0').check();
+    await foto('firewall');
+    await pagina.locator('.janela.ativa .acoes button.padrao').click();
+    await pagina.waitForSelector('.janela.dialogo input[type=password]', { timeout: 5000 });
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(800);
+    console.log('firewall:', JSON.stringify(await pagina.evaluate(() => retro.firewall.estado())));
+    // A aba de atalhos do Teclado, com o histórico da área de transferência.
+    await abrir('painel', { secao: 'teclado' });
+    await pagina.waitForTimeout(500);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Atalhos') }).click();
+    await pagina.waitForTimeout(200);
+    await foto('teclado-atalhos');
+  },
   async ajuda() {
     // Os tópicos da Ajuda, um por captura (o texto rolado até o fim mostra se cabe).
     await fecharTudo();

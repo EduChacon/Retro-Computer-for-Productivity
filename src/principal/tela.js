@@ -3,6 +3,10 @@
  * A resolução da tela (no Retro Computer como sistema do Linux, pelo xrandr): os modos do
  * monitor e a troca de um para outro. A escolha fica guardada e volta a cada abertura.
  * Fora do modo sistema, quem cuida da resolução é o próprio sistema do computador.
+ *
+ * Também a luz noturna do modo sistema: as cores da tela mais quentes (menos azul) pela
+ * correção de gama do xrandr, que vale para tudo o que aparece, inclusive os programas do
+ * Linux. Fora do modo sistema, a área de trabalho põe um filtro só sobre ela.
  */
 const fs = require('node:fs');
 const { execFile } = require('node:child_process');
@@ -46,6 +50,21 @@ function lerXrandr(texto) {
   return t;
 }
 
+/** As saídas ligadas (todos os monitores recebem a luz noturna). */
+function lerSaidas(texto) {
+  return String(texto).split('\n').map((l) => /^(\S+) connected/.exec(l)).filter(Boolean).map((m) => m[1]);
+}
+
+/**
+ * A correção de gama da luz noturna: k vai de 0 (as cores de sempre) a 1 (o mais quente).
+ * O vermelho fica; o verde e, mais ainda, o azul diminuem (como a luz de uma lâmpada comum).
+ */
+function gamaDe(k) {
+  const n = Math.max(0, Math.min(1, Number(k) || 0));
+  const f = (x) => (Math.round(x * 100) / 100).toFixed(2);
+  return `1.00:${f(1 - 0.28 * n)}:${f(1 - 0.58 * n)}`;
+}
+
 class Tela {
   constructor({ plataforma = process.platform, sistema = false } = {}) {
     this.plataforma = plataforma;
@@ -63,6 +82,18 @@ class Tela {
       return t ? { disponivel: true, ...t } : { disponivel: false };
     } catch {
       return { disponivel: false };
+    }
+  }
+
+  /** A luz noturna em todos os monitores (k = 0 volta às cores de sempre). */
+  async luzNoturna(k) {
+    if (!this.disponivel()) return { ok: false, erro: 'xrandr' };
+    try {
+      const saidas = lerSaidas(await rodar(['--query'])).filter(saidaValida);
+      for (const s of saidas) await rodar(['--output', s, '--gamma', gamaDe(k)]);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, erro: (e.saida || e.message || '').split('\n').pop() };
     }
   }
 
@@ -87,6 +118,7 @@ class TelaFalsa extends Tela {
   }
 
   disponivel() { return true; }
+  async luzNoturna(k) { this.gama = gamaDe(k); return { ok: true }; }
   async modos() { return { disponivel: true, saida: 'eDP-1', atual: this.atual, preferido: '1440x900', modos: ['1440x900', '1366x768', '1280x800', '1024x768', '800x600'] }; }
   async definir(saida, modo) {
     const t = await this.modos();
@@ -96,4 +128,4 @@ class TelaFalsa extends Tela {
   }
 }
 
-module.exports = { Tela, TelaFalsa, lerXrandr, modoValido, saidaValida };
+module.exports = { Tela, TelaFalsa, lerXrandr, lerSaidas, gamaDe, modoValido, saidaValida };

@@ -64,6 +64,22 @@ contextBridge.exposeInMainWorld('retro', {
   tela: {
     modos: () => chamar('tela:modos'),
     definir: (saida, modo) => chamar('tela:definir', saida, modo),
+    luzNoturna: (k) => chamar('tela:luzNoturna', k),
+  },
+  // O histórico da área de transferência (só na memória do processo principal).
+  transferencia: {
+    listar: () => chamar('transferencia:listar'),
+    usar: (id) => chamar('transferencia:usar', id),
+    escrever: (texto) => chamar('transferencia:escrever', texto),
+    colar: (id, nativa) => chamar('transferencia:colar', id, nativa || null),
+    apagar: (id) => chamar('transferencia:apagar', id),
+    fixar: (id, v) => chamar('transferencia:fixar', id, v),
+    limpar: () => chamar('transferencia:limpar'),
+    aoMudar: ouvir('transferencia:mudou'),
+  },
+  firewall: {
+    estado: () => chamar('firewall:estado'),
+    definir: (ligar, senha) => chamar('firewall:definir', ligar, senha),
   },
   janelasLinux: {
     listar: () => chamar('janelasLinux:listar'),
@@ -210,6 +226,8 @@ contextBridge.exposeInMainWorld('retro', {
     definirVolume: (o) => chamar('bandeja:definirVolume', o),
     brilho: () => chamar('bandeja:brilho'),
     definirBrilho: (n) => chamar('bandeja:definirBrilho', n),
+    perfil: () => chamar('bandeja:perfil'),
+    definirPerfil: (p) => chamar('bandeja:definirPerfil', p),
     rede: () => chamar('bandeja:rede'),
     redes: (procurar) => chamar('bandeja:redes', !!procurar),
     conectar: (ssid, senha) => chamar('bandeja:conectar', ssid, senha),

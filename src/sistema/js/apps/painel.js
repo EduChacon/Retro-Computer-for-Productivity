@@ -16,6 +16,7 @@ import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
 import { BUSCAS, CORREIOS, paraEndereco } from './navegador.js';
 import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
 import { comSenhaAdmin } from '../admin.js';
+import { aplicarLuzNoturna } from '../luz-noturna.js';
 
 const ITENS = [
   { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: () => dialogoAparencia() },
@@ -25,6 +26,7 @@ const ITENS = [
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
   { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
   { chave: 'bluetooth', rotulo: marcar('Bluetooth'), icone: 'bluetooth', descricao: marcar('Os mouses, os teclados e os fones sem fio: parear, conectar e esquecer.'), abrir: () => import('../bluetooth.js').then((m) => m.abrirBluetooth()) },
+  { chave: 'firewall', rotulo: marcar('Firewall'), icone: 'firewall', descricao: marcar('Recusa as conexões que outros computadores tentam abrir neste.'), abrir: () => dialogoFirewall(), mostrar: () => estado.config.plataforma === 'linux' },
   { chave: 'atualizacoes', rotulo: marcar('Atualizações do Linux'), icone: 'atualizacoes', descricao: marcar('As atualizações de segurança do Linux e dos programas da Loja.'), abrir: () => abrir('atualizacoes'), mostrar: () => estado.config.plataforma === 'linux' },
   { chave: 'impressoras', rotulo: marcar('Impressoras'), icone: 'impressora', descricao: marcar('As impressoras, a padrão, a fila de impressão e a página de teste.'), abrir: () => dialogoImpressoras() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
@@ -189,16 +191,44 @@ function dialogoAparencia() {
   // No modo sistema, o Retro Computer é a tela inteira.
   if (c.modoSistema) { radioCheia.disabled = true; radioJanela.disabled = true; }
 
-  // Os efeitos (como a aba do Windows 98): os cantos magnéticos das janelas.
+  // Os efeitos (como a aba do Windows 98): os cantos magnéticos das janelas e a luz noturna.
   const chkEncaixe = h('input', { type: 'checkbox', checked: !c.janelas || c.janelas.encaixe !== false });
+  const ln = { ligada: false, quando: 'noite', de: 20, ate: 7, intensidade: 50, ...(c.luzNoturna || {}) };
+  const chkLuz = h('input', { type: 'checkbox', checked: !!ln.ligada });
+  const radioNoite = h('input', { type: 'radio', name: 'luz-quando', checked: ln.quando !== 'sempre' });
+  const radioSempre = h('input', { type: 'radio', name: 'luz-quando', checked: ln.quando === 'sempre' });
+  const selHora = (v, rot) => {
+    const s = h('select', { 'aria-label': rot }, ...Array.from({ length: 24 }, (_, i) => h('option', { value: String(i) },
+      new Date(2000, 0, 1, i).toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' }))));
+    s.value = String(v);
+    return s;
+  };
+  const selDe = selHora(ln.de, tr('Começa às'));
+  const selAte = selHora(ln.ate, tr('Termina às'));
+  const lerLuz = () => ({ ligada: chkLuz.checked, quando: radioSempre.checked ? 'sempre' : 'noite', de: Number(selDe.value), ate: Number(selAte.value), intensidade: ln.intensidade });
+  let previaLuz = false;
+  // Mexer na intensidade mostra o resultado na hora (e o que não for aplicado volta ao fechar).
+  const intensidade = deslizante({
+    valor: ln.intensidade, min: 10, max: 100, tamanho: 140, passo: 5, passoGrande: 20, rotulo: tr('Intensidade da luz noturna'),
+    aoMudar: (n) => { ln.intensidade = n; previaLuz = true; aplicarLuzNoturna({ ...lerLuz(), ligada: true }); },
+  });
+  const marcarLuz = () => { for (const el of [radioNoite, radioSempre, selDe, selAte]) el.disabled = !chkLuz.checked; };
+  chkLuz.addEventListener('change', marcarLuz);
+  marcarLuz();
   const abaEfeitos = h('div',
-    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Janelas')),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Janelas')),
       h('label', chkEncaixe, h('span', tr('Encaixar as janelas ao arrastá-las até as bordas e os cantos da tela'))),
       h('div', { style: { color: '#808080', marginTop: '6px', lineHeight: '13px' } },
         tr('À esquerda ou à direita, a janela ocupa metade da tela; num canto, um quarto; no alto, a tela toda. A tecla do logotipo com as setas faz o mesmo.'))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Luz noturna')),
+      h('label', chkLuz, h('span', tr('Deixar as cores mais quentes, com menos azul, para descansar a vista'))),
+      h('div.linha', { style: { marginTop: '6px', marginLeft: '18px', gap: '4px' } }, h('label', radioNoite, h('span', tr('Das'))), h('div.select-caixa', selDe), h('span', tr('às')), h('div.select-caixa', selAte)),
+      h('div', { style: { marginTop: '4px', marginLeft: '18px' } }, h('label', radioSempre, h('span', tr('O dia todo')))),
+      h('div', { style: { marginTop: '8px' } }, tr('Intensidade:')),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' } }, h('span', tr('Menos')), intensidade.el, h('span', tr('Mais')))),
   );
 
-  dialogoBase({
+  const dlg = dialogoBase({
     titulo: tr('Propriedades de Aparência'),
     icone: 'aparencia',
     larg: 440,
@@ -207,7 +237,8 @@ function dialogoAparencia() {
     aoAplicar: async () => {
       aplicarProt();
       escala = selEscala.value;
-      await definirConfig({ papel, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, janelas: { encaixe: chkEncaixe.checked } });
+      previaLuz = false;
+      await definirConfig({ papel, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);
       await aplicarEscala(escala);
@@ -218,6 +249,8 @@ function dialogoAparencia() {
       if (res.escolhido && res.escolhido !== res.antes) await trocarResolucao(res);
     },
   });
+  // A prévia da luz noturna que não foi aplicada volta ao que estava.
+  if (dlg) dlg.ev.on('fechada', () => { if (previaLuz) aplicarLuzNoturna(); });
 }
 
 /** Troca a resolução e pergunta se fica; sem resposta em 15 segundos, volta à anterior. */
@@ -395,15 +428,71 @@ function dialogoTeclado() {
         : tr('O layout do teclado é o do computador principal: troque-o nas configurações do sistema dele.'))),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Layout do teclado')), h('div.select-caixa', { style: { width: '100%' } }, sel)),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Testar')), teste));
+  // Os atalhos: o histórico da área de transferência (logotipo + V) e o caminho para a lista das teclas.
+  const chkHistorico = h('input', { type: 'checkbox', checked: !c.transferencia || c.transferencia.historico !== false });
+  const atalhos = h('div',
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Área de transferência')),
+      h('label', chkHistorico, h('span', tr('Guardar o histórico do que é copiado (logotipo + V)'))),
+      h('div', { style: { color: '#808080', marginTop: '6px', lineHeight: '13px' } },
+        tr('Os últimos 25 textos copiados, só na memória: nada vai para o disco, e tudo some ao fechar o Retro Computer. O que os gerenciadores de senhas marcam como secreto fica de fora.'))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Teclas de atalho')),
+      h('div', { style: { lineHeight: '13px' } }, tr('Alt+Tab troca de janela, Alt+F4 fecha, e a tecla do logotipo com uma letra abre o que se usa mais: E, o Explorador; R, o Executar; D, a área de trabalho; V, a área de transferência; L, o bloqueio.')),
+      h('div.acoes', { style: { marginTop: '8px' } }, h('button', { type: 'button', on: { click: () => abrir('ajuda', { topico: 'atalhos' }) } }, tr('Ver todas as teclas…')))));
   dialogoBase({
-    titulo: tr('Propriedades de Teclado'), icone: 'teclado', larg: 400,
-    abas: [{ titulo: tr('Idioma do teclado'), conteudo }],
-    aoAplicar: sistema ? async () => {
+    titulo: tr('Propriedades de Teclado'), icone: 'teclado', larg: 400, altMin: 430,
+    abas: [{ titulo: tr('Idioma do teclado'), conteudo }, { titulo: tr('Atalhos'), conteudo: atalhos }],
+    aoAplicar: async () => {
+      await definirConfig({ transferencia: { historico: chkHistorico.checked } });
+      if (!sistema) return;
       const [l, v] = sel.value.split(':');
       const r = await retro.sistema.teclado(l, v).catch((e) => ({ ok: false, erro: e.message }));
       if (!r.ok) erro(tr('Não foi possível trocar o layout do teclado: {erro}', { erro: r.erro || '?' }));
       teste.focus();
-    } : null,
+    },
+  });
+}
+
+/* Firewall (o ufw do Linux) */
+
+function dialogoFirewall() {
+  const radioLigado = h('input', { type: 'radio', name: 'firewall', disabled: true });
+  const radioDesligado = h('input', { type: 'radio', name: 'firewall', disabled: true });
+  const nota = h('div', { style: { color: '#808080', marginTop: '8px', lineHeight: '13px' } }, tr('Lendo…'));
+  let antes = null;
+  retro.firewall.estado().then((e) => {
+    if (!e || !e.disponivel) { nota.textContent = tr('O firewall deste computador é configurado pelo próprio sistema.'); return; }
+    antes = !!e.ligado;
+    radioLigado.checked = antes;
+    radioDesligado.checked = !antes;
+    if (e.instalado || e.podeInstalar) radioLigado.disabled = radioDesligado.disabled = false;
+    nota.textContent = !e.instalado
+      ? (e.podeInstalar ? tr('O firewall do Linux (ufw) ainda não está instalado: ligar o instala.') : tr('O firewall do Linux (ufw) não está instalado.'))
+      : antes ? tr('Ligado: ninguém de fora abre conexões com este computador.') : tr('Desligado: outros computadores da rede podem tentar se conectar a este.');
+  }).catch(() => { nota.textContent = tr('O firewall deste computador é configurado pelo próprio sistema.'); });
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('firewall', 32),
+      h('div', { style: { lineHeight: '13px' } }, tr('O firewall recusa as conexões que outros computadores tentam abrir neste. A internet, os downloads e os programas continuam como antes.'))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Firewall')),
+      h('div', h('label', radioLigado, h('span', tr('Ligado (recomendado)')))),
+      h('div', { style: { marginTop: '6px' } }, h('label', radioDesligado, h('span', tr('Desligado')))),
+      nota));
+  dialogoBase({
+    titulo: tr('Propriedades do Firewall'), icone: 'firewall', larg: 400, altMin: 320,
+    abas: [{ titulo: tr('Geral'), conteudo }],
+    aoAplicar: async () => {
+      if (antes === null || radioLigado.disabled || radioLigado.checked === antes) return;
+      const ligar = radioLigado.checked;
+      const r = await comSenhaAdmin(ligar ? tr('Para ligar o firewall, digite a senha de administrador:') : tr('Para desligar o firewall, digite a senha de administrador:'),
+        (senha) => retro.firewall.definir(ligar, senha));
+      if (r && r.ok) {
+        antes = ligar;
+        nota.textContent = ligar ? tr('Ligado: ninguém de fora abre conexões com este computador.') : tr('Desligado: outros computadores da rede podem tentar se conectar a este.');
+        return;
+      }
+      radioLigado.checked = antes;
+      radioDesligado.checked = !antes;
+      if (r && !r.senhaErrada && !r.naoPode) erro(tr('Não foi possível mudar o firewall: {erro}', { erro: r.erro || '?' }));
+    },
   });
 }
 

@@ -39,6 +39,15 @@ function acaoDaTecla(input, { plataforma = process.platform, sistema = false } =
   return acaoDoLogotipo(input);
 }
 
+/**
+ * No modo sistema, com um programa do Linux na frente, estas teclas mostram algo do próprio
+ * Retro Computer: ele vem para a frente antes. (A captura de um pedaço da tela, não: ela
+ * fotografa o que está na tela primeiro.)
+ */
+function trazORetro(acao) {
+  return /^(alternar|alternar-volta|explorador|executar|painel|busca|area-transferencia|bloquear|fixado:\d)$/.test(String(acao));
+}
+
 /** As mesmas teclas como atalhos globais do modo sistema (valem também com um programa do Linux na frente). */
 const GLOBAIS = [
   ['Alt+Tab', 'alternar'], ['Alt+Shift+Tab', 'alternar-volta'], ['Alt+F4', 'fechar-janela'],
@@ -49,4 +58,4 @@ const GLOBAIS = [
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ['Super+' + n, 'fixado:' + n]),
 ];
 
-module.exports = { acaoDaTecla, GLOBAIS };
+module.exports = { acaoDaTecla, trazORetro, GLOBAIS };

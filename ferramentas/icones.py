@@ -431,6 +431,38 @@ def bateria(n, carga=False):
     return [''.join(l) for l in linhas]
 
 
+def muro(tam):
+    """O muro de tijolos do firewall (desenho próprio): os tijolos vermelhos desencontrados,
+    a argamassa cinza e o contorno preto. Só a parte de baixo do quadro; o resto fica vazio."""
+    if tam == 32:
+        x0, x1, y0, tij, fiadas = 2, 29, 13, 8, ['A3', 'L', 'B3', 'L', 'A3', 'L', 'B3']
+    else:
+        x0, x1, y0, tij, fiadas = 1, 14, 7, 5, ['A2', 'L', 'B2', 'L', 'A1']
+    linhas = [['.'] * tam for _ in range(tam)]
+    y = y0 + 1
+    for f in fiadas:
+        if f == 'L':
+            for x in range(x0 + 1, x1):
+                linhas[y][x] = 'L'
+            y += 1
+            continue
+        desvio = 0 if f[0] == 'A' else tij // 2
+        altura = int(f[1])
+        cores = {3: 'pRr', 2: 'Rr', 1: 'R'}[altura]
+        for k in range(altura):
+            for x in range(x0 + 1, x1):
+                junta = (x - x0 - 1 + desvio) % tij == tij - 1
+                linhas[y][x] = 'L' if junta else cores[k]
+            y += 1
+    for x in range(x0, x1 + 1):
+        linhas[y0][x] = 'K'
+        linhas[y][x] = 'K'
+    for yy in range(y0, y + 1):
+        linhas[yy][x0] = 'K'
+        linhas[yy][x1] = 'K'
+    return [''.join(l) for l in linhas]
+
+
 def grade(linhas):
     a = len(linhas)
     w = max(len(x) for x in linhas)
@@ -801,6 +833,13 @@ def gerar(serenity):
     feitos[16]['impressora'] = grade(IMPRESSORA_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)
     feitos[32]['bluetooth'] = grade(BLUETOOTH_16).resize((32, 32), Image.NEAREST)
+
+    # 1.0: o firewall é o muro de tijolos na frente do globo (o globo é o do SerenityOS);
+    # a área de transferência é a prancheta do SerenityOS.
+    globo16 = abrir_serenity(serenity, 16, 'internet')
+    feitos[32]['firewall'] = colar(colar(Image.new('RGBA', (32, 32), (0, 0, 0, 0)), globo16, 8, 2), grade(muro(32)), 0, 0)
+    feitos[16]['firewall'] = colar(colar(Image.new('RGBA', (16, 16), (0, 0, 0, 0)), globo16.resize((10, 10), Image.NEAREST), 3, 1), grade(muro(16)), 0, 0)
+    feitos[16]['transferencia'] = abrir_serenity(serenity, 16, 'paste')
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

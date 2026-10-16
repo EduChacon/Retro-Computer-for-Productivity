@@ -134,6 +134,13 @@ class JanelasLinux {
     return true;
   }
 
+  /** O Ctrl+V na janela da frente (o histórico da área de transferência num programa do Linux). */
+  async colar() {
+    if (!existe('xdotool')) return false;
+    await rodar('xdotool', ['key', '--clearmodifiers', 'ctrl+v']).catch(() => { });
+    return true;
+  }
+
   /** Antes da tela de bloqueio: nenhuma janela do Linux fica por cima dela. */
   async minimizarTodas() {
     const { lista } = await this.listar();
@@ -173,6 +180,7 @@ class JanelasFalsas extends JanelasLinux {
   async minimizar(id) { const j = this.falsas.find((x) => x.id === id); if (j) j.ativa = false; this.avisar(); return true; }
   async fechar(id) { this.falsas = this.falsas.filter((j) => j.id !== id); this.avisar(); return true; }
   async encaixar(id, seta) { (this.encaixes = this.encaixes || []).push([id, seta]); return true; }
+  async colar() { this.colados = (this.colados || 0) + 1; return true; }
   avisar() { this.listar().then((r) => this.aoMudar(r)); }
 }
 

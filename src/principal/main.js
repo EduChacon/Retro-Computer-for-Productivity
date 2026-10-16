@@ -9,7 +9,7 @@
  * A área de trabalho fala com este processo só pela ponte do preload
  * (window.retro); os programas, só pela área de trabalho (postMessage).
  */
-const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard, ClipboardItem, webContents } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -32,8 +32,10 @@ const { Impressoras, ImpressorasFalsas } = require('./impressoras');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
-const { acaoDaTecla, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atalhos');
+const { acaoDaTecla, trazORetro, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atalhos');
 const { Tela, TelaFalsa } = require('./tela');
+const { HistoricoTransferencia } = require('./transferencia');
+const { Firewall, FirewallFalso } = require('./firewall');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -92,6 +94,7 @@ let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
+let historico = null; // o histórico da área de transferência (transferencia.js)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -467,8 +470,9 @@ function teclasDoSistema() {
       const ok = globalShortcut.register(tecla, () => {
         // A tecla do logotipo já foi usada: soltá-la não abre o Iniciar.
         logotipoSozinho = false;
-        // O Alt+Tab traz o Retro Computer para a frente: o resto das teclas (e o soltar do Alt) chega a ele.
-        if (acao.startsWith('alternar') && janela && !janela.isDestroyed()) janela.focus();
+        // O Alt+Tab (e o que abre algo do Retro Computer) o traz para a frente: o resto das teclas
+        // (e o soltar do Alt) chega a ele.
+        if (trazORetro(acao) && janela && !janela.isDestroyed()) janela.focus();
         enviar('sistema:tecla', acao);
       });
       if (ok) globais.add(acao);
@@ -576,7 +580,9 @@ function registrarPonte() {
     for (const k of proibidas) delete parte[k];
     // A senha da tela de bloqueio só muda por bloqueio:definir (conferindo a atual).
     if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
-    return semSegredos(config.definir(parte));
+    const r = config.definir(parte);
+    if (parte.transferencia && historico) historico.ligar(r.transferencia.historico !== false);
+    return semSegredos(r);
   });
   // Os pendrives: listar, abrir, trazer para o C:, levar do C: e remover com segurança.
   tratar('unidades:listar', () => unidades.listar());
@@ -727,6 +733,31 @@ function registrarPonte() {
   tratar('janelasLinux:fechar', (id) => janelasLinux && janelasLinux.fechar(String(id)));
   tratar('tela:modos', () => tela.modos());
   tratar('tela:definir', (saida, modo) => tela.definir(String(saida), String(modo)));
+  tratar('tela:luzNoturna', (k) => tela.luzNoturna(Number(k) || 0));
+  // O histórico da área de transferência (logotipo + V).
+  tratar('transferencia:listar', () => historico.listar());
+  tratar('transferencia:usar', (id) => historico.usar(id));
+  tratar('transferencia:escrever', async (texto) => { await clipboard.writeText(String(texto).slice(0, 1e6)); return true; });
+  tratar('transferencia:apagar', (id) => historico.apagar(id));
+  tratar('transferencia:fixar', (id, v) => historico.fixar(id, !!v));
+  tratar('transferencia:limpar', () => historico.limpar());
+  tratar('transferencia:colar', async (id, nativa) => {
+    if (!(await historico.usar(id))) return false;
+    // Num programa do Linux (modo sistema): ele volta para a frente e recebe o Ctrl+V.
+    if (nativa && janelasLinux) {
+      await janelasLinux.ativar(String(nativa));
+      await new Promise((ok) => setTimeout(ok, 150));
+      return janelasLinux.colar();
+    }
+    // No Retro Computer: cola onde o cursor estava (a área de trabalho já devolveu o foco).
+    const wc = webContents.getFocusedWebContents() || (janela && janela.webContents);
+    if (wc && !wc.isDestroyed()) wc.paste();
+    return true;
+  });
+  // O firewall do Linux (o ufw).
+  const firewall = new (process.env.RETRO_FIREWALL_FALSO ? FirewallFalso : Firewall)();
+  tratar('firewall:estado', () => firewall.estado());
+  tratar('firewall:definir', (ligar, senha) => firewall.definir(!!ligar, String(senha || '')));
   tratar('janelasLinux:encaixar', (id, seta) => janelasLinux && janelasLinux.encaixar(String(id), String(seta)));
   tratar('janelasLinux:minimizarTodas', async () => {
     const n = janelasLinux ? await janelasLinux.minimizarTodas() : 0;
@@ -774,6 +805,8 @@ function registrarPonte() {
   tratar('bandeja:definirVolume', (o) => sistemaBandeja.volume.definir(o || {}));
   tratar('bandeja:brilho', () => sistemaBandeja.brilho.ler());
   tratar('bandeja:definirBrilho', (n) => sistemaBandeja.brilho.definir(n));
+  tratar('bandeja:perfil', () => sistemaBandeja.perfil.ler());
+  tratar('bandeja:definirPerfil', (p) => sistemaBandeja.perfil.definir(String(p)));
   tratar('bandeja:rede', () => sistemaBandeja.rede.estado());
   tratar('bandeja:redes', (procurar) => sistemaBandeja.rede.redes(!!procurar));
   tratar('bandeja:conectar', (ssid, senha) => sistemaBandeja.rede.conectar(String(ssid), senha ? String(senha) : ''));
@@ -872,8 +905,9 @@ function registrarPonte() {
     }
     return new Uint8Array((await janela.webContents.capturePage()).toPNG());
   });
-  tratar('captura:copiar', (png) => {
-    clipboard.writeImage(nativeImage.createFromBuffer(Buffer.from(png)));
+  tratar('captura:copiar', async (png) => {
+    // Desde o Electron 44, a área de transferência recebe itens como os do navigator.clipboard.
+    await clipboard.write([new ClipboardItem({ 'image/png': new Blob([Buffer.from(png)], { type: 'image/png' }) })]);
     return true;
   });
   tratar('sistema:zoom', (fator) => {
@@ -934,7 +968,7 @@ app.whenReady().then(async () => {
     const volume = new bandeja.Volume();
     let bateria = null;
     sistemaBandeja = {
-      volume, brilho: new bandeja.Brilho({ volume }), rede: new bandeja.Rede({ shell }),
+      volume, brilho: new bandeja.Brilho({ volume }), rede: new bandeja.Rede({ shell }), perfil: new bandeja.PerfilEnergia(),
       // A bateria não aparece nem some com o computador ligado: basta perguntar uma vez.
       bateria: async () => (bateria = bateria || bandeja.temBateria(process.platform, volume).then((existe) => ({ existe }))),
       aparelhos: async () => (process.platform === 'linux' ? bandeja.lerAparelhos() : []),
@@ -954,6 +988,9 @@ app.whenReady().then(async () => {
   registrarPonte();
   atalhosDoWindows();
   teclasDoSistema();
+  // O histórico da área de transferência: só na memória, lido de tempos em tempos.
+  historico = new HistoricoTransferencia({ clipboard, parado: () => powerMonitor.getSystemIdleTime(), aoMudar: () => enviar('transferencia:mudou') });
+  historico.ligar((config.obter().transferencia || {}).historico !== false);
   // A resolução escolhida em Painel › Aparência volta antes de a janela abrir (modo sistema).
   tela = new (process.env.RETRO_TELA_FALSA ? TelaFalsa : Tela)({ sistema: MODO_SISTEMA });
   const t = config.obter().tela;

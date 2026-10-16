@@ -14,6 +14,7 @@ import { atualizarEmSegundoPlano } from './apps/programas.js';
 import { programasAbertos } from './apps/craft.js';
 import { procurarAtualizacao } from './atualizacao.js';
 import { bloquearAoAbrir } from './bloqueio.js';
+import { iniciarLuzNoturna } from './luz-noturna.js';
 
 import './apps/explorador.js';
 import './apps/bloco.js';
@@ -36,6 +37,7 @@ import './apps/midia.js';
 import './apps/captura.js';
 import './apps/monitor.js';
 import './apps/atualizacoes.js';
+import './apps/transferencia.js';
 import './atalhos.js';
 
 const boot = document.getElementById('boot');
@@ -115,6 +117,7 @@ async function iniciar() {
   await atualizarProgramas().catch(() => { });
   aplicarFundo(estado.config.papel);
   await aplicarEscala(estado.config.escala);
+  iniciarLuzNoturna();
   const rapido = estado.config.inicioRapido || new URLSearchParams(location.search).has('rapido');
   if (!rapido) {
     await telaBios();
@@ -160,7 +163,7 @@ async function iniciar() {
 }
 
 // Para os testes e as capturas.
-window.__retro = { abrir, estado, janelas };
+window.__retro = { abrir, estado, janelas, definirConfig };
 
 iniciar().catch((e) => {
   console.error(e);

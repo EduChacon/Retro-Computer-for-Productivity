@@ -7,6 +7,7 @@
  *            macOS pelo osascript.
  *   Brilho:  Linux pelo /sys/class/backlight (e o logind ou o brightnessctl para mudar);
  *            Windows pelo WMI (só a tela do próprio computador portátil).
+ *   Energia: Linux pelo power-profiles-daemon (powerprofilesctl): economia, equilibrado, desempenho.
  *   Rede:    Linux pelo NetworkManager (nmcli): as redes Wi-Fi, conectar, desconectar;
  *            Windows pelo netsh (só o nome e o sinal da rede; conectar fica com o Windows).
  *
@@ -452,6 +453,53 @@ function lerAparelhos(raiz = '/sys/class/power_supply') {
   }).filter(Boolean);
 }
 
+/* ---------- Os modos de energia (o power-profiles-daemon do Linux) ---------- */
+
+// Na ordem da caixa da bateria: economia, equilibrado e desempenho.
+const PERFIS = ['power-saver', 'balanced', 'performance'];
+
+/** powerprofilesctl list → { atual, perfis } (os que o computador tem, na ordem de PERFIS), ou null. */
+function lerPerfis(texto) {
+  const achados = new Set();
+  let atual = null;
+  for (const linha of String(texto).split('\n')) {
+    const m = /^(\*)?\s*([a-z-]+):\s*$/.exec(linha);
+    if (!m || !PERFIS.includes(m[2])) continue;
+    achados.add(m[2]);
+    if (m[1]) atual = m[2];
+  }
+  if (!achados.size) return null;
+  return { atual, perfis: PERFIS.filter((p) => achados.has(p)) };
+}
+
+class PerfilEnergia {
+  constructor({ plataforma = process.platform } = {}) {
+    this.plataforma = plataforma;
+  }
+
+  disponivel() {
+    return this.plataforma === 'linux' && ['/usr/bin/powerprofilesctl', '/bin/powerprofilesctl'].some((p) => fs.existsSync(p));
+  }
+
+  /** { disponivel, atual, perfis } */
+  async ler() {
+    if (!this.disponivel()) return { disponivel: false };
+    try {
+      const r = lerPerfis(await rodar('powerprofilesctl', ['list'], { timeout: 4000 }));
+      return r ? { disponivel: true, ...r } : { disponivel: false };
+    } catch {
+      return { disponivel: false };
+    }
+  }
+
+  async definir(perfil) {
+    if (!PERFIS.includes(perfil) || !this.disponivel()) return this.ler();
+    // A sessão aberta pode trocar sem senha (o polkit do power-profiles-daemon).
+    await rodar('powerprofilesctl', ['set', perfil], { timeout: 6000 }).catch(() => { });
+    return this.ler();
+  }
+}
+
 /* ---------- A rede ---------- */
 
 class Rede {
@@ -596,6 +644,7 @@ class Rede {
 function bandejaFalsa() {
   let vol = { disponivel: true, como: 'teste', nivel: 60, mudo: false };
   let luz = { disponivel: true, nivel: 70 };
+  let perfil = { disponivel: true, atual: 'balanced', perfis: [...PERFIS] };
   let ligado = true;
   let atual = 'Casa';
   const redes = [
@@ -611,6 +660,7 @@ function bandejaFalsa() {
     aparelhos: async () => [{ nome: 'MX Master 3S', nivel: 80, carregando: false }],
     volume: { ler: async () => vol, definir: async (o) => { vol = { ...vol, ...(o.nivel != null ? { nivel: Math.round(o.nivel) } : {}), ...(o.mudo != null ? { mudo: !!o.mudo } : {}) }; return vol; }, fechar() { } },
     brilho: { ler: async () => luz, definir: async (n) => { luz = { disponivel: true, nivel: Math.max(5, Math.min(100, Math.round(n))) }; return luz; } },
+    perfil: { ler: async () => perfil, definir: async (p) => { if (PERFIS.includes(p)) perfil = { ...perfil, atual: p }; return perfil; } },
     rede: {
       estado: async () => estado(),
       redes: async () => (ligado ? redes.map((r) => ({ ...r, emUso: r.ssid === atual })).sort((a, b) => (b.emUso - a.emUso) || (b.sinal - a.sinal)) : []),
@@ -630,4 +680,4 @@ function bandejaFalsa() {
   };
 }
 
-module.exports = { Volume, Brilho, Rede, temBateria, lerAparelhos, bandejaFalsa, escolherLuz, lerWpctl, lerPactl, lerAmixer, lerMac, camposNmcli, lerDispositivos, lerRedesWifi, lerNetsh, erroCurto, VOLUME_WINDOWS, VolumeWindows };
+module.exports = { Volume, Brilho, Rede, PerfilEnergia, lerPerfis, PERFIS, temBateria, lerAparelhos, bandejaFalsa, escolherLuz, lerWpctl, lerPactl, lerAmixer, lerMac, camposNmcli, lerDispositivos, lerRedesWifi, lerNetsh, erroCurto, VOLUME_WINDOWS, VolumeWindows };

@@ -29,6 +29,10 @@ const PADRAO = {
   webapps: [],
   // As janelas: encaixar ao arrastar até as bordas e os cantos (os cantos magnéticos).
   janelas: { encaixe: true },
+  // A luz noturna: as cores mais quentes à noite (das 20h às 7h) ou sempre; a intensidade vai de 0 a 100.
+  luzNoturna: { ligada: false, quando: 'noite', de: 20, ate: 7, intensidade: 50 },
+  // O histórico da área de transferência (logotipo + V), só na memória.
+  transferencia: { historico: true },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,

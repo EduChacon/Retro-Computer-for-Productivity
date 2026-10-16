@@ -294,6 +294,7 @@ async function itensProgramas() {
   return [
     {
       rotulo: tr('Acessórios'), icone: 'pasta-programas', sub: () => [
+        { rotulo: tr('Área de transferência'), icone: 'transferencia', acao: () => abrir('transferencia') },
         { rotulo: tr('Bloco de notas'), icone: 'bloco', acao: () => abrir('bloco') },
         { rotulo: tr('Calculadora'), icone: 'calculadora', acao: () => abrir('calculadora') },
         { rotulo: tr('Captura de tela'), icone: 'captura', acao: () => abrir('captura') },
