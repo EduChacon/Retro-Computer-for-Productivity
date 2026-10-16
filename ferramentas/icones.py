@@ -808,6 +808,97 @@ COMPUTADOR_16 = [
     "................",
 ]
 
+# Os emblemas pequenos das pastas especiais (no ícone de 16 pontos), ponto a ponto: o emblema de
+# 16 reduzido não se lê.
+EMBLEMAS_16 = {
+    'pasta-mesa': [
+        "KKKKKKKKK",
+        "KWWWWWWGK",
+        "KWTTTTTGK",
+        "KWTutTTGK",
+        "KWTTTTTGK",
+        "KGGGGGGGK",
+        "KKKKKKKKK",
+        "...KGK...",
+        ".KKKKKKK.",
+    ],
+    'pasta-recebidos': [
+        "...KKK...",
+        "...KgK...",
+        "...KgK...",
+        ".KKKgKKK.",
+        "..KgggK..",
+        "...KgK...",
+        "K...K...K",
+        "KLLLLLLLK",
+        "KKKKKKKKK",
+    ],
+    'pasta-imagens': [
+        "KKKKKKKKK",
+        "KccccYYcK",
+        "KccccYYcK",
+        "KcccccccK",
+        "KccVVcccK",
+        "KcVVVVccK",
+        "KVVVVVVVK",
+        "KvvvvvvvK",
+        "KKKKKKKKK",
+    ],
+    'pasta-musicas': [
+        "...KKKKKK",
+        "...KBBBBK",
+        "...KKKKKK",
+        "...K....K",
+        "...K....K",
+        ".KKK..KKK",
+        "KBBK.KBBK",
+        "KBBK.KBBK",
+        ".KK...KK.",
+    ],
+    'pasta-videos': [
+        "KKKKKKKKK",
+        "KWKWKWKWK",
+        "KKKKKKKKK",
+        "KbbbbbbbK",
+        "KbcccccbK",
+        "KbbbbbbbK",
+        "KKKKKKKKK",
+        "KWKWKWKWK",
+        "KKKKKKKKK",
+    ],
+    'pasta-diario': [
+        ".K.....K.",
+        "KKKKKKKKK",
+        "KRRRRRRRK",
+        "KKKKKKKKK",
+        "KWWWWWWWK",
+        "KWKWKWKWK",
+        "KWWWWWWWK",
+        "KWKWKWWWK",
+        "KKKKKKKKK",
+    ],
+    'pasta-capturas': [
+        "...KKK...",
+        "KKKKKKKKK",
+        "KLLKKKLLK",
+        "KLKbbbKLK",
+        "KLKbcbKLK",
+        "KLKbbbKLK",
+        "KLLKKKLLK",
+        "KKKKKKKKK",
+    ],
+    'pasta-dos': [
+        "KKKKKKKKK",
+        "KBBBBBBBK",
+        "KKKKKKKKK",
+        "KKLKKKKKK",
+        "KKKLKKKKK",
+        "KKLKKKKKK",
+        "KKKKWWWKK",
+        "KKKKKKKKK",
+    ],
+}
+
 # O disquete do botão Iniciar (o logotipo do Retro Computer).
 LOGO_16 = [
     "................",
@@ -1144,6 +1235,23 @@ def gerar(serenity):
     # As Damas: duas pedras, desenhadas como as do jogo (src/sistema/js/jogos/pecas.js).
     feitos[32]['damas'] = damas(32)
     feitos[16]['damas'] = damas(16)
+
+    # As pastas especiais do disco C: (como as do Windows): a pasta amarela com o emblema de cada
+    # uma (a Área de trabalho com o computador próprio; o DOS com o desenho próprio; as outras com os
+    # ícones do SerenityOS). No pequeno, os emblemas desenhados à mão (EMBLEMAS_16).
+    emblemas = {
+        'pasta-mesa': grade(COMPUTADOR_16),
+        'pasta-recebidos': abrir_serenity(serenity, 16, 'download'),
+        'pasta-imagens': abrir_serenity(serenity, 16, 'filetype-image'),
+        'pasta-musicas': abrir_serenity(serenity, 16, 'filetype-music'),
+        'pasta-videos': abrir_serenity(serenity, 16, 'filetype-video'),
+        'pasta-diario': abrir_serenity(serenity, 16, 'filetype-calendar'),
+        'pasta-capturas': abrir_serenity(serenity, 16, 'app-screenshot'),
+        'pasta-dos': grade(dos(16)),
+    }
+    for nome, em in emblemas.items():
+        feitos[32][nome] = colar(feitos[32]['pasta'], em, 14, 12)
+        feitos[16][nome] = colar(feitos[16]['pasta'], grade(EMBLEMAS_16[nome]), 7, 16 - len(EMBLEMAS_16[nome]))
 
     # Os perfis: o usuário (desenho próprio) e o Painel › Usuários (o ícone de usuários do SerenityOS).
     feitos[32]['usuario'] = pessoa(32)
