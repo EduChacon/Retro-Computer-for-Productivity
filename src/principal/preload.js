@@ -93,6 +93,18 @@ contextBridge.exposeInMainWorld('retro', {
     pasta: () => chamar('diario:pasta'),
     hoje: () => chamar('diario:hoje'),
   },
+  // As opções de energia e a data e a hora (modo sistema).
+  energia: {
+    estado: () => chamar('energia:estado'),
+    definir: (opcoes) => chamar('energia:definir', opcoes),
+    tampa: (acao, senha) => chamar('energia:tampa', acao, senha),
+    configuracoesDoSistema: () => chamar('energia:configuracoesDoSistema'),
+  },
+  dataHora: {
+    estado: () => chamar('datahora:estado'),
+    definir: (o, senha) => chamar('datahora:definir', o, senha),
+    configuracoesDoSistema: () => chamar('datahora:configuracoesDoSistema'),
+  },
   // As saídas de som e os microfones (Painel › Sons).
   som: {
     estado: () => chamar('som:estado'),

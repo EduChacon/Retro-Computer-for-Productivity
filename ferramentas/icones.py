@@ -939,6 +939,9 @@ def gerar(serenity):
     feitos[32]['seguranca'] = colar(grade(escudo(32)), grade(CADEADO_16), 8, 7)
     feitos[16]['seguranca'] = grade(escudo(16))
 
+    # As Opções de energia: a bateria carregando da bandeja, ampliada no 32.
+    feitos[16]['energia'] = grade(bateria(4, True))
+    feitos[32]['energia'] = grade(bateria(4, True)).resize((32, 32), Image.NEAREST)
     # O microfone (a gravação nas Propriedades de Sons): desenho próprio.
     feitos[32]['microfone'] = grade(microfone(32))
     feitos[16]['microfone'] = grade(microfone(16))

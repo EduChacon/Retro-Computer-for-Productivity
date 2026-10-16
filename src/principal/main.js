@@ -40,6 +40,8 @@ const { CopiaSeguranca, destinoValido, venceu } = require('./copia');
 const { Firefox, CLASSE: CLASSE_FIREFOX } = require('./firefox');
 const { Visualizador } = require('./visualizar');
 const { Som, SomFalso } = require('./som');
+const { Energia } = require('./energia');
+const { DataHora, DataHoraFalsa } = require('./datahora');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -122,6 +124,7 @@ let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
 let loja = null; // os programas do Linux pelo Flathub (loja.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
+let energiaOpcoes = null; // as opções de energia do modo sistema (energia.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
@@ -897,6 +900,30 @@ function registrarPonte() {
     config.definir({ mouse: limparEscolhas(escolhas) });
     return mouse.aplicar(config.obter().mouse);
   });
+  // As opções de energia (só no modo sistema; fora dele, as do computador principal).
+  tratar('energia:estado', async () => (energiaOpcoes ? { disponivel: true, ...(await energiaOpcoes.estado()) } : { disponivel: false }));
+  tratar('energia:definir', async (opcoes) => {
+    if (!energiaOpcoes) return { ok: false };
+    const { opcoesDe } = require('./energia');
+    config.definir({ energia: opcoesDe(opcoes) });
+    await energiaOpcoes.aplicarTela();
+    return { ok: true, opcoes: energiaOpcoes.opcoes() };
+  });
+  tratar('energia:tampa', (acao, senha) => (energiaOpcoes ? energiaOpcoes.definirTampa(String(acao || ''), String(senha || '')) : { ok: false }));
+  tratar('energia:configuracoesDoSistema', () => {
+    if (process.platform === 'win32') return shell.openExternal('ms-settings:powersleep').then(() => true);
+    if (process.platform === 'darwin') return shell.openExternal('x-apple.systempreferences:com.apple.preference.battery').then(() => true);
+    return false;
+  });
+  // A data, a hora e o fuso (só no modo sistema, pelo timedatectl).
+  const dataHora = MODO_SISTEMA ? (process.env.RETRO_DATAHORA_FALSA ? new DataHoraFalsa() : new DataHora({ comoAdmin: sistemaLinux.comoAdmin })) : null;
+  tratar('datahora:estado', () => (dataHora ? dataHora.estado() : { disponivel: false }));
+  tratar('datahora:definir', (o, senha) => (dataHora ? dataHora.definir(o || {}, String(senha || '')) : { ok: false }));
+  tratar('datahora:configuracoesDoSistema', () => {
+    if (process.platform === 'win32') return shell.openExternal('ms-settings:dateandtime').then(() => true);
+    if (process.platform === 'darwin') return shell.openExternal('x-apple.systempreferences:com.apple.preference.datetime').then(() => true);
+    return false;
+  });
   // As saídas de som e os microfones (Painel › Sons); fora do Linux, as configurações do sistema.
   const som = process.env.RETRO_SOM_FALSO ? new SomFalso() : new Som();
   tratar('som:estado', () => som.estado());
@@ -1175,6 +1202,16 @@ app.whenReady().then(async () => {
       bateria: async () => (bateria = bateria || bandeja.temBateria(process.platform, volume).then((existe) => ({ existe }))),
       aparelhos: async () => (process.platform === 'linux' ? bandeja.lerAparelhos() : []),
     };
+  }
+  // As opções de energia do modo sistema: a tela e a suspensão (na tomada e na bateria) e a tampa.
+  if (MODO_SISTEMA) {
+    energiaOpcoes = new Energia({
+      config: () => config.obter(), powerMonitor, comoAdmin: sistemaLinux.comoAdmin,
+      suspender: () => sistemaLinux.energia('suspender'),
+      temBateria: () => sistemaBandeja.bateria().then((b) => !!(b && b.existe)),
+      falso: !!process.env.RETRO_ENERGIA_FALSA,
+    });
+    energiaOpcoes.iniciar();
   }
   await abrirDisco();
   // Os pendrives e cartões (RETRO_UNIDADES_FALSAS: uma pasta comum, para os testes).

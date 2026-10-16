@@ -362,7 +362,9 @@ const TOPICOS = [
 <p><b>Teclado</b>: o layout (Português ABNT2, EUA internacional com teclas mortas e outros), um campo para testar os acentos e a aba <b>Atalhos</b>.</p>
 <p><b>Cópia de segurança</b>: o disco C: inteiro (com a Lixeira e as versões anteriores) vai para outra pasta (um disco externo, um pendrive, a pasta de uma nuvem), todo dia ou toda semana, ou na hora. A cópia só acrescenta e atualiza: nada é apagado nela. Com o destino desligado, ela espera e é feita quando ele voltar.</p>
 <p><b>Mouse</b>: no Retro Computer como sistema, o botão principal (destro ou canhoto, com uma pasta para testar o clique duplo), a velocidade do ponteiro, a aceleração e a rolagem natural; na aba <b>Touchpad</b>, tocar para clicar, rolar e clicar com dois dedos e desligá-lo enquanto se digita ou com um mouse ligado. As escolhas valem também para o mouse sem fio ligado depois. Fora do modo sistema, o mouse segue as configurações do computador principal.</p>
-<p><b>Sons</b>, <b>Data e hora</b>, <b>Adicionar ou remover programas</b>, <b>Foco</b> e <b>Sobre o Retro Computer</b>.</p>`],
+<p><b>Sons</b>: os sons do sistema e, na aba <b>Áudio</b>, a saída de som e o microfone preferidos.</p>
+<p><b>Opções de energia</b> (com o Retro Computer como sistema): depois de quanto tempo parado a tela apaga e o computador suspende, na tomada e na bateria (com um som tocando, ele não suspende), e o que a tampa do notebook faz.</p>
+<p><b>Data e hora</b>: com o Retro Computer como sistema, acertar a hora pela internet ou à mão e escolher o fuso horário (pede a senha de administrador). <b>Adicionar ou remover programas</b>, <b>Foco</b> e <b>Sobre o Retro Computer</b>.</p>`],
     en: ['Control Panel', `
 <h2>Settings</h2>
 <p><b>Appearance</b>: the background color and pattern, the screen saver (Flying through the stars, Colored lines or Clock), the effects (the magnetic corners of the windows and the night light, with less blue at night), full screen, the pixel size (so the letters stay sharp on any monitor), the screen area (the resolution, with Retro Computer as the system) and opening Retro Computer when signing in to the computer.</p>
@@ -378,7 +380,9 @@ const TOPICOS = [
 <p><b>Keyboard</b>: the layout (Brazilian ABNT2, US international with dead keys and others), a field to try the accents and the <b>Shortcuts</b> tab.</p>
 <p><b>Backup</b>: the whole disk C: (with the Trash and the previous versions) goes to another folder (an external drive, a USB drive, a cloud folder), every day or every week, or right away. The backup only adds and updates: nothing is deleted in it. With the destination disconnected, it waits and is made when it comes back.</p>
 <p><b>Mouse</b>: with Retro Computer as the system, the primary button (right- or left-handed, with a folder to try the double-click), the pointer speed, acceleration and natural scrolling; on the <b>Touchpad</b> tab, tap to click, two-finger scrolling and clicking, and turning it off while typing or when a mouse is connected. The choices also apply to a wireless mouse connected later. Outside system mode, the mouse follows the main computer's settings.</p>
-<p><b>Sounds</b>, <b>Date and Time</b>, <b>Add or Remove Programs</b>, <b>Focus</b> and <b>About Retro Computer</b>.</p>`],
+<p><b>Sounds</b>: the system sounds and, on the <b>Audio</b> tab, the preferred sound output and microphone.</p>
+<p><b>Power Options</b> (with Retro Computer as the system): after how long idle the screen turns off and the computer suspends, plugged in and on battery (with a sound playing, it does not suspend), and what the laptop lid does.</p>
+<p><b>Date and Time</b>: with Retro Computer as the system, setting the time from the internet or by hand and choosing the time zone (it asks for the administrator password). <b>Add or Remove Programs</b>, <b>Focus</b> and <b>About Retro Computer</b>.</p>`],
     es: ['Panel de control', `
 <h2>Configuración</h2>
 <p><b>Apariencia</b>: el color y el patrón del fondo, el protector de pantalla (Volando entre estrellas, Líneas de colores o Reloj), los efectos (las esquinas magnéticas de las ventanas y la luz nocturna, con menos azul de noche), la pantalla completa, el tamaño de los píxeles (para que las letras queden nítidas en cualquier monitor), el área de la pantalla (la resolución, con Retro Computer como sistema) y abrir Retro Computer al entrar en la computadora.</p>
@@ -394,7 +398,9 @@ const TOPICOS = [
 <p><b>Teclado</b>: la distribución (portugués ABNT2, EE. UU. internacional con teclas muertas y otras), un campo para probar los acentos y la pestaña <b>Atajos</b>.</p>
 <p><b>Copia de seguridad</b>: el disco C: entero (con la Papelera y las versiones anteriores) va a otra carpeta (un disco externo, una memoria USB, la carpeta de una nube), todos los días o todas las semanas, o en el momento. La copia solo agrega y actualiza: nada se borra en ella. Con el destino desconectado, espera y se hace cuando vuelva.</p>
 <p><b>Mouse</b>: con Retro Computer como sistema, el botón principal (diestro o zurdo, con una carpeta para probar el doble clic), la velocidad del puntero, la aceleración y el desplazamiento natural; en la pestaña <b>Panel táctil</b>, tocar para hacer clic, desplazar y hacer clic con dos dedos y desactivarlo mientras se escribe o con un mouse conectado. Las opciones valen también para el mouse inalámbrico conectado después. Fuera del modo sistema, el mouse sigue la configuración de la computadora principal.</p>
-<p><b>Sonidos</b>, <b>Fecha y hora</b>, <b>Agregar o quitar programas</b>, <b>Enfoque</b> y <b>Acerca de Retro Computer</b>.</p>`],
+<p><b>Sonidos</b>: los sonidos del sistema y, en la pestaña <b>Audio</b>, la salida de sonido y el micrófono preferidos.</p>
+<p><b>Opciones de energía</b> (con Retro Computer como sistema): después de cuánto tiempo inactiva se apaga la pantalla y se suspende la computadora, enchufada y con batería (con un sonido en reproducción, no se suspende), y qué hace la tapa del portátil.</p>
+<p><b>Fecha y hora</b>: con Retro Computer como sistema, ajustar la hora por internet o a mano y elegir la zona horaria (pide la contraseña de administrador). <b>Agregar o quitar programas</b>, <b>Enfoque</b> y <b>Acerca de Retro Computer</b>.</p>`],
   },
   {
     id: 'senha', icone: 'cadeado',

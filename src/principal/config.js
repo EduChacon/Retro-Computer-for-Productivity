@@ -40,6 +40,8 @@ const PADRAO = {
   diario: { ligado: false },
   // A cópia de segurança do disco C: (todo dia ou toda semana), para uma pasta fora dele.
   copia: { ligada: false, destino: '', quando: 'diaria', ultima: 0, resultado: null },
+  // As opções de energia do modo sistema (minutos; 0 = nunca): a tela e a suspensão, na tomada e na bateria.
+  energia: { telaTomada: 15, telaBateria: 5, suspenderTomada: 0, suspenderBateria: 30 },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,

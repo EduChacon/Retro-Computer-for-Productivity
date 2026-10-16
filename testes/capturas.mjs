@@ -379,7 +379,7 @@ const ROTEIROS = {
   },
   async caixas() {
     // Cada caixa do Painel de controle, aba a aba: o conteúdo cabe sem rolar? (sem fotos)
-    for (const secao of ['aparencia', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'sobre']) {
+    for (const secao of ['aparencia', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'copia', 'impressoras', 'sobre']) {
       await fecharTudo();
       await abrir('painel', { secao });
       await pagina.waitForTimeout(1200);
@@ -944,6 +944,39 @@ const ROTEIROS = {
 
   // A bandeja (com RETRO_BANDEJA_FALSA=1: o volume, o brilho, a bateria e o Wi-Fi de mentira):
   // as caixinhas, conectar a uma rede protegida, as notificações e a data no relógio.
+  // As opções de energia e a data e a hora do modo sistema (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1
+  // e RETRO_DATAHORA_FALSA=1; a senha de teste é "certa").
+  async energia() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'energia' });
+    await pagina.waitForTimeout(900);
+    await foto('energia');
+    const selects = pagina.locator('.janela.ativa select');
+    await selects.nth(3).selectOption('60');
+    await selects.nth(4).selectOption('nada');
+    await pagina.click(`.janela.ativa button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(500);
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(700);
+    console.log('energia:', JSON.stringify(await pagina.evaluate(() => retro.energia.estado())));
+    await abrir('painel', { secao: 'data' });
+    await pagina.waitForTimeout(1200);
+    await foto('data-hora');
+    await pagina.click(`.janela.ativa .abas > div:has-text("${T('Fuso horário')}")`);
+    await pagina.waitForTimeout(500);
+    await foto('data-fuso');
+    await pagina.selectOption('.janela.ativa select[size]', 'Europe/Lisbon');
+    await pagina.click(`.janela.ativa .abas > div:has-text("${T('Data e hora')}")`);
+    await pagina.click('.janela.ativa input[type=checkbox] >> nth=0');
+    await pagina.click(`.janela.ativa button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(500);
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(700);
+    console.log('data e hora:', JSON.stringify(await pagina.evaluate(() => retro.dataHora.estado().then((e) => ({ fuso: e.fuso, ntp: e.ntp })))));
+  },
+
   // A saída de som e o microfone (com RETRO_SOM_FALSO=1 e RETRO_BANDEJA_FALSA=1): a aba Áudio
   // das Propriedades de Sons e a escolha da saída na caixa do volume.
   async som() {

@@ -34,7 +34,8 @@ const ITENS = [
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'mouse', rotulo: marcar('Mouse'), icone: 'mouse', descricao: marcar('A velocidade do ponteiro, o botão principal, a rolagem e o touchpad.'), abrir: () => dialogoMouse() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Os sons do sistema, a saída de som e o microfone.'), abrir: (args) => dialogoSons(args) },
-  { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('Mostra a data e a hora do computador.'), abrir: () => dialogoData() },
+  { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('A data, a hora e o fuso horário do computador.'), abrir: () => dialogoData() },
+  { chave: 'energia', rotulo: marcar('Opções de energia'), icone: 'energia', descricao: marcar('Quando apagar a tela e suspender o computador parado, e o que a tampa do notebook faz.'), abrir: () => dialogoEnergia() },
   { chave: 'programas', rotulo: marcar('Adicionar ou remover programas'), icone: 'programas-caixa', descricao: marcar('Instala, atualiza e remove programas.'), abrir: () => abrir('programas') },
   { chave: 'foco', rotulo: marcar('Foco'), icone: 'foco', descricao: marcar('Abre o relógio de foco (Pomodoro).'), abrir: () => abrir('foco') },
   { chave: 'sobre', rotulo: marcar('Sobre o Retro Computer'), icone: 'computador', descricao: marcar('Versão, licenças e créditos.'), abrir: () => dialogoSobre() },
@@ -1168,6 +1169,82 @@ async function dialogoFila(p) {
 
 /* Data e hora */
 
+/* Opções de energia */
+
+// Os tempos das listas, em minutos (0 = nunca), como os do Windows.
+const TEMPOS = [0, 1, 2, 3, 5, 10, 15, 20, 25, 30, 45, 60, 120, 180, 300];
+const rotuloTempo = (m) => (!m ? tr('Nunca') : m < 60 ? tr('Depois de {n} min', { n: m }) : tr('Depois de {n} h', { n: m / 60 }));
+
+async function dialogoEnergia() {
+  const titulo = tr('Propriedades de Opções de energia');
+  const aberta = janelas.find((x) => x.titulo === titulo);
+  if (aberta) return aberta.focar();
+  const est = await retro.energia.estado().catch(() => ({ disponivel: false }));
+  const cabeca = (texto) => h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('energia', 32), h('div', { style: { lineHeight: '13px' } }, texto));
+  if (!est.disponivel) {
+    const plat = estado.config.plataforma;
+    const botao = plat === 'win32' || plat === 'darwin'
+      ? h('div.acoes', h('button', { type: 'button', on: { click: () => retro.energia.configuracoesDoSistema().catch(() => { }) } }, tr('Abrir as configurações do sistema…')))
+      : null;
+    return dialogoBase({ titulo, icone: 'energia', larg: 380, abas: [{ titulo: tr('Energia'), conteudo: h('div', cabeca(tr('A tela e a suspensão seguem as opções de energia do computador principal.')), botao) }] });
+  }
+  const o = est.opcoes;
+  const lista = (valor) => {
+    const tempos = TEMPOS.includes(valor) ? TEMPOS : [...TEMPOS, valor].sort((a, b) => a - b);
+    return h('select', { style: { width: '100%' } }, ...tempos.map((m) => h('option', { value: m, selected: m === valor }, rotuloTempo(m))));
+  };
+  const sel = { telaTomada: lista(o.telaTomada), telaBateria: lista(o.telaBateria), suspenderTomada: lista(o.suspenderTomada), suspenderBateria: lista(o.suspenderBateria) };
+  const caixa = (s) => h('div.select-caixa', { style: { width: '100%', minWidth: '0' } }, s);
+  const comBateria = est.bateria;
+  const grade = h('div', { style: { display: 'grid', gridTemplateColumns: comBateria ? 'auto 1fr 1fr' : 'auto 1fr', alignItems: 'center', gap: '6px 8px' } },
+    ...(comBateria ? [h('span'), h('b', tr('Na tomada')), h('b', tr('Na bateria'))] : []),
+    h('span', tr('Apagar a tela:')), caixa(sel.telaTomada), comBateria ? caixa(sel.telaBateria) : null,
+    h('span', tr('Suspender:')), caixa(sel.suspenderTomada), comBateria ? caixa(sel.suspenderBateria) : null);
+  const tampa = h('select', { style: { width: '100%' } },
+    h('option', { value: 'suspender' }, tr('Suspender')), h('option', { value: 'nada' }, tr('Não fazer nada')), h('option', { value: 'desligar' }, tr('Desligar')));
+  tampa.value = est.tampa;
+  const conteudo = h('div',
+    cabeca(tr('Com o computador parado, a tela apaga e ele suspende depois do tempo escolhido. Na volta, a senha da tela de bloqueio é pedida (se houver).')),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Com o computador parado')), grade,
+      h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '8px' } }, tr('Com um som tocando (um vídeo, uma música), o computador não suspende sozinho.'))),
+    est.tampaPossivel ? h('fieldset', { style: { margin: '0' } }, h('legend', tr('Tampa do notebook')),
+      h('div', { style: { display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: '8px' } }, h('span', tr('Ao fechar a tampa:')), caixa(tampa))) : null);
+  let tampaAntes = est.tampa;
+  dialogoBase({
+    titulo, icone: 'energia', larg: comBateria ? 460 : 400,
+    abas: [{ titulo: tr('Energia'), conteudo }],
+    aoAplicar: async () => {
+      const opcoes = Object.fromEntries(Object.entries(sel).map(([k, s]) => [k, Number(s.value)]));
+      if (!comBateria) { opcoes.telaBateria = opcoes.telaTomada; opcoes.suspenderBateria = opcoes.suspenderTomada; }
+      await retro.energia.definir(opcoes);
+      if (est.tampaPossivel && tampa.value !== tampaAntes) {
+        const r = await comSenhaAdmin(tr('Para mudar o que a tampa faz, digite a senha de administrador do Linux:'), (senha) => retro.energia.tampa(tampa.value, senha));
+        if (r && r.ok) {
+          tampaAntes = tampa.value;
+          if (r.reiniciar) info(tr('A escolha da tampa vale depois de reiniciar o computador.'), tr('Opções de energia'));
+        } else if (r && !r.senhaErrada && !r.naoPode) erro(tr('Não foi possível mudar o que a tampa faz: {erro}', { erro: r.erro || '?' }));
+      }
+    },
+  });
+}
+
+/* Data e hora */
+
+/** O deslocamento de um fuso agora, em minutos ("GMT-3" → -180). */
+function deslocamento(fuso, agora = new Date()) {
+  try {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: fuso, timeZoneName: 'longOffset' }).formatToParts(agora).find((x) => x.type === 'timeZoneName');
+    const m = /GMT([+-])(\d{2}):(\d{2})/.exec(p ? p.value : '');
+    return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0;
+  } catch { return 0; }
+}
+
+const rotuloFuso = (fuso, min) => {
+  const s = min < 0 ? '-' : '+';
+  const a = Math.abs(min);
+  return `(GMT${s}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}) ${fuso.replace(/_/g, ' ').replace(/\//g, ' / ')}`;
+};
+
 function dialogoData() {
   const relogio = h('canvas', { width: 120, height: 120, style: { width: '120px', height: '120px', display: 'block', margin: '0 auto 8px', imageRendering: 'auto' } });
   const texto = h('div', { style: { textAlign: 'center', fontWeight: 'bold' } });
@@ -1196,17 +1273,68 @@ function dialogoData() {
   desenhar();
   const t = setInterval(desenhar, 1000);
   const chkData = h('input', { type: 'checkbox', checked: !!(estado.config.barra && estado.config.barra.data) });
-  const conteudo = h('div', relogio, texto,
-    h('p', { style: { color: '#808080', textAlign: 'center', marginTop: '10px' } }, tr('A data e a hora vêm do computador principal.')),
-    h('p', { style: { color: '#808080', textAlign: 'center' } }, tr('Fuso horário: {fuso}', { fuso: Intl.DateTimeFormat().resolvedOptions().timeZone })),
-    h('fieldset', { style: { margin: '8px 0 0' } }, h('legend', tr('Barra de tarefas')),
-      h('label', chkData, h('span', tr('Mostrar a data embaixo da hora')))));
-  const j = dialogoBase({
-    titulo: tr('Propriedades de Data e hora'), icone: 'relogio', larg: 320, abas: [{ titulo: tr('Data e hora'), conteudo }],
-    aoAplicar: () => definirConfig({ barra: { data: chkData.checked } }),
+  const barra = h('fieldset', { style: { margin: '8px 0 0' } }, h('legend', tr('Barra de tarefas')),
+    h('label', chkData, h('span', tr('Mostrar a data embaixo da hora'))));
+  const titulo = tr('Propriedades de Data e hora');
+  const aberta = janelas.find((x) => x.titulo === titulo);
+  if (aberta) { clearInterval(t); return aberta.focar(); }
+  retro.dataHora.estado().catch(() => ({ disponivel: false })).then((dh) => {
+    if (!dh.disponivel) {
+      // Fora do modo sistema, a data e a hora são as do computador principal.
+      const plat = estado.config.plataforma;
+      const conteudo = h('div', relogio, texto,
+        h('p', { style: { color: '#808080', textAlign: 'center', marginTop: '10px' } }, tr('A data e a hora vêm do computador principal.')),
+        h('p', { style: { color: '#808080', textAlign: 'center' } }, tr('Fuso horário: {fuso}', { fuso: Intl.DateTimeFormat().resolvedOptions().timeZone })),
+        plat === 'win32' || plat === 'darwin' ? h('div', { style: { textAlign: 'center' } }, h('button', { type: 'button', on: { click: () => retro.dataHora.configuracoesDoSistema().catch(() => { }) } }, tr('Abrir as configurações do sistema…'))) : null,
+        barra);
+      const j = dialogoBase({ titulo, icone: 'relogio', larg: 320, abas: [{ titulo: tr('Data e hora'), conteudo }], aoAplicar: () => definirConfig({ barra: { data: chkData.checked } }) });
+      if (j) j.ev.on('fechada', () => clearInterval(t)); else clearInterval(t);
+      return;
+    }
+    // No modo sistema: a hora pela internet (ou à mão) e o fuso horário, como no Windows.
+    const ntp = h('input', { type: 'checkbox', checked: dh.ntp, disabled: !dh.podeNtp });
+    const agora = new Date();
+    const dois = (n) => String(n).padStart(2, '0');
+    const campoData = h('input', { type: 'date', value: `${agora.getFullYear()}-${dois(agora.getMonth() + 1)}-${dois(agora.getDate())}` });
+    const campoHora = h('input', { type: 'time', step: 1, value: `${dois(agora.getHours())}:${dois(agora.getMinutes())}:${dois(agora.getSeconds())}` });
+    let mexeu = false;
+    for (const c of [campoData, campoHora]) c.addEventListener('input', () => { mexeu = true; });
+    const travar = () => { campoData.disabled = ntp.checked; campoHora.disabled = ntp.checked; };
+    ntp.addEventListener('change', travar);
+    travar();
+    const sinc = h('div', { style: { color: '#404040', lineHeight: '13px', marginLeft: '18px' } },
+      dh.ntp ? (dh.sincronizado ? tr('A hora está acertada pela internet.') : tr('A hora ainda não foi acertada pela internet (sem conexão?).')) : '');
+    const abaHora = h('div', relogio, texto,
+      h('fieldset', { style: { margin: '10px 0 0' } }, h('legend', tr('Acertar a hora')),
+        h('label', ntp, h('span', tr('Acertar a data e a hora pela internet automaticamente'))), sinc,
+        h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, h('span', tr('Data:')), campoData, h('span', tr('Hora:')), campoHora)),
+      barra);
+    const fusos = dh.fusos.map((f) => ({ f, m: deslocamento(f) })).sort((a, b) => (a.m - b.m) || a.f.localeCompare(b.f));
+    const selFuso = h('select', { size: 12, style: { width: '100%' } }, ...fusos.map((x) => h('option', { value: x.f, selected: x.f === dh.fuso }, rotuloFuso(x.f, x.m))));
+    const abaFuso = h('div',
+      h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('internet', 32), h('div', { style: { lineHeight: '13px' } }, tr('Escolha o fuso horário do lugar onde o computador está. A hora de verão segue o fuso sozinha.'))),
+      selFuso);
+    requestAnimationFrame(() => { const o = selFuso.selectedOptions[0]; if (o) o.scrollIntoView({ block: 'center' }); });
+    const j = dialogoBase({
+      titulo, icone: 'relogio', larg: 400,
+      abas: [{ titulo: tr('Data e hora'), conteudo: abaHora }, { titulo: tr('Fuso horário'), conteudo: abaFuso }],
+      aoAplicar: async () => {
+        await definirConfig({ barra: { data: chkData.checked } });
+        const pedido = {};
+        if (selFuso.value && selFuso.value !== dh.fuso) pedido.fuso = selFuso.value;
+        if (dh.podeNtp && ntp.checked !== dh.ntp) pedido.ntp = ntp.checked;
+        if (!ntp.checked && mexeu && campoData.value && campoHora.value) pedido.hora = `${campoData.value} ${campoHora.value.length === 5 ? campoHora.value + ':00' : campoHora.value}`;
+        if (!Object.keys(pedido).length) return;
+        const r = await comSenhaAdmin(tr('Para mudar a data, a hora ou o fuso horário, digite a senha de administrador do Linux:'), (senha) => retro.dataHora.definir(pedido, senha));
+        if (r && r.ok) {
+          if (pedido.fuso) dh.fuso = pedido.fuso;
+          if (pedido.ntp != null) dh.ntp = pedido.ntp;
+          mexeu = false;
+        } else if (r && !r.senhaErrada && !r.naoPode) erro(tr('Não foi possível mudar a data e a hora: {erro}', { erro: r.erro || '?' }));
+      },
+    });
+    if (j) j.ev.on('fechada', () => clearInterval(t)); else clearInterval(t);
   });
-  if (j) j.ev.on('fechada', () => clearInterval(t));
-  else clearInterval(t);
 }
 
 /* Sobre */

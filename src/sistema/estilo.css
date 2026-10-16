@@ -169,6 +169,8 @@ select {
   outline: none;
   position: relative;
 }
+/* A lista (select com size): a altura das linhas, sem a seta. */
+select[size] { height: auto; background-image: none; padding: 2px; }
 .select-caixa { position: relative; display: inline-block; }
 .select-caixa::after {
   content: '';
@@ -311,7 +313,7 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 .mesa-icones label { gap: 4px; }
 
 /* O Diário de trabalho */
-.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
+select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
 
 /* O Mapa de caracteres */
 .cm-linha { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
