@@ -1059,6 +1059,22 @@ button.cm-rosto:active { padding: 1px 0 0 1px; }
 .breakout .corpo { padding: 2px; }
 .bo-campo { display: block; outline: none; box-shadow: 0 0 0 1px var(--escuro); touch-action: none; image-rendering: pixelated; }
 
+/* Painel › Barra de tarefas e menu Iniciar: as listas dos fixados */
+.lp-topo { display: flex; gap: 6px; }
+.lp-lista { flex: 1; min-width: 0; height: 92px; overflow-y: auto; padding: 2px; user-select: none; }
+.lp-linha { display: flex; align-items: center; gap: 5px; padding: 1px 3px; white-space: nowrap; cursor: var(--cur-default, default); }
+.lp-linha span { overflow: hidden; text-overflow: ellipsis; }
+.lp-linha.sel { background: var(--selecao); color: var(--selecao-texto); }
+.lp-vazio { color: #808080; padding: 3px; line-height: 13px; white-space: normal; }
+.lp-botoes { display: flex; flex-direction: column; gap: 4px; }
+.lp-botoes button { min-width: 84px; }
+.lp-por { display: flex; gap: 6px; margin-top: 6px; }
+.lp-por button { min-width: 84px; }
+.lp-itens { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+/* O menu Iniciar com os ícones pequenos (como a opção do Windows 95): mais baixo e sem a faixa. */
+.menu.iniciar.pequenos .opcao { height: 22px; gap: 6px; }
+.menu.iniciar.pequenos .opcao img { width: 16px; height: 16px; }
+
 /* Damas e Xadrez: o tabuleiro com as coordenadas e o painel dos lances */
 .jogo-tabuleiro .corpo { padding: 0; }
 .tab-jogo { display: flex; gap: 8px; padding: 8px; background: var(--face); }

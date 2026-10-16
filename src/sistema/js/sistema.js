@@ -199,6 +199,8 @@ export async function abrirArquivo(rel, { com } = {}) {
 /* ---------- Documentos recentes ---------- */
 
 export function adicionarRecente(rel) {
+  // Painel › Barra de tarefas e menu Iniciar › Guardar os documentos abertos recentemente.
+  if (estado.config.iniciar && estado.config.iniciar.recentes === false) return;
   const lista = [rel, ...(estado.config.recentes || []).filter((r) => r !== rel)].slice(0, 15);
   definirConfig({ recentes: lista }).catch(() => { });
 }

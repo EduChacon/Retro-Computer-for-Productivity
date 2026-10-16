@@ -57,6 +57,16 @@ export function montarBarra() {
   barra.addEventListener('contextmenu', (e) => {
     if (e.target.closest('#tarefas button')) return;
     e.preventDefault();
+    // O botão direito no Iniciar, como no Windows 95: abrir o menu, explorar e as propriedades.
+    if (e.target.closest('#iniciar')) {
+      return abrirMenu([
+        { rotulo: tr('&Abrir'), negrito: true, acao: () => abrirIniciar() },
+        { rotulo: tr('&Explorar'), acao: () => abrir('explorador', { pasta: pastaDocs() }) },
+        { rotulo: tr('&Localizar'), acao: () => abrir('localizar') },
+        { separador: true },
+        { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'barra', aba: 1 }) },
+      ], { x: e.clientX, y: e.clientY, acima: true });
+    }
     if (e.target.closest('.relogio')) {
       return abrirMenu([
         { rotulo: tr('&Ajustar data e hora…'), negrito: true, acao: () => abrir('painel', { secao: 'data' }) },
@@ -78,13 +88,13 @@ export function montarBarra() {
         ],
       },
       { separador: true },
-      { rotulo: tr('P&ropriedades'), acao: () => abrir('painel') },
+      { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'barra' }) },
     ], { x: e.clientX, y: e.clientY, acima: true });
   });
 
   evJanelas.on('mudou', desenharTarefas);
   eventosNativas.on('mudou', desenharTarefas);
-  evSistema.on('config', () => { tique(); desenharTarefas(); });
+  evSistema.on('config', () => { tique(); desenharTarefas(); busca.hidden = !mostrarBusca(); });
   evSistema.on('programas', desenharTarefas);
   desenharTarefas();
   evSistema.on('foco', (f) => {
@@ -160,6 +170,43 @@ export function fixar(chave) {
 
 export function desafixar(chave) {
   return definirConfig({ barra: { fixados: fixados().filter((k) => k !== chave) } });
+}
+
+/* ---------- O menu Iniciar configurável (Painel › Barra de tarefas e menu Iniciar) ---------- */
+
+const cfgIniciar = () => estado.config.iniciar || {};
+/** Os programas fixados no alto do menu Iniciar (as mesmas chaves da barra). */
+export const fixadosIniciar = () => cfgIniciar().fixados || [];
+export const estaNoIniciar = (chave) => fixadosIniciar().includes(chave);
+
+export function fixarNoIniciar(chave) {
+  if (estaNoIniciar(chave) || !programaDe(chave)) return Promise.resolve();
+  return definirConfig({ iniciar: { fixados: [...fixadosIniciar(), chave] } });
+}
+
+export function desafixarDoIniciar(chave) {
+  return definirConfig({ iniciar: { fixados: fixadosIniciar().filter((k) => k !== chave) } });
+}
+
+/** Os itens do menu Iniciar que dá para esconder (o Programas e o Desligar ficam sempre). */
+export const ITENS_INICIAR = [
+  { id: 'loja', rotulo: marcar('Loja de programas') },
+  { id: 'documentos', rotulo: marcar('Documentos') },
+  { id: 'configuracoes', rotulo: marcar('Configurações') },
+  { id: 'localizar', rotulo: marcar('Localizar') },
+  { id: 'ajuda', rotulo: marcar('Ajuda') },
+  { id: 'executar', rotulo: marcar('Executar') },
+  { id: 'bloquear', rotulo: marcar('Bloquear o computador') },
+];
+const ocultoNoIniciar = (id) => (cfgIniciar().ocultos || []).includes(id);
+export const guardaRecentes = () => cfgIniciar().recentes !== false;
+
+/** Os programas que podem ser fixados (no menu Iniciar ou na barra), para a lista do Painel. */
+export function programasFixaveis() {
+  const embutidos = ['explorador', 'navegador', 'correio', 'claude', 'bloco', 'calculadora', 'captura', 'diario', 'foco', 'caracteres',
+    'monitor', 'prompt', 'midia', 'imagens', 'transferencia', 'painel', 'programas', 'paciencia', 'campo-minado', 'breakout', 'damas', 'xadrez'];
+  const chaves = [...embutidos, ...estado.instalados.map((p) => 'craft:' + p.id), ...(estado.config.webapps || []).map((w) => 'webapp:' + w.id), ...noMenu().map((id) => 'nativo:' + id)];
+  return chaves.map(programaDe).filter(Boolean).sort((a, b) => a.nome.localeCompare(b.nome, localidade()));
 }
 
 const iconeDe = (p) => (p.iconeUrl ? h('img.de-fora', { src: p.iconeUrl, width: 16, height: 16, alt: '' }) : img(p.icone, 16));
@@ -293,8 +340,17 @@ function contextoPrograma(chave, acao) {
       ? { rotulo: tr('Remover da área de &trabalho'), acao: () => removerAtalho(chave) }
       : { rotulo: tr('Adicionar à área de &trabalho'), acao: () => adicionarAtalho(chave) },
     fixarOuDesafixar(chave),
+    estaNoIniciar(chave)
+      ? { rotulo: tr('Desafixar do menu &Iniciar'), acao: () => desafixarDoIniciar(chave) }
+      : { rotulo: tr('Fixar no menu &Iniciar'), acao: () => fixarNoIniciar(chave), desativado: !programaDe(chave) },
   ];
 }
+
+// O botão direito num item do próprio menu Iniciar: escondê-lo e personalizar o menu.
+const contextoItem = (id) => () => [
+  { rotulo: tr('&Não mostrar no menu Iniciar'), acao: () => definirConfig({ iniciar: { ocultos: [...new Set([...(cfgIniciar().ocultos || []), id])] } }) },
+  { rotulo: tr('&Personalizar o menu Iniciar…'), acao: () => abrir('painel', { secao: 'barra', aba: 1 }) },
+];
 
 /** Um programa do Iniciar, com o botão direito. */
 const prog = (chave, rotulo, icone, acao = () => abrir(chave), extra = {}) => ({ rotulo, icone, acao, contexto: contextoPrograma(chave, acao), ...extra });
@@ -360,7 +416,7 @@ async function itensProgramas() {
 }
 
 function itensDocumentos() {
-  const recentes = (estado.config.recentes || []).slice(0, 15).map((rel) => ({
+  const recentes = (guardaRecentes() ? estado.config.recentes || [] : []).slice(0, 15).map((rel) => ({
     rotulo: nomeDe(rel),
     icone: tipoDe(nomeDe(rel)).icone,
     acao: () => abrirArquivo(rel),
@@ -380,29 +436,40 @@ export function alternarIniciar() {
 
 export async function abrirIniciar() {
   const r = btIniciar.getBoundingClientRect();
-  const el = h('div.menu.iniciar.com-icones');
+  const pequenos = !!cfgIniciar().pequenos;
+  // Com os ícones pequenos, como no Windows 95, o menu fica mais baixo e sem a faixa do lado.
+  const el = h('div.menu.iniciar.com-icones' + (pequenos ? '.pequenos' : ''));
   const itens = h('div.itens');
-  el.append(h('div.faixa', h('span', h('b', 'Retro'), ' Computer')), itens);
+  if (!pequenos) el.append(h('div.faixa', h('span', h('b', 'Retro'), ' Computer')));
+  el.append(itens);
   btIniciar.classList.add('apertado');
+  const se = (id, item) => (ocultoNoIniciar(id) ? [] : [{ ...item, contexto: contextoItem(id) }]);
+  // Os programas fixados pelo usuário ficam no alto, como no Windows de depois.
+  const fixos = fixadosIniciar().map(programaDe).filter(Boolean)
+    .map((p) => ({ rotulo: p.nome.replace(/&/g, '&&'), icone: p.icone, iconeUrl: p.iconeUrl || null, acao: p.abrir, contexto: contextoPrograma(p.chave, p.abrir) }));
+  // A loja (os Craft e, no Linux, os programas do Flathub), à vista no alto, como o Windows Update da época.
+  const loja = se('loja', { rotulo: tr('Lo&ja de programas'), icone: 'programas-caixa', acao: () => abrir('programas') });
   await abrirMenu([
-    // A loja (os Craft e, no Linux, os programas do Flathub), à vista no alto, como o Windows Update da época.
-    { rotulo: tr('Lo&ja de programas'), icone: 'programas-caixa', acao: () => abrir('programas') },
-    { separador: true },
+    ...fixos,
+    ...(fixos.length ? [{ separador: true }] : []),
+    ...loja,
+    ...(loja.length ? [{ separador: true }] : []),
     { rotulo: tr('&Programas'), icone: 'pasta-programas', sub: itensProgramas },
-    { rotulo: tr('&Documentos'), icone: 'documentos', sub: itensDocumentos },
-    {
+    ...se('documentos', { rotulo: tr('&Documentos'), icone: 'documentos', sub: itensDocumentos }),
+    ...se('configuracoes', {
       rotulo: tr('&Configurações'), icone: 'configuracoes', sub: () => [
         { rotulo: tr('&Painel de controle'), icone: 'painel', acao: () => abrir('painel') },
         { rotulo: tr('&Adicionar ou remover programas'), icone: 'programas-caixa', acao: () => abrir('programas') },
-        { rotulo: tr('A&parência'), icone: 'aparencia', acao: () => abrir('painel', { secao: 'aparencia' }) },
+        { rotulo: tr('Apa&rência'), icone: 'aparencia', acao: () => abrir('painel', { secao: 'aparencia' }) },
+        { rotulo: tr('&Barra de tarefas e menu Iniciar…'), icone: 'barra-tarefas', acao: () => abrir('painel', { secao: 'barra' }) },
       ],
-    },
-    { rotulo: tr('&Localizar'), icone: 'localizar', acao: () => abrir('localizar') },
-    { rotulo: tr('&Ajuda'), icone: 'ajuda', acao: () => abrir('ajuda') },
-    { rotulo: tr('&Executar…'), icone: 'executar', acao: () => abrir('executar') },
+    }),
+    ...se('localizar', { rotulo: tr('&Localizar'), icone: 'localizar', acao: () => abrir('localizar') }),
+    ...se('ajuda', { rotulo: tr('&Ajuda'), icone: 'ajuda', acao: () => abrir('ajuda') }),
+    ...se('executar', { rotulo: tr('&Executar…'), icone: 'executar', acao: () => abrir('executar') }),
     { separador: true },
     // Sem senha ainda, o item leva ao Painel de controle › Senhas para criar uma.
-    { rotulo: tr('&Bloquear o computador'), icone: 'chave', acao: () => (temSenha() ? bloquear() : abrir('painel', { secao: 'senhas' })) },
+    ...se('bloquear', { rotulo: tr('&Bloquear o computador'), icone: 'chave', acao: () => (temSenha() ? bloquear() : abrir('painel', { secao: 'senhas' })) }),
     { rotulo: tr('&Desligar…'), icone: 'desligar', acao: () => abrir('desligar') },
   ], {
     x: r.left,
@@ -410,7 +477,7 @@ export async function abrirIniciar() {
     acima: true,
     elemento: el,
     corpo: itens,
-    tamIcone: 32,
+    tamIcone: pequenos ? 16 : 32,
     aoFechar: () => btIniciar.classList.remove('apertado'),
   });
 }

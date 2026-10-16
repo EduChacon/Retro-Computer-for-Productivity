@@ -61,7 +61,13 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 
 - **À esquerda**: o Iniciar, a caixa de busca (programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados (de início, o Explorador de arquivos, o Navegador, o E-mail e o Bloco de notas). Botão direito num programa › "Fixar na barra de tarefas" ou "Desafixar".
 - **Os botões das janelas** mostram o nome, como na época, ou só os ícones, agrupados por programa (botão direito na barra › Botões das janelas). O clique com a roda num botão abre outra janela do programa.
+- **As propriedades** (botão direito na barra › Propriedades, ou Iniciar › Configurações › "Barra de tarefas e menu Iniciar"): a caixa de busca, a data, os botões das janelas e a ordem dos fixados.
 - **A bandeja, à direita**: a rede (as redes Wi-Fi, no Linux), o volume (com a escolha da saída de som, quando há mais de uma), a bateria com o brilho da tela e a bateria do mouse e do teclado sem fio, o Bluetooth (no Linux), o sino das notificações com o "Não perturbe" e o relógio, que abre o calendário (botão direito › Mostrar a data).
+
+### O menu Iniciar
+
+- **Fixar um programa no alto do menu**: botão direito nele, em qualquer lugar do Iniciar › "Fixar no menu Iniciar" (ou "Desafixar do menu Iniciar").
+- **Personalizar** (Iniciar › Configurações › "Barra de tarefas e menu Iniciar" › Menu Iniciar, ou botão direito no Iniciar › Propriedades): a ordem dos fixados, os itens à vista (a Loja de programas, os Documentos, as Configurações, o Localizar, a Ajuda, o Executar e o Bloquear; o Programas e o Desligar ficam sempre), os **ícones pequenos** (o menu mais baixo, sem a faixa, como a opção do Windows 95) e os documentos recentes (guardar ou não, e limpar a lista). O botão direito num item do menu › "Não mostrar no menu Iniciar" também o esconde.
 
 ### Trazer e levar arquivos
 

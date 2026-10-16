@@ -17,9 +17,11 @@ import { BUSCAS, CORREIOS, paraEndereco, conferirFirefox } from './navegador.js'
 import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
 import { comSenhaAdmin } from '../admin.js';
 import { aplicarLuzNoturna } from '../luz-noturna.js';
+import { programaDe, programasFixaveis, ITENS_INICIAR } from '../barra.js';
 
 const ITENS = [
   { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: () => dialogoAparencia() },
+  { chave: 'barra', rotulo: marcar('Barra de tarefas e menu Iniciar'), icone: 'barra-tarefas', descricao: marcar('Os programas fixados, os itens do menu Iniciar, os ícones pequenos e os documentos recentes.'), abrir: (args) => dialogoBarra(args) },
   { chave: 'disco', rotulo: marcar('Disco C:'), icone: 'disco', descricao: marcar('Mostra a pasta do disco C: no computador principal e permite trocá-la.'), abrir: () => dialogoDisco() },
   { chave: 'claude', rotulo: marcar('Claude'), icone: 'claude', descricao: marcar('Instala o Claude Code e guarda a chave de API.'), abrir: () => dialogoClaude() },
   { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e em qual navegador os links abrem.'), abrir: () => dialogoInternet() },
@@ -127,6 +129,99 @@ function dialogoBase({ titulo, icone, abas, larg = 380, altMin = 0, aoAplicar, a
     j.aplicarRet();
   }
   return j;
+}
+
+/* Barra de tarefas e menu Iniciar */
+
+/**
+ * Uma lista de programas na ordem que o usuário escolhe (os fixados): subir, descer, tirar e
+ * acrescentar um da lista de todos.
+ */
+function listaDeProgramas(chaves, vazio) {
+  let lista = chaves.filter((k) => programaDe(k));
+  let sel = -1;
+  const caixa = h('div.campo.lp-lista', { tabIndex: 0 });
+  const btCima = h('button', { type: 'button', on: { click: () => mover(-1) } }, rotulo(tr('Para &cima')));
+  const btBaixo = h('button', { type: 'button', on: { click: () => mover(1) } }, rotulo(tr('Para &baixo')));
+  const btTirar = h('button', { type: 'button', on: { click: () => { lista.splice(sel, 1); sel = Math.min(sel, lista.length - 1); desenhar(); } } }, rotulo(tr('&Remover')));
+  const escolha = h('select', { style: { width: '100%' } });
+  const btPor = h('button', { type: 'button', on: { click: () => { if (escolha.value) { lista.push(escolha.value); sel = lista.length - 1; desenhar(); } } } }, rotulo(tr('&Adicionar')));
+  const mover = (d) => {
+    const j = sel + d;
+    if (sel < 0 || j < 0 || j >= lista.length) return;
+    [lista[sel], lista[j]] = [lista[j], lista[sel]];
+    sel = j;
+    desenhar();
+  };
+  const desenhar = () => {
+    caixa.replaceChildren(...(lista.length ? lista.map((k, i) => {
+      const p = programaDe(k);
+      const linha = h('div.lp-linha' + (i === sel ? '.sel' : ''),
+        p.iconeUrl ? h('img', { src: p.iconeUrl, width: 16, height: 16, alt: '' }) : img(p.icone, 16), h('span', p.nome));
+      linha.addEventListener('mousedown', () => { sel = i; desenhar(); });
+      return linha;
+    }) : [h('div.lp-vazio', vazio)]));
+    btCima.disabled = sel <= 0;
+    btBaixo.disabled = sel < 0 || sel >= lista.length - 1;
+    btTirar.disabled = sel < 0;
+    const livres = programasFixaveis().filter((p) => !lista.includes(p.chave));
+    escolha.replaceChildren(...livres.map((p) => h('option', { value: p.chave }, p.nome)));
+    escolha.disabled = btPor.disabled = !livres.length;
+  };
+  caixa.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' && sel > 0) { sel--; desenhar(); e.preventDefault(); }
+    if (e.key === 'ArrowDown' && sel < lista.length - 1) { sel++; desenhar(); e.preventDefault(); }
+    if (e.key === 'Delete' && sel >= 0) btTirar.click();
+  });
+  desenhar();
+  const el = h('div.lp',
+    h('div.lp-topo', caixa, h('div.lp-botoes', btCima, btBaixo, btTirar)),
+    h('div.lp-por', h('div.select-caixa', { style: { flex: '1', minWidth: '0' } }, escolha), btPor));
+  return { el, valor: () => lista.slice() };
+}
+
+function dialogoBarra(args = {}) {
+  const c = estado.config;
+  const b = c.barra || {};
+  const ini = c.iniciar || {};
+  // A aba Barra de tarefas: as opções que também estão no botão direito da barra, e os fixados.
+  const chkBusca = h('input', { type: 'checkbox', checked: b.busca !== false });
+  const chkData = h('input', { type: 'checkbox', checked: !!b.data });
+  const radNomes = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes !== 'icones' });
+  const radIcones = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes === 'icones' });
+  const fixBarra = listaDeProgramas(b.fixados || [], tr('Nenhum programa fixado. Clique com o botão direito num programa do Iniciar para fixá-lo.'));
+  const abaBarra = h('div',
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Opções da barra')),
+      h('label', chkBusca, h('span', tr('Mostrar a caixa de busca ao lado do Iniciar'))),
+      h('label', chkData, h('span', tr('Mostrar a data embaixo da hora'))),
+      h('div', { style: { margin: '6px 0 2px' } }, tr('Os botões das janelas:')),
+      h('div', { style: { marginLeft: '12px' } }, h('label', radNomes, h('span', tr('Com o nome')))),
+      h('div', { style: { marginLeft: '12px' } }, h('label', radIcones, h('span', tr('Só os ícones, agrupados por programa'))))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Fixados na barra de tarefas')), fixBarra.el));
+  // A aba Menu Iniciar: os fixados no alto, os itens à vista, os ícones pequenos e os recentes.
+  const fixIni = listaDeProgramas(ini.fixados || [], tr('Nenhum programa fixado. Clique com o botão direito num programa do Iniciar e escolha "Fixar no menu Iniciar".'));
+  const ocultos = new Set(ini.ocultos || []);
+  const chks = ITENS_INICIAR.map((it) => ({ id: it.id, el: h('input', { type: 'checkbox', checked: !ocultos.has(it.id) }), rotulo: tr(it.rotulo) }));
+  const chkPequenos = h('input', { type: 'checkbox', checked: !!ini.pequenos });
+  const chkRecentes = h('input', { type: 'checkbox', checked: ini.recentes !== false });
+  const avisoLimpo = h('span', { style: { color: '#404040' } });
+  const btLimpar = h('button', { type: 'button', disabled: !(c.recentes || []).length, on: { click: async () => { await definirConfig({ recentes: [] }); btLimpar.disabled = true; avisoLimpo.textContent = tr('A lista foi limpa.'); } } }, rotulo(tr('&Limpar a lista')));
+  const abaIniciar = h('div',
+    h('fieldset', { style: { margin: '0 0 8px' } }, h('legend', tr('Fixados no alto do menu Iniciar')), fixIni.el),
+    h('fieldset', { style: { margin: '0 0 8px' } }, h('legend', tr('Mostrar no menu Iniciar')),
+      h('div.lp-itens', ...chks.map((x) => h('label', x.el, h('span', x.rotulo))))),
+    h('label', { style: { margin: '0 0 8px' } }, chkPequenos, h('span', tr('Ícones pequenos no menu Iniciar'))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Documentos recentes')),
+      h('label', chkRecentes, h('span', tr('Guardar os documentos abertos recentemente'))),
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' } }, btLimpar, avisoLimpo)));
+  dialogoBase({
+    titulo: tr('Propriedades da Barra de tarefas e do menu Iniciar'), icone: 'barra-tarefas', larg: 400, aba: args.aba || 0,
+    abas: [{ titulo: tr('Barra de tarefas'), conteudo: abaBarra }, { titulo: tr('Menu Iniciar'), conteudo: abaIniciar }],
+    aoAplicar: () => definirConfig({
+      barra: { busca: chkBusca.checked, data: chkData.checked, botoes: radIcones.checked ? 'icones' : 'nomes', fixados: fixBarra.valor() },
+      iniciar: { fixados: fixIni.valor(), ocultos: chks.filter((x) => !x.el.checked).map((x) => x.id), pequenos: chkPequenos.checked, recentes: chkRecentes.checked },
+    }),
+  });
 }
 
 /* Aparência */

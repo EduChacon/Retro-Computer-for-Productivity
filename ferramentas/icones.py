@@ -592,6 +592,53 @@ def pedra(tam, branca):
     return im
 
 
+def barra_tarefas(tam):
+    """A Barra de tarefas e o menu Iniciar: a área de trabalho com uma janela e a barra embaixo."""
+    k = tam // 16
+    c = [['.'] * tam for _ in range(tam)]
+
+    def ret(x0, y0, x1, y1, ch):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                c[y][x] = ch
+
+    x0, x1 = k, tam - 1 - k
+    y0, y1 = 2 * k, tam - 2 * k
+    ret(x0, y0, x1, y1, 'K')
+    ret(x0 + 1, y0 + 1, x1 - 1, y1 - 1, 'T')
+    by0 = y1 - 4 * k  # a borda clara da barra
+    # A janela na área de trabalho, com a barra de título azul.
+    jx0, jy0, jx1, jy1 = x0 + 3 * k, y0 + 2 * k, x0 + 10 * k, by0 - 2 * k
+    ret(jx0, jy0, jx1, jy1, 'K')
+    ret(jx0 + 1, jy0 + 1, jx1 - 1, jy1 - 1, 'W')
+    ret(jx0 + 1, jy0 + 1, jx1 - 1, jy0 + k, 'B')
+    # A barra de tarefas: a borda clara, o botão Iniciar (com o logotipo) e os botões das janelas.
+    ret(x0 + 1, by0, x1 - 1, y1 - 1, 'L')
+    ret(x0 + 1, by0, x1 - 1, by0, 'W')
+    t, b = by0 + k, y1 - k
+
+    def botao(bx0, bx1):
+        ret(bx0, t, bx1, b, 'L')
+        ret(bx0, t, bx1, t, 'W')
+        ret(bx0, t, bx0, b, 'W')
+        ret(bx1, t, bx1, b, 'D')
+        ret(bx0, b, bx1, b, 'D')
+
+    botao(x0 + k, x0 + 5 * k)
+    # No botão Iniciar, o disquete azul do próprio Retro Computer (o logotipo do botão de verdade).
+    meio = (t + b) // 2
+    if k > 1:
+        ret(x0 + 3, meio - 1, x0 + 5, meio + 1, 'B')
+        ret(x0 + 4, meio - 1, x0 + 4, meio - 1, 'L')
+        ret(x0 + 4, meio + 1, x0 + 4, meio + 1, 'W')
+    else:
+        ret(x0 + 2, meio, x0 + 3, meio, 'B')
+    botao(x0 + 6 * k, x0 + 10 * k)
+    if k > 1:
+        botao(x0 + 11 * k, x1 - k)
+    return [''.join(l) for l in c]
+
+
 def damas(tam):
     """As Damas: a pedra preta atrás, à direita, e a branca na frente."""
     im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
@@ -993,6 +1040,10 @@ def gerar(serenity):
     # O microfone (a gravação nas Propriedades de Sons): desenho próprio.
     feitos[32]['microfone'] = grade(microfone(32))
     feitos[16]['microfone'] = grade(microfone(16))
+
+    # A Barra de tarefas e o menu Iniciar (Painel de controle): desenho próprio.
+    feitos[32]['barra-tarefas'] = grade(barra_tarefas(32))
+    feitos[16]['barra-tarefas'] = grade(barra_tarefas(16))
 
     # As Damas: duas pedras, desenhadas como as do jogo (src/sistema/js/jogos/pecas.js).
     feitos[32]['damas'] = damas(32)

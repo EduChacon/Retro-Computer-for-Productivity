@@ -397,7 +397,7 @@ const ROTEIROS = {
   },
   async caixas() {
     // Cada caixa do Painel de controle, aba a aba: o conteúdo cabe sem rolar? (sem fotos)
-    for (const secao of ['aparencia', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'acessibilidade', 'copia', 'impressoras', 'sobre']) {
+    for (const secao of ['aparencia', 'barra', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'acessibilidade', 'copia', 'impressoras', 'sobre']) {
       await fecharTudo();
       await abrir('painel', { secao });
       await pagina.waitForTimeout(1200);
@@ -1872,6 +1872,76 @@ const ROTEIROS = {
     await pagina.keyboard.press('Space');
     await pagina.waitForTimeout(2500);
     await foto('breakout');
+  },
+
+  // O menu Iniciar configurável: fixar pelo botão direito, esconder um item, a caixa de propriedades
+  // (as duas abas), os ícones pequenos e o botão direito no próprio Iniciar.
+  async iniciar() {
+    await fecharTudo();
+    await pagina.evaluate(() => window.__retro.definirConfig({ iniciar: null }));
+    // O item pelo nome exato (com os fixados no alto, a posição do Programas muda).
+    const sobre = async (texto) => (await pagina.evaluateHandle((t) => [...document.querySelectorAll('.menu .opcao')].find((o) => o.textContent.trim() === t), texto)).asElement().hover();
+    const abrirAcessorios = async () => {
+      await pagina.click('#iniciar');
+      await pagina.waitForTimeout(300);
+      await sobre(T('&Programas'));
+      await pagina.waitForTimeout(700);
+      await pagina.hover(`.menu .opcao:has-text("${T('Acessórios')}")`);
+      await pagina.waitForTimeout(700);
+    };
+    for (const nome of ['Calculadora', 'Bloco de notas']) {
+      await abrirAcessorios();
+      await pagina.click(`.menu .opcao:has-text("${T(nome)}")`, { button: 'right' });
+      await pagina.waitForTimeout(400);
+      if (nome === 'Calculadora') await foto('iniciar-contexto');
+      await pagina.click(`.menu .opcao:has-text("${T('Fixar no menu &Iniciar')}")`);
+      await pagina.waitForTimeout(400);
+      await pagina.keyboard.press('Escape');
+      await pagina.mouse.click(600, 300);
+    }
+    // Esconde o Localizar pelo botão direito no próprio item.
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(400);
+    await pagina.click(`.menu.iniciar .opcao:has-text("${T('&Localizar')}")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.menu .opcao:has-text("${T('&Não mostrar no menu Iniciar')}")`);
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.press('Escape');
+    await pagina.mouse.click(600, 300);
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(500);
+    await foto('iniciar-fixados');
+    await pagina.keyboard.press('Escape');
+    await pagina.mouse.click(600, 300);
+    console.log('iniciar:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.iniciar)));
+    // A caixa de propriedades, nas duas abas.
+    await abrir('painel', { secao: 'barra', aba: 1 });
+    await pagina.waitForTimeout(500);
+    await pagina.locator('.janela.ativa .lp-linha >> nth=1').click();
+    await pagina.waitForTimeout(200);
+    await foto('iniciar-propriedades');
+    await pagina.click(`.janela.ativa .abas div:has-text("${T('Barra de tarefas')}")`);
+    await pagina.waitForTimeout(300);
+    await foto('iniciar-propriedades-barra');
+    await pagina.click(`.janela.ativa .abas div:has-text("${T('Menu Iniciar')}")`);
+    await pagina.waitForTimeout(200);
+    // Sobe o Bloco de notas e liga os ícones pequenos.
+    await pagina.click(`.janela.ativa button:has-text("${T('Para &cima')}")`);
+    await pagina.locator('.janela.ativa label', { hasText: T('Ícones pequenos no menu Iniciar') }).locator('input').check();
+    await pagina.click(`.janela.ativa button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(400);
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(500);
+    await foto('iniciar-pequenos');
+    await pagina.keyboard.press('Escape');
+    await pagina.mouse.click(600, 300);
+    // O botão direito no Iniciar.
+    await pagina.click('#iniciar', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('iniciar-botao-direito');
+    await pagina.keyboard.press('Escape');
+    console.log('iniciar depois:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.iniciar)));
+    await pagina.evaluate(() => window.__retro.definirConfig({ iniciar: null }));
   },
 
   // As Damas e o Xadrez: os menus do Iniciar, a tomada obrigatória, a resposta do computador (o Worker),
