@@ -441,7 +441,9 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   display: block;
   background: #e6e6e6;
 }
-.corpo .carregando {
+/* A tela de carregamento de um programa Craft (craft.js). O nome é só dela: a aba do Navegador que
+   carrega também tem a classe "carregando", e com o nome comum ela virava esta tela. */
+.corpo .carga-programa {
   position: absolute;
   inset: 0;
   display: flex;
@@ -451,7 +453,7 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   gap: 10px;
   background: var(--face);
 }
-.corpo .carregando .progresso { width: 220px; }
+.corpo .carga-programa .progresso { width: 220px; }
 
 .status {
   flex: none;

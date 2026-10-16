@@ -35,7 +35,7 @@ class ProgramaCraft {
     });
     this.barra = h('div.progresso', h('div'));
     this.textoCarga = h('div', tr('Carregando o {programa}…', { programa: this.info.nome }));
-    this.carregando = h('div.carregando', img(this.info.icone || 'programa', 32), this.textoCarga, this.barra);
+    this.carregando = h('div.carga-programa', img(this.info.icone || 'programa', 32), this.textoCarga, this.barra);
     this.j.corpo.append(this.iframe, this.carregando);
     this.ouvinte = (e) => this.mensagem(e);
     window.addEventListener('message', this.ouvinte);

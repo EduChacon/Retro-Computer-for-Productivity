@@ -240,7 +240,7 @@ function pdfSimples(arquivo, paginas) {
 }
 
 async function esperarPronto(ms = 90000) {
-  await pagina.waitForFunction(() => !document.querySelector('.corpo .carregando'), null, { timeout: ms });
+  await pagina.waitForFunction(() => !document.querySelector('.corpo .carga-programa'), null, { timeout: ms });
   await pagina.waitForTimeout(1500);
 }
 
@@ -923,6 +923,58 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('depois de carregar:', await abas());
     await foto('aba-nova-carregada');
     await pagina.evaluate(() => retro.sistema.zoom(1));
+    servidor.close();
+  },
+
+  // A aba nova (o +, com a página inicial) e depois um site digitado no endereço ou uma pesquisa
+  // pela caixa da página inicial: a faixa das abas tem que continuar no lugar.
+  async abaNova() {
+    const servidor = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      setTimeout(() => res.end(`<!doctype html><title>Site ${req.url}</title><h1>Site ${req.url}</h1>`), 800);
+    });
+    await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+    const base = `127.0.0.1:${servidor.address().port}`;
+    await fecharTudo();
+    await abrir('navegador');
+    await pagina.waitForTimeout(1500);
+    const medir = (r) => pagina.evaluate((rot) => {
+      const j = document.querySelector('.janela.ativa');
+      const abas = [...j.querySelectorAll('.nav-aba')].map((a) => {
+        const q = (s) => { const b = a.querySelector(s).getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)}`; };
+        const b = a.getBoundingClientRect();
+        return `[${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}x${Math.round(b.height)} ícone ${q('.nav-aba-icone')} fechar ${q('.nav-aba-fechar')} "${a.querySelector('.nav-aba-nome').textContent}"]`;
+      }).join(' ');
+      const rolados = [...j.querySelectorAll('*')].filter((e) => e.scrollTop || e.scrollLeft).map((e) => `${e.className}:${e.scrollLeft},${e.scrollTop}`).join('; ');
+      return `${rot}: ${abas} | rolados: ${rolados || 'nenhum'}`;
+    }, r);
+    console.log(await medir('início'));
+    // 1) O + e um site digitado no endereço.
+    await pagina.click('.janela.ativa .nav-aba-nova');
+    await pagina.waitForTimeout(600);
+    console.log(await medir('aba nova'));
+    await pagina.click('.janela.ativa .nav-endereco');
+    await pagina.keyboard.type(base + '/digitado');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(200);
+    console.log(await medir('carregando o site'));
+    await foto('aba-nova-site-carregando');
+    await pagina.waitForTimeout(2500);
+    console.log(await medir('site aberto'));
+    await foto('aba-nova-site');
+    // 2) O + e a pesquisa pela caixa da página inicial.
+    await pagina.click('.janela.ativa .nav-aba-nova');
+    await pagina.waitForTimeout(600);
+    const caixa = '.janela.ativa .nav-conteudo:not(.escondida) .nav-inicio input';
+    await pagina.click(caixa);
+    await pagina.keyboard.type('retro computer');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(200);
+    console.log(await medir('pesquisando'));
+    await foto('aba-nova-pesquisa-carregando');
+    await pagina.waitForTimeout(4000);
+    console.log(await medir('pesquisa'));
+    await foto('aba-nova-pesquisa');
     servidor.close();
   },
 
@@ -2331,12 +2383,12 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('pixels');
     // Escolher o 1,5 e aplicar: o zoom da tela segue.
     await pagina.evaluate(() => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === 'auto')); s.value = '1.5'; s.dispatchEvent(new Event('change')); });
-    await pagina.click('.janela.ativa button >> text=' + T('Aplicar'));
+    await pagina.click('.janela.ativa button >> text=' + T('&Aplicar').replace('&', ''));
     await pagina.waitForTimeout(1200);
     console.log('guardado:', await pagina.evaluate(() => window.__retro.estado.config.escala), '| área:', await pagina.evaluate(() => `${innerWidth} x ${innerHeight}`));
     await foto('pixels-1-5');
     await pagina.evaluate(() => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === 'auto')); s.value = 'auto'; s.dispatchEvent(new Event('change')); });
-    await pagina.click('.janela.ativa button >> text=' + T('Aplicar'));
+    await pagina.click('.janela.ativa button >> text=' + T('&Aplicar').replace('&', ''));
     await pagina.waitForTimeout(800);
   },
 
