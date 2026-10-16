@@ -3,9 +3,10 @@
  * o menu do botão direito, renomear no lugar, excluir para a Lixeira, criar,
  * arrastar entre pastas e trazer ou levar arquivos do computador principal.
  */
-import { h, nomeDe, paiDe, juntar, caminhoTela, extensao } from './util.js';
-import { confirmar, entrada, erro, mensagem, propriedades } from './dialogos.js';
-import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputador } from './sistema.js';
+import { h, img, nomeDe, paiDe, juntar, caminhoTela, extensao } from './util.js';
+import { confirmar, entrada, erro, mensagem, propriedades, ajustarAoConteudo } from './dialogos.js';
+import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputador, padraoPara, definirConfig } from './sistema.js';
+import { Janela } from './janelas.js';
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
 import { listarUnidades, levarParaUnidade, nomeUnidade } from './unidades.js';
@@ -13,6 +14,56 @@ import { ehCompactado, extrairEMostrar, compactarItens } from './compactados.js'
 import { ehFixada, alternarFixada, seguirPasta } from './acesso.js';
 
 export const TIPO_ARRASTO = 'application/x-retro-arquivos';
+
+/**
+ * A caixa "Abrir com", como a da época: a lista dos programas que abrem o tipo (e o do computador
+ * principal) e "Sempre usar este programa para abrir os arquivos .docx". Devolve o escolhido (o
+ * identificador, 'fora' ou null) e, com a caixa marcada, guarda-o como o padrão do tipo. O Painel
+ * (Programas padrão) a usa com soPadrao e guardar: false, e guarda tudo no OK dele.
+ */
+export function escolherPrograma({ nome, soPadrao = false, guardar = true, atual }) {
+  const ext = extensao(nome);
+  const progs = [...programasPara(nome), { id: 'fora', nome: tr('Programa do computador principal'), icone: 'computador' }];
+  let sel = Math.max(0, progs.findIndex((p) => p.id === (atual !== undefined ? atual : padraoPara(nome))));
+  return new Promise((resolve) => {
+    let feito = false;
+    const j = new Janela({ titulo: tr('Abrir com'), icone: 'programa', dialogo: true, largura: 380, altura: 300, aoFechar: () => { if (!feito) { feito = true; resolve(null); } } });
+    const lista = h('div.campo.lp-lista', { tabIndex: 0, style: { height: '150px' } });
+    const sempre = h('input', { type: 'checkbox', checked: true, disabled: !ext || soPadrao });
+    const ok = h('button.padrao', { type: 'button' }, tr('OK'));
+    const fim = async (v) => {
+      if (feito) return;
+      feito = true;
+      j.fechar(true);
+      if (guardar && v && ext && (sempre.checked || soPadrao)) await definirConfig({ abrirCom: { [ext]: v } });
+      resolve(v);
+    };
+    const desenhar = () => {
+      lista.replaceChildren(...progs.map((p, i) => {
+        const linha = h('div.lp-linha' + (i === sel ? '.sel' : ''), img(p.icone || 'programa', 16), h('span', p.nome));
+        linha.addEventListener('mousedown', () => { sel = i; desenhar(); });
+        linha.addEventListener('dblclick', () => fim(progs[sel].id));
+        return linha;
+      }));
+    };
+    lista.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' && sel > 0) { sel--; desenhar(); e.preventDefault(); }
+      if (e.key === 'ArrowDown' && sel < progs.length - 1) { sel++; desenhar(); e.preventDefault(); }
+      if (e.key === 'Enter') { e.preventDefault(); fim(progs[sel].id); }
+    });
+    ok.addEventListener('click', () => fim(progs[sel].id));
+    desenhar();
+    j.corpo.append(
+      h('div', { style: { lineHeight: '13px', marginBottom: '8px' } }, soPadrao
+        ? tr('Escolha o programa que abre os arquivos .{ext}:', { ext })
+        : tr('Escolha o programa para abrir "{nome}":', { nome })),
+      lista,
+      soPadrao ? null : h('label', { style: { marginTop: '8px' } }, sempre, h('span', ext ? tr('Sempre usar este programa para abrir os arquivos .{ext}', { ext }) : tr('Sempre usar este programa para abrir este tipo de arquivo'))),
+      h('div.acoes.direita', ok, h('button', { type: 'button', on: { click: () => fim(null) } }, tr('Cancelar'))));
+    ajustarAoConteudo(j, { largura: 380 });
+    lista.focus();
+  });
+}
 
 /** Edita o nome no próprio ícone. Devolve o nome novo (ou null). */
 export function editarRotulo(itemEl, nomeAtual, { semExtensao = true } = {}) {
@@ -235,7 +286,9 @@ export function menuDeItens(sel, o = {}) {
       rotulo: tr('Abrir c&om'), sub: () => [
         ...progs.map((p) => ({ rotulo: p.nome, icone: p.icone, acao: () => abrirArquivo(um.rel, { com: p.id }) })),
         ...(progs.length ? [{ separador: true }] : []),
-        { rotulo: tr('Programa do computador principal'), acao: () => abrirNoComputador(um.rel).catch((e) => erro(e.message)) },
+        { rotulo: tr('Programa do computador principal'), icone: 'computador', acao: () => abrirNoComputador(um.rel).catch((e) => erro(e.message)) },
+        { separador: true },
+        { rotulo: tr('&Escolher o programa…'), acao: () => escolherPrograma({ nome: um.nome }).then((id) => id && (id === 'fora' ? abrirNoComputador(um.rel) : abrirArquivo(um.rel, { com: id }))).catch((e) => erro(e.message)) },
       ],
     });
     if (ehCompactado(um.nome)) itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(um.rel) });

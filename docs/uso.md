@@ -95,6 +95,7 @@ As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a 
 - **Exibir › Painel de visualização** (Alt+P, ou o botão Visualizar) mostra à direita o arquivo escolhido, sem abrir o programa: o Word (`.docx`, convertido pelo mammoth), o texto do OpenDocument (`.odt`), o PDF (as páginas, pelo pdf.js, até 40), a primeira folha das planilhas (`.xlsx`, `.ods`, `.csv`, até 200 linhas), os textos, as fotos, os vídeos, as músicas e as páginas da internet salvas (numa moldura sem scripts e sem a internet). Numa janela estreita, o painel a alarga.
 - **O endereço** fica em pedaços: cada nome leva àquela pasta. Um clique no espaço vazio ao lado (ou Alt+D, F4) vira o campo de texto.
 - **Exibir › Miniaturas** mostra as fotos encolhidas.
+- **O programa de cada tipo de arquivo**: botão direito num arquivo › Abrir com › "Escolher o programa…", com "Sempre usar este programa para abrir os arquivos .docx" marcado (também o programa do computador principal). A lista dos escolhidos fica em Painel de controle › Programas padrão (Mudar, Voltar ao normal e Novo tipo). Um Craft escolhido que sair do computador deixa o tipo com o programa de sempre.
 - **Um `.zip` abre como pasta** (só para ver). Botão direito › "Extrair tudo…" cria uma pasta nova ao lado, sem gravar por cima de nada; os `.tar` (`.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`) também se extraem. Para compactar: Enviar para › Pasta compactada (zip).
 
 ### Internet

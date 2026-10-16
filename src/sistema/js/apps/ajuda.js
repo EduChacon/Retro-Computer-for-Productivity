@@ -187,6 +187,7 @@ const TOPICOS = [
 <p>Ao abrir um programa, o Retro Computer procura uma versão nova dele (com internet) e a instala antes de abrir. Em <b>Adicionar ou remover programas</b>, escolha entre atualizar sozinho, perguntar antes ou nunca procurar. O próprio Retro Computer também avisa quando há versão nova dele.</p>
 <h2>Abrir e salvar</h2>
 <p>Os comandos Abrir e Salvar dos programas usam as caixas do Retro Computer, no disco C:. Dois cliques num documento abrem o programa certo; um arquivo que veio do disco é salvo de volta no mesmo lugar.</p>
+<p>Para escolher o programa de um tipo de arquivo: botão direito no arquivo › <b>Abrir com › Escolher o programa…</b>, com a caixa <b>Sempre usar este programa</b> marcada (também o programa do computador principal). Os escolhidos ficam em <b>Painel de controle › Programas padrão</b>, que os muda ou os volta ao normal.</p>
 <h2>Programas do computador</h2>
 <p><b>Iniciar › Programas › Programas do computador</b> lista os programas instalados no computador principal; cada um pode ganhar um atalho na área de trabalho e no menu Iniciar.</p>
 <h2>Programas do Linux</h2>
@@ -203,6 +204,7 @@ const TOPICOS = [
 <p>When you open a program, Retro Computer looks for a new version of it (when online) and installs it before opening. In <b>Add or Remove Programs</b>, choose between updating automatically, asking first or never checking. Retro Computer also tells you when a new version of itself is out.</p>
 <h2>Opening and saving</h2>
 <p>The programs' Open and Save commands use the Retro Computer dialogs, on drive C:. Double-clicking a document opens the right program; a file that came from the disk is saved back to the same place.</p>
+<p>To choose the program for a file type: right-click the file › <b>Open with › Choose program…</b>, with <b>Always use this program</b> checked (the main computer's program is an option too). The choices are listed in <b>Control Panel › Default programs</b>, which changes them or restores the default.</p>
 <h2>Computer programs</h2>
 <p><b>Start › Programs › Computer programs</b> lists the programs installed on the main computer; each one can get a shortcut on the desktop and in the Start menu.</p>
 <h2>Linux programs</h2>
@@ -219,6 +221,7 @@ const TOPICOS = [
 <p>Al abrir un programa, Retro Computer busca una versión nueva (con internet) y la instala antes de abrirlo. En <b>Agregar o quitar programas</b>, elige entre actualizar solo, preguntar antes o no buscar nunca. Retro Computer también avisa cuando hay una versión nueva de sí mismo.</p>
 <h2>Abrir y guardar</h2>
 <p>Los comandos Abrir y Guardar de los programas usan los cuadros de Retro Computer, en el disco C:. Un doble clic en un documento abre el programa correcto; un archivo que vino del disco se guarda de vuelta en el mismo lugar.</p>
+<p>Para elegir el programa de un tipo de archivo: clic derecho en el archivo › <b>Abrir con › Elegir el programa…</b>, con <b>Usar siempre este programa</b> marcado (también el programa de la computadora principal). Los elegidos quedan en <b>Panel de control › Programas predeterminados</b>, que los cambia o los restablece.</p>
 <h2>Programas de la computadora</h2>
 <p><b>Inicio › Programas › Programas de la computadora</b> muestra los programas instalados en la computadora principal; cada uno puede tener un acceso directo en el escritorio y en el menú Inicio.</p>
 <h2>Programas de Linux</h2>

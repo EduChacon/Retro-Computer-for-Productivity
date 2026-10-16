@@ -2,11 +2,11 @@
  * O Painel de controle: Aparência, Disco C:, Claude, Idioma, Teclado, Mouse, Sons, Data e hora,
  * Adicionar ou remover programas, Foco e Sobre.
  */
-import { h, img, icone, tamanho, caminhoTela, rotulo } from '../util.js';
+import { h, img, icone, tamanho, caminhoTela, rotulo, tipoDe } from '../util.js';
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
-import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco } from '../sistema.js';
+import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco, programasPara } from '../sistema.js';
 import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada } from '../dialogos.js';
 import { deslizante } from '../controles.js';
 import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparencia.js';
@@ -19,6 +19,7 @@ import { comSenhaAdmin } from '../admin.js';
 import { aplicarLuzNoturna } from '../luz-noturna.js';
 import { programaDe, programasFixaveis, ITENS_INICIAR } from '../barra.js';
 import { perfisInfo, atualizarPerfis, nomeDoPerfil } from '../perfis.js';
+import { escolherPrograma } from '../arquivos.js';
 
 const ITENS = [
   { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: () => dialogoAparencia() },
@@ -42,6 +43,7 @@ const ITENS = [
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('A data, a hora e o fuso horário do computador.'), abrir: () => dialogoData() },
   { chave: 'energia', rotulo: marcar('Opções de energia'), icone: 'energia', descricao: marcar('Quando apagar a tela e suspender o computador parado, e o que a tampa do notebook faz.'), abrir: () => dialogoEnergia() },
   { chave: 'programas', rotulo: marcar('Adicionar ou remover programas'), icone: 'programas-caixa', descricao: marcar('Instala, atualiza e remove programas.'), abrir: () => abrir('programas') },
+  { chave: 'padroes', rotulo: marcar('Programas padrão'), icone: 'programa', descricao: marcar('O programa que abre cada tipo de arquivo com dois cliques.'), abrir: () => dialogoPadroes() },
   { chave: 'foco', rotulo: marcar('Foco'), icone: 'foco', descricao: marcar('Abre o relógio de foco (Pomodoro).'), abrir: () => abrir('foco') },
   { chave: 'sobre', rotulo: marcar('Sobre o Retro Computer'), icone: 'computador', descricao: marcar('Versão, licenças e créditos.'), abrir: () => dialogoSobre() },
 ];
@@ -671,6 +673,85 @@ function dialogoUsuarios() {
     abas: [{ titulo: tr('Usuários'), conteudo }],
     aoAplicar: async () => {
       if (!chkPerguntar.disabled && chkPerguntar.checked !== (perfisInfo().perguntar !== false)) atualizarPerfis(await retro.perfis.perguntar(chkPerguntar.checked));
+    },
+  });
+}
+
+/* Programas padrão */
+
+/** O nome do programa escolhido para o tipo (também o de um Craft que saiu do computador). */
+function nomeDoPadrao(ext, id) {
+  if (id === 'fora') return tr('Programa do computador principal');
+  const p = programasPara('arquivo.' + ext).find((x) => x.id === id);
+  if (p) return p.nome;
+  const c = id.startsWith('craft:') && (estado.catalogo || []).find((x) => 'craft:' + x.id === id);
+  return tr('{programa} (não instalado)', { programa: c ? c.nome : id });
+}
+
+/**
+ * O programa de cada tipo de arquivo, como em "Abrir com › Escolher o programa…": a lista dos tipos
+ * que têm um escolhido, Mudar, Voltar ao normal (o programa de sempre) e Novo tipo. Grava no OK.
+ */
+function dialogoPadroes() {
+  const pend = { ...(estado.config.abrirCom || {}) };
+  const tipos = () => Object.keys(pend).filter((e) => pend[e]).sort();
+  let sel = 0;
+  const caixa = h('div.campo.lp-lista', { tabIndex: 0, style: { height: '150px' } });
+  const btNovo = h('button', { type: 'button' }, rotulo(tr('&Novo tipo…')));
+  const btMudar = h('button', { type: 'button' }, rotulo(tr('&Mudar…')));
+  const btVoltar = h('button', { type: 'button' }, rotulo(tr('&Voltar ao normal')));
+  const descricao = h('div', { style: { lineHeight: '13px', minHeight: '26px', marginTop: '6px' } });
+  const desenhar = () => {
+    const l = tipos();
+    sel = Math.max(0, Math.min(sel, l.length - 1));
+    caixa.replaceChildren(...(l.length ? l.map((ext, i) => {
+      const linha = h('div.lp-linha' + (i === sel ? '.sel' : ''), img(tipoDe('a.' + ext).icone, 16),
+        h('span', { style: { width: '64px', flex: 'none' } }, '.' + ext), h('span', nomeDoPadrao(ext, pend[ext])));
+      linha.addEventListener('mousedown', () => { sel = i; desenhar(); });
+      linha.addEventListener('dblclick', () => btMudar.click());
+      return linha;
+    }) : [h('div', { style: { color: '#808080', padding: '2px 3px' } }, tr('Nenhum tipo tem um programa escolhido.'))]));
+    btMudar.disabled = btVoltar.disabled = !l.length;
+    descricao.textContent = l.length ? tr('Os arquivos {tipo} (.{ext}) abrem com {programa}.', { tipo: tipoDe('a.' + l[sel]).descricao, ext: l[sel], programa: nomeDoPadrao(l[sel], pend[l[sel]]) }) : '';
+  };
+  const mudar = async (ext) => {
+    const v = await escolherPrograma({ nome: 'arquivo.' + ext, soPadrao: true, guardar: false, atual: pend[ext] || null });
+    if (!v) return;
+    pend[ext] = v;
+    sel = tipos().indexOf(ext);
+    desenhar();
+  };
+  btMudar.addEventListener('click', () => { const ext = tipos()[sel]; if (ext) mudar(ext); });
+  btVoltar.addEventListener('click', () => { const ext = tipos()[sel]; if (!ext) return; pend[ext] = null; desenhar(); });
+  btNovo.addEventListener('click', async () => {
+    const v = await entrada({ titulo: tr('Novo tipo'), texto: tr('A extensão do tipo de arquivo (por exemplo, docx):'), icone: 'programa' });
+    const ext = String(v || '').trim().replace(/^\*?\./, '').toLowerCase();
+    if (!ext) return;
+    if (!/^[a-z0-9_-]{1,12}$/.test(ext)) return erro(tr('"{ext}" não é uma extensão de arquivo.', { ext: v }));
+    mudar(ext);
+  });
+  caixa.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' && sel > 0) { sel--; desenhar(); e.preventDefault(); }
+    if (e.key === 'ArrowDown' && sel < tipos().length - 1) { sel++; desenhar(); e.preventDefault(); }
+    if (e.key === 'Enter' && !btMudar.disabled) btMudar.click();
+    if (e.key === 'Delete' && !btVoltar.disabled) btVoltar.click();
+  });
+  desenhar();
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('programa', 32),
+      h('div', { style: { lineHeight: '13px' } }, tr('Os tipos de arquivo com um programa escolhido abrem com ele nos dois cliques. Os outros abrem com o programa de sempre. Para escolher, você também pode usar o botão direito: Abrir com › Escolher o programa…'))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Tipos de arquivo')),
+      h('div.lp-topo', caixa, h('div.lp-botoes', btNovo, btMudar, btVoltar)), descricao));
+  return dialogoBase({
+    titulo: tr('Programas padrão'), icone: 'programa', larg: 420,
+    abas: [{ titulo: tr('Abrir com'), conteudo }],
+    aoAplicar: async () => {
+      const atual = estado.config.abrirCom || {};
+      const mudou = {};
+      for (const ext of new Set([...Object.keys(atual), ...Object.keys(pend)])) {
+        if ((atual[ext] || null) !== (pend[ext] || null)) mudou[ext] = pend[ext] || null;
+      }
+      if (Object.keys(mudou).length) await definirConfig({ abrirCom: mudou });
     },
   });
 }

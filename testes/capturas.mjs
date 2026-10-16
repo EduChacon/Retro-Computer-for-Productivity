@@ -461,6 +461,55 @@ const ROTEIROS = {
     await foto('pastas-documentos');
   },
 
+  // O programa padrão de cada tipo: Abrir com › Escolher o programa… (o Bloco de notas para o .md, que
+  // abre no WordCraft com RETRO_ZIP), os dois cliques com ele, o Painel › Programas padrão e o Voltar ao normal.
+  async padroes() {
+    fs.writeFileSync(path.join(disco, DOCS, 'Notas.md'), '# Notas\n\nO programa padrão de cada tipo de arquivo.\n');
+    const titulo = () => pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); return j ? j.titulo : null; });
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    const item = '.janela.ativa .item:has-text("Notas")';
+    await pagina.dblclick(item);
+    await pagina.waitForTimeout(2500);
+    console.log('antes, os dois cliques abrem:', await titulo());
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.click(item, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('Abrir c&om')}")`);
+    await pagina.waitForTimeout(500);
+    await foto('padroes-menu');
+    await pagina.click(`.menu .opcao:has-text("${T('&Escolher o programa…')}")`);
+    await pagina.waitForTimeout(600);
+    await pagina.click(`.janela.ativa .lp-linha:has-text("${T('Bloco de notas')}")`);
+    await pagina.waitForTimeout(200);
+    await foto('padroes-escolher');
+    await pagina.click(`.janela.ativa button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(1200);
+    console.log('aberto pela caixa:', await titulo(), '| abrirCom:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.abrirCom)));
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.dblclick(item);
+    await pagina.waitForTimeout(1500);
+    console.log('depois, os dois cliques abrem:', await titulo());
+    await fecharTudo();
+    await abrir('painel', { secao: 'padroes' });
+    await pagina.waitForTimeout(700);
+    await foto('padroes-painel');
+    await pagina.click(`.janela.ativa button:has-text("${T('&Voltar ao normal')}")`);
+    await pagina.waitForTimeout(200);
+    await pagina.click(`.janela.ativa .acoes button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(500);
+    console.log('voltou ao normal:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.abrirCom)));
+    await fecharTudo();
+    await abrir('painel', { secao: 'padroes' });
+    await pagina.waitForTimeout(700);
+    await foto('padroes-painel-vazio');
+  },
+
   async vitrine() {
     await fecharTudo();
     const lances = ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5', 'c2c3', 'g8f6', 'd2d4', 'e5d4', 'c3d4', 'c5b4', 'b1c3', 'f6e4', 'e1g1', 'e4c3', 'b2c3', 'b4c3'];
@@ -668,7 +717,7 @@ const ROTEIROS = {
   },
   async caixas() {
     // Cada caixa do Painel de controle, aba a aba: o conteúdo cabe sem rolar? (sem fotos)
-    for (const secao of ['aparencia', 'barra', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'usuarios', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'acessibilidade', 'copia', 'impressoras', 'sobre']) {
+    for (const secao of ['aparencia', 'barra', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'usuarios', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'acessibilidade', 'copia', 'impressoras', 'padroes', 'sobre']) {
       await fecharTudo();
       await abrir('painel', { secao });
       await pagina.waitForTimeout(1200);

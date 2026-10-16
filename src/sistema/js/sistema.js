@@ -188,7 +188,19 @@ export function programasPara(nome) {
     if ((p.tipos || []).includes(ext)) r.push({ id: 'craft:' + p.id, nome: p.nome, icone: p.icone || 'programa' });
   }
   if (ehTexto(nome) && !r.some((x) => x.id === 'bloco')) r.push({ id: 'bloco', nome: tr('Bloco de notas'), icone: 'bloco' });
+  // O programa padrão escolhido pelo usuário para o tipo vem primeiro.
+  const i = r.findIndex((x) => x.id === padraoPara(nome));
+  if (i > 0) r.unshift(...r.splice(i, 1));
   return r;
+}
+
+/**
+ * O programa padrão escolhido para o tipo do arquivo (Abrir com › Escolher o programa…): o
+ * identificador de um programa, 'fora' (o do computador principal) ou null (o de sempre).
+ */
+export function padraoPara(nome) {
+  const ext = extensao(nome);
+  return (ext && ((estado.config && estado.config.abrirCom) || {})[ext]) || null;
 }
 
 /** Programas do catálogo (não instalados) que abririam o arquivo. */
@@ -199,6 +211,12 @@ export function sugestoesPara(nome) {
 
 export async function abrirArquivo(rel, { com } = {}) {
   const nome = nomeDe(rel);
+  // O programa padrão do tipo, se o usuário escolheu um (e ele ainda está instalado).
+  if (!com) {
+    const pad = padraoPara(nome);
+    if (pad === 'fora') { adicionarRecente(rel); return abrirNoComputador(rel); }
+    if (pad && programasPara(nome).some((p) => p.id === pad)) com = pad;
+  }
   // As pastas compactadas: o .zip abre como pasta no Explorador; o .tar só se extrai.
   if (!com && /\.(zip|tar|tgz|txz|tbz2?|tar\.(gz|xz|bz2))$/i.test(nome)) {
     const c = await import('./compactados.js');

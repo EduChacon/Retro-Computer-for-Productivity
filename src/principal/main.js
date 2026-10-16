@@ -945,6 +945,12 @@ function registrarPonte() {
     else if ('bloqueio' in parte) delete parte.bloqueio;
     // As permissões dos programas só mudam pela pergunta (ou pelo Painel, que as tira com null).
     if (parte.permissoesProgramas && typeof parte.permissoesProgramas !== 'object') delete parte.permissoesProgramas;
+    // Os programas padrão: a extensão → o identificador do programa (ou null, o de sempre).
+    if ('abrirCom' in parte) {
+      const a = parte.abrirCom;
+      const ok = a && typeof a === 'object' && !Array.isArray(a) && Object.entries(a).every(([ext, v]) => /^[a-z0-9_-]{1,12}$/.test(ext) && (v === null || (typeof v === 'string' && /^[a-z0-9:_-]{1,80}$/i.test(v))));
+      if (!ok) delete parte.abrirCom;
+    }
     const r = config.definir(parte);
     if (parte.transferencia && historico) historico.ligar(r.transferencia.historico !== false);
     if (parte.papel && MODO_SISTEMA) fundoDaRaiz();
