@@ -3,3 +3,5 @@ dist/
 _to_delete/
 *.log
 .DS_Store
+# As cópias de trabalho dos ajudantes do Claude Code (locais, nunca no repositório).
+.claude/worktrees/
