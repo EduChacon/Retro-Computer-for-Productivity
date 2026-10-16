@@ -157,7 +157,7 @@ const TOPICOS = [
     id: 'barra', icone: 'relogio',
     'pt-BR': ['A barra de tarefas', `
 <h2>À esquerda</h2>
-<p>O botão <b>Iniciar</b>, a caixa de busca (que acha programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados. Para fixar um programa, use o botão direito no botão da janela dele ou num ícone › <b>Fixar na barra de tarefas</b>.</p>
+<p>O botão <b>Iniciar</b>, a caixa de busca (que acha programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados. Para fixar um programa, use o botão direito no botão da janela dele ou num ícone › <b>Fixar na barra de tarefas</b>. Para mudar a ordem, arraste os botões (os fixados e os das janelas) para o lugar que quiser: a ordem dos fixados fica guardada.</p>
 <p>Uma conta na caixa de busca (<b>12*3,5</b>, <b>200 × 15%</b>, <b>√2</b>) mostra o resultado primeiro; Enter o copia.</p>
 <p>Os botões das janelas mostram o nome. Para ver só os ícones, agrupados por programa, use o botão direito na barra › <b>Botões das janelas</b>. A roda do mouse num botão abre outra janela do programa.</p>
 <h2>O menu Iniciar do seu jeito</h2>
@@ -167,7 +167,7 @@ const TOPICOS = [
 <p>Um clique no <b>relógio</b> abre o calendário; o botão direito nele › <b>Mostrar a data</b> põe a data embaixo da hora.</p>`],
     en: ['The taskbar', `
 <h2>On the left</h2>
-<p>The <b>Start</b> button, the search box (it finds programs, Control Panel options and files on drive C:; with Enter, it searches the internet) and the pinned programs. To pin a program, right-click its window button or an icon › <b>Pin to the taskbar</b>.</p>
+<p>The <b>Start</b> button, the search box (it finds programs, Control Panel options and files on drive C:; with Enter, it searches the internet) and the pinned programs. To pin a program, right-click its window button or an icon › <b>Pin to the taskbar</b>. To change the order, drag the buttons (the pinned ones and the window buttons) where you want them: the order of the pinned ones is saved.</p>
 <p>A calculation in the search box (<b>12*3.5</b>, <b>200 × 15%</b>, <b>√2</b>) shows the result first; Enter copies it.</p>
 <p>The window buttons show the name. To see only the icons, grouped by program, right-click the taskbar › <b>Taskbar buttons</b>. The mouse wheel on a button opens another window of the program.</p>
 <h2>The Start menu your way</h2>
@@ -177,7 +177,7 @@ const TOPICOS = [
 <p>A click on the <b>clock</b> opens the calendar; right-click it › <b>Show the date</b> to put the date under the time.</p>`],
     es: ['La barra de tareas', `
 <h2>A la izquierda</h2>
-<p>El botón <b>Inicio</b>, el cuadro de búsqueda (encuentra programas, opciones del Panel de control y archivos del disco C:; con Enter, busca en internet) y los programas anclados. Para anclar un programa, usa el clic derecho en el botón de su ventana o en un icono › <b>Anclar a la barra de tareas</b>.</p>
+<p>El botón <b>Inicio</b>, el cuadro de búsqueda (encuentra programas, opciones del Panel de control y archivos del disco C:; con Enter, busca en internet) y los programas anclados. Para anclar un programa, usa el clic derecho en el botón de su ventana o en un icono › <b>Anclar a la barra de tareas</b>. Para cambiar el orden, arrastra los botones (los anclados y los de las ventanas) adonde quieras: el orden de los anclados se guarda.</p>
 <p>Una cuenta en el cuadro de búsqueda (<b>12*3,5</b>, <b>200 × 15%</b>, <b>√2</b>) muestra el resultado primero; Enter lo copia.</p>
 <p>Los botones de las ventanas muestran el nombre. Para ver solo los íconos, agrupados por programa, usa el clic derecho en la barra › <b>Botones de las ventanas</b>. La rueda del mouse en un botón abre otra ventana del programa.</p>
 <h2>El menú Inicio a tu manera</h2>

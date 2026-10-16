@@ -219,6 +219,85 @@ async function fecharTodas(js) {
   for (const j of js.slice()) if (!(await j.fechar())) break;
 }
 
+/* ---------- Arrastar para reorganizar a barra ---------- */
+
+/*
+ * Os botões da barra mudam de lugar arrastando, como no Windows de hoje: o botão troca de lugar
+ * com o vizinho quando o ponteiro passa do meio dele, e soltar grava a ordem nova. A ordem dos
+ * fixados fica guardada (barra.fixados); a das janelas e a dos programas abertos que não estão
+ * fixados vale até o Retro Computer fechar.
+ */
+const LIMIAR_ARRASTO = 5; // pontos antes de o clique virar arrasto
+let arrasto = null; // { b, faixa, x0, y0, id, movido, aoSoltar }
+let redesenharDepois = false;
+let proximaPosicao = 0;
+const posicaoJanela = new Map(); // a janela (ou o id da do Linux) -> a posição na barra
+let ordemGrupos = new Map(); // no modo só com ícones: a chave do grupo -> a posição
+
+/** A chave de uma janela na ordem da barra (as do Linux são refeitas a cada leitura: vale o id). */
+const chaveJanela = (j) => (j.nativa ? 'nativa:' + j.id : j);
+
+/** As janelas na ordem da barra: as novas no fim, as arrastadas onde ficaram. */
+function emOrdem(js) {
+  for (const j of js) if (!posicaoJanela.has(chaveJanela(j))) posicaoJanela.set(chaveJanela(j), proximaPosicao++);
+  // As que fecharam saem da conta.
+  const vivas = new Set(js.map(chaveJanela));
+  for (const k of [...posicaoJanela.keys()]) if (!vivas.has(k)) posicaoJanela.delete(k);
+  return js.slice().sort((a, b) => posicaoJanela.get(chaveJanela(a)) - posicaoJanela.get(chaveJanela(b)));
+}
+
+/** Um botão que se reorganiza arrastando dentro da faixa dele; aoSoltar recebe os botões na ordem nova. */
+function reorganizavel(b, faixa, aoSoltar) {
+  b.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    arrasto = { b, faixa, x0: e.clientX, y0: e.clientY, id: e.pointerId, movido: false, aoSoltar };
+  });
+}
+
+function moverArrasto(e) {
+  const a = arrasto;
+  if (!a || e.pointerId !== a.id) return;
+  if (!a.b.isConnected) { arrasto = null; return; }
+  if (!a.movido) {
+    if (Math.abs(e.clientX - a.x0) < LIMIAR_ARRASTO && Math.abs(e.clientY - a.y0) < LIMIAR_ARRASTO) return;
+    a.movido = true;
+    try { a.b.setPointerCapture(a.id); } catch { }
+    a.b.classList.add('arrastado');
+    document.body.classList.add('arrastando-barra');
+  }
+  // O lugar novo: antes do primeiro vizinho cujo meio fica à direita do ponteiro.
+  const outros = [...a.faixa.children].filter((x) => x !== a.b && x.tagName === 'BUTTON');
+  const depois = outros.find((x) => { const r = x.getBoundingClientRect(); return e.clientX < r.left + r.width / 2; }) || null;
+  if (depois ? a.b.nextElementSibling !== depois : a.b !== a.faixa.lastElementChild) a.faixa.insertBefore(a.b, depois);
+}
+
+function soltarArrasto(e) {
+  const a = arrasto;
+  if (!a || e.pointerId !== a.id) return;
+  arrasto = null;
+  if (!a.movido) return;
+  a.b.classList.remove('arrastado');
+  document.body.classList.remove('arrastando-barra');
+  // O clique que vem depois de soltar não abre nem minimiza nada.
+  const parar = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+  window.addEventListener('click', parar, { capture: true, once: true });
+  setTimeout(() => window.removeEventListener('click', parar, { capture: true }), 0);
+  if (e.type === 'pointerup') a.aoSoltar([...a.faixa.children].filter((x) => x.tagName === 'BUTTON'));
+  if (redesenharDepois || e.type !== 'pointerup') { redesenharDepois = false; desenharTarefas(); }
+}
+
+window.addEventListener('pointermove', moverArrasto);
+window.addEventListener('pointerup', soltarArrasto);
+window.addEventListener('pointercancel', soltarArrasto);
+
+/** Grava a ordem nova dos fixados (os que não estão na barra agora, como um programa removido, ficam no fim). */
+function gravarFixados(chaves) {
+  const atuais = fixados();
+  const novos = [...chaves.filter((k) => atuais.includes(k)), ...atuais.filter((k) => !chaves.includes(k))];
+  if (novos.join('\n') === atuais.join('\n')) return desenharTarefas();
+  return definirConfig({ barra: { fixados: novos } });
+}
+
 /* ---------- Os botões das janelas ---------- */
 
 /** A janela está na frente? (As do Linux dizem; as do Retro Computer, só com ele na frente.) */
@@ -226,15 +305,18 @@ const naFrente = (j, ativa) => (j.nativa ? j.ativa : j === ativa && !j.minimizad
 
 function desenharTarefas() {
   if (!tarefas || !estado.config) return;
+  // No meio de um arrasto, a barra só é refeita depois de soltar (o botão arrastado sumiria).
+  if (arrasto && arrasto.movido) { redesenharDepois = true; return; }
   // Com um programa do Linux na frente, nenhuma janela do Retro Computer fica apertada.
   const ativa = retroAtivo() ? janelaAtiva() : null;
   // As janelas dos programas do Linux (modo sistema) vêm depois das do Retro Computer.
-  const visiveis = [...lista.filter((j) => !j.dialogo), ...janelasNativas()];
+  const visiveis = emOrdem([...lista.filter((j) => !j.dialogo), ...janelasNativas()]);
   const icones = modoBotoes() === 'icones';
   // Com o nome: os fixados ficam à parte, como a Inicialização rápida da época.
   const rapidos = icones ? [] : fixados().map(programaDe).filter(Boolean);
   fixadosEl.replaceChildren(...rapidos.map((p) => {
-    const b = h('button.prog.rapido', { title: p.nome }, iconeDe(p));
+    const b = h('button.prog.rapido', { title: p.nome, dataset: { chave: p.chave } }, iconeDe(p));
+    reorganizavel(b, fixadosEl, (bs) => gravarFixados(bs.map((x) => x.dataset.chave)));
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('click', () => p.abrir());
     b.addEventListener('auxclick', (e) => { if (e.button === 1) p.abrir(); });
@@ -252,6 +334,8 @@ function desenharTarefas() {
   tarefas.replaceChildren(...visiveis.map((j) => {
     const pj = j.nativa && j.programa ? programaDe(j.programa) : null;
     const b = h('button', { title: j.titulo }, pj ? iconeDe(pj) : j.icone ? img(j.icone, 16) : null, h('span', j.titulo));
+    b.janela = j;
+    reorganizavel(b, tarefas, (bs) => bs.forEach((x, i) => posicaoJanela.set(chaveJanela(x.janela), i)));
     if (naFrente(j, ativa)) b.classList.add('apertado');
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('click', () => {
@@ -294,12 +378,22 @@ function desenharGrupos(visiveis, ativa) {
       grupos.get(p.chave).janelas.push(j);
     } else {
       // Uma janela sem programa conhecido fica sozinha, com o ícone dela.
-      grupos.set(Symbol('janela'), { p: { nome: j.titulo, icone: j.icone || 'programa' }, janelas: [j] });
+      grupos.set(chaveJanela(j), { p: { nome: j.titulo, icone: j.icone || 'programa' }, janelas: [j] });
     }
   }
-  tarefas.replaceChildren(...[...grupos.values()].map((g) => {
+  // A ordem arrastada (até fechar o Retro Computer); os grupos novos vão para o fim.
+  const naturais = [...grupos.keys()];
+  const pos = (k) => (ordemGrupos.has(k) ? ordemGrupos.get(k) : 1e6 + naturais.indexOf(k));
+  const chaves = naturais.slice().sort((a, b) => pos(a) - pos(b));
+  tarefas.replaceChildren(...chaves.map((k) => {
+    const g = grupos.get(k);
     const js = g.janelas;
     const b = h('button.prog', { title: js.length === 1 ? js[0].titulo : g.p.nome }, iconeDe(g.p));
+    b.grupo = k;
+    reorganizavel(b, tarefas, (bs) => {
+      ordemGrupos = new Map(bs.map((x, i) => [x.grupo, i]));
+      gravarFixados(bs.map((x) => x.grupo).filter((x) => typeof x === 'string'));
+    });
     if (js.length) b.classList.add('aberto');
     if (js.length > 1) b.classList.add('varias');
     if (js.some((j) => naFrente(j, ativa))) b.classList.add('apertado');

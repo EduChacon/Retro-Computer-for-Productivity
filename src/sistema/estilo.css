@@ -689,6 +689,11 @@ button.prog.rapido:not(:disabled):active { box-shadow: var(--raso); padding: 1px
 button.prog.aberto::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: 2px; height: 2px; background: var(--titulo); }
 button.prog.varias::after { left: 8px; right: 8px; background: linear-gradient(90deg, var(--titulo) 0 6px, transparent 6px 10px, var(--titulo) 10px); }
 #tarefas button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* O botão arrastado para outro lugar da barra: o contorno pontilhado da época, por cima dos outros.
+   No toque, o dedo arrasta o botão (a barra não rola). */
+#barra button { touch-action: none; }
+#barra button.arrastado { outline: 1px dotted var(--escuro); outline-offset: -4px; z-index: 1; }
+body.arrastando-barra, body.arrastando-barra #barra button { cursor: var(--cur-default, default); }
 /* Com a data no relógio, a barra cresce um pouco (como a barra dupla da época). */
 body.barra-alta { --altura-barra: 34px; }
 #bandeja {

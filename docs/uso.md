@@ -62,6 +62,7 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 
 - **À esquerda**: o Iniciar, a caixa de busca (programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados (de início, o Explorador de arquivos, o Navegador, o E-mail e o Bloco de notas). Botão direito num programa › "Fixar na barra de tarefas" ou "Desafixar".
 - **Os botões das janelas** mostram o nome, como na época, ou só os ícones, agrupados por programa (botão direito na barra › Botões das janelas). O clique com a roda num botão abre outra janela do programa.
+- **Arrastar para reorganizar**: os fixados e os botões das janelas mudam de lugar arrastando (o botão troca com o vizinho quando o ponteiro passa do meio dele, com o contorno pontilhado). A ordem dos fixados fica guardada; a das janelas e a dos programas abertos que não estão fixados vale até fechar o Retro Computer, e as janelas novas entram no fim.
 - **As propriedades** (botão direito na barra › Propriedades, ou Iniciar › Configurações › "Barra de tarefas e menu Iniciar"): a caixa de busca, a data, os botões das janelas e a ordem dos fixados.
 - **A bandeja, à direita**: a rede (as redes Wi-Fi, no Linux), o volume (com a escolha da saída de som, quando há mais de uma), a bateria com o brilho da tela e a bateria do mouse e do teclado sem fio, o Bluetooth (no Linux), o sino das notificações com o "Não perturbe" e o relógio, que abre o calendário (botão direito › Mostrar a data).
 

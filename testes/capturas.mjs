@@ -2025,6 +2025,66 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'nomes' } }));
   },
 
+  // Arrastar para reorganizar a barra: os botões das janelas, os fixados (com o nome) e os
+  // programas (só os ícones). O clique de soltar não pode abrir nem minimizar nada.
+  async reorganizar() {
+    await fecharTudo();
+    await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'nomes', fixados: ['navegador', 'bloco', 'calculadora'] } }));
+    await pagina.evaluate(async () => { const s = await import('./js/sistema.js'); await s.definirConfig({}); });
+    await abrir('bloco');
+    await abrir('calculadora');
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(800);
+    const titulos = (sel) => pagina.evaluate((s) => [...document.querySelectorAll(s)].map((b) => b.title || b.dataset.dica || ''), sel);
+    const estados = () => pagina.evaluate(() => window.__retro.janelas.lista.filter((j) => !j.dialogo).map((j) => (j.minimizada ? 'min' : 'ok')).join(','));
+    // Arrasta do centro de um botão até um ponto, em passos, como a mão.
+    const arrastar = async (de, ateX, foto1) => {
+      const r = await pagina.locator(de).boundingBox();
+      await pagina.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+      await pagina.mouse.down();
+      const passos = 12;
+      for (let i = 1; i <= passos; i++) {
+        await pagina.mouse.move(r.x + r.width / 2 + ((ateX - (r.x + r.width / 2)) * i) / passos, r.y + r.height / 2);
+        await pagina.waitForTimeout(30);
+      }
+      if (foto1) await foto(foto1);
+      await pagina.mouse.up();
+      await pagina.waitForTimeout(500);
+    };
+    console.log('janelas antes:', JSON.stringify(await titulos('#tarefas button')), '| estados:', await estados());
+    await foto('reorganizar-antes');
+    // A primeira janela (o Bloco de notas) vai para o fim.
+    const fim = await pagina.locator('#tarefas button >> nth=-1').boundingBox();
+    await arrastar('#tarefas button >> nth=0', fim.x + fim.width - 4, 'reorganizar-arrastando');
+    console.log('janelas depois:', JSON.stringify(await titulos('#tarefas button')), '| estados:', await estados());
+    await foto('reorganizar-janelas');
+    // Uma janela nova entra no fim, sem desfazer a ordem.
+    await abrir('navegador');
+    await pagina.waitForTimeout(800);
+    console.log('com mais uma:', JSON.stringify(await titulos('#tarefas button')));
+    // O último fixado (a Calculadora) vai para o começo e fica guardado.
+    const ini = await pagina.locator('#fixados button >> nth=0').boundingBox();
+    await arrastar('#fixados button >> nth=-1', ini.x + 2);
+    console.log('fixados:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.barra.fixados)), '| janelas abertas:', await pagina.evaluate(() => window.__retro.janelas.lista.length));
+    await foto('reorganizar-fixados');
+    // Só os ícones: um programa aberto que não está fixado vai para o começo; a ordem dos fixados segue a nova.
+    await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'icones' } }));
+    await pagina.evaluate(async () => { const s = await import('./js/sistema.js'); await s.definirConfig({}); });
+    await pagina.waitForTimeout(600);
+    console.log('ícones antes:', JSON.stringify(await titulos('#tarefas button.prog')));
+    const primeiro = await pagina.locator('#tarefas button.prog >> nth=0').boundingBox();
+    await arrastar('#tarefas button.prog >> nth=-1', primeiro.x + 2);
+    const ultimoFix = await pagina.locator('#tarefas button.prog >> nth=-1').boundingBox();
+    await arrastar('#tarefas button.prog >> nth=1', ultimoFix.x + ultimoFix.width - 2);
+    console.log('ícones depois:', JSON.stringify(await titulos('#tarefas button.prog')), '| fixados:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.barra.fixados)), '| estados:', await estados());
+    await foto('reorganizar-icones');
+    // Um clique simples continua sendo um clique (minimiza a janela da frente).
+    await pagina.click('#tarefas button.prog.apertado');
+    await pagina.waitForTimeout(400);
+    console.log('clique simples:', await estados());
+    await pagina.evaluate(() => retro.config.definir({ barra: { botoes: 'nomes' } }));
+  },
+
   // O modo sistema (com RETRO_SISTEMA=1 e RETRO_ENERGIA_FALSA=1: a energia só é anotada, nunca desliga).
   async sistema() {
     if (!process.env.RETRO_ENERGIA_FALSA) throw new Error('rode com RETRO_ENERGIA_FALSA=1');
