@@ -7,6 +7,12 @@
  */
 const { ipcRenderer, webFrame } = require('electron');
 
+// O login do Google: ali o Navegador se apresenta como o Firefox (main.js, agenteFirefox), e o
+// Firefox não tem o navigator.userAgentData do Chromium, que denunciaria o navegador embutido.
+if (location.hostname === 'accounts.google.com') {
+  try { webFrame.executeJavaScript("try { Object.defineProperty(Navigator.prototype, 'userAgentData', { get: () => undefined, configurable: true }); } catch (e) { }"); } catch { }
+}
+
 // As notificações (window.Notification) do site: a página pede como sempre, e o aviso vai para a
 // área de trabalho, se o usuário permitiu as notificações desse site.
 try {

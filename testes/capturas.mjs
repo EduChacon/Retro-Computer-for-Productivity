@@ -572,6 +572,139 @@ const ROTEIROS = {
     console.log('desligadas: pastas', JSON.stringify(await pagina.evaluate(() => retro.computador.pastas())), '| rota recusa?', await pagina.evaluate(() => retro.unidades.pasta('pc:mesa', '').then(() => false, () => true)));
   },
 
+  // Arrastar e soltar com o mouse: um arquivo sobre o ícone de uma pasta (no Explorador e na área de
+  // trabalho), um arquivo para dentro de uma pasta aberta, e renomear na área de trabalho (o texto à vista).
+  async arrastar() {
+    const docs = path.join(disco, DOCS);
+    const mesa = path.join(disco, MESA);
+    fs.mkdirSync(path.join(docs, 'Pasta A'), { recursive: true });
+    fs.mkdirSync(path.join(docs, 'Pasta B'), { recursive: true });
+    fs.writeFileSync(path.join(docs, 'nota.txt'), 'nota');
+    fs.writeFileSync(path.join(docs, 'outra.txt'), 'outra');
+    fs.mkdirSync(path.join(mesa, 'Projetos'), { recursive: true });
+    fs.writeFileSync(path.join(mesa, 'lembrete.txt'), 'lembrete');
+    await fecharTudo();
+    await pagina.waitForTimeout(1500);
+    const arrastar = async (de, para) => {
+      const a = await pagina.locator(de).first().boundingBox();
+      const b = await pagina.locator(para).first().boundingBox();
+      await pagina.mouse.move(a.x + a.width / 2, a.y + 12);
+      await pagina.mouse.down();
+      for (let i = 1; i <= 12; i++) await pagina.mouse.move(a.x + a.width / 2 + ((b.x + b.width / 2) - (a.x + a.width / 2)) * i / 12, a.y + 12 + ((b.y + 12) - (a.y + 12)) * i / 12);
+      await pagina.waitForTimeout(150);
+      await pagina.mouse.up();
+      await pagina.waitForTimeout(1200);
+    };
+    // 1) No Explorador, sobre o ícone da pasta.
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(1200);
+    await arrastar('.janela.ativa .vista-icones .item:has-text("nota.txt"), .janela.ativa .item:has(.rotulo:text-is("nota.txt"))', '.janela.ativa .item:has(.rotulo:text-is("Pasta A"))');
+    console.log('1) sobre o ícone da pasta, no Explorador:', fs.existsSync(path.join(docs, 'Pasta A', 'nota.txt')));
+    // 2) Para dentro de uma pasta aberta (a janela da Pasta B ao lado).
+    await abrir('explorador', { pasta: DOCS + '/Pasta B' });
+    await pagina.waitForTimeout(1200);
+    await pagina.evaluate(() => { const l = window.__retro.janelas.lista; const [a, b] = l.slice(-2); a.ret = { x: 10, y: 10, w: 470, h: 330 }; a.aplicarRet(); b.ret = { x: 500, y: 10, w: 470, h: 330 }; b.aplicarRet(); });
+    await pagina.waitForTimeout(400);
+    const janelas = pagina.locator('.janela');
+    const n = await janelas.count();
+    await arrastar(`.janela >> nth=${n - 2} >> .item:has(.rotulo:text-is("outra.txt"))`, `.janela >> nth=${n - 1} >> .icones`);
+    console.log('2) para dentro da pasta aberta:', fs.existsSync(path.join(docs, 'Pasta B', 'outra.txt')));
+    await foto('arrastar-janelas');
+    // 3) Na área de trabalho, sobre o ícone da pasta.
+    await fecharTudo();
+    await pagina.waitForTimeout(1500);
+    await arrastar('#mesa .item:has(.rotulo:text-is("lembrete.txt"))', '#mesa .item:has(.rotulo:text-is("Projetos"))');
+    console.log('3) sobre a pasta da área de trabalho:', fs.existsSync(path.join(mesa, 'Projetos', 'lembrete.txt')));
+    // 4) Renomear na área de trabalho: o texto digitado tem que aparecer.
+    await pagina.click('#mesa .item:has(.rotulo:text-is("Projetos"))');
+    await pagina.keyboard.press('F2');
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.type('Projetos novos');
+    await pagina.waitForTimeout(300);
+    console.log('4) cor do texto ao renomear:', await pagina.evaluate(() => { const e = document.querySelector('.rotulo-editor'); return e ? getComputedStyle(e).color + ' sobre ' + getComputedStyle(e).backgroundColor : 'sem editor'; }));
+    await foto('arrastar-renomear-mesa');
+    await pagina.keyboard.press('Escape');
+  },
+
+  // Arrastar com o mouse de verdade (o xdotool, pelo arrastar do X, e não o simulado pelo Playwright),
+  // com o zoom da interface em RETRO_ZOOM_TESTE (1, 1.25, 1.5…): o Windows com a escala de 125% ou
+  // 150% fica com um zoom fracionário. Um arquivo vai para a Lixeira e outro para uma pasta.
+  async arrastarReal() {
+    const docs = path.join(disco, DOCS);
+    fs.mkdirSync(path.join(docs, 'Pasta A'), { recursive: true });
+    fs.writeFileSync(path.join(docs, 'nota.txt'), 'nota');
+    fs.writeFileSync(path.join(docs, 'lixo.txt'), 'lixo');
+    const zoom = Number(process.env.RETRO_ZOOM_TESTE || 1);
+    await pagina.evaluate((z) => retro.sistema.zoom(z), zoom);
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(1500);
+    const cont = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getContentBounds());
+    const fator = await pagina.evaluate(() => window.devicePixelRatio);
+    const ponto = async (sel) => { const b = await pagina.locator(sel).first().boundingBox(); return [Math.round(cont.x + (b.x + b.width / 2) * fator), Math.round(cont.y + (b.y + Math.min(16, b.height / 2)) * fator)]; };
+    const xdo = (...a) => execFileSync('xdotool', a.map(String));
+    const arrastarX = async (de, para) => {
+      const [x0, y0] = await ponto(de);
+      const [x1, y1] = await ponto(para);
+      xdo('mousemove', x0, y0); await pagina.waitForTimeout(200);
+      xdo('mousedown', 1); await pagina.waitForTimeout(200);
+      for (let i = 1; i <= 15; i++) { xdo('mousemove', Math.round(x0 + (x1 - x0) * i / 15), Math.round(y0 + (y1 - y0) * i / 15)); await pagina.waitForTimeout(40); }
+      await pagina.waitForTimeout(300);
+      xdo('mouseup', 1); await pagina.waitForTimeout(1500);
+    };
+    console.log('zoom', zoom, '| devicePixelRatio', fator);
+    await arrastarX('.janela.ativa .item:has(.rotulo:text-is("nota.txt"))', '.janela.ativa .item:has(.rotulo:text-is("Pasta A"))');
+    console.log('para a pasta:', fs.existsSync(path.join(docs, 'Pasta A', 'nota.txt')));
+    fs.writeFileSync(path.join(docs, 'fundo.txt'), 'f');
+    await pagina.waitForTimeout(1500);
+    const jb = await pagina.locator('.janela.ativa').boundingBox();
+    const [fx, fy] = await ponto('.janela.ativa .item:has(.rotulo:text-is("fundo.txt"))');
+    xdo('mousemove', fx, fy); await pagina.waitForTimeout(200); xdo('mousedown', 1); await pagina.waitForTimeout(200);
+    for (let i = 1; i <= 15; i++) { xdo('mousemove', fx + 20 * i, Math.round(cont.y + (jb.y + jb.height + 60) * fator)); await pagina.waitForTimeout(40); }
+    await pagina.waitForTimeout(300); xdo('mouseup', 1); await pagina.waitForTimeout(1500);
+    console.log('para o fundo da área de trabalho:', fs.existsSync(path.join(disco, MESA, 'fundo.txt')));
+    // A janela sai de cima do ícone da Lixeira.
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret.x = 300; j.ret.y = 80; j.aplicarRet(); });
+    await pagina.waitForTimeout(400);
+    await arrastarX('.janela.ativa .item:has(.rotulo:text-is("lixo.txt"))', '#mesa .item:has(.rotulo:text-is("' + T('Lixeira') + '"))');
+    const pergunta = await pagina.locator('.janela.dialogo.ativa').count();
+    if (pergunta) { await foto('arrastar-lixeira-pergunta'); await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim').replace('&', '') }).click(); await pagina.waitForTimeout(800); }
+    console.log('para a Lixeira (com a pergunta):', !!pergunta, !fs.existsSync(path.join(docs, 'lixo.txt')));
+    await foto('arrastar-real');
+  },
+
+  // A barra de ferramentas do Explorador e a do Navegador numa janela estreita: os botões não são
+  // cortados (fica só o ícone) e os nomes voltam com a janela larga.
+  async barraFerramentas() {
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(1000);
+    const medir = () => pagina.evaluate(() => { const b = document.querySelector('.janela.ativa .barra-ferramentas'); return { compacta: b.classList.contains('compacta'), sobra: b.scrollWidth - b.clientWidth }; });
+    const largura = async (w) => { await pagina.evaluate((w) => { const j = window.__retro.janelas.janelaAtiva(); j.ret.w = w; j.aplicarRet(); j.ev.emit('tamanho'); }, w); await pagina.waitForTimeout(500); };
+    await largura(760);
+    console.log('larga:', JSON.stringify(await medir()));
+    await foto('barra-larga');
+    await largura(420);
+    console.log('estreita:', JSON.stringify(await medir()));
+    await foto('barra-estreita');
+    await largura(760);
+    console.log('larga de novo:', JSON.stringify(await medir()));
+  },
+
+  // O login do Google no Navegador (precisa da internet): na página de login, o Navegador se
+  // apresenta como o Firefox; noutro site, como o Chrome.
+  async loginGoogle() {
+    await fecharTudo();
+    await abrir('navegador', { url: 'https://accounts.google.com/', interno: true });
+    await pagina.waitForTimeout(9000);
+    const ler = () => pagina.evaluate(() => document.querySelector('.janela.ativa webview').executeJavaScript('[location.host, navigator.userAgent, !!navigator.userAgentData && navigator.userAgentData.brands.map((b) => b.brand).join(",")]'));
+    console.log('no login do Google:', JSON.stringify(await ler()));
+    await foto('login-google');
+    await pagina.evaluate(() => document.querySelector('.janela.ativa webview').loadURL('https://www.wikipedia.org/'));
+    await pagina.waitForTimeout(6000);
+    console.log('noutro site:', JSON.stringify(await ler()));
+  },
+
   async vitrine() {
     await fecharTudo();
     const lances = ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5', 'c2c3', 'g8f6', 'd2d4', 'e5d4', 'c3d4', 'c5b4', 'b1c3', 'f6e4', 'e1g1', 'e4c3', 'b2c3', 'b4c3'];

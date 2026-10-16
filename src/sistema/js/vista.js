@@ -46,11 +46,15 @@ export class VistaIcones {
       this.selecionar([]);
       o.aoMenu([], e);
     });
-    raiz.addEventListener('dragover', (e) => {
+    // O dragenter também é aceito: ao passar de um elemento para outro, o Chromium responde ao sistema
+    // pelo dragenter, e um dragenter recusado logo antes de soltar faz o Windows (e o X) desistir da soltura.
+    const aceitarFundo = (e) => {
       if (!aceitaSoltar(e) || o.pastaSoltar == null) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = [...e.dataTransfer.types].includes('Files') || String(o.pastaSoltar).startsWith('::unidade:') ? 'copy' : (e.ctrlKey ? 'copy' : 'move');
-    });
+    };
+    raiz.addEventListener('dragenter', aceitarFundo);
+    raiz.addEventListener('dragover', aceitarFundo);
     raiz.addEventListener('drop', (e) => {
       if (o.pastaSoltar == null) return;
       if (e.target.closest('.item.alvo')) return;
@@ -150,21 +154,26 @@ export class VistaIcones {
       });
       el.addEventListener('dragend', () => { setTimeout(() => { this.arrastando = null; }, 0); });
     }
-    // Soltar sobre uma pasta ou a Lixeira.
+    // Soltar sobre uma pasta ou a Lixeira. O dragenter e o dragover aceitam (veja o fundo, acima), e a
+    // marca de "por cima" só muda as cores: mudar o tamanho do nome trocava o elemento sob o ponteiro,
+    // e o dragenter desse outro elemento, logo antes de soltar, recusava a soltura.
     if (it.alvo) {
-      el.addEventListener('dragover', (e) => {
+      const aceitar = (e) => {
         if (!aceitaSoltar(e)) return;
         if (this.arrastando && this.arrastando.chaves.includes(it.chave)) return;
         e.preventDefault();
         e.stopPropagation();
-        el.itemEl.classList.add('sel');
-      });
-      el.addEventListener('dragleave', () => { if (!this.sel.has(i)) el.itemEl.classList.remove('sel'); });
+        if (it.alvo === '::lixeira') e.dataTransfer.dropEffect = 'move';
+        el.itemEl.classList.add('sobre');
+      };
+      el.addEventListener('dragenter', aceitar);
+      el.addEventListener('dragover', aceitar);
+      el.addEventListener('dragleave', (e) => { if (!el.contains(e.relatedTarget)) el.itemEl.classList.remove('sobre'); });
       el.addEventListener('drop', (e) => {
+        el.itemEl.classList.remove('sobre');
         if (this.arrastando && this.arrastando.chaves.includes(it.chave)) return;
         e.preventDefault();
         e.stopPropagation();
-        el.itemEl.classList.remove('sel');
         soltarEm(e, it.alvo);
       });
     }

@@ -5,7 +5,7 @@
  * abre endereços http e https, sem acesso ao Node (o processo principal confere).
  * O "E-mail" é o Navegador aberto no e-mail escolhido.
  */
-import { h, img, rotulo } from '../util.js';
+import { h, img, rotulo, barraAdaptavel } from '../util.js';
 import { zoomInterface } from '../aparencia.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
@@ -114,8 +114,8 @@ class Navegador {
       if (this.cliqueNovo && this.campo.selectionStart === this.campo.selectionEnd) { e.preventDefault(); this.campo.select(); }
       this.cliqueNovo = false;
     });
-    const barra = h('div.barra-ferramentas.nav-botoes',
-      this.btVoltar, this.btAvancar, this.btParar, this.btAtualizar, this.btInicio, h('div.sep'), this.btFavoritos);
+    const barra = barraAdaptavel(h('div.barra-ferramentas.nav-botoes',
+      this.btVoltar, this.btAvancar, this.btParar, this.btAtualizar, this.btInicio, h('div.sep'), this.btFavoritos));
     const linhaEndereco = h('div.barra-ferramentas.nav-linha',
       h('label', { on: { click: () => this.campo.focus() } }, rotulo(tr('En&dereço'))), this.campo,
       h('button.ferramenta', { on: { click: () => this.ir(this.campo.value) } }, tr('Ir')));

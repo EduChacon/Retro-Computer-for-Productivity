@@ -614,9 +614,41 @@ function limparNavegador() {
   return s.clearStorageData().then(() => s.clearCache());
 }
 
+/**
+ * O login do Google recusa os navegadores embutidos num aplicativo ("Esse navegador ou app pode não
+ * ser seguro"). Nas páginas de login dele, o Navegador se apresenta como o Firefox, sem as "client
+ * hints" do Chromium (que o Firefox não manda), como fazem os outros programas que reúnem sites;
+ * no resto da navegação, ele continua como o Chrome.
+ */
+const LOGIN_GOOGLE = /^https:\/\/accounts\.google\.com\//i;
+function agenteFirefox(plataforma = process.platform, arq = process.arch) {
+  const so = plataforma === 'win32' ? 'Windows NT 10.0; Win64; x64'
+    : plataforma === 'darwin' ? 'Macintosh; Intel Mac OS X 10.15'
+      : arq === 'arm64' ? 'X11; Linux aarch64' : 'X11; Linux x86_64';
+  return `Mozilla/5.0 (${so}; rv:150.0) Gecko/20100101 Firefox/150.0`;
+}
+
 function configurarNavegador() {
   const s = session.fromPartition(SESSAO_NAVEGADOR);
   s.setUserAgent(s.getUserAgent().replace(/\s(Electron|Retro-?Computer)\/\S+/gi, ''));
+  const agenteChrome = s.getUserAgent();
+  const agenteLogin = agenteFirefox();
+  s.webRequest.onBeforeSendHeaders({ urls: ['https://accounts.google.com/*'] }, (d, cb) => {
+    const cab = { ...d.requestHeaders, 'User-Agent': agenteLogin };
+    for (const k of Object.keys(cab)) if (/^sec-ch-ua/i.test(k)) delete cab[k];
+    cb({ requestHeaders: cab });
+  });
+  // O navigator.userAgent da página acompanha (a página de login também confere por ele).
+  app.on('web-contents-created', (_e, wc) => {
+    if (wc.session !== s) return;
+    wc.on('did-start-navigation', (ev, urlAntiga, _mesmoDoc, principalAntigo) => {
+      const url = (ev && ev.url) || urlAntiga || '';
+      const principal = ev && typeof ev.isMainFrame === 'boolean' ? ev.isMainFrame : principalAntigo;
+      if (!principal || (ev && ev.isSameDocument)) return;
+      const ua = LOGIN_GOOGLE.test(url) ? agenteLogin : agenteChrome;
+      try { if (wc.getUserAgent() !== ua) wc.setUserAgent(ua); } catch { }
+    });
+  });
   // Sempre: copiar e a tela cheia. Perguntando ao usuário (e lembrando por site): a câmera e o
   // microfone, as notificações, ler a área de transferência e a localização. O resto, nunca.
   const sempre = new Set(['clipboard-sanitized-write', 'fullscreen']);

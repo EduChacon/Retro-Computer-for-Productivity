@@ -480,6 +480,11 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   box-shadow: inset 0 -1px var(--sombra), inset 0 1px var(--luz), 0 1px var(--luz);
 }
 .barra-ferramentas .sep { width: 2px; height: 20px; margin: 0 3px; box-shadow: inset 1px 0 var(--sombra), inset -1px 0 var(--luz); }
+/* Os botões não encolhem: sem lugar, a barra fica só com os ícones (barraAdaptavel, em util.js). */
+.barra-ferramentas { min-width: 0; overflow: hidden; }
+.barra-ferramentas > button.ferramenta, .barra-ferramentas > .ferr-rotulo, .barra-ferramentas > .sep { flex: none; white-space: nowrap; }
+.barra-ferramentas.compacta .ferr-rotulo { display: none; }
+.barra-ferramentas.compacta > button.ferramenta { padding: 0 3px; }
 .barra-ferramentas label { gap: 4px; }
 
 /* As alças de redimensionar. */
@@ -554,10 +559,10 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   line-height: 12px;
 }
 .item.sel .rotulo, .item.renomeando .rotulo { -webkit-line-clamp: 6; }
-.item.sel .rotulo { background: var(--selecao); color: var(--selecao-texto); }
+.item.sel .rotulo, .item.sobre .rotulo { background: var(--selecao); color: var(--selecao-texto); }
 .item.foco .rotulo { outline: 1px dotted #ffff7f; outline-offset: -1px; }
 .lista-arquivos .item.foco .rotulo, .janela .item.foco .rotulo { outline-color: #000; }
-.item.sel .icone::after {
+.item.sel .icone::after, .item.sobre .icone::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -571,6 +576,9 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   box-shadow: inset 0 0 0 1px #000;
 }
 .item .rotulo-editor {
+  /* Preto no branco também na área de trabalho, em que os nomes dos ícones são brancos. */
+  color: #000;
+  background: #fff;
   width: 74px;
   margin-top: 3px;
   height: auto;
@@ -597,7 +605,7 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
 .vista-lista .item .icone, .vista-detalhes .item .icone { width: 16px; height: 16px; }
 .vista-lista .item .icone img, .vista-detalhes .item .icone img { width: 16px; height: 16px; }
 .vista-lista .item .rotulo, .vista-detalhes .item .rotulo { margin: 0; -webkit-line-clamp: 1; max-width: 220px; text-align: left; white-space: nowrap; display: block; }
-.vista-lista .item.sel .icone::after, .vista-detalhes .item.sel .icone::after { -webkit-mask-size: 16px 16px; }
+.vista-lista .item.sel .icone::after, .vista-detalhes .item.sel .icone::after, .vista-lista .item.sobre .icone::after, .vista-detalhes .item.sobre .icone::after { -webkit-mask-size: 16px 16px; }
 .vista-detalhes { display: block; overflow: auto; padding: 0; }
 .vista-detalhes .tabela { display: table; width: 100%; border-collapse: collapse; }
 .vista-detalhes .cab { display: table-row; position: sticky; top: 0; }

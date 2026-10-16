@@ -9,7 +9,7 @@
  *   pasta '::zip:…'       por dentro de uma pasta compactada (compactados.js): ver e extrair
  *   qualquer outra        uma pasta do disco ('' é a raiz C:\)
  */
-import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, dataHora, rotulo, extensao, urlMiniatura } from '../util.js';
+import { h, img, tipoDe, caminhoTela, caminhoInterno, nomeDe, paiDe, tamanho, dataHora, rotulo, extensao, urlMiniatura, barraAdaptavel } from '../util.js';
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
@@ -99,7 +99,8 @@ class Explorador {
     this.btVis = h('button.ferramenta', { title: tr('Mostrar ou esconder o painel de visualização (Alt+P)'), on: { click: () => this.alternarVis() } }, img('documento', 16), tr('Visualizar'));
     const ferramentas = h('div.barra-ferramentas',
       this.btVoltar, this.btAcima, this.btPastas, h('div.sep'),
-      h('span', tr('Endereço')), this.caixaEndereco, h('div.sep'), btVista, this.btVis);
+      h('span.ferr-rotulo', tr('Endereço')), this.caixaEndereco, h('div.sep'), btVista, this.btVis);
+    barraAdaptavel(ferramentas);
     this.area = h('div.lista-arquivos', { style: { flex: '1' } });
     // A barra de pastas à esquerda (a árvore), com a divisória para arrastar.
     this.arvore = new Arvore({ aoEscolher: (p) => this.navegar(p) });

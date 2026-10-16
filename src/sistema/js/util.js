@@ -34,6 +34,34 @@ export function h(seletor, props, ...filhos) {
 }
 
 /** Rótulo com a letra de atalho sublinhada: "&Arquivo" → A sublinhado. */
+/**
+ * A barra de ferramentas que se ajusta à largura da janela: os botões não encolhem (o nome cortado
+ * pela metade, "Volt", "Acim"), e, quando eles não cabem, a barra fica só com os ícones (o nome
+ * continua na dica). Com a janela larga de novo, os nomes voltam. Os textos soltos dos botões
+ * (e os marcados com .ferr-rotulo) são os que somem.
+ */
+export function barraAdaptavel(barra) {
+  for (const bt of barra.querySelectorAll('button.ferramenta')) {
+    for (const n of [...bt.childNodes]) {
+      if (n.nodeType === 3 && n.textContent.trim()) n.replaceWith(h('span.ferr-rotulo', n.textContent));
+    }
+  }
+  if (typeof ResizeObserver === 'undefined') return barra;
+  let cheia = 0; // a largura que a barra pede com os nomes
+  const conferir = () => {
+    if (!barra.isConnected || !barra.clientWidth) return;
+    if (!barra.classList.contains('compacta')) {
+      if (barra.scrollWidth > barra.clientWidth + 1) { cheia = barra.scrollWidth; barra.classList.add('compacta'); }
+    } else if (barra.clientWidth >= cheia) {
+      barra.classList.remove('compacta');
+      // Ainda não cabe (a barra mudou desde a medida): volta a ficar só com os ícones.
+      if (barra.scrollWidth > barra.clientWidth + 1) { cheia = barra.scrollWidth; barra.classList.add('compacta'); }
+    }
+  };
+  new ResizeObserver(conferir).observe(barra);
+  return barra;
+}
+
 export function rotulo(texto) {
   const i = texto.indexOf('&');
   if (i < 0) return document.createTextNode(texto);
