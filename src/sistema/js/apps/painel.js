@@ -253,7 +253,7 @@ function dialogoAparencia() {
   const NOMES_MESA = {
     'meu-computador': [marcar('Meu computador'), 'computador'], 'meus-documentos': [marcar('Meus documentos'), 'documentos'],
     lixeira: [marcar('Lixeira'), 'lixeira'], navegador: [marcar('Navegador'), 'navegador'], correio: [marcar('E-mail'), 'correio'],
-    claude: [marcar('Claude'), 'claude'], prompt: [marcar('Prompt de comando'), 'prompt'], painel: [marcar('Painel de controle'), 'painel'],
+    claude: [marcar('Claude'), 'claude'], programas: [marcar('Loja de programas'), 'programas-caixa'], prompt: [marcar('Prompt de comando'), 'prompt'], painel: [marcar('Painel de controle'), 'painel'],
     bloco: [marcar('Bloco de notas'), 'bloco'], foco: [marcar('Foco'), 'foco'],
   };
   const caixasMesa = ICONES_SISTEMA.map((k) => ({ k, c: h('input', { type: 'checkbox', checked: naMesa(k) }) }));

@@ -23,6 +23,10 @@ O Retro Computer pede um sistema de 64 bits e uns 4 GB de memória para tudo ir 
 
 Quem prefere não instalar pode usar o `.zip`: é só extrair e abrir o `Retro Computer.exe`.
 
+### No Windows com o WSL
+
+O item "Linux" do Explorador do Windows é o WSL (o Subsistema do Windows para Linux): um Linux, como o Ubuntu, que roda dentro do próprio Windows. O Retro Computer também funciona nele (no Windows 11, os programas do Linux abrem em janelas comuns): no Ubuntu do WSL, `sudo apt install ./Retro-Computer-1.0.0-linux-amd64.deb` e depois `retro-computer`. Para o dia a dia, porém, o instalador do Windows é mais simples e mais rápido; o WSL serve para experimentar o que só existe no Linux (a loja do Flathub, o firewall). O modo sistema não se aplica ao WSL, e o disco C: fica dentro do Linux dele (visível no Explorador do Windows, no item "Linux").
+
 ## 2. macOS 12 Monterey ou mais novo
 
 1. Baixe o `.dmg` do seu Mac: `x64` (Intel) ou `arm64` (chip Apple, do M1 em diante).

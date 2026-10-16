@@ -8,7 +8,7 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 - No Linux, ele também pode ser o próprio sistema do computador: a sessão "Retro Computer" da tela de entrada abre direto nele, sem a área de trabalho do Linux por baixo (seção 7). Assim, um notebook antigo ou um mini PC vira um computador retrô dedicado.
 - Fala português, inglês e espanhol (Painel de controle › Idioma).
 - O disco C: é uma pasta do computador principal (por padrão, `Documentos/Retro Computer`). Tudo o que se salva fica nela, visível também fora do programa.
-- Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pelo "Adicionar ou remover programas" e rodam em janelas da área de trabalho. No Linux, a mesma janela instala os programas do Flathub.
+- Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pela Loja de programas (no alto do menu Iniciar; no Painel de controle, "Adicionar ou remover programas") e rodam em janelas da área de trabalho. No Linux, a mesma janela instala os programas do Flathub.
 - Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Prompt de comando e três jogos.
 - As janelas se encaixam nas bordas e nos cantos da tela, e os atalhos do Windows (Alt+Tab, a tecla do logotipo com uma letra) funcionam no Retro Computer como sistema.
 - Painel de controle › Segurança mostra num lugar só a senha, o firewall, as atualizações e a privacidade.
@@ -138,7 +138,7 @@ No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw
 
 ## 3. Programas
 
-Iniciar › Configurações › "Adicionar ou remover programas" lista, na aba "Programas recomendados", os Craft por categoria. "Instalar" baixa a versão para navegador do lançamento oficial no GitHub (de 5 MB a 20 MB cada); depois disso, o programa funciona sem internet. "Atualizar" baixa a versão mais recente, e "Remover" apaga o programa sem tocar nos documentos.
+A Loja de programas (no alto do menu Iniciar, ou Iniciar › Configurações › "Adicionar ou remover programas") lista, na aba "Programas recomendados", os Craft por categoria. "Instalar" baixa a versão para navegador do lançamento oficial no GitHub (de 5 MB a 20 MB cada); depois disso, o programa funciona sem internet. "Atualizar" baixa a versão mais recente, e "Remover" apaga o programa sem tocar nos documentos.
 
 ### Atualizações
 
@@ -162,7 +162,7 @@ Iniciar › Programas › "Programas do computador…" lista os programas instal
 
 ### Programas do Linux (Flathub)
 
-No Linux, "Adicionar ou remover programas" tem a aba "Programas do Linux": os mais usados e as categorias do Flathub, a pesquisa e a ficha de cada programa (descrição, captura, versão, licença e tamanho). A instalação é só para o usuário (`flatpak --user`), sem senha, e o programa novo entra nos Programas do computador. Sem o Flatpak, a aba explica como instalá-lo.
+No Linux, a Loja de programas tem a aba "Programas do Linux": os mais usados e as categorias do Flathub, a pesquisa e a ficha de cada programa (descrição, captura, versão, licença e tamanho). A instalação é só para o usuário (`flatpak --user`), sem senha, e o programa novo entra nos Programas do computador. Sem o Flatpak, a aba explica como instalá-lo.
 
 ## 4. Claude Code
 

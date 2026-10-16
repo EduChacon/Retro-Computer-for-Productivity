@@ -27,7 +27,7 @@ const ATALHOS = {
   prompt: { rotulo: marcar('Prompt de comando'), icone: 'prompt', abrir: () => abrir('prompt') },
   bloco: { rotulo: marcar('Bloco de notas'), icone: 'bloco', abrir: () => abrir('bloco') },
   foco: { rotulo: marcar('Foco'), icone: 'foco', abrir: () => abrir('foco') },
-  programas: { rotulo: marcar('Adicionar programas'), icone: 'programas-caixa', abrir: () => abrir('programas') },
+  programas: { rotulo: marcar('Loja de programas'), icone: 'programas-caixa', abrir: () => abrir('programas') },
 };
 
 function atalhoDe(chave) {
@@ -53,7 +53,7 @@ function atalhoDe(chave) {
 }
 
 /** Os ícones do sistema que Painel › Aparência › Área de trabalho liga e desliga, na ordem da mesa. */
-export const ICONES_SISTEMA = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt', 'painel', 'bloco', 'foco'];
+export const ICONES_SISTEMA = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'programas', 'prompt', 'painel', 'bloco', 'foco'];
 export const ICONES_PADRAO = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'];
 export const naMesa = (chave) => ((estado.config.mesa && estado.config.mesa.atalhos) || []).includes(chave);
 

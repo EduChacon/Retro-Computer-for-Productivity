@@ -374,6 +374,9 @@ export async function abrirIniciar() {
   el.append(h('div.faixa', h('span', h('b', 'Retro'), ' Computer')), itens);
   btIniciar.classList.add('apertado');
   await abrirMenu([
+    // A loja (os Craft e, no Linux, os programas do Flathub), à vista no alto, como o Windows Update da época.
+    { rotulo: tr('Lo&ja de programas'), icone: 'programas-caixa', acao: () => abrir('programas') },
+    { separador: true },
     { rotulo: tr('&Programas'), icone: 'pasta-programas', sub: itensProgramas },
     { rotulo: tr('&Documentos'), icone: 'documentos', sub: itensDocumentos },
     {

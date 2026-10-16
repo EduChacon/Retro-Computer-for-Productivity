@@ -14,7 +14,7 @@ const TOPICOS = [
 <p>Ele não é uma máquina virtual: os programas rodam no seu computador de verdade, e o disco C: é uma pasta comum dele. Por isso é leve, abre rápido e nada fica preso lá dentro.</p>
 <h2>Primeiros passos</h2>
 <p>1. Abra <b>Meus documentos</b> e leia o <b>Leia-me.txt</b>.</p>
-<p>2. Instale os programas em <b>Iniciar › Configurações › Adicionar ou remover programas</b>.</p>
+<p>2. Instale os programas pela <b>Loja de programas</b>, no alto do menu Iniciar.</p>
 <p>3. Para a internet, use o <b>Navegador</b> e o <b>E-mail</b>, na barra de tarefas.</p>
 <p>4. Para o Claude, use o ícone <b>Claude</b> na área de trabalho.</p>
 <p>Os ícones da área de trabalho se escolhem em <b>Painel de controle › Aparência › Ícones</b>; para pôr outro programa nela, use o botão direito nele, no menu Iniciar › <b>Adicionar à área de trabalho</b>.</p>
@@ -26,7 +26,7 @@ const TOPICOS = [
 <p>It is not a virtual machine: the programs run on your real computer, and drive C: is an ordinary folder on it. That is why it is light, starts quickly and nothing gets locked inside.</p>
 <h2>First steps</h2>
 <p>1. Open <b>Documents</b> and read <b>Read me.txt</b>.</p>
-<p>2. Install programs from <b>Start › Settings › Add or Remove Programs</b>.</p>
+<p>2. Install programs from the <b>Program Store</b>, at the top of the Start menu.</p>
 <p>3. For the internet, use the <b>Browser</b> and <b>E-mail</b>, on the taskbar.</p>
 <p>4. For Claude, use the <b>Claude</b> icon on the desktop.</p>
 <p>The desktop icons are chosen in <b>Control Panel › Appearance › Icons</b>; to put another program on it, right-click the program in the Start menu › <b>Add to the desktop</b>.</p>
@@ -38,7 +38,7 @@ const TOPICOS = [
 <p>No es una máquina virtual: los programas se ejecutan en tu computadora real, y el disco C: es una carpeta común de ella. Por eso es liviano, abre rápido y nada queda atrapado adentro.</p>
 <h2>Primeros pasos</h2>
 <p>1. Abre <b>Mis documentos</b> y lee <b>Léame.txt</b>.</p>
-<p>2. Instala los programas en <b>Inicio › Configuración › Agregar o quitar programas</b>.</p>
+<p>2. Instala los programas desde la <b>Tienda de programas</b>, arriba en el menú Inicio.</p>
 <p>3. Para internet, usa el <b>Navegador</b> y el <b>Correo</b>, en la barra de tareas.</p>
 <p>4. Para Claude, usa el icono <b>Claude</b> del escritorio.</p>
 <p>Los iconos del escritorio se eligen en <b>Panel de control › Apariencia › Iconos</b>; para poner otro programa en él, haz clic derecho en el programa, en el menú Inicio › <b>Agregar al escritorio</b>.</p>
