@@ -1280,6 +1280,8 @@
   "Desinstalar…": "Uninstall…",
   "Nenhum site instalado. Para instalar, abra o site no Navegador do Retro Computer e use Arquivo › Instalar como programa.": "No site installed. To install one, open the site in Retro Computer's Browser and use File › Install as program.",
   "Os sites instalados como programas abrem numa janela própria e ficam no menu Iniciar › Programas.": "Sites installed as programs open in their own window and stay in the Start menu › Programs.",
+  "O plano de fundo da página inicial do Navegador do Retro Computer, a das abas novas.": "The background of the Retro Computer Browser's home page, the one new tabs show.",
+  "Restaurar o padrão": "Restore default",
   "Propriedades de Internet": "Internet Properties",
   "Programas da internet": "Internet programs",
   "Não foi possível mudar a impressora padrão: {erro}": "Could not change the default printer: {erro}",

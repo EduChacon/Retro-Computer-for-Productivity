@@ -43,6 +43,9 @@ export function escurecer(hex, f = 0.55) {
   return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
 }
 
+/** O fundo de sempre da página inicial do Navegador (Painel › Internet › Página inicial). */
+export const FUNDO_INICIO = Object.freeze({ cor: '#3a6ea5', padrao: 'losangos' });
+
 export function fundoCss(papel) {
   const cor = (papel && papel.cor) || '#008080';
   const img = imagemPadrao(papel && papel.padrao, escurecer(cor));

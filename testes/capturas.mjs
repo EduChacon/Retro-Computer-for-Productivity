@@ -2454,6 +2454,53 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.waitForTimeout(800);
   },
 
+  // O fundo da página inicial do Navegador (Painel › Internet › Página inicial): o de sempre (o azul
+  // com losangos), outra cor e outro padrão, com o Navegador aberto mudando na hora, e o Restaurar.
+  // E a aba Plano de fundo da Aparência, que usa a mesma escolha.
+  async fundoInicio() {
+    await fecharTudo();
+    await pagina.evaluate(() => retro.config.definir({ navegador: { inicioFundo: null } }));
+    await abrir('navegador', { interno: true });
+    await pagina.waitForTimeout(1200);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 380, y: 20, w: 620, h: 420 }; j.aplicarRet(); });
+    const fundo = () => pagina.evaluate(() => [...document.querySelectorAll('.nav-inicio')].map((e) => `${e.style.backgroundColor} ${e.style.backgroundImage === 'none' ? 'sem padrão' : e.style.backgroundImage ? 'com padrão' : '?'}`).join(' | '));
+    console.log('o de sempre:', await fundo());
+    await foto('fundo-inicio-padrao');
+    await abrir('painel', { secao: 'internet' });
+    await pagina.waitForTimeout(600);
+    await pagina.click('.janela.ativa .abas > div >> nth=1');
+    await pagina.waitForTimeout(400);
+    await foto('fundo-inicio-painel');
+    await pagina.click('.janela.ativa .cores > div >> nth=6');
+    await pagina.evaluate(() => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === 'tijolos')); s.value = 'tijolos'; s.dispatchEvent(new Event('change')); });
+    await pagina.waitForTimeout(300);
+    await foto('fundo-inicio-outro');
+    await pagina.click('.janela.ativa button >> text=' + T('&Aplicar').replace('&', ''));
+    await pagina.waitForTimeout(600);
+    console.log('guardado:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.navegador.inicioFundo)), '| o Navegador aberto:', await fundo());
+    await foto('fundo-inicio-aplicado');
+    // Uma aba nova já vem com o fundo escolhido.
+    await pagina.click('.janela.ativa button >> text=' + T('OK'));
+    await pagina.waitForTimeout(400);
+    await pagina.click('.janela.ativa .nav-aba-nova');
+    await pagina.waitForTimeout(500);
+    console.log('com a aba nova:', await fundo());
+    await foto('fundo-inicio-aba-nova');
+    // O Restaurar volta ao de sempre.
+    await abrir('painel', { secao: 'internet' });
+    await pagina.waitForTimeout(600);
+    await pagina.click('.janela.ativa .abas > div >> nth=1');
+    await pagina.waitForTimeout(300);
+    await pagina.click('.janela.ativa button >> text=' + T('Restaurar o padrão'));
+    await pagina.click('.janela.ativa button >> text=' + T('&Aplicar').replace('&', ''));
+    await pagina.waitForTimeout(600);
+    console.log('restaurado:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.navegador.inicioFundo)), '|', await fundo());
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(600);
+    await foto('fundo-aparencia');
+  },
+
   // O modo sistema (com RETRO_SISTEMA=1 e RETRO_ENERGIA_FALSA=1: a energia só é anotada, nunca desliga).
   async sistema() {
     if (!process.env.RETRO_ENERGIA_FALSA) throw new Error('rode com RETRO_ENERGIA_FALSA=1');

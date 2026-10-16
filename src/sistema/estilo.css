@@ -944,6 +944,12 @@ body.barra-alta { --altura-barra: 34px; }
 .cores > div { width: 20px; height: 16px; box-shadow: var(--campo); padding: 2px; }
 .cores > div > div { width: 100%; height: 100%; }
 .cores > div.sel { outline: 1px dotted #000; outline-offset: 1px; }
+/* A prévia da página inicial do Navegador (Painel › Internet): o fundo com a caixa cinza no meio. */
+.inicio-previa { height: 78px; margin-bottom: 10px; box-shadow: var(--campo); display: flex; align-items: center; justify-content: center; }
+.inicio-previa-caixa { width: 150px; height: 46px; background: var(--face); box-shadow: var(--relevo-janela); padding: 6px 8px; display: flex; flex-direction: column; gap: 5px; }
+.inicio-previa-caixa > div { height: 6px; background: var(--sombra); }
+.inicio-previa-caixa > div:first-child { width: 60%; background: var(--titulo); }
+.inicio-previa-caixa > div:last-child { width: 80%; }
 .monitor-previa {
   width: 192px; height: 180px;
   margin: 0 auto 8px;

@@ -9,7 +9,7 @@ import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco, programasPara } from '../sistema.js';
 import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada } from '../dialogos.js';
 import { deslizante } from '../controles.js';
-import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS } from '../aparencia.js';
+import { CORES, PADROES, FUNDO_INICIO, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS } from '../aparencia.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
@@ -230,6 +230,37 @@ function dialogoBarra(args = {}) {
 
 /* Aparência */
 
+/**
+ * A escolha da cor e do padrão 8×8 de um fundo (o da área de trabalho, o da página inicial do
+ * Navegador): muda o papel ({ cor, padrao }) na hora e chama aoMudar; atualizar() relê o papel.
+ */
+function escolhaDeFundo(papel, aoMudar) {
+  const cores = h('div.cores', CORES.map((cor) => {
+    const el = h('div', { title: cor }, h('div', { style: { background: cor } }));
+    el.addEventListener('mousedown', () => { papel.cor = cor; marcarCores(); outra.value = cor; aoMudar(); });
+    return el;
+  }));
+  const marcarCores = () => [...cores.children].forEach((el, i) => el.classList.toggle('sel', CORES[i] === papel.cor));
+  const outra = h('input', { type: 'color', style: { width: '40px', height: '21px', padding: '0', border: 'none' } });
+  outra.addEventListener('input', () => { papel.cor = outra.value; marcarCores(); aoMudar(); });
+  const listaPadroes = h('select', { size: 6, style: { height: 'auto', width: '140px', background: '#fff' } }, Object.entries(PADROES).map(([k, p]) => h('option', { value: k }, tr(p.nome))));
+  listaPadroes.addEventListener('change', () => { papel.padrao = listaPadroes.value; aoMudar(); });
+  const atualizar = () => { marcarCores(); outra.value = papel.cor || '#008080'; listaPadroes.value = papel.padrao || 'nenhum'; };
+  atualizar();
+  // A lista só rola até o padrão escolhido quando aparece (a aba começa escondida).
+  new ResizeObserver((_e, o) => {
+    if (!listaPadroes.clientHeight) return;
+    o.disconnect();
+    const v = listaPadroes.value;
+    listaPadroes.selectedIndex = -1;
+    listaPadroes.value = v;
+  }).observe(listaPadroes);
+  const el = h('div', { style: { display: 'flex', gap: '14px' } },
+    h('fieldset', { style: { flex: '1', margin: '0' } }, h('legend', tr('Cor')), cores, h('div', { style: { marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' } }, tr('Outra:'), outra)),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Padrão')), listaPadroes));
+  return { el, atualizar };
+}
+
 function dialogoAparencia() {
   const c = estado.config;
   const papel = { ...c.papel };
@@ -242,26 +273,7 @@ function dialogoAparencia() {
   const monitor = h('div.monitor-previa', previa);
   atualizarPrevia();
 
-  const cores = h('div.cores', CORES.map((cor) => {
-    const el = h('div', { title: cor }, h('div', { style: { background: cor } }));
-    el.addEventListener('mousedown', () => { papel.cor = cor; marcarCores(); atualizarPrevia(); });
-    return el;
-  }));
-  const marcarCores = () => [...cores.children].forEach((el, i) => el.classList.toggle('sel', CORES[i] === papel.cor));
-  marcarCores();
-  const outra = h('input', { type: 'color', value: papel.cor, style: { width: '40px', height: '21px', padding: '0', border: 'none' } });
-  outra.addEventListener('input', () => { papel.cor = outra.value; marcarCores(); atualizarPrevia(); });
-
-  const listaPadroes = h('select', { size: 6, style: { height: 'auto', width: '140px', background: '#fff' } }, Object.entries(PADROES).map(([k, p]) => h('option', { value: k }, tr(p.nome))));
-  listaPadroes.value = papel.padrao || 'nenhum';
-  listaPadroes.addEventListener('change', () => { papel.padrao = listaPadroes.value; atualizarPrevia(); });
-
-  const abaFundo = h('div',
-    monitor,
-    h('div', { style: { display: 'flex', gap: '14px' } },
-      h('fieldset', { style: { flex: '1', margin: '0' } }, h('legend', tr('Cor')), cores, h('div', { style: { marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' } }, tr('Outra:'), outra)),
-      h('fieldset', { style: { margin: '0' } }, h('legend', tr('Padrão')), listaPadroes)),
-  );
+  const abaFundo = h('div', monitor, escolhaDeFundo(papel, atualizarPrevia).el);
 
   const chkProt = h('input', { type: 'checkbox', checked: protecao.ligada });
   const minProt = h('input', { type: 'number', min: 1, max: 120, value: protecao.minutos, style: { width: '56px' } });
@@ -1498,12 +1510,24 @@ function dialogoInternet() {
   const conteudoApps = h('div',
     h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('programas-caixa', 32), h('div', tr('Os sites instalados como programas abrem numa janela própria e ficam no menu Iniciar › Programas.'))),
     listaApps);
+  // O fundo da página inicial do Navegador do Retro Computer: a cor e o padrão, à parte dos da área de trabalho.
+  const fundo = { ...FUNDO_INICIO, ...(n.inicioFundo || {}) };
+  const previaInicio = h('div.inicio-previa', h('div.inicio-previa-caixa', h('div'), h('div'), h('div')));
+  const pintarPrevia = () => Object.assign(previaInicio.style, fundoCss(fundo));
+  pintarPrevia();
+  const escolhaInicio = escolhaDeFundo(fundo, pintarPrevia);
+  const conteudoInicio = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('navegador', 32), h('div', tr('O plano de fundo da página inicial do Navegador do Retro Computer, a das abas novas.'))),
+    previaInicio,
+    escolhaInicio.el,
+    h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '8px' } },
+      h('button', { on: { click: () => { Object.assign(fundo, FUNDO_INICIO); escolhaInicio.atualizar(); pintarPrevia(); } } }, tr('Restaurar o padrão'))));
   dialogoBase({
     titulo: tr('Propriedades de Internet'), icone: 'navegador', larg: 420,
-    abas: [{ titulo: tr('Geral'), conteudo }, { titulo: tr('Programas da internet'), conteudo: conteudoApps }],
+    abas: [{ titulo: tr('Geral'), conteudo }, { titulo: tr('Página inicial'), conteudo: conteudoInicio }, { titulo: tr('Programas da internet'), conteudo: conteudoApps }],
     aoAplicar: () => {
       const correio = outro.value.trim() ? paraEndereco(outro.value) : (selCorreio.value || null);
-      return definirConfig({ navegador: { correio, busca: selBusca.value, links: rPrincipal.checked ? 'principal' : rRetro.checked ? 'retro' : 'firefox' } });
+      return definirConfig({ navegador: { correio, busca: selBusca.value, links: rPrincipal.checked ? 'principal' : rRetro.checked ? 'retro' : 'firefox', inicioFundo: { cor: fundo.cor, padrao: fundo.padrao } } });
     },
   });
 }

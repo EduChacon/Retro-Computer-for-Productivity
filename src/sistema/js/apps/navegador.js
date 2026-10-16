@@ -7,7 +7,7 @@
  * programa é uma janela de uma aba só, sem as barras.
  */
 import { h, img, rotulo, barraAdaptavel } from '../util.js';
-import { zoomInterface } from '../aparencia.js';
+import { zoomInterface, fundoCss, FUNDO_INICIO } from '../aparencia.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, avisar, eventos, abrir } from '../sistema.js';
@@ -123,7 +123,17 @@ function guardarIcone(origem, icone) {
 }
 
 /** Os favoritos mudaram (por aqui, por outra janela ou pelo Claude): a barra e a página inicial de todas as janelas. */
-eventos.on('config', (_c, parte) => { if (parte && parte.navegador && 'favoritos' in parte.navegador) redesenharFavoritos(); });
+eventos.on('config', (_c, parte) => {
+  if (parte && parte.navegador && 'favoritos' in parte.navegador) redesenharFavoritos();
+  if (parte && parte.navegador && 'inicioFundo' in parte.navegador) for (const n of abertos) if (!n.j.fechada) n.abas.forEach(pintarFundo);
+});
+
+/** O fundo da página inicial (e da de erro, que tem o mesmo jeito): a cor e o padrão de Painel › Internet. */
+function pintarFundo(aba) {
+  const css = fundoCss({ ...FUNDO_INICIO, ...(cfg().inicioFundo || {}) });
+  Object.assign(aba.inicio.style, css);
+  Object.assign(aba.erroEl.style, css);
+}
 function redesenharFavoritos() {
   for (const n of abertos) {
     if (n.j.fechada) continue;
@@ -1008,6 +1018,7 @@ class Navegador {
   /* ---------- A página inicial ---------- */
 
   desenharInicio(aba) {
+    pintarFundo(aba);
     const campoBusca = h('input', { type: 'text', spellcheck: false, placeholder: tr('Pesquisar na internet') });
     const pesquisar = () => { if (campoBusca.value.trim()) this.ir(busca().url + encodeURIComponent(campoBusca.value.trim()), aba); };
     campoBusca.addEventListener('keydown', (e) => { if (e.key === 'Enter') pesquisar(); });
