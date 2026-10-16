@@ -261,7 +261,7 @@ const TOPICOS = [
 <p>Os endereços <b>http://</b> abrem na versão segura (https://). O site que não a tiver mostra um aviso, com a escolha de abri-lo assim mesmo; os aparelhos da rede de casa (o roteador, a impressora) ficam de fora. Para desligar: Painel de controle › Segurança › Privacidade.</p>
 <p><b>O login do Google</b>: o Google recusa alguns navegadores embutidos em aplicativos. Se ele recusar, o Navegador tenta de novo sozinho, de outro jeito; se recusar outra vez, use o Firefox como navegador padrão (Painel de controle › Internet).</p>
 <h2>Vídeos e músicas</h2>
-<p>Os sites de vídeo e de música comuns, como o YouTube, funcionam nos dois. Os serviços com proteção contra cópia (Netflix, Prime Video, Disney+ e o Spotify na web) tocam só no Firefox.</p>
+<p>Os sites de vídeo e de música comuns, como o YouTube, funcionam nos dois. Os serviços com proteção contra cópia (Netflix, Prime Video, Disney+ e o Spotify na web) tocam só no Firefox. Quando um site pede o vídeo protegido no Navegador do Retro Computer, a faixa amarela no alto da página oferece abri-lo no Firefox (ou, sem ele, no navegador do computador); <b>Não avisar neste site</b> a desliga para aquele site.</p>
 <h2>O e-mail</h2>
 <p>O <b>E-mail</b> abre o seu e-mail da web (escolhido na primeira vez) numa janela própria. Para trocar, use Painel de controle › Internet.</p>
 <h2>Sites como programas</h2>
@@ -276,7 +276,7 @@ const TOPICOS = [
 <p><b>http://</b> addresses open in the secure version (https://). A site without one shows a warning, with the choice to open it anyway; the devices on the home network (the router, the printer) are left out. To turn this off: Control Panel › Security › Privacy.</p>
 <p><b>Google sign-in</b>: Google refuses some browsers built into apps. If it refuses, the Browser tries again on its own, another way; if it refuses again, use Firefox as the default browser (Control Panel › Internet).</p>
 <h2>Videos and music</h2>
-<p>The usual video and music sites, such as YouTube, work in both. Services with copy protection (Netflix, Prime Video, Disney+ and Spotify on the web) play only in Firefox.</p>
+<p>The usual video and music sites, such as YouTube, work in both. Services with copy protection (Netflix, Prime Video, Disney+ and Spotify on the web) play only in Firefox. When a site asks for protected video in the Retro Computer Browser, the yellow bar at the top of the page offers to open it in Firefox (or, without it, in the computer's browser); <b>Don't warn on this site</b> turns it off for that site.</p>
 <h2>E-mail</h2>
 <p><b>E-mail</b> opens your web e-mail (chosen the first time) in a window of its own. To change it, use Control Panel › Internet.</p>
 <h2>Sites as programs</h2>
@@ -291,7 +291,7 @@ const TOPICOS = [
 <p>Las direcciones <b>http://</b> se abren en la versión segura (https://). El sitio que no la tenga muestra un aviso, con la opción de abrirlo de todos modos; los aparatos de la red de casa (el router, la impresora) quedan fuera. Para desactivarlo: Panel de control › Seguridad › Privacidad.</p>
 <p><b>El inicio de sesión de Google</b>: Google rechaza algunos navegadores integrados en aplicaciones. Si lo rechaza, el Navegador lo intenta de nuevo solo, de otra forma; si lo rechaza otra vez, usa Firefox como navegador predeterminado (Panel de control › Internet).</p>
 <h2>Videos y música</h2>
-<p>Los sitios de video y de música comunes, como YouTube, funcionan en los dos. Los servicios con protección contra copia (Netflix, Prime Video, Disney+ y Spotify en la web) se reproducen solo en Firefox.</p>
+<p>Los sitios de video y de música comunes, como YouTube, funcionan en los dos. Los servicios con protección contra copia (Netflix, Prime Video, Disney+ y Spotify en la web) se reproducen solo en Firefox. Cuando un sitio pide video protegido en el Navegador de Retro Computer, la barra amarilla en la parte de arriba de la página ofrece abrirlo en Firefox (o, sin él, en el navegador de la computadora); <b>No avisar en este sitio</b> la desactiva para ese sitio.</p>
 <h2>El correo</h2>
 <p>El <b>Correo</b> abre tu correo de la web (elegido la primera vez) en una ventana propia. Para cambiarlo, usa Panel de control › Internet.</p>
 <h2>Sitios como programas</h2>

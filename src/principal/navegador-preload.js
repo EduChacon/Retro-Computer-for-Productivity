@@ -37,7 +37,25 @@ try {
   })()`);
 } catch { }
 
+// O vídeo protegido (DRM): o Navegador daqui não tem o Widevine, e a página que o pede recebe a
+// recusa. Na primeira recusa, a janela do Navegador oferece abrir o site no Firefox. Fica de fora do
+// login do Google, que não tem vídeo e confere as funções da página.
+if (location.hostname !== 'accounts.google.com') try {
+  webFrame.executeJavaScript(`(() => {
+    const original = Navigator.prototype.requestMediaKeySystemAccess;
+    if (!original) return;
+    let avisou = false;
+    Navigator.prototype.requestMediaKeySystemAccess = function (sistema, opcoes) {
+      return original.call(this, sistema, opcoes).catch((e) => {
+        if (!avisou && /widevine|playready|fairplay|fps/i.test(String(sistema))) { avisou = true; window.postMessage({ __retroDrm: String(sistema) }, '*'); }
+        throw e;
+      });
+    };
+  })()`);
+} catch { }
+
 window.addEventListener('message', (e) => {
+  if (e.source === window && e.data && e.data.__retroDrm) ipcRenderer.sendToHost('navegador', 'drm');
   const n = e.source === window && e.data && e.data.__retroNotificacao;
   if (n && Notification.permission === 'granted') ipcRenderer.sendToHost('navegador', 'notificacao', String(n.titulo).slice(0, 200), String(n.corpo).slice(0, 500));
 });

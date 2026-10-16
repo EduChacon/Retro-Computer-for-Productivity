@@ -559,7 +559,7 @@ class Navegador {
     wv.addEventListener('did-stop-loading', () => this.definirCarregando(false, aba));
     const navegou = (e) => {
       if (e.isMainFrame === false) return;
-      if (origemDe(e.url) !== origemDe(aba.url)) aba.icone = null;
+      if (origemDe(e.url) !== origemDe(aba.url)) { aba.icone = null; this.tirarAvisoDrm(aba); }
       aba.url = e.url;
       if (daFrente()) {
         if (document.activeElement !== this.campo) this.campo.value = e.url;
@@ -607,6 +607,45 @@ class Navegador {
       if (r.finalUpdate && daFrente()) this.j.definirStatus([r.matches ? tr('{n} de {total}', { n: r.activeMatchOrdinal, total: r.matches }) : tr('Não foi possível localizar "{texto}".', { texto: aba.busca }), this.textoZoom()]);
     });
     aba.el.append(wv);
+  }
+
+  /**
+   * O site pediu vídeo protegido (DRM), que o Navegador daqui não toca (não tem o Widevine): a faixa
+   * amarela de informação, como a da época, por cima da página, com o caminho que toca: o Firefox
+   * (o perfil do Retro Computer tem o Widevine) ou, sem ele, o navegador do computador principal.
+   * Um site pode pedir só para saber se há o recurso: por isso a faixa diz "se o vídeo não abrir" e
+   * deixa não avisar mais naquele site.
+   */
+  avisarDrm(aba) {
+    const origem = origemDe(aba.url);
+    if (!origem || aba.drmEl || (cfg().semAvisoDrm || []).includes(origem)) return;
+    const url = aba.url;
+    const fechar = () => this.tirarAvisoDrm(aba);
+    const botoes = [];
+    if (firefoxInstalado) {
+      botoes.push(h('button', { on: { click: async () => { fechar(); if (!(await abrirNoFirefox(url))) this.avisarSemFirefox(); } } }, tr('Abrir no Firefox')));
+    } else if (!estado.config.modoSistema) {
+      botoes.push(h('button', { on: { click: () => { fechar(); retro.sistema.abrirLink(url).catch(() => { }); } } }, tr('Abrir no navegador do computador')));
+    } else {
+      botoes.push(h('button', { on: { click: () => { fechar(); abrir('painel', { secao: 'internet' }); } } }, tr('Instalar o Firefox…')));
+    }
+    botoes.push(h('button', { on: { click: () => { fechar(); definirConfig({ navegador: { semAvisoDrm: [...(cfg().semAvisoDrm || []), origem] } }); } } }, tr('Não avisar neste site')));
+    aba.drmEl = h('div.nav-faixa-info', { role: 'alert' },
+      img('seguranca', 16),
+      h('span', firefoxInstalado ? tr('Este site usa vídeo protegido (DRM), que o Navegador do Retro Computer não toca. Se o vídeo não abrir, abra o site no Firefox.')
+        : !estado.config.modoSistema ? tr('Este site usa vídeo protegido (DRM), que o Navegador do Retro Computer não toca. Se o vídeo não abrir, abra o site no navegador do computador.')
+          : tr('Este site usa vídeo protegido (DRM), que o Navegador do Retro Computer não toca. Se o vídeo não abrir, instale o Firefox, que toca.')),
+      ...botoes,
+      h('button.nav-faixa-fechar', { title: tr('Fechar'), on: { click: fechar } }));
+    aba.el.append(aba.drmEl);
+  }
+
+  tirarAvisoDrm(aba) {
+    if (aba.drmEl) { aba.drmEl.remove(); aba.drmEl = null; }
+  }
+
+  avisarSemFirefox() {
+    mensagem({ titulo: tr('Navegador'), tipo: 'info', texto: tr('O Firefox não foi achado neste computador. Para os vídeos protegidos, instale o Firefox e escolha-o em Painel de controle › Internet.'), botoes: [{ texto: tr('OK'), valor: null, padrao: true }] });
   }
 
   /**
@@ -760,6 +799,7 @@ class Navegador {
   /** As teclas, os botões do mouse e as notificações que a página repassa (navegador-preload.js). */
   acao(aba, a, ...args) {
     if (a === 'notificacao') return this.notificar(aba, ...args);
+    if (a === 'drm') return this.avisarDrm(aba);
     // As teclas só valem na aba da frente (a de trás não tem o foco).
     if (aba && aba !== this.aba) return;
     if (/^aba:\d$/.test(a)) return this.irParaAba(Number(a.slice(4)));

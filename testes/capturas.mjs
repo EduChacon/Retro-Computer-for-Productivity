@@ -808,11 +808,6 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('larga de novo:', JSON.stringify(await medir()));
   },
 
-  // O login do Google no Navegador (precisa da internet): na página de login, o Navegador se
-  // apresenta como o Firefox; noutro site, como o Chrome.
-  // A troca de jeito no login do Google (precisa da internet): a recusa do Google é imitada no
-  // processo principal (o did-navigate da página de recusa), e o Navegador passa do Firefox para o
-  // Chrome, recomeça o login e, recusado de novo, sugere o Firefox de verdade.
   // A tela cheia de um site (a página inteira e o vídeo de dentro de um quadro de outro site, como o
   // Vimeo numa página de curso) e a aba nova logo que abre.
   async telaCheiaSite() {
@@ -881,9 +876,71 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     servidor.close();
   },
 
+  // O aviso do vídeo protegido (DRM): a página pede o Widevine, que o Navegador daqui não tem, e a
+  // faixa amarela oferece o Firefox (com RETRO_FIREFOX) ou o navegador do computador. O ClearKey (que
+  // toca) e outro erro não avisam; fechar, trocar de site e "Não avisar neste site" tiram a faixa.
+  // RETRO_DRM_SITES (endereços separados por vírgula, precisa da internet) diz se cada site avisa.
+  async drm() {
+    const pagina1 = (sistema) => `<!doctype html><meta charset="utf-8"><title>Filme</title><body style="margin:0;font:16px sans-serif;background:#000;color:#fff"><div style="height:300px;display:flex;align-items:center;justify-content:center">VÍDEO PROTEGIDO</div><p id="r">…</p><script>
+      navigator.requestMediaKeySystemAccess(${JSON.stringify(sistema)}, [{ initDataTypes: ['cenc'], videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"' }] }])
+        .then(() => { document.getElementById('r').textContent = 'aceito'; }, (e) => { document.getElementById('r').textContent = 'recusado: ' + e.name; });
+    </script>`;
+    const servidor = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      const u = new URL(req.url, 'http://x');
+      res.end(pagina1(u.searchParams.get('s') || 'com.widevine.alpha'));
+    });
+    await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+    const porta = servidor.address().port;
+    const base = `http://127.0.0.1:${porta}`;
+    await pagina.evaluate(() => retro.config.definir({ navegador: { semAvisoDrm: [] } }));
+    await fecharTudo();
+    await abrir('navegador', { url: base + '/filme', interno: true });
+    await pagina.waitForTimeout(2500);
+    const faixa = '.janela.ativa .nav-conteudo:not(.escondida) .nav-faixa-info';
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const ler = (r) => pagina.evaluate(([f, w, r]) => {
+      const el = document.querySelector(f);
+      return document.querySelector(w).executeJavaScript('document.getElementById("r") && document.getElementById("r").textContent')
+        .then((p) => `${r}: página "${p}" | faixa: ${el ? `"${el.querySelector('span').textContent}" [${[...el.querySelectorAll('button')].map((b) => b.textContent || b.title).join(' | ')}]` : 'não'}`);
+    }, [faixa, wv, r]);
+    const ir = async (url) => { await pagina.evaluate(([w, u]) => document.querySelector(w).loadURL(u), [wv, url]); await pagina.waitForTimeout(2000); };
+    console.log(await ler('Widevine'));
+    await foto('drm-aviso');
+    // Fechar tira a faixa; voltar à página avisa de novo.
+    await pagina.click(faixa + ' .nav-faixa-fechar');
+    await pagina.waitForTimeout(300);
+    console.log(await ler('fechada'));
+    await ir(base + '/filme?2');
+    console.log(await ler('de novo'));
+    // Outro site (outra origem, o localhost) tira a faixa.
+    await ir(`http://localhost:${porta}/outro?s=org.w3.clearkey`);
+    console.log(await ler('outro site com ClearKey'));
+    await ir(base + '/filme?s=com.exemplo.inventado');
+    console.log(await ler('sistema desconhecido'));
+    await ir(base + '/filme?s=com.microsoft.playready');
+    console.log(await ler('PlayReady'));
+    // "Não avisar neste site".
+    await pagina.click(`${faixa} button:text-is("${T('Não avisar neste site')}")`);
+    await pagina.waitForTimeout(500);
+    console.log('guardado:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.navegador.semAvisoDrm)));
+    await ir(base + '/filme?3');
+    console.log(await ler('depois de não avisar'));
+    await pagina.evaluate(() => retro.config.definir({ navegador: { semAvisoDrm: [] } }));
+    for (const site of (process.env.RETRO_DRM_SITES || '').split(',').filter(Boolean)) {
+      await ir(site);
+      await pagina.waitForTimeout(6000);
+      const f = await pagina.evaluate((f) => !!document.querySelector(f), faixa);
+      console.log(`site ${site}: ${f ? 'avisou' : 'não avisou'}`);
+      await foto('drm-' + new URL(site).hostname.replace(/[^a-z0-9]+/g, '-'));
+      await pagina.evaluate((f) => { const b = document.querySelector(f + ' .nav-faixa-fechar'); if (b) b.click(); }, faixa);
+    }
+    servidor.close();
+  },
+
   // A aba nova por cada caminho (o +, o link com target, o window.open, o favorito com o botão do
   // meio, o Navegador aberto de fora) com os pixels em 2, como no Windows a 150%.
-  async abaNova() {
+  async abasNovas() {
     const servidor = http.createServer((req, res) => {
       const pagina = (corpo) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(corpo); };
       if (req.url.startsWith('/devagar')) return setTimeout(() => pagina('<!doctype html><title>Devagar</title><h1>Devagar</h1>'), 4000);
@@ -978,6 +1035,9 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     servidor.close();
   },
 
+  // A troca de jeito no login do Google (precisa da internet): a recusa do Google é imitada no
+  // processo principal (o did-navigate da página de recusa), e o Navegador passa do Firefox para o
+  // Chrome, recomeça o login e, recusado de novo, sugere o Firefox de verdade.
   async loginTroca() {
     await fecharTudo();
     await pagina.evaluate(() => retro.config.definir({ navegador: { loginGoogle: 'firefox' } }));
@@ -1004,6 +1064,8 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.evaluate(() => retro.config.definir({ navegador: { loginGoogle: 'firefox' } }));
   },
 
+  // O login do Google no Navegador (precisa da internet): na página de login, o Navegador se
+  // apresenta como o Firefox; noutro site, como o Chrome.
   async loginGoogle() {
     await fecharTudo();
     await abrir('navegador', { url: 'https://accounts.google.com/', interno: true });
