@@ -56,10 +56,12 @@ if command -v openbox >/dev/null 2>&1; then
 fi
 
 # O Retro Computer. Se ele parar com erro, abre de novo; "Sair da sessão" (código 0) volta à tela de entrada.
+# O código 75 é o pedido de abrir de novo (a troca de idioma ou de usuário, o logoff).
 tentativas=0
 while true; do
   "$APP" --sistema
   codigo=$?
+  if [ "$codigo" -eq 75 ]; then tentativas=0; continue; fi
   [ "$codigo" -eq 0 ] && break
   tentativas=$((tentativas + 1))
   [ "$tentativas" -ge 5 ] && break

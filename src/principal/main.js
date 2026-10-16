@@ -24,7 +24,7 @@ const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
 const sistemaLinux = require('./sistema-linux');
-const { Bloqueio, semSegredos } = require('./bloqueio');
+const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
 const { Unidades, UnidadesFalsas } = require('./unidades');
 const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
@@ -53,6 +53,7 @@ const { dentro: dentroDaUnidade } = require('./unidades');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
+const { Perfis, PRINCIPAL } = require('./perfis');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -96,6 +97,20 @@ else if (PORTATIL) {
   app.setPath('userData', caminhosPortateis(PORTATIL).dados);
 }
 
+// Os vários perfis (perfis.js): a pasta de dados de cada usuário fica dentro da principal, e os
+// programas instalados ficam na principal, para todos.
+const BASE_DADOS = app.getPath('userData');
+const perfis = new Perfis(BASE_DADOS);
+// Um Retro Computer aberto por vez, qualquer que seja o usuário: a trava fica na pasta principal.
+const TRAVA = app.requestSingleInstanceLock();
+// Quem entra: o da troca de usuário ou do logoff (a "próxima abertura"), ou o último usado.
+const INICIO = TRAVA ? perfis.inicial() : { perfil: PRINCIPAL, entrou: false, logon: false, reaberto: false };
+const PERFIL = INICIO.perfil;
+if (PERFIL !== PRINCIPAL) {
+  fs.mkdirSync(perfis.pastaDados(PERFIL), { recursive: true });
+  app.setPath('userData', perfis.pastaDados(PERFIL));
+}
+
 // O idioma escolhido vale também para os programas (o WordCraft segue o do navegador).
 // No "automático", o Chromium usa o idioma do sistema.
 const idiomaEscolhido = (() => {
@@ -126,7 +141,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'dos', privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
 
-if (!app.requestSingleInstanceLock()) {
+if (!TRAVA) {
   app.quit();
 }
 
@@ -170,12 +185,18 @@ function nomesDasPastas(raiz) {
   return idioma.PASTAS[idioma.idioma()];
 }
 
+/** O disco C: padrão do perfil principal (os dos outros perfis ficam ao lado dele). */
+function discoPadraoPrincipal() {
+  if (PORTATIL) return caminhosPortateis(PORTATIL).disco;
+  return process.env.RETRO_DISCO || path.join(app.getPath('documents'), 'Retro Computer');
+}
+
 async function abrirDisco() {
   let raiz = config.obter().disco;
   // No modo portátil, o disco é sempre o da pasta (o caminho do pendrive muda de um computador para outro).
-  if (PORTATIL) raiz = caminhosPortateis(PORTATIL).disco;
+  if (PORTATIL) raiz = perfis.discoPadrao(PERFIL, discoPadraoPrincipal());
   if (!raiz) {
-    raiz = process.env.RETRO_DISCO || path.join(app.getPath('documents'), 'Retro Computer');
+    raiz = perfis.discoPadrao(PERFIL, discoPadraoPrincipal());
     config.definir({ disco: raiz });
   }
   disco = new Disco(raiz);
@@ -860,7 +881,8 @@ function registrarPonte() {
     return false;
   });
   // Os programas do Windows no Linux, pelo WINE (o do sistema ou o do Flathub).
-  const wine = new Wine({ dados: app.getPath('userData'), falso: !!process.env.RETRO_WINE_FALSO });
+  // Os programas do Windows, como os outros, são de todos os perfis.
+  const wine = new Wine({ dados: BASE_DADOS, falso: !!process.env.RETRO_WINE_FALSO });
   // O DOS: a unidade C: (a pasta C:\DOS ou a do programa) vai para o emulador e volta ao guardar.
   const dos = new Dos({ disco });
   tratar('dos:abrir', (rel) => dos.abrir(String(rel || '')));
@@ -893,6 +915,7 @@ function registrarPonte() {
   tratar('antivirus:instalar', (senha) => antivirus.instalar(String(senha || ''), (s) => enviar('antivirus:instalando', String(s).slice(-2000))));
   tratar('antivirus:atualizar', (senha) => antivirus.atualizar(String(senha || '')));
   tratar('bloqueio:conferir', (senha) => bloqueio.conferir(String(senha || '')));
+  registrarPerfis();
   tratar('bloqueio:definir', (atual, nova) => bloqueio.definir(String(atual || ''), String(nova || '')));
   tratar('config:chave', (chave) => config.gravarChave(chave));
 
@@ -1296,12 +1319,10 @@ function registrarPonte() {
     terminais.fecharTodos();
     if (janela) janela.webContents.reload();
   });
-  // Reabre o aplicativo inteiro (para trocar o idioma, que vale também para os programas).
+  // Reabre o aplicativo inteiro (para trocar o idioma, que vale também para os programas), no mesmo usuário.
   tratar('sistema:reabrir', () => {
-    terminais.fecharTodos();
-    if (janela) janela.__podeFechar = true;
-    app.relaunch();
-    setTimeout(() => app.exit(0), 50);
+    perfis.gravarAbertura({ perfil: PERFIL, entrou: true });
+    reabrirApp();
   });
   tratar('sistema:escalaTela', () => (janela ? screen.getDisplayMatching(janela.getBounds()).scaleFactor : 1));
   // As impressoras (RETRO_IMPRESSORAS_FALSAS: duas de mentira, para os testes).
@@ -1371,6 +1392,94 @@ function registrarPonte() {
   });
 }
 
+/* ---------- Os perfis (usuários) ---------- */
+
+/**
+ * Fecha e abre de novo (a troca de idioma ou de usuário, o logoff). Na sessão do Linux, quem abre
+ * de novo é a própria sessão (o código 75 do sessao.sh): o app.relaunch abriria fora dela, e a
+ * sessão terminaria com o código 0.
+ */
+function reabrirApp() {
+  if (terminais) terminais.fecharTodos();
+  if (servidorMcp) servidorMcp.fechar();
+  if (janela) janela.__podeFechar = true;
+  if (process.env.RETRO_SEM_RELANCAR || (MODO_SISTEMA && process.argv.includes('--sistema'))) {
+    setTimeout(() => app.exit(75), 50);
+    return;
+  }
+  app.relaunch();
+  setTimeout(() => app.exit(0), 50);
+}
+
+/** O config.json de outro perfil (só para ler o resumo da senha e o disco dele). */
+function configDoPerfil(id) {
+  if (id === PERFIL) return config.obter();
+  try { return JSON.parse(fs.readFileSync(path.join(perfis.pastaDados(id), 'config.json'), 'utf8')) || {}; } catch { return {}; }
+}
+
+function registrarPerfis() {
+  const senhaDe = (id) => (configDoPerfil(id).bloqueio || {}).senha || null;
+  const discoDe = (id) => configDoPerfil(id).disco || perfis.discoPadrao(id, discoPadraoPrincipal());
+  const estadoPerfis = () => {
+    const r = perfis.ler();
+    return {
+      atual: PERFIL, perguntar: r.perguntar, logon: INICIO.logon, entrou: INICIO.entrou, reaberto: INICIO.reaberto,
+      lista: r.perfis.map((p) => ({ id: p.id, nome: p.nome, atual: p.id === PERFIL, temSenha: !!senhaDe(p.id) })),
+    };
+  };
+  // As senhas erradas seguidas atrasam a próxima resposta, como na tela de bloqueio.
+  let erros = 0;
+  tratar('perfis:estado', () => estadoPerfis());
+  // A tela de entrada: confere a senha do usuário escolhido (a dele ou, no Linux, a de entrada).
+  // O mesmo usuário continua; outro abre o Retro Computer de novo, já com a senha conferida.
+  tratar('perfis:entrar', async (id, senha) => {
+    id = String(id || '');
+    if (!perfis.perfil(id)) return { ok: false };
+    const guardada = senhaDe(id);
+    if (guardada) {
+      const s = String(senha || '');
+      if (!((await confereSenha(s, guardada)) || (await confereLinux(s)))) {
+        erros++;
+        await new Promise((r) => setTimeout(r, Math.min(30000, 1000 * 2 ** Math.min(erros - 1, 5))));
+        return { ok: false, senhaErrada: true };
+      }
+    }
+    erros = 0;
+    perfis.definirUltimo(id);
+    if (id === PERFIL) {
+      INICIO.logon = false;
+      INICIO.entrou = true;
+      return { ok: true };
+    }
+    perfis.gravarAbertura({ perfil: id, entrou: true });
+    reabrirApp();
+    return { ok: true, reabrindo: true };
+  });
+  // O logoff: tudo fecha, e a tela de entrada aparece (começando por este usuário).
+  tratar('perfis:logoff', () => {
+    perfis.gravarAbertura({ perfil: PERFIL, logon: true });
+    reabrirApp();
+    return true;
+  });
+  tratar('perfis:criar', (nome) => {
+    const r = perfis.criar(String(nome || ''), discoPadraoPrincipal());
+    return r.ok ? { ok: true, id: r.perfil.id, disco: discoDe(r.perfil.id), estado: estadoPerfis() } : r;
+  });
+  tratar('perfis:renomear', (id, nome) => {
+    const r = perfis.renomear(String(id || ''), String(nome || ''));
+    return r.ok ? { ok: true, estado: estadoPerfis() } : r;
+  });
+  // Tirar um perfil não apaga nada: a pasta de dados e o disco ficam onde estão (e o usuário sabe onde).
+  tratar('perfis:remover', (id) => {
+    id = String(id || '');
+    const disco = perfis.perfil(id) ? discoDe(id) : null;
+    const r = perfis.remover(id, PERFIL);
+    return r.ok ? { ok: true, disco, dados: r.dados, estado: estadoPerfis() } : r;
+  });
+  tratar('perfis:perguntar', (sim) => { perfis.definirPerguntar(!!sim); return estadoPerfis(); });
+  tratar('perfis:disco', (id) => (perfis.perfil(String(id || '')) ? discoDe(String(id)) : null));
+}
+
 /* ---------- Início ---------- */
 
 app.on('second-instance', () => {
@@ -1383,7 +1492,7 @@ app.on('second-instance', () => {
 app.whenReady().then(async () => {
   config = new Config(app.getPath('userData'), safeStorage);
   idioma.definir(idioma.resolver(idiomaEscolhido, app.getLocale()));
-  programas = new Programas(path.join(app.getPath('userData'), 'programas'), (url, o) => net.fetch(url, o));
+  programas = new Programas(path.join(BASE_DADOS, 'programas'), (url, o) => net.fetch(url, o));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
   if (MODO_SISTEMA || process.env.RETRO_JANELAS_FALSAS) {

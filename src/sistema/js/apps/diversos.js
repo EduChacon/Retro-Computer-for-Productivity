@@ -4,10 +4,11 @@ import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, abrir, abrirArquivo, definirConfig, pastaDocs, abrirEndereco } from '../sistema.js';
-import { ajustarAoConteudo, erro } from '../dialogos.js';
+import { ajustarAoConteudo, erro, confirmar } from '../dialogos.js';
 import { menuDeItens } from '../arquivos.js';
 import { tocar } from '../sons.js';
 import { tr } from '../idioma.js';
+import { variosPerfis } from '../perfis.js';
 
 /* ---------- Executar ---------- */
 
@@ -132,7 +133,7 @@ function abrirLocalizar(args = {}) {
 
 /* ---------- Desligar ---------- */
 
-async function abrirDesligar() {
+async function abrirDesligar(args = {}) {
   if (document.querySelector('.escurecer')) return;
   const escuro = h('div.escurecer');
   document.getElementById('camada-modal').append(escuro);
@@ -142,6 +143,8 @@ async function abrirDesligar() {
   const opcoes = sistema
     ? [['desligar', tr('&Desligar o computador?')], ['reiniciar', tr('&Reiniciar o computador?')], ['suspender', tr('&Suspender o computador?')], ['sair', tr('Sair da s&essão (voltar à tela de entrada)?')]]
     : [['desligar', tr('&Desligar o computador?')], ['reiniciar', tr('&Reiniciar o computador?')], ['janela', tr('Sair da &tela cheia?')]];
+  // Com mais de um usuário, a troca de usuário (como na época: fechar tudo e entrar como outro).
+  if (variosPerfis() && !args.entrada) opcoes.splice(2, 0, ['logoff', tr('Fechar todos os programas e entrar como &outro usuário?')]);
   const radios = opcoes.map(([v], i) => h('input', { type: 'radio', name: 'desligar', checked: i === 0, value: v }));
   const sim = h('button.padrao', rotulo(tr('&Sim')));
   j.corpo.append(
@@ -158,6 +161,7 @@ async function abrirDesligar() {
     if (escolha === 'janela') return retro.sistema.telaCheia(false);
     if (escolha === 'suspender') return suspender();
     if (!(await fecharTudo())) return;
+    if (escolha === 'logoff') return sairDoUsuario();
     if (sistema) return energia(escolha);
     if (escolha === 'reiniciar') return reiniciar();
     desligar();
@@ -175,6 +179,23 @@ async function fecharTudo() {
     if (!ok) return false;
   }
   return true;
+}
+
+/** O logoff: pergunta, fecha os programas (eles perguntam o que há por salvar) e volta à tela de entrada. */
+async function fazerLogoff() {
+  if (document.querySelector('.escurecer')) return;
+  if (!(await confirmar(tr('Deseja realmente fazer logoff?'), { titulo: tr('Fazer logoff') }))) return;
+  if (!(await fecharTudo())) return;
+  sairDoUsuario();
+}
+
+async function sairDoUsuario() {
+  const boot = document.getElementById('boot');
+  boot.replaceChildren(h('div.aguarde', h('div', tr('Fazendo logoff…'))));
+  boot.classList.add('visivel');
+  tocar('desligar');
+  await new Promise((r) => setTimeout(r, 1200));
+  retro.perfis.logoff();
 }
 
 async function desligar() {
@@ -220,5 +241,6 @@ async function reiniciar() {
 registrarApp('executar', { nome: 'Executar', icone: 'executar', abrir: abrirExecutar });
 registrarApp('localizar', { nome: 'Localizar', icone: 'localizar', abrir: abrirLocalizar });
 registrarApp('desligar', { nome: 'Desligar', icone: 'desligar', abrir: abrirDesligar });
+registrarApp('logoff', { nome: 'Fazer logoff', icone: 'usuario', abrir: fazerLogoff });
 
 export { nomeDe };

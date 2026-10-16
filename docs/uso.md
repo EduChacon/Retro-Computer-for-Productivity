@@ -122,6 +122,12 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 
 Painel de controle › Senhas cria a senha da tela de bloqueio. Com ela, Iniciar › Bloquear o computador cobre a tela até a senha ser digitada, e a senha pode ser pedida também ao voltar da suspensão (ou ao fechar a tampa), ao sair da proteção de tela e ao abrir o Retro Computer. A senha fica guardada só como resumo (PBKDF2). No Linux, a senha de entrada do Linux também desbloqueia.
 
+### Vários usuários
+
+Painel de controle › Usuários › Novo usuário cria outra pessoa no mesmo Retro Computer. Cada usuário tem a área de trabalho, as configurações (o fundo, a barra, o menu Iniciar, os sons), os favoritos e os cookies do Navegador, o Diário, a senha da tela de bloqueio e o disco C: próprios: o disco dele é uma pasta ao lado da do usuário principal ("Retro Computer - Ana"; no modo portátil, "Disco C - Ana"), e a pasta de dados fica dentro da principal. Os programas instalados (os Craft e os do Windows) são de todos.
+
+Com mais de um usuário, o Retro Computer pergunta quem vai usar ao abrir (dá para desligar a pergunta na mesma caixa) e pede a senha de quem tiver. Iniciar › Fazer logoff, ou a opção "Fechar todos os programas e entrar como outro usuário" da caixa Desligar, fecha os programas (cada um pergunta se há algo por salvar) e volta à tela de entrada. Tirar um usuário só o tira da lista: a pasta de dados e o disco C: dele ficam onde estão, e a caixa mostra onde. Os usuários separam as áreas de trabalho de quem divide o computador; eles não escondem os arquivos de quem usa o computador principal.
+
 ### Segurança e privacidade
 
 Painel de controle › **Segurança** mostra o estado de cada proteção, com o botão que leva à configuração dela: a senha da tela de bloqueio, o firewall e as atualizações de segurança automáticas (no Linux) e como a chave do Claude está guardada (cifrada pelo cofre de senhas do sistema; no Linux sem chaveiro, só embaralhada, com o aviso em vermelho). A aba Privacidade tem:
@@ -289,20 +295,14 @@ As ideias abaixo ainda não foram feitas; ficam registradas para decisão:
 
 a) **Tema Mac clássico**, inspirado no Mac OS 9.2 (o visual "Platinum": as janelas cinza-claro com a barra de título listrada, a barra de menus no alto, a Lixeira no canto), escolhido no Painel de controle. Como em todo o projeto, nada da Apple: os ícones, as letras e as molduras são desenhados aqui (o tema "Cupertino" do SerenityOS, BSD-2-Clause, serve de ponto de partida para as cores).
 
-b) **Várias telas**: a área de trabalho estendida por dois ou mais monitores, com a barra de tarefas em cada um.
+b) **Papel de parede, esquemas de cores e cursores**: imagens de fundo, esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS.
 
-c) **Papel de parede, esquemas de cores e cursores**: imagens de fundo, esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS.
+c) **Instaladores assinados** (o caminho e os custos estão em [instalacao.md](instalacao.md), seção "Os avisos de segurança").
 
-d) **Navegador focado**: uma janela de navegador com uma lista de "sites" permitidos (por exemplo, o portal do tribunal, a pesquisa de jurisprudência e o e-mail), sem abas infinitas.
+d) **Áreas de trabalho virtuais** (como no Pop!_OS, no GNOME e no Windows 10): várias mesas, cada uma com as suas janelas.
 
-i) **Instaladores assinados** (o caminho e os custos estão em [instalacao.md](instalacao.md), seção "Os avisos de segurança").
+e) **Enviar arquivos a outro computador da casa** (como o Warpinator do Linux Mint) e o celular ligado ao computador (como o KDE Connect).
 
-j) **Emulador de DOS embutido**: o motor do DOSBox (GPL) numa janela do Retro Computer, para abrir com dois cliques os jogos e programas de DOS guardados no disco C:, com o Micropolis (a versão aberta do SimCity) como exemplo. Até lá, no Linux, o DOSBox Staging pode ser instalado pela aba Programas do Linux.
-
-k) **Áreas de trabalho virtuais** (como no Pop!_OS, no GNOME e no Windows 10): várias mesas, cada uma com as suas janelas.
-
-l) **Programas do Windows pelo WINE** (como o "Windows App Support" do Zorin OS), junto do emulador de DOS.
-
-m) **Enviar arquivos a outro computador da casa** (como o Warpinator do Linux Mint) e o celular ligado ao computador (como o KDE Connect).
+f) **A barra de tarefas em cada monitor**: com as várias telas estendidas, uma barra em cada tela (hoje ela fica na principal).
 
 A pesquisa das distribuições do Linux que deu origem a algumas destas ideias (e aos recursos da 1.0) está em [pesquisa-distribuicoes.md](pesquisa-distribuicoes.md).

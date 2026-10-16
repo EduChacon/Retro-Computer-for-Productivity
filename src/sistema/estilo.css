@@ -1261,6 +1261,32 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 .bloq-linha input { flex: 1; }
 .bloq-aviso { min-height: 13px; margin: 6px 0 4px; color: #800000; }
 
+/* A tela de entrada (vários usuários): a cor de sempre da área de trabalho e a caixa da época. */
+#entrada {
+  position: absolute; inset: 0; z-index: 799000; background: #008080;
+  display: flex; align-items: center; justify-content: center;
+}
+.ent-caixa { width: 372px; background: var(--face); box-shadow: var(--relevo-janela); padding: 3px; }
+.ent-caixa .titulo { background: var(--titulo); color: var(--titulo-texto); }
+.ent-faixa {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-top: 1px;
+  background: linear-gradient(90deg, #0d4a4a, #2a7a7a 70%, #4a9a9a); color: #fff;
+}
+.ent-faixa b { display: block; font-size: 10px; letter-spacing: 1px; }
+.ent-faixa span { display: block; color: #9fdede; }
+.ent-corpo { padding: 10px 10px 8px; }
+.ent-texto { line-height: 13px; margin-bottom: 8px; }
+.ent-lista { height: 150px; overflow-y: auto; padding: 2px; margin-bottom: 8px; user-select: none; }
+.ent-usuario { display: flex; align-items: center; gap: 8px; padding: 2px 4px; cursor: var(--cur-default, default); }
+.ent-usuario span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ent-usuario.sel { background: var(--selecao); color: var(--selecao-texto); }
+.ent-lista:focus .ent-usuario.sel { outline: 1px dotted var(--selecao-texto); outline-offset: -1px; }
+.ent-senha.apagada span { color: #808080; text-shadow: 1px 1px #fff; }
+.ent-aguarde { display: flex; align-items: center; gap: 12px; padding: 24px 16px; }
+.us-disco { margin-top: 6px; line-height: 13px; overflow-wrap: anywhere; }
+.us-nota { color: #808080; margin-left: 2px; }
+.lp-linha.sel .us-nota { color: var(--selecao-texto); }
+
 /* O indicador das teclas de volume e de brilho. */
 .indicador-bandeja {
   position: absolute; right: 8px; bottom: calc(var(--altura-barra) + 6px); z-index: 700001; display: flex; align-items: center; gap: 6px;

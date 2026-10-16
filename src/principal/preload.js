@@ -309,6 +309,17 @@ contextBridge.exposeInMainWorld('retro', {
     aoAchar: ouvir('antivirus:achou'),
     aoInstalar: ouvir('antivirus:instalando'),
   },
+  // Os vários perfis (usuários): a tela de entrada, o logoff e a lista do Painel › Usuários.
+  perfis: {
+    estado: () => chamar('perfis:estado'),
+    entrar: (id, senha) => chamar('perfis:entrar', id, senha),
+    logoff: () => chamar('perfis:logoff'),
+    criar: (nome) => chamar('perfis:criar', nome),
+    renomear: (id, nome) => chamar('perfis:renomear', id, nome),
+    remover: (id) => chamar('perfis:remover', id),
+    perguntar: (sim) => chamar('perfis:perguntar', sim),
+    disco: (id) => chamar('perfis:disco', id),
+  },
   // A tela de bloqueio: a senha só é conferida aqui; o resumo dela nunca vem para a página.
   bloqueio: {
     conferir: (senha) => chamar('bloqueio:conferir', senha),

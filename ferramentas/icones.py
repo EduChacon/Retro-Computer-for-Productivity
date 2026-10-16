@@ -40,6 +40,7 @@ DO_SERENITY = {
     'desligar': ('shutdown', 'power'),
     'configuracoes': ('app-settings', 'settings'),
     'chave': ('key', 'certificate'),
+    'usuarios': ('app-user-settings', 'app-user-settings'),
     'navegador': ('search-engine', 'internet'),
     'calculadora': ('app-calculator', 'app-calculator'),
     'caracteres': ('app-character-map', 'app-character-map'),
@@ -682,6 +683,54 @@ def dos(tam):
     return [''.join(l) for l in c]
 
 
+def pessoa(tam):
+    """O usuário (os perfis): a cabeça e os ombros, no verde e com a luz do ícone de usuários do SerenityOS."""
+    if tam >= 32:
+        cab = (16, 9.5, 6.2)  # o centro e o raio da cabeça
+        ombro = (16, 29, 12.5, 10.5)  # o centro e os raios dos ombros (uma elipse cortada embaixo)
+        fim = tam - 3
+    else:
+        # No pequeno, a cabeça maior, para ler de longe.
+        cab = (8, 4.9, 3.75)
+        ombro = (8, 15.2, 6.9, 6)
+        fim = tam - 2
+
+    def na_cabeca(x, y):
+        return (x + 0.5 - cab[0]) ** 2 + (y + 0.5 - cab[1]) ** 2 <= cab[2] ** 2
+
+    def nos_ombros(x, y):
+        if y > fim:
+            return False
+        return ((x + 0.5 - ombro[0]) / ombro[2]) ** 2 + ((y + 0.5 - ombro[1]) / ombro[3]) ** 2 <= 1
+
+    def parte(x, y):
+        if not (0 <= x < tam and 0 <= y < tam):
+            return 0
+        return 1 if na_cabeca(x, y) else 2 if nos_ombros(x, y) else 0
+
+    rampa = [(206, 240, 98), (170, 214, 36), (124, 180, 14), (76, 140, 0), (44, 96, 0)]
+    im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
+    for y in range(tam):
+        for x in range(tam):
+            q = parte(x, y)
+            if not q:
+                continue
+            vizinhos = [parte(x - 1, y), parte(x + 1, y), parte(x, y - 1), parte(x, y + 1)]
+            # O contorno preto em volta de cada parte (o pescoço fica separado da cabeça, como no SerenityOS).
+            if any(v != q for v in vizinhos):
+                im.putpixel((x, y), (0, 0, 0, 255))
+                continue
+            if q == 1:
+                dx, dy, r = x + 0.5 - cab[0], y + 0.5 - cab[1], cab[2]
+            else:
+                dx, dy, r = (x + 0.5 - ombro[0]) * 0.8, y + 0.5 - (ombro[1] - ombro[3] * 0.55), ombro[2]
+            # A luz do alto à esquerda: mais clara perto do brilho, mais escura do outro lado.
+            luz = ((dx + r * 0.45) ** 2 + (dy + r * 0.45) ** 2) ** 0.5 / (r * 1.6)
+            i = max(0, min(len(rampa) - 1, int(luz * len(rampa))))
+            im.putpixel((x, y), rampa[i] + (255,))
+    return im
+
+
 def damas(tam):
     """As Damas: a pedra preta atrás, à direita, e a branca na frente."""
     im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
@@ -1095,6 +1144,10 @@ def gerar(serenity):
     # As Damas: duas pedras, desenhadas como as do jogo (src/sistema/js/jogos/pecas.js).
     feitos[32]['damas'] = damas(32)
     feitos[16]['damas'] = damas(16)
+
+    # Os perfis: o usuário (desenho próprio) e o Painel › Usuários (o ícone de usuários do SerenityOS).
+    feitos[32]['usuario'] = pessoa(32)
+    feitos[16]['usuario'] = pessoa(16)
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

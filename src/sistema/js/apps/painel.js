@@ -7,7 +7,7 @@ import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco } from '../sistema.js';
-import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info } from '../dialogos.js';
+import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada } from '../dialogos.js';
 import { deslizante } from '../controles.js';
 import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparencia.js';
 import { tocar } from '../sons.js';
@@ -18,6 +18,7 @@ import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atuali
 import { comSenhaAdmin } from '../admin.js';
 import { aplicarLuzNoturna } from '../luz-noturna.js';
 import { programaDe, programasFixaveis, ITENS_INICIAR } from '../barra.js';
+import { perfisInfo, atualizarPerfis, nomeDoPerfil } from '../perfis.js';
 
 const ITENS = [
   { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: () => dialogoAparencia() },
@@ -29,6 +30,7 @@ const ITENS = [
   { chave: 'copia', rotulo: marcar('Cópia de segurança'), icone: 'copia', descricao: marcar('Copia o disco C: para um disco externo ou outra pasta, todo dia ou toda semana.'), abrir: () => dialogoCopia() },
   { chave: 'seguranca', rotulo: marcar('Segurança'), icone: 'seguranca', descricao: marcar('A proteção do computador num lugar só: a senha, o firewall, as atualizações e a privacidade.'), abrir: () => dialogoSeguranca() },
   { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
+  { chave: 'usuarios', rotulo: marcar('Usuários'), icone: 'usuarios', descricao: marcar('As pessoas que usam este computador, cada uma com a área de trabalho, as configurações e o disco C: próprios.'), abrir: () => dialogoUsuarios() },
   { chave: 'bluetooth', rotulo: marcar('Bluetooth'), icone: 'bluetooth', descricao: marcar('Os mouses, os teclados e os fones sem fio: parear, conectar e esquecer.'), abrir: () => import('../bluetooth.js').then((m) => m.abrirBluetooth()) },
   { chave: 'firewall', rotulo: marcar('Firewall'), icone: 'firewall', descricao: marcar('Recusa as conexões que outros computadores tentam abrir neste.'), abrir: () => dialogoFirewall(), mostrar: () => estado.config.plataforma === 'linux' },
   { chave: 'atualizacoes', rotulo: marcar('Atualizações do Linux'), icone: 'atualizacoes', descricao: marcar('As atualizações de segurança do Linux e dos programas da Loja.'), abrir: () => abrir('atualizacoes'), mostrar: () => estado.config.plataforma === 'linux' },
@@ -579,6 +581,95 @@ function dialogoSenhas() {
     titulo: tr('Propriedades de Senhas'), icone: 'chave', larg: 400,
     abas: [{ titulo: tr('Tela de bloqueio'), conteudo }],
     aoAplicar: () => definirConfig({ bloqueio: { aoVoltar: chkVoltar.checked, aoAbrir: chkAbrir.checked, naProtecao: chkProtecao.checked } }),
+  });
+}
+
+/* Usuários */
+
+/**
+ * Os usuários deste computador: criar, renomear e tirar (tirar nunca apaga nada: a pasta de
+ * dados e o disco C: ficam onde estão). Cada um entra pela tela de entrada (Iniciar › Fazer logoff).
+ */
+function dialogoUsuarios() {
+  const lista = () => perfisInfo().lista;
+  let sel = Math.max(0, lista().findIndex((p) => p.atual));
+  const caixa = h('div.campo.lp-lista', { tabIndex: 0, style: { height: '104px' } });
+  const btNovo = h('button', { type: 'button' }, rotulo(tr('&Novo usuário…')));
+  const btRenomear = h('button', { type: 'button' }, rotulo(tr('&Renomear…')));
+  const btTirar = h('button', { type: 'button' }, rotulo(tr('&Tirar…')));
+  const btSenha = h('button', { type: 'button', on: { click: () => abrir('painel', { secao: 'senhas' }) } }, rotulo(tr('&Senha…')));
+  const discoEl = h('div.us-disco');
+  const chkPerguntar = h('input', { type: 'checkbox', checked: perfisInfo().perguntar !== false });
+  const emUso = h('div', { style: { lineHeight: '13px' } });
+  let pedido = 0;
+  const desenhar = () => {
+    const l = lista();
+    sel = Math.max(0, Math.min(sel, l.length - 1));
+    caixa.replaceChildren(...l.map((p, i) => {
+      const linha = h('div.lp-linha' + (i === sel ? '.sel' : ''), img('usuario', 16), h('span', nomeDoPerfil(p)),
+        p.atual ? h('span.us-nota', tr('(em uso)')) : null, p.temSenha ? img('cadeado', 16) : null);
+      linha.addEventListener('mousedown', () => { sel = i; desenhar(); });
+      linha.addEventListener('dblclick', () => btRenomear.click());
+      return linha;
+    }));
+    const p = l[sel];
+    btTirar.disabled = p.id === 'principal' || p.atual;
+    // A senha de cada um é a da tela de bloqueio dele (só dá para mudar a de quem está usando).
+    btSenha.disabled = !p.atual;
+    chkPerguntar.disabled = l.length < 2;
+    emUso.textContent = tr('Quem está usando agora: {nome}.', { nome: nomeDoPerfil(l.find((x) => x.atual)) });
+    const n = ++pedido;
+    retro.perfis.disco(p.id).then((pasta) => { if (n === pedido) discoEl.textContent = tr('O disco C: de {nome} fica em: {pasta}', { nome: nomeDoPerfil(p), pasta: pasta || '?' }); }).catch(() => { });
+  };
+  const errar = (r) => erro(r.erro === 'repetido' ? tr('Já existe um usuário com esse nome.') : r.erro === 'nome' ? tr('Digite o nome do usuário.') : tr('Não foi possível mudar os usuários.'));
+  btNovo.addEventListener('click', async () => {
+    const nome = await entrada({ titulo: tr('Novo usuário'), texto: tr('O nome do novo usuário:'), icone: 'usuario' });
+    if (nome == null) return;
+    const r = await retro.perfis.criar(nome).catch(() => ({ ok: false }));
+    if (!r.ok) return errar(r);
+    atualizarPerfis(r.estado);
+    sel = lista().findIndex((p) => p.id === r.id);
+    desenhar();
+    info(tr('O usuário {nome} foi criado, com uma área de trabalho nova e o disco C: em:\n\n{pasta}\n\nPara entrar com ele, use Iniciar › Fazer logoff.', { nome: nomeDoPerfil(lista()[sel]), pasta: r.disco }), tr('Novo usuário'));
+  });
+  btRenomear.addEventListener('click', async () => {
+    const p = lista()[sel];
+    const nome = await entrada({ titulo: tr('Renomear o usuário'), texto: tr('O novo nome de {nome}:', { nome: nomeDoPerfil(p) }), valor: p.nome || nomeDoPerfil(p), icone: 'usuario' });
+    if (nome == null) return;
+    const r = await retro.perfis.renomear(p.id, nome).catch(() => ({ ok: false }));
+    if (!r.ok) return errar(r);
+    atualizarPerfis(r.estado);
+    desenhar();
+  });
+  btTirar.addEventListener('click', async () => {
+    const p = lista()[sel];
+    const pasta = await retro.perfis.disco(p.id).catch(() => null);
+    if (!(await confirmar(tr('Tirar {nome} da lista de usuários?\n\nNada é apagado: os documentos continuam no disco C: de {nome}, em:\n\n{pasta}', { nome: nomeDoPerfil(p), pasta: pasta || '?' }), { titulo: tr('Tirar o usuário') }))) return;
+    const r = await retro.perfis.remover(p.id).catch(() => ({ ok: false }));
+    if (!r.ok) return errar(r);
+    atualizarPerfis(r.estado);
+    desenhar();
+  });
+  caixa.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' && sel > 0) { sel--; desenhar(); e.preventDefault(); }
+    if (e.key === 'ArrowDown' && sel < lista().length - 1) { sel++; desenhar(); e.preventDefault(); }
+    if (e.key === 'F2') btRenomear.click();
+    if (e.key === 'Delete' && !btTirar.disabled) btTirar.click();
+  });
+  desenhar();
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('usuarios', 32),
+      h('div', { style: { lineHeight: '13px' } }, tr('Cada usuário tem a área de trabalho, as configurações, a senha e o disco C: próprios. Os programas instalados são de todos.'))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Usuários deste computador')),
+      h('div.lp-topo', caixa, h('div.lp-botoes', btNovo, btRenomear, btTirar, btSenha)),
+      discoEl, emUso),
+    h('label', chkPerguntar, h('span', tr('Perguntar quem vai usar ao abrir o Retro Computer'))));
+  return dialogoBase({
+    titulo: tr('Propriedades de Usuários'), icone: 'usuarios', larg: 420,
+    abas: [{ titulo: tr('Usuários'), conteudo }],
+    aoAplicar: async () => {
+      if (!chkPerguntar.disabled && chkPerguntar.checked !== (perfisInfo().perguntar !== false)) atualizarPerfis(await retro.perfis.perguntar(chkPerguntar.checked));
+    },
   });
 }
 

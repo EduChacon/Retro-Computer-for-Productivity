@@ -14,6 +14,7 @@ import { atualizarEmSegundoPlano } from './apps/programas.js';
 import { programasAbertos } from './apps/craft.js';
 import { procurarAtualizacao } from './atualizacao.js';
 import { bloquearAoAbrir } from './bloqueio.js';
+import { carregarPerfis, telaDeEntrada } from './perfis.js';
 import { iniciarLuzNoturna } from './luz-noturna.js';
 import { iniciarAcessibilidade } from './acessibilidade.js';
 
@@ -143,16 +144,27 @@ async function iniciar() {
       avisar(tr('Cópia de segurança'), erroDaCopia(r) || tr('A cópia não terminou.'), { icone: 'copia', aoClicar: () => abrir('painel', { secao: 'copia' }) });
     }
   });
-  const rapido = estado.config.inicioRapido || new URLSearchParams(location.search).has('rapido');
+  // Os usuários: na troca de usuário e no logoff, o Retro Computer abre de novo sem o BIOS.
+  const perfis = await carregarPerfis();
+  const rapido = estado.config.inicioRapido || new URLSearchParams(location.search).has('rapido') || perfis.reaberto;
   if (!rapido) {
     await telaBios();
     await telaAbertura();
   }
+  // Com mais de um usuário (ou depois do logoff), a tela de entrada vem antes da área de trabalho.
+  let entrou = perfis.entrou;
+  if (perfis.logon) {
+    boot.classList.remove('visivel');
+    boot.replaceChildren();
+    await telaDeEntrada();
+    entrou = true;
+  }
   montarBarra();
   await montarMesa();
   dicas();
-  // Com "pedir a senha ao abrir", a área de trabalho só aparece depois da senha.
-  bloquearAoAbrir();
+  // Com "pedir a senha ao abrir", a área de trabalho só aparece depois da senha (a não ser que ela
+  // tenha sido pedida na tela de entrada, ou que seja o mesmo usuário abrindo de novo).
+  if (!entrou) bloquearAoAbrir();
   boot.classList.remove('visivel');
   boot.replaceChildren();
   if (!rapido) tocar('inicio');

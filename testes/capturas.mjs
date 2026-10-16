@@ -89,16 +89,30 @@ fs.writeFileSync(path.join(disco, DOCS, 'Teste.md'), '# Título do teste\n\nUm p
 
 // RETRO_EXECUTAVEL=dist/linux-unpacked/retro-computer testa o aplicativo já empacotado.
 const empacotado = process.env.RETRO_EXECUTAVEL ? path.resolve(process.env.RETRO_EXECUTAVEL) : null;
-const app = await electron.launch({
-  executablePath: empacotado || require('electron'),
-  args: empacotado ? ['--no-sandbox'] : ['--no-sandbox', RAIZ],
-  env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: process.env.RETRO_BOOT ? '' : '1' },
-});
-const pagina = await app.firstWindow();
+// O roteiro "perfis" troca de usuário: o Retro Computer fecha (sem se abrir sozinho) e o roteiro o abre de novo.
+if (ROTEIRO === 'perfis') process.env.RETRO_SEM_RELANCAR = '1';
 const erros = [];
-pagina.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') erros.push(`[${m.type()}] ${m.text()}`); });
-pagina.on('pageerror', (e) => erros.push(`[pageerror] ${e.message}\n${e.stack}`));
-await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; w.setContentSize(1024, 700); });
+let app = null;
+let pagina = null;
+async function lancar() {
+  app = await electron.launch({
+    executablePath: empacotado || require('electron'),
+    args: empacotado ? ['--no-sandbox'] : ['--no-sandbox', RAIZ],
+    env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: process.env.RETRO_BOOT ? '' : '1' },
+  });
+  pagina = await app.firstWindow();
+  pagina.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') erros.push(`[${m.type()}] ${m.text()}`); });
+  pagina.on('pageerror', (e) => erros.push(`[pageerror] ${e.message}\n${e.stack}`));
+  await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; w.setContentSize(1024, 700); });
+}
+/** Espera o Retro Computer fechar sozinho (a troca de usuário, o logoff) e o abre de novo. */
+async function abrirDeNovo() {
+  const fechou = new Promise((r) => app.process().once('exit', (codigo) => r(codigo)));
+  const codigo = await Promise.race([fechou, new Promise((r) => setTimeout(() => r('não fechou'), 20000))]);
+  console.log('fechou com o código', codigo);
+  await lancar();
+}
+await lancar();
 if (process.env.RETRO_BOOT) {
   await pagina.waitForSelector('#boot .bios', { timeout: 30000 });
   await pagina.waitForTimeout(700);
@@ -199,6 +213,91 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
+  // Os vários usuários: o Painel › Usuários, o logoff, a tela de entrada, a área de trabalho de outro
+  // usuário (com o disco C: dele) e a senha dele na tela de entrada.
+  async perfis() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'usuarios' });
+    await pagina.waitForTimeout(500);
+    await foto('usuarios');
+    const novo = async (nome, fotografar) => {
+      await pagina.locator('.janela.ativa button', { hasText: T('&Novo usuário…') }).click();
+      await pagina.waitForTimeout(300);
+      await pagina.keyboard.type(nome);
+      if (fotografar) await foto('usuario-novo');
+      await pagina.keyboard.press('Enter');
+      await pagina.waitForTimeout(600);
+      if (fotografar) await foto('usuario-criado');
+      await pagina.keyboard.press('Enter');
+      await pagina.waitForTimeout(300);
+    };
+    await novo('Ana', true);
+    await novo('Bruno', false);
+    await foto('usuarios-tres');
+    // Um nome repetido não vale.
+    await pagina.locator('.janela.ativa button', { hasText: T('&Novo usuário…') }).click();
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.type('ana');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(500);
+    await foto('usuario-repetido');
+    await pagina.keyboard.press('Enter');
+    await fecharTudo();
+    // O logoff, pelo menu Iniciar.
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(400);
+    await foto('iniciar-logoff');
+    await pagina.locator('.menu.iniciar .opcao', { hasText: T('Fazer l&ogoff de {nome}…').replace('{nome}', T('Principal')) }).click();
+    await pagina.waitForTimeout(500);
+    await foto('logoff-pergunta');
+    await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim') }).click();
+    await pagina.waitForTimeout(500);
+    await foto('fazendo-logoff');
+    await abrirDeNovo();
+    await pagina.waitForSelector('#entrada .ent-usuario', { timeout: 30000 });
+    await pagina.waitForTimeout(500);
+    await foto('tela-de-entrada');
+    // Entra a Ana: o Retro Computer abre de novo com ela.
+    await pagina.locator('#entrada .ent-usuario', { hasText: 'Ana' }).click();
+    await pagina.keyboard.press('Enter');
+    await abrirDeNovo();
+    await pagina.waitForSelector('#iniciar', { timeout: 30000 });
+    await pagina.waitForTimeout(1500);
+    await foto('ana-primeira-vez');
+    console.log('disco da Ana:', await pagina.evaluate(() => retro.disco.raiz()));
+    await fecharTudo();
+    // O fundo dela é só dela.
+    await pagina.evaluate(() => window.__retro.definirConfig({ papel: { cor: '#800040', padrao: 'nenhum' } }));
+    await pagina.evaluate(async () => { const { aplicarFundo } = await import('./js/aparencia.js'); aplicarFundo(window.__retro.estado.config.papel); });
+    // A senha dela (a da tela de bloqueio).
+    console.log('senha da Ana:', JSON.stringify(await pagina.evaluate(() => retro.bloqueio.definir('', 'certa'))));
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(400);
+    await foto('iniciar-logoff-ana');
+    await pagina.keyboard.press('Escape');
+    // A troca de usuário pela caixa Desligar.
+    await abrir('desligar');
+    await pagina.waitForTimeout(400);
+    await pagina.locator('.janela.dialogo.ativa input[value=logoff]').check();
+    await foto('desligar-outro-usuario');
+    await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim') }).click();
+    await abrirDeNovo();
+    await pagina.waitForSelector('#entrada .ent-usuario', { timeout: 30000 });
+    await pagina.waitForTimeout(500);
+    await foto('entrada-com-senha');
+    await pagina.keyboard.type('errada');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForFunction(() => /\S/.test(document.querySelector('#entrada .bloq-aviso').textContent) && !document.querySelector('#entrada button.padrao').disabled, null, { timeout: 10000 });
+    await foto('entrada-senha-errada');
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForSelector('#iniciar', { timeout: 30000 });
+    await pagina.waitForTimeout(800);
+    await foto('ana-de-volta');
+    // O principal continua com o fundo e o disco de antes.
+    console.log('perfis:', JSON.stringify(await pagina.evaluate(() => retro.perfis.estado())));
+  },
+
   async boot() {
     // Com RETRO_BOOT=1: a tela do BIOS e a abertura (capturadas logo no início).
   },
@@ -397,7 +496,7 @@ const ROTEIROS = {
   },
   async caixas() {
     // Cada caixa do Painel de controle, aba a aba: o conteúdo cabe sem rolar? (sem fotos)
-    for (const secao of ['aparencia', 'barra', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'acessibilidade', 'copia', 'impressoras', 'sobre']) {
+    for (const secao of ['aparencia', 'barra', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'usuarios', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'energia', 'acessibilidade', 'copia', 'impressoras', 'sobre']) {
       await fecharTudo();
       await abrir('painel', { secao });
       await pagina.waitForTimeout(1200);

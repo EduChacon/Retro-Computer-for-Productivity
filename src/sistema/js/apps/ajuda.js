@@ -389,6 +389,7 @@ const TOPICOS = [
 <p><b>Idioma</b>: português, inglês ou espanhol (o Retro Computer reinicia para trocar).</p>
 <p><b>Segurança</b>: o estado das proteções (a senha, o firewall, as atualizações, a chave do Claude) e a privacidade (só conexões seguras no Navegador, apagar os dados de navegação ao fechar, o histórico da área de transferência).</p>
 <p><b>Senhas</b>: a senha da tela de bloqueio e quando pedi-la.</p>
+<p><b>Usuários</b>: as pessoas que usam este computador, cada uma com a área de trabalho, as configurações e o disco C: próprios.</p>
 <p><b>Bluetooth</b>: procurar, parear, conectar e esquecer mouses, teclados e fones sem fio (no Windows e no macOS, abre as configurações do sistema).</p>
 <p><b>Firewall</b> e <b>Atualizações do Linux</b> (só no Linux): recusar as conexões que chegam de fora e as atualizações de segurança do Linux e dos programas da Loja.</p>
 <p><b>Impressoras</b>: as impressoras, a padrão, a fila de impressão e a página de teste.</p>
@@ -408,6 +409,7 @@ const TOPICOS = [
 <p><b>Language</b>: Portuguese, English or Spanish (Retro Computer restarts to switch).</p>
 <p><b>Security</b>: the status of the protections (the password, the firewall, the updates, the Claude key) and privacy (secure connections only in the Browser, deleting the browsing data on closing, the clipboard history).</p>
 <p><b>Passwords</b>: the lock screen password and when to ask for it.</p>
+<p><b>Users</b>: the people who use this computer, each with their own desktop, settings and C: drive.</p>
 <p><b>Bluetooth</b>: finding, pairing, connecting and forgetting wireless mice, keyboards and headphones (on Windows and macOS, it opens the system settings).</p>
 <p><b>Firewall</b> and <b>Linux Updates</b> (Linux only): refusing the connections that come from outside, and the security updates for Linux and for the programs from the Store.</p>
 <p><b>Printers</b>: the printers, the default one, the print queue and the test page.</p>
@@ -427,6 +429,7 @@ const TOPICOS = [
 <p><b>Idioma</b>: portugués, inglés o español (Retro Computer se reinicia para cambiarlo).</p>
 <p><b>Seguridad</b>: el estado de las protecciones (la contraseña, el firewall, las actualizaciones, la clave de Claude) y la privacidad (solo conexiones seguras en el Navegador, borrar los datos de navegación al cerrar, el historial del portapapeles).</p>
 <p><b>Contraseñas</b>: la contraseña de la pantalla de bloqueo y cuándo pedirla.</p>
+<p><b>Usuarios</b>: las personas que usan esta computadora, cada una con su propio escritorio, su configuración y su disco C:.</p>
 <p><b>Bluetooth</b>: buscar, emparejar, conectar y olvidar mouses, teclados y auriculares inalámbricos (en Windows y macOS, abre la configuración del sistema).</p>
 <p><b>Firewall</b> y <b>Actualizaciones de Linux</b> (solo en Linux): rechazar las conexiones que llegan de fuera y las actualizaciones de seguridad de Linux y de los programas de la Tienda.</p>
 <p><b>Impresoras</b>: las impresoras, la predeterminada, la cola de impresión y la página de prueba.</p>
@@ -458,6 +461,36 @@ const TOPICOS = [
 <h2>Cuándo pedir la contraseña</h2>
 <p>Además del bloqueo desde Inicio, la contraseña se puede pedir al volver de la suspensión (o al cerrar la tapa), al salir del protector de pantalla y al abrir Retro Computer.</p>
 <p>En Linux, la contraseña de entrada de Linux también desbloquea, por si olvidas la de Retro Computer. Con Retro Computer como sistema, la tecla del logotipo + L bloquea.</p>`],
+  },
+  {
+    id: 'usuarios', icone: 'usuarios',
+    'pt-BR': ['Vários usuários', `
+<h2>Um computador para a família ou para a equipe</h2>
+<p>Em <b>Painel de controle › Usuários</b>, <b>Novo usuário</b> cria outra pessoa no mesmo Retro Computer. Cada usuário tem a área de trabalho, o fundo, a barra de tarefas, o menu Iniciar, os favoritos e os cookies do Navegador, o Diário, a senha e o <b>disco C:</b> próprios (uma pasta ao lado da do usuário principal, como "Retro Computer - Ana"). Os programas instalados são de todos.</p>
+<h2>Entrar e sair</h2>
+<p>Com mais de um usuário, o Retro Computer pergunta quem vai usar ao abrir: escolha o nome e, se ele tiver senha, digite-a. Para trocar, use <b>Iniciar › Fazer logoff</b> ou, na caixa <b>Desligar</b>, <b>Fechar todos os programas e entrar como outro usuário</b>: os programas fecham (cada um pergunta se há algo por salvar) e a tela de entrada volta.</p>
+<p>A senha de cada usuário é a da tela de bloqueio dele: entre com o usuário e vá a <b>Painel de controle › Senhas</b>. No Linux, a senha de entrada do Linux também serve, para o caso de esquecer.</p>
+<h2>Tirar um usuário</h2>
+<p><b>Tirar</b> só tira o nome da lista: nada é apagado. Os documentos continuam no disco C: dele (a caixa mostra onde), e a pasta pode ser aberta pelo computador principal. O usuário principal e o que está em uso não saem.</p>
+<p>Os usuários separam as áreas de trabalho e os documentos de quem divide o computador; eles não escondem os arquivos de quem usa o computador principal.</p>`],
+    en: ['Several users', `
+<h2>One computer for the family or the team</h2>
+<p>In <b>Control Panel › Users</b>, <b>New User</b> adds another person to the same Retro Computer. Each user has their own desktop, background, taskbar, Start menu, Browser favorites and cookies, Work Log, password and <b>C: drive</b> (a folder next to the main user's, like "Retro Computer - Ana"). The installed programs are shared by everyone.</p>
+<h2>Logging on and off</h2>
+<p>With more than one user, Retro Computer asks who is using it when it opens: choose the name and, if it has a password, type it. To switch, use <b>Start › Log Off</b> or, in the <b>Shut Down</b> box, <b>Close all programs and log on as a different user</b>: the programs close (each one asks if there is anything to save) and the logon screen comes back.</p>
+<p>Each user's password is their lock screen password: log on as the user and go to <b>Control Panel › Passwords</b>. On Linux, the Linux login password also works, in case it is forgotten.</p>
+<h2>Removing a user</h2>
+<p><b>Remove</b> only takes the name off the list: nothing is deleted. The documents stay on that user's C: drive (the box shows where), and the folder can be opened from the main computer. The main user and the one in use cannot be removed.</p>
+<p>Users keep apart the desktops and documents of the people who share the computer; they do not hide the files from whoever uses the main computer.</p>`],
+    es: ['Varios usuarios', `
+<h2>Una computadora para la familia o el equipo</h2>
+<p>En <b>Panel de control › Usuarios</b>, <b>Nuevo usuario</b> agrega otra persona al mismo Retro Computer. Cada usuario tiene su propio escritorio, fondo, barra de tareas, menú Inicio, favoritos y cookies del Navegador, Diario, contraseña y <b>disco C:</b> (una carpeta junto a la del usuario principal, como "Retro Computer - Ana"). Los programas instalados son de todos.</p>
+<h2>Entrar y salir</h2>
+<p>Con más de un usuario, Retro Computer pregunta quién lo va a usar al abrir: elige el nombre y, si tiene contraseña, escríbela. Para cambiar, usa <b>Inicio › Cerrar sesión</b> o, en el cuadro <b>Apagar</b>, <b>Cerrar todos los programas y entrar como otro usuario</b>: los programas se cierran (cada uno pregunta si hay algo por guardar) y vuelve la pantalla de entrada.</p>
+<p>La contraseña de cada usuario es la de su pantalla de bloqueo: entra con el usuario y ve a <b>Panel de control › Contraseñas</b>. En Linux, la contraseña de entrada de Linux también sirve, por si la olvidas.</p>
+<h2>Quitar un usuario</h2>
+<p><b>Quitar</b> solo saca el nombre de la lista: no se borra nada. Los documentos siguen en el disco C: de ese usuario (el cuadro muestra dónde), y la carpeta se puede abrir desde la computadora principal. El usuario principal y el que está en uso no se pueden quitar.</p>
+<p>Los usuarios separan los escritorios y los documentos de quienes comparten la computadora; no esconden los archivos de quien usa la computadora principal.</p>`],
   },
   {
     id: 'seguranca', icone: 'seguranca',
@@ -586,18 +619,21 @@ const TOPICOS = [
 <p><b>Iniciar › Desligar</b> fecha os programas (cada um pergunta se há algo por salvar) e sai do Retro Computer. Os arquivos ficam no disco C:.</p>
 <p><b>Reiniciar</b> recarrega a área de trabalho. <b>Sair da tela cheia</b> mostra o Retro Computer numa janela do computador principal.</p>
 <p>No Retro Computer como sistema do Linux, as opções são desligar, reiniciar e suspender o computador e sair da sessão.</p>
+<p>Com mais de um usuário (Painel de controle › Usuários), a caixa também oferece <b>Fechar todos os programas e entrar como outro usuário</b>.</p>
 <p>Para sair de perto sem fechar nada, use <b>Iniciar › Bloquear o computador</b>.</p>`],
     en: ['Shut Down', `
 <h2>Shutting down the computer</h2>
 <p><b>Start › Shut Down</b> closes the programs (each one asks if there is anything to save) and quits Retro Computer. The files stay on drive C:.</p>
 <p><b>Restart</b> reloads the desktop. <b>Leave full screen</b> shows Retro Computer in a window of the main computer.</p>
 <p>With Retro Computer as the Linux system, the options are to turn off, restart and suspend the computer, and to sign out.</p>
+<p>With more than one user (Control Panel › Users), the box also offers <b>Close all programs and log on as a different user</b>.</p>
 <p>To step away without closing anything, use <b>Start › Lock the Computer</b>.</p>`],
     es: ['Apagar', `
 <h2>Apagar la computadora</h2>
 <p><b>Inicio › Apagar</b> cierra los programas (cada uno pregunta si hay algo por guardar) y sale de Retro Computer. Los archivos quedan en el disco C:.</p>
 <p><b>Reiniciar</b> recarga el escritorio. <b>Salir de la pantalla completa</b> muestra Retro Computer en una ventana de la computadora principal.</p>
 <p>Con Retro Computer como sistema de Linux, las opciones son apagar, reiniciar y suspender la computadora, y cerrar la sesión.</p>
+<p>Con más de un usuario (Panel de control › Usuarios), el cuadro también ofrece <b>Cerrar todos los programas y entrar como otro usuario</b>.</p>
 <p>Para alejarte sin cerrar nada, usa <b>Inicio › Bloquear la computadora</b>.</p>`],
   },
 ];
