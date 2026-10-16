@@ -30,6 +30,45 @@ export function app(id) {
   return apps.get(id) || null;
 }
 
+const carregadores = [];
+
+/**
+ * Programas que só carregam quando abrem pela primeira vez (ou quando o computador fica parado,
+ * depois da abertura): o Retro Computer abre mais depressa, o que conta num computador antigo.
+ * O nome e o ícone já valem para a barra e os fixados; ao carregar, o módulo se registra de verdade.
+ * @param {Object<string, {nome:string, icone:string}>} defs  os programas do módulo
+ * @param {() => Promise<any>} carregar  o import() do módulo
+ */
+export function registrarPreguicoso(defs, carregar) {
+  let promessa = null;
+  const carregarUmaVez = () => (promessa = promessa || carregar());
+  carregadores.push(carregarUmaVez);
+  for (const [id, def] of Object.entries(defs)) {
+    apps.set(id, {
+      id, ...def, preguicoso: true,
+      abrir: async (args) => {
+        await carregarUmaVez();
+        const real = apps.get(id);
+        if (!real || real.preguicoso) return null;
+        // De novo com o programa marcado: a janela que ele abrir sabe de quem é (os fixados da barra).
+        return comPrograma(id, () => real.abrir(args));
+      },
+    });
+  }
+}
+
+/** Carrega, um por vez e sem pressa, os programas que ficaram para depois. */
+export function carregarOsQueFaltam() {
+  const fila = carregadores.slice();
+  const proximo = () => {
+    const f = fila.shift();
+    if (!f) return;
+    const quando = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
+    quando(() => f().catch(() => { }).finally(proximo), { timeout: 3000 });
+  };
+  proximo();
+}
+
 export async function carregarConfig() {
   estado.config = await retro.config.obter();
   configurarSons(estado.config);

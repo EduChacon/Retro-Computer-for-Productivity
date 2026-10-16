@@ -205,7 +205,7 @@ Fora da sessão, o Retro Computer pode simplesmente abrir junto com o computador
 
 As ideias abaixo ainda não foram feitas; ficam registradas para decisão:
 
-a) **Tema Mac clássico** (o System 7), escolhido no Painel de controle, com a barra de menus no alto e a Lixeira no canto. O tema "Cupertino" do SerenityOS (BSD-2-Clause) serve de ponto de partida para as cores e as molduras.
+a) **Tema Mac clássico**, inspirado no Mac OS 9.2 (o visual "Platinum": as janelas cinza-claro com a barra de título listrada, a barra de menus no alto, a Lixeira no canto), escolhido no Painel de controle. Como em todo o projeto, nada da Apple: os ícones, as letras e as molduras são desenhados aqui (o tema "Cupertino" do SerenityOS, BSD-2-Clause, serve de ponto de partida para as cores).
 
 b) **Várias telas**: a área de trabalho estendida por dois ou mais monitores, com a barra de tarefas em cada um.
 

@@ -6,7 +6,7 @@
  * Computer mostra também os programas da Loja e os outros do Linux.
  */
 const fs = require('node:fs');
-const { execFile } = require('node:child_process');
+const { execFile, spawn } = require('node:child_process');
 
 function rodar(cmd, args, { timeout = 4000 } = {}) {
   return new Promise((resolve, reject) => {
@@ -148,19 +148,55 @@ class JanelasLinux {
     return lista.length;
   }
 
-  /** Olha de tempos em tempos e avisa quando a lista (ou a ativa) muda. */
+  /**
+   * Avisa quando a lista (ou a ativa) muda. O "xprop -spy" conta na hora quando uma janela abre,
+   * fecha ou vem para a frente, sem abrir dois programas a cada segundo e meio (o que pesa num
+   * computador antigo); os títulos, que mudam sem aviso na raiz, são conferidos a cada 4 segundos.
+   * Sem o xprop (ou se ele parar), a lista é lida de tempos em tempos, como antes.
+   */
   vigiar(ms = 1500) {
     if (!this.disponivel()) return;
+    let lendo = false;
+    let deNovo = false;
     const olhar = async () => {
-      const r = await this.listar();
-      const ass = JSON.stringify([r.retroAtivo, r.lista.map((j) => [j.id, j.titulo, j.ativa])]);
-      if (ass !== this.assinatura) {
-        this.assinatura = ass;
-        this.aoMudar(r);
+      if (lendo) { deNovo = true; return; }
+      lendo = true;
+      try {
+        const r = await this.listar();
+        const ass = JSON.stringify([r.retroAtivo, r.lista.map((j) => [j.id, j.titulo, j.ativa])]);
+        if (ass !== this.assinatura) {
+          this.assinatura = ass;
+          this.aoMudar(r);
+        }
+      } finally {
+        lendo = false;
+        if (deNovo) { deNovo = false; olhar(); }
       }
     };
+    let espera = null;
+    const logo = () => { clearTimeout(espera); espera = setTimeout(olhar, 80); };
+    let relogio = setInterval(olhar, existe('xprop') ? 4000 : ms);
+    relogio.unref();
+    if (existe('xprop')) {
+      this.espiar(logo, () => { clearInterval(relogio); relogio = setInterval(olhar, ms); relogio.unref(); });
+    }
     olhar();
-    setInterval(olhar, ms).unref();
+  }
+
+  /** O xprop que fica ouvindo as mudanças da raiz (a lista e a janela ativa). */
+  espiar(aoMudar, aoParar) {
+    try {
+      const p = spawn('xprop', ['-root', '-spy', '_NET_CLIENT_LIST', '_NET_ACTIVE_WINDOW'], { stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, LC_ALL: 'C' } });
+      p.stdout.on('data', aoMudar);
+      p.on('error', aoParar);
+      p.on('exit', aoParar);
+      process.once('exit', () => { try { p.kill(); } catch { } });
+      this.espiao = p;
+      return true;
+    } catch {
+      aoParar();
+      return false;
+    }
   }
 }
 

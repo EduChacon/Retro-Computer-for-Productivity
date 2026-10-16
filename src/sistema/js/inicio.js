@@ -2,7 +2,7 @@
  * A abertura: a tela do BIOS, a marca do Retro Computer e a área de trabalho.
  */
 import { h, img, esperar } from './util.js';
-import { carregarConfig, atualizarProgramas, estado, abrir, avisar, avisarRecebido, definirConfig, abrirEndereco } from './sistema.js';
+import { carregarConfig, atualizarProgramas, estado, abrir, avisar, avisarRecebido, definirConfig, abrirEndereco, registrarPreguicoso, carregarOsQueFaltam } from './sistema.js';
 import { aplicarFundo, aplicarEscala } from './aparencia.js';
 import { montarBarra } from './barra.js';
 import { montarMesa, atualizar as atualizarMesa } from './mesa.js';
@@ -19,26 +19,30 @@ import { iniciarLuzNoturna } from './luz-noturna.js';
 import './apps/explorador.js';
 import './apps/bloco.js';
 import './apps/craft.js';
-import './apps/prompt.js';
 import './apps/programas.js';
-import './apps/painel.js';
 import './apps/diversos.js';
-import './apps/foco.js';
 import './apps/protecao.js';
-import './apps/ajuda.js';
-import './apps/calculadora.js';
 import './apps/navegador.js';
-import './apps/campominado.js';
-import './apps/paciencia.js';
-import './apps/breakout.js';
 import './apps/nativos.js';
 import './apps/imagens.js';
 import './apps/midia.js';
-import './apps/captura.js';
-import './apps/monitor.js';
 import './apps/atualizacoes.js';
-import './apps/transferencia.js';
 import './atalhos.js';
+
+// Estes carregam só quando abrem (ou com o computador parado, logo depois da abertura). Os de
+// cima ficam prontos desde o início: abrem arquivos pelo tipo, recebem avisos do processo
+// principal (os links, as permissões do Navegador) ou têm relógios próprios.
+registrarPreguicoso({ prompt: { nome: 'Prompt de comando', icone: 'prompt' }, claude: { nome: 'Claude', icone: 'claude' } }, () => import('./apps/prompt.js'));
+registrarPreguicoso({ painel: { nome: 'Painel de controle', icone: 'painel' } }, () => import('./apps/painel.js'));
+registrarPreguicoso({ foco: { nome: 'Foco', icone: 'foco' } }, () => import('./apps/foco.js'));
+registrarPreguicoso({ ajuda: { nome: 'Ajuda', icone: 'ajuda' } }, () => import('./apps/ajuda.js'));
+registrarPreguicoso({ calculadora: { nome: 'Calculadora', icone: 'calculadora' } }, () => import('./apps/calculadora.js'));
+registrarPreguicoso({ captura: { nome: 'Captura de tela', icone: 'captura' } }, () => import('./apps/captura.js'));
+registrarPreguicoso({ monitor: { nome: 'Monitor do sistema', icone: 'monitor' } }, () => import('./apps/monitor.js'));
+registrarPreguicoso({ transferencia: { nome: 'Área de transferência', icone: 'transferencia' } }, () => import('./apps/transferencia.js'));
+registrarPreguicoso({ 'campo-minado': { nome: 'Campo Minado', icone: 'campo-minado' } }, () => import('./apps/campominado.js'));
+registrarPreguicoso({ paciencia: { nome: 'Paciência', icone: 'paciencia' } }, () => import('./apps/paciencia.js'));
+registrarPreguicoso({ breakout: { nome: 'Breakout', icone: 'breakout' } }, () => import('./apps/breakout.js'));
 
 const boot = document.getElementById('boot');
 
@@ -131,6 +135,8 @@ async function iniciar() {
   boot.classList.remove('visivel');
   boot.replaceChildren();
   if (!rapido) tocar('inicio');
+  // Os programas que ficaram para depois carregam com o computador parado: a primeira vez que abrem já é rápida.
+  setTimeout(carregarOsQueFaltam, 4000);
 
   retro.sistema.aoPedidoDesligar(() => abrir('desligar'));
   retro.sistema.aoRecebido((rel) => avisarRecebido(rel));
