@@ -59,7 +59,8 @@
       "!node_modules/emulators/dist/types/**"
     ],
     "asarUnpack": [
-      "node_modules/node-pty/**"
+      "node_modules/node-pty/**",
+      "src/principal/mcp-retro.js"
     ],
     "win": {
       "target": [

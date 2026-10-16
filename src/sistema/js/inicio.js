@@ -29,6 +29,7 @@ import './apps/imagens.js';
 import './apps/midia.js';
 import './apps/atualizacoes.js';
 import './atalhos.js';
+import { iniciarMcp } from './mcp.js';
 
 // Estes carregam só quando abrem (ou com o computador parado, logo depois da abertura). Os de
 // cima ficam prontos desde o início: abrem arquivos pelo tipo, recebem avisos do processo
@@ -130,6 +131,8 @@ async function iniciar() {
   await aplicarEscala(estado.config.escala);
   iniciarLuzNoturna();
   iniciarAcessibilidade();
+  // O Claude do Prompt pede pelo processo principal o que só a área de trabalho faz (mcp.js).
+  iniciarMcp();
   // O fim da cópia de segurança (a automática e a feita na hora): um aviso, e o erro quando houver.
   retro.copia.aoFim(async (r) => {
     await carregarConfig();

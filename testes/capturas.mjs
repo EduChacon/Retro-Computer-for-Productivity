@@ -1874,6 +1874,44 @@ const ROTEIROS = {
     await foto('breakout');
   },
 
+  // O Claude ajusta o Retro Computer: o roteiro faz o papel do Claude Code, roda o servidor MCP com o
+  // config que o Retro Computer gravou e pede o fundo azul-marinho, a Calculadora no Iniciar e um aviso.
+  async claudeAjusta() {
+    await fecharTudo();
+    const conf = JSON.parse(fs.readFileSync(path.join(dados, 'claude', 'mcp.json'), 'utf8')).mcpServers['retro-computer'];
+    const { spawn } = await import('node:child_process');
+    const p = spawn(conf.command, conf.args, { env: { ...process.env, ...conf.env } });
+    let resto = '';
+    const respostas = new Map();
+    p.stdout.on('data', (d) => {
+      resto += d;
+      let i;
+      while ((i = resto.indexOf('\n')) >= 0) { const m = JSON.parse(resto.slice(0, i)); respostas.set(m.id, m); resto = resto.slice(i + 1); }
+    });
+    let id = 0;
+    const pedir = async (method, params) => {
+      const n = ++id;
+      p.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: n, method, params }) + '\n');
+      for (let t = 0; t < 200 && !respostas.has(n); t++) await pagina.waitForTimeout(50);
+      return respostas.get(n);
+    };
+    await pedir('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'roteiro', version: '1' } });
+    console.log('ferramentas:', (await pedir('tools/list', {})).result.tools.map((t) => t.name).join(', '));
+    const usar = async (name, args) => { const r = await pedir('tools/call', { name, arguments: args }); console.log(name + ':', r.result.content[0].text.replace(/\s+/g, ' ').slice(0, 200)); return r; };
+    await usar('mudar_configuracoes', { configuracoes: { papel: { cor: '#000080', padrao: 'nenhum' } } });
+    await usar('mudar_configuracoes', { configuracoes: { bloqueio: { aoAbrir: false } } });
+    await usar('atalho', { programa: 'calculadora', onde: 'iniciar', acao: 'por' });
+    await usar('avisar', { titulo: 'Claude', texto: T('Pronto: o fundo azul-marinho e a Calculadora no menu Iniciar.') });
+    await usar('estado', {});
+    await pagina.waitForTimeout(600);
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(500);
+    await foto('claude-ajusta');
+    await pagina.keyboard.press('Escape');
+    p.kill();
+    await pagina.evaluate(() => window.__retro.definirConfig({ papel: { cor: '#008080', padrao: 'nenhum' }, iniciar: null }));
+  },
+
   // O DOS: um .COM feito aqui (só escreve uma frase) aberto com dois cliques, os comandos digitados e
   // o arquivo criado no DOS de volta ao disco ao fechar a janela.
   async dos() {

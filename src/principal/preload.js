@@ -281,6 +281,12 @@ contextBridge.exposeInMainWorld('retro', {
     aoMudar: ouvir('unidades:mudou'),
   },
   // Os programas do Windows no Linux, pelo WINE.
+  // O Claude ajusta o Retro Computer (o servidor MCP): os pedidos que a área de trabalho resolve.
+  mcp: {
+    aoPedido: ouvir('mcp:pedido'),
+    responder: (id, r) => chamar('mcp:resposta', id, r),
+    aoMudarConfig: ouvir('config:mudou'),
+  },
   dos: {
     abrir: (rel) => chamar('dos:abrir', rel),
     guardar: (pasta, foto, arquivos, pastas) => chamar('dos:guardar', pasta, foto, arquivos, pastas),

@@ -47,6 +47,8 @@ const PADRAO = {
   energia: { telaTomada: 15, telaBateria: 5, suspenderTomada: 0, suspenderBateria: 30 },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
+  // O Claude do Prompt ajusta o Retro Computer pelo servidor MCP (mcp.js).
+  claude: { ajustes: true },
   primeiraVez: true,
 };
 

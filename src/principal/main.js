@@ -48,6 +48,7 @@ const { AcessibilidadeLinux } = require('./acessibilidade');
 const { Antivirus } = require('./antivirus');
 const { Wine } = require('./wine');
 const { Dos, servirEmulador } = require('./dos');
+const { ServidorMcp, filtrarConfig } = require('./mcp');
 const { dentro: dentroDaUnidade } = require('./unidades');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
@@ -660,7 +661,7 @@ function teclasDoSistema() {
       }
     });
   });
-  app.on('will-quit', () => globalShortcut.unregisterAll());
+  app.on('will-quit', () => { globalShortcut.unregisterAll(); if (servidorMcp) servidorMcp.fechar(); });
 }
 
 /** O cache das miniaturas do Explorador não cresce sem fim: passando de 3000, saem as 1000 mais antigas. */
@@ -734,7 +735,88 @@ function tratar(canal, fn) {
   });
 }
 
+/* ---------- O Claude ajusta o Retro Computer (o servidor MCP, mcp.js) ---------- */
+
+let servidorMcp = null;
+const pendentesMcp = new Map();
+let nMcp = 0;
+
+/** O mcp-retro.js fora do app.asar (o Electron como Node o lê do disco, desempacotado). */
+const scriptMcp = () => path.join(__dirname, 'mcp-retro.js').replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
+
+function arquivosMcp() {
+  if (!servidorMcp) return null;
+  try { return servidorMcp.arquivos({ executavel: process.execPath, script: scriptMcp(), raiz: disco.raiz }); } catch { return null; }
+}
+
+/** Uma ferramenta que a área de trabalho resolve (os programas, os atalhos, os avisos). */
+function pedirTela(nome, args) {
+  return new Promise((resolve, reject) => {
+    const id = ++nMcp;
+    pendentesMcp.set(id, { resolve, reject });
+    if (!enviar('mcp:pedido', { id, nome, args })) { pendentesMcp.delete(id); reject(new Error(tr('A área de trabalho não está aberta.'))); return; }
+    setTimeout(() => { if (pendentesMcp.delete(id)) reject(new Error(tr('A área de trabalho não respondeu.'))); }, 60000);
+  });
+}
+
+/** Um caminho do disco C: como o Claude escreve: a pasta de verdade, "C:\\Meus documentos\\x" ou o relativo. */
+function caminhoDoDisco(c) {
+  let s = String(c || '').trim();
+  // A pasta de verdade do disco (o terminal do Claude começa nela).
+  if (s === disco.raiz || s.startsWith(disco.raiz + path.sep)) return path.relative(disco.raiz, s).split(path.sep).join('/');
+  // "C:\\…" ou "C:/…", como o disco aparece no Retro Computer.
+  s = s.replace(/^[a-z]:[\\/]?/i, '');
+  if (path.isAbsolute(s)) throw new Error(tr('Caminho fora do disco.'));
+  return s.replace(/\\/g, '/');
+}
+
+async function executarMcp(nome, a) {
+  switch (nome) {
+    case 'estado': {
+      const tela = await pedirTela('estado', {}).catch(() => ({}));
+      return {
+        versao: app.getVersion(), plataforma: process.platform, modoSistema: MODO_SISTEMA, portatil: !!PORTATIL,
+        idioma: idioma.idioma(), discoC: disco.raiz,
+        craftInstalados: programas.instalados().map((p) => ({ id: p.id, nome: p.nome, versao: p.versao })),
+        ...tela,
+      };
+    }
+    case 'ler_configuracoes': {
+      const { disco: _d, ...resto } = semSegredos(config.obter());
+      return resto;
+    }
+    case 'mudar_configuracoes': {
+      const { aceitas, recusadas } = filtrarConfig(a.configuracoes);
+      if (!Object.keys(aceitas).length) throw new Error(tr('Nenhuma das chaves pode ser mudada pelo Claude: {chaves}', { chaves: recusadas.join(', ') || '?' }));
+      config.definir(aceitas);
+      enviar('config:mudou', aceitas);
+      return { aplicadas: Object.keys(aceitas), recusadas, ...(aceitas.idioma ? { aviso: tr('O idioma novo vale depois de reabrir o Retro Computer.') } : {}) };
+    }
+    case 'instalar_programa': {
+      const id = String(a.programa || '').replace(/^craft:/, '');
+      const r = await programas.instalar(id, (p) => enviar('programas:progresso', id, p), {});
+      await pedirTela('programasMudaram', {}).catch(() => { });
+      return r;
+    }
+    case 'mover_para_lixeira': {
+      const rel = caminhoDoDisco(a.caminho);
+      if (!rel) throw new Error(tr('Não dá para excluir o disco.'));
+      await disco.paraLixeira(rel);
+      return { naLixeira: rel };
+    }
+    default:
+      return pedirTela(nome, a);
+  }
+}
+
 function registrarPonte() {
+  tratar('mcp:resposta', (id, r) => {
+    const p = pendentesMcp.get(id);
+    if (!p) return false;
+    pendentesMcp.delete(id);
+    if (r && r.erro) p.reject(new Error(String(r.erro))); else p.resolve(r ? r.valor : null);
+    return true;
+  });
   // Configurações
   tratar('config:obter', () => ({
     ...semSegredos(config.obter()),
@@ -976,7 +1058,10 @@ function registrarPonte() {
     if (o.claude) {
       const pedido = typeof o.claude.pedido === 'string' ? o.claude.pedido.slice(0, 4000) : '';
       if (pedido) env.RETRO_PEDIDO = pedido;
-      comando = comandoClaude({ pedido: !!pedido });
+      // O Claude que ajusta o Retro Computer: o servidor MCP e o texto que explica onde ele está.
+      const arqs = (config.obter().claude || {}).ajustes !== false ? arquivosMcp() : null;
+      if (arqs) { env.RETRO_CLAUDE_MCP = arqs.mcp; env.RETRO_CLAUDE_SISTEMA = arqs.sistema; }
+      comando = comandoClaude({ pedido: !!pedido, ajustes: !!arqs });
     }
     return terminais.criar({ cols: o.cols, rows: o.rows, cwd, comando, env });
   });
@@ -1363,6 +1448,9 @@ app.whenReady().then(async () => {
   if ((config.obter().navegador || {}).limparAoFechar) await limparNavegador().catch(() => { });
   registrarProtocolos();
   registrarPonte();
+  // O servidor do Claude (o MCP): um soquete local, com um código novo a cada abertura.
+  servidorMcp = new ServidorMcp({ dados: app.getPath('userData'), executar: executarMcp });
+  servidorMcp.iniciar().then(() => arquivosMcp()).catch(() => { servidorMcp = null; });
   atalhosDoWindows();
   teclasDoSistema();
   // O histórico da área de transferência: só na memória, lido de tempos em tempos.

@@ -121,9 +121,16 @@ function acharClaude() {
  * O comando que abre o Claude Code. O pedido (do botão direito, "Pedir ao Claude") vai pela
  * variável RETRO_PEDIDO: o texto nunca passa pelo shell, e nenhuma aspa precisa ser escapada.
  */
-function comandoClaude({ pedido = false, plataforma = process.platform } = {}) {
+/**
+ * O comando do Claude no Prompt. O pedido e os arquivos do servidor MCP vão por variáveis
+ * (RETRO_PEDIDO, RETRO_CLAUDE_SISTEMA e RETRO_CLAUDE_MCP), nunca escritos no comando; o
+ * --mcp-config vem por último, porque ele aceita mais de um arquivo.
+ */
+function comandoClaude({ pedido = false, ajustes = false, plataforma = process.platform } = {}) {
+  const v = (nome) => (plataforma === 'win32' ? '$env:' + nome : `"$${nome}"`);
   const partes = [process.env.RETRO_CLAUDE_FALSO || 'claude'];
-  if (pedido) partes.push(plataforma === 'win32' ? '$env:RETRO_PEDIDO' : '"$RETRO_PEDIDO"');
+  if (pedido) partes.push(v('RETRO_PEDIDO'));
+  if (ajustes) partes.push('--append-system-prompt-file', v('RETRO_CLAUDE_SISTEMA'), '--mcp-config', v('RETRO_CLAUDE_MCP'));
   return partes.join(' ');
 }
 

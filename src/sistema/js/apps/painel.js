@@ -1036,7 +1036,17 @@ async function dialogoClaude() {
     situacao.textContent = tr('Nenhuma chave guardada.');
     await carregarConfig();
   }
-  dialogoBase({ titulo: tr('Propriedades do Claude'), icone: 'claude', larg: 400, abas: [{ titulo: tr('Geral'), conteudo }] });
+  // Os ajustes: o Claude do Prompt muda o próprio Retro Computer (pelo servidor MCP).
+  const chkAjustes = h('input', { type: 'checkbox', checked: !(c.claude && c.claude.ajustes === false) });
+  const ajustes = h('div.texto-ajuda',
+    h('label', { style: { marginBottom: '8px' } }, chkAjustes, h('span', tr('Deixar o Claude ajustar o Retro Computer'))),
+    h('p', tr('Pedindo em palavras ("deixe o fundo azul-marinho", "ponha a Calculadora no menu Iniciar", "instale o WordCraft"), o Claude muda a aparência, a barra de tarefas, o menu Iniciar, os sons, os atalhos e os programas, e manda para a Lixeira o que for apagar.')),
+    h('p', tr('Ele nunca muda a senha, a chave de API, a pasta do disco nem as atualizações, e o Claude Code pergunta antes de cada ajuste. Vale para os próximos Claude abertos.')));
+  dialogoBase({
+    titulo: tr('Propriedades do Claude'), icone: 'claude', larg: 400,
+    abas: [{ titulo: tr('Geral'), conteudo }, { titulo: tr('Ajustes'), conteudo: ajustes }],
+    aoAplicar: () => definirConfig({ claude: { ajustes: chkAjustes.checked } }),
+  });
 }
 
 /* Idioma */
