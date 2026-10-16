@@ -124,6 +124,33 @@ export function ajustarAoConteudo(j, { minLarg = 0, largura = 0 } = {}) {
   j.ret.x = Math.round((t.width - j.ret.w) / 2);
   j.ret.y = Math.max(0, Math.round((t.height - j.ret.h) / 2.4));
   j.aplicarRet();
+  if (!j.redim) acompanharConteudo(j, [...j.corpo.children]);
+}
+
+/**
+ * As janelas de tamanho fixo crescem quando o conteúdo cresce depois de abertas (uma aba mais
+ * alta, um texto que chegou depois), sem passar da tela; nunca encolhem sozinhas.
+ * @param {HTMLElement[]} elementos  o que observar (os conteúdos das abas, por exemplo)
+ */
+export function acompanharConteudo(j, elementos) {
+  if (!j._acompanha) {
+    j._acompanha = new ResizeObserver(() => requestAnimationFrame(() => crescer(j)));
+    j.ev.on('fechada', () => j._acompanha.disconnect());
+  }
+  for (const el of elementos) if (el) j._acompanha.observe(el);
+}
+
+function crescer(j) {
+  if (j.fechada || j.maximizada || j.minimizada) return;
+  const antes = j.el.style.height;
+  j.el.style.height = 'auto';
+  const precisa = Math.ceil(j.el.getBoundingClientRect().height);
+  j.el.style.height = antes;
+  if (precisa <= j.ret.h) return;
+  const t = document.getElementById('janelas').getBoundingClientRect();
+  j.ret.h = Math.min(precisa, Math.floor(t.height) - 8);
+  if (j.ret.y + j.ret.h > t.height) j.ret.y = Math.max(0, Math.floor(t.height) - j.ret.h);
+  j.aplicarRet();
 }
 
 /* ---------- Abrir e Salvar como ---------- */

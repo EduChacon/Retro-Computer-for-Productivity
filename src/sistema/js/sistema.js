@@ -4,7 +4,7 @@
  */
 import { h, img, extensao, nomeDe, ehTexto, Eventos, caminhoTela } from './util.js';
 import { configurar as configurarSons, tocar } from './sons.js';
-import { tr } from './idioma.js';
+import { tr, localidade } from './idioma.js';
 import { comPrograma } from './janelas.js';
 
 export const eventos = new Eventos();
@@ -13,7 +13,15 @@ export const estado = {
   instalados: [],
   catalogo: [],
   raizDisco: '',
+  // O modo foco completo (foco.js): durante um bloco de foco, { silencio, semJogos, fim } ou null.
+  emFoco: null,
 };
+
+/** O "Não perturbe" agora: o escolhido no sino ou o do bloco de foco. */
+export const naoPerturbeAgora = () => !!(estado.config && estado.config.naoPerturbe) || !!(estado.emFoco && estado.emFoco.silencio);
+
+// Os jogos, que o modo foco completo deixa para as pausas.
+const JOGOS = new Set(['paciencia', 'campo-minado', 'breakout']);
 
 const apps = new Map();
 
@@ -117,6 +125,11 @@ export function abrir(id, args = {}) {
     const a = apps.get('craft');
     return a && comPrograma(id, () => a.abrir({ ...args, programa: id.slice(6) }));
   }
+  if (estado.emFoco && estado.emFoco.semJogos && JOGOS.has(id)) {
+    const hora = new Date(estado.emFoco.fim).toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
+    avisar(tr('Foco'), tr('Os jogos ficam para a pausa, que começa às {hora}.', { hora }), { icone: 'foco', guardar: false, sempre: true });
+    return null;
+  }
   const a = apps.get(id);
   if (!a) {
     console.warn('programa desconhecido', id);
@@ -210,7 +223,7 @@ export function avisosLidos() {
  * O balão perto do relógio, guardado também nas notificações do sino.
  * Com "Não perturbe", fica só no sino (sem balão nem som).
  */
-export function avisar(titulo, texto, { icone = 'msg-info', ms = 6000, som = 'info', aoClicar, guardar = true } = {}) {
+export function avisar(titulo, texto, { icone = 'msg-info', ms = 6000, som = 'info', aoClicar, guardar = true, sempre = false } = {}) {
   const id = ++numeroAviso;
   if (guardar) {
     avisos.lista = [{ id, titulo: String(titulo), texto: String(texto ?? ''), icone, aoClicar, em: Date.now() }, ...avisos.lista].slice(0, 50);
@@ -218,7 +231,8 @@ export function avisar(titulo, texto, { icone = 'msg-info', ms = 6000, som = 'in
     eventos.emit('avisos', avisos);
   }
   const clicar = () => { esquecerAviso(id); if (aoClicar) aoClicar(); };
-  if (estado.config && estado.config.naoPerturbe) return;
+  // O que responde a um clique do usuário (sempre) aparece mesmo com o "Não perturbe".
+  if (naoPerturbeAgora() && !sempre) return;
   if (balao) balao.remove();
   // Os ícones das caixas de mensagem só existem em 32 pontos; os outros vão no tamanho da bandeja.
   balao = h('div.aviso-balao', img(icone, icone.startsWith('msg-') ? 32 : 16), h('div', h('b', titulo), texto));

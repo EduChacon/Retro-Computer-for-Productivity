@@ -306,6 +306,25 @@ const ROTEIROS = {
     await pagina.waitForTimeout(200);
     await foto('teclado-atalhos');
   },
+  async caixas() {
+    // Cada caixa do Painel de controle, aba a aba: o conteúdo cabe sem rolar? (sem fotos)
+    for (const secao of ['aparencia', 'teclado', 'mouse', 'seguranca', 'firewall', 'senhas', 'internet', 'sons', 'idioma', 'claude', 'disco', 'data', 'sobre']) {
+      await fecharTudo();
+      await abrir('painel', { secao });
+      await pagina.waitForTimeout(1200);
+      const n = await pagina.locator('.janela.ativa .abas > div').count();
+      const r = [];
+      for (let i = 0; i < Math.max(1, n); i++) {
+        if (n) { await pagina.locator(`.janela.ativa .abas > div >> nth=${i}`).dispatchEvent('mousedown'); await pagina.waitForTimeout(300); }
+        r.push(await pagina.evaluate(() => {
+          const a = document.querySelector('.janela.ativa .painel-aba');
+          const j = document.querySelector('.janela.ativa');
+          return a ? `${a.scrollHeight > a.clientHeight + 1 ? 'ROLA' : 'ok'}(${a.scrollHeight}/${a.clientHeight}, ${j.offsetHeight})` : 'sem abas';
+        }));
+      }
+      console.log('caixa', secao + ':', r.join(' '));
+    }
+  },
   async caracteres() {
     // O Mapa de caracteres: a lupa com o botão apertado, dois cliques para juntar e Copiar.
     await fecharTudo();
@@ -1272,11 +1291,11 @@ const ROTEIROS = {
     await fecharTudo();
     await abrir('foco', { aba: 1 });
     await pagina.waitForTimeout(400);
-    await pagina.click('.janela.ativa .foco-painel:not([hidden]) button.padrao');
+    await pagina.click('.janela.ativa .foco-painel:not(.oculto) button.padrao');
     await pagina.waitForTimeout(1300);
-    await pagina.click(`.janela.ativa .foco-painel:not([hidden]) button:has-text("${T('Volta')}")`);
+    await pagina.click(`.janela.ativa .foco-painel:not(.oculto) button:has-text("${T('Volta')}")`);
     await pagina.waitForTimeout(900);
-    await pagina.click(`.janela.ativa .foco-painel:not([hidden]) button:has-text("${T('Volta')}")`);
+    await pagina.click(`.janela.ativa .foco-painel:not(.oculto) button:has-text("${T('Volta')}")`);
     await pagina.waitForTimeout(300);
     await foto('foco-cronometro');
     await pagina.click('.janela.ativa .abas > div >> nth=2');
@@ -1284,6 +1303,17 @@ const ROTEIROS = {
     await pagina.click(`.janela.ativa .foco-rapidos button >> nth=0`);
     await pagina.waitForTimeout(1500);
     await foto('foco-temporizador');
+    // O modo foco completo: com o foco correndo, o sino silencia e os jogos esperam a pausa.
+    await pagina.click('.janela.ativa .abas > div >> nth=0');
+    await pagina.locator('.janela.ativa .foco-painel:not(.oculto) fieldset >> nth=1').locator('input >> nth=1').check();
+    await pagina.click('.janela.ativa .foco-painel:not(.oculto) button.padrao');
+    await pagina.waitForTimeout(600);
+    await foto('foco-durante');
+    await abrir('paciencia');
+    await pagina.waitForTimeout(500);
+    console.log('jogo aberto no foco:', await pagina.locator('.janela.paciencia, .janela[data-app=paciencia]').count(), 'sino:', await pagina.evaluate(() => [document.querySelector('.nao-perturbe') ? 'silencioso' : 'normal', window.__retro.estado.emFoco]));
+    await foto('foco-sem-jogos');
+    await pagina.click(`.janela.ativa .foco-painel:not(.oculto) button:has-text("${T('Pausar')}")`).catch(() => { });
   },
 
   // As impressoras (com RETRO_IMPRESSORAS_FALSAS=1): a lista, a padrão, a fila e imprimir do Bloco.

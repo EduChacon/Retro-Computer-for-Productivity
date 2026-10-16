@@ -92,7 +92,7 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 | Reprodutor de mídia | Os vídeos e as músicas do disco, a fila da pasta, as legendas `.srt` e `.vtt` de mesmo nome, a velocidade, a tela cheia (Alt+Enter) e as teclas de mídia |
 | Captura de tela | A tela inteira, a janela da frente ou um pedaço, com atraso opcional; tudo fica em `Meus documentos/Capturas de tela` e na área de transferência |
 | Monitor do sistema (Ctrl+Shift+Esc) | Os programas abertos (finalizar e alternar), os processos do computador e o desempenho (processador e memória) |
-| Foco | O Pomodoro (25/5/15 minutos, ajustáveis), o cronômetro com voltas e o temporizador; os três continuam com a janela fechada |
+| Foco | O Pomodoro (25/5/15 minutos, ajustáveis), o cronômetro com voltas e o temporizador; os três continuam com a janela fechada. Durante o foco, o "Não perturbe" liga sozinho e, se escolhido, os jogos ficam para as pausas |
 | Mapa de caracteres | Os acentos, os símbolos e as letras de outros alfabetos, em grupos: segurar o botão amplia, dois cliques juntam à caixa de baixo, Copiar leva à área de transferência |
 | Área de transferência (logotipo + V) | Os últimos 25 textos copiados em qualquer programa: Enter cola o escolhido na posição do cursor; o "…" fixa ou exclui. Fica só na memória (nada vai para o disco), sem o que os gerenciadores de senhas marcam como secreto |
 | Calculadora, Bloco de notas, Prompt de comando | Os de sempre |
@@ -249,8 +249,6 @@ b) **Várias telas**: a área de trabalho estendida por dois ou mais monitores, 
 c) **Papel de parede, esquemas de cores e cursores**: imagens de fundo, esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS.
 
 d) **Navegador focado**: uma janela de navegador com uma lista de "sites" permitidos (por exemplo, o portal do tribunal, a pesquisa de jurisprudência e o e-mail), sem abas infinitas.
-
-e) **Modo foco completo**: ao ligar o Foco, ligar o "Não perturbe" sozinho e esconder o relógio de segundos e os atalhos que distraem.
 
 f) **Atalhos do Claude no menu do arquivo**: botão direito num documento › "Pedir ao Claude…" (revisar, resumir, traduzir), abrindo o Claude Code já com o pedido.
 

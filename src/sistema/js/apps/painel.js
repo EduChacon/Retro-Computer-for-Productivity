@@ -7,7 +7,7 @@ import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco } from '../sistema.js';
-import { ajustarAoConteudo, confirmar, confirmarComPrazo, erro, info } from '../dialogos.js';
+import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info } from '../dialogos.js';
 import { deslizante } from '../controles.js';
 import { CORES, PADROES, fundoCss, aplicarFundo, aplicarEscala } from '../aparencia.js';
 import { tocar } from '../sons.js';
@@ -98,6 +98,24 @@ function dialogoBase({ titulo, icone, abas, larg = 380, altMin = 0, aoAplicar })
   j.corpo.style.padding = '8px';
   j.corpo.append(cab, painel, acoes);
   ajustarAoConteudo(j, { largura: larg });
+  // Como na época, a caixa tem a altura da aba mais alta: trocar de aba não a muda.
+  if (abas.length > 1) {
+    const alturas = abas.map((a) => {
+      painel.replaceChildren(a.conteudo);
+      j.el.style.height = 'auto';
+      return Math.ceil(j.el.getBoundingClientRect().height);
+    });
+    painel.replaceChildren(abas[atual].conteudo);
+    const maior = Math.max(j.ret.h, ...alturas);
+    if (maior > j.ret.h) {
+      const area = document.getElementById('janelas').getBoundingClientRect();
+      j.ret.h = Math.min(maior, Math.floor(area.height) - 8);
+      j.ret.y = Math.max(0, Math.round((area.height - j.ret.h) / 2.4));
+    }
+    j.aplicarRet();
+  }
+  // O que chega depois de abrir (o estado lido do sistema) também cabe: a janela cresce com ele.
+  acompanharConteudo(j, abas.map((a) => a.conteudo));
   // As abas mais altas (que crescem depois de abrir) cabem sem rolar.
   if (altMin && j.ret.h < altMin) {
     const area = document.getElementById('janelas').getBoundingClientRect();

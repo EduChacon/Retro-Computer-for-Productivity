@@ -297,6 +297,7 @@ const TOPICOS = [
 <h2>Trabalhar em blocos</h2>
 <p>A aba <b>Pomodoro</b> alterna blocos de trabalho (25 minutos) com pausas curtas (5 minutos) e, a cada quatro blocos, uma pausa longa (15 minutos). Os tempos podem ser mudados.</p>
 <p>O tempo aparece na bandeja, ao lado do relógio, mesmo com a janela fechada. No fim de cada fase, um som e um aviso.</p>
+<p><b>Durante o foco</b> (não nas pausas): o <b>Não perturbe</b> liga sozinho (os avisos esperam no sino, e o do fim do foco aparece), e, se marcado, os jogos ficam para as pausas.</p>
 <h2>Cronômetro e temporizador</h2>
 <p>A aba <b>Cronômetro</b> marca as voltas; a aba <b>Temporizador</b> conta de alguns segundos a horas, com atalhos de 1 a 60 minutos, e avisa com som e balão quando acaba. Os dois continuam com a janela fechada.</p>
 <p>Dica: marque <b>Minimizar as outras janelas no começo do foco</b> e use a tela cheia (F11).</p>`],
@@ -304,6 +305,7 @@ const TOPICOS = [
 <h2>Working in blocks</h2>
 <p>The <b>Pomodoro</b> tab alternates blocks of work (25 minutes) with short breaks (5 minutes) and, every four blocks, a long break (15 minutes). The times can be changed.</p>
 <p>The time shows in the tray, next to the clock, even with the window closed. At the end of each phase, a sound and a notice.</p>
+<p><b>During focus</b> (not during the breaks): <b>Do not disturb</b> turns on by itself (notifications wait in the bell, and the one at the end of the focus block shows), and, if checked, the games are left for the breaks.</p>
 <h2>Stopwatch and timer</h2>
 <p>The <b>Stopwatch</b> tab records laps; the <b>Timer</b> tab counts from a few seconds to hours, with shortcuts from 1 to 60 minutes, and tells you with a sound and a balloon when it ends. Both keep going with the window closed.</p>
 <p>Tip: check <b>Minimize the other windows when a focus block starts</b> and use full screen (F11).</p>`],
@@ -311,6 +313,7 @@ const TOPICOS = [
 <h2>Trabajar en bloques</h2>
 <p>La pestaña <b>Pomodoro</b> alterna bloques de trabajo (25 minutos) con pausas cortas (5 minutos) y, cada cuatro bloques, una pausa larga (15 minutos). Los tiempos se pueden cambiar.</p>
 <p>El tiempo aparece en la bandeja, junto al reloj, incluso con la ventana cerrada. Al final de cada fase, un sonido y un aviso.</p>
+<p><b>Durante el enfoque</b> (no en las pausas): <b>No molestar</b> se activa solo (los avisos esperan en la campana, y el del final del enfoque aparece), y, si está marcado, los juegos quedan para las pausas.</p>
 <h2>Cronómetro y temporizador</h2>
 <p>La pestaña <b>Cronómetro</b> marca las vueltas; la pestaña <b>Temporizador</b> cuenta de unos segundos a horas, con atajos de 1 a 60 minutos, y avisa con sonido y globo cuando termina. Los dos siguen con la ventana cerrada.</p>
 <p>Consejo: marca <b>Minimizar las otras ventanas al comenzar el enfoque</b> y usa la pantalla completa (F11).</p>`],

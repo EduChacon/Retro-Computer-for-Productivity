@@ -79,7 +79,7 @@ function temporizadorZerar() {
 
 function cfg() {
   const c = (estado.config && estado.config.foco) || {};
-  return { minutos: c.minutos || 25, pausa: c.pausa || 5, longa: c.longa || 15, ciclo: c.ciclo || 4, minimizar: !!c.minimizar };
+  return { minutos: c.minutos || 25, pausa: c.pausa || 5, longa: c.longa || 15, ciclo: c.ciclo || 4, minimizar: !!c.minimizar, silencio: c.silencio !== false, semJogos: !!c.semJogos };
 }
 
 function duracao(fase) {
@@ -108,10 +108,23 @@ function avisarBarra() {
   eventos.emit('foco', { ativo: pomodoro, texto: mmss(restante()), fase: nomeFase() });
 }
 
+/**
+ * O modo foco completo: durante um bloco de foco (não nas pausas), o "Não perturbe" (os avisos
+ * esperam no sino) e os jogos deixados para a pausa. Fica só na memória: ao fechar, acaba.
+ */
+function modoFoco() {
+  const c = cfg();
+  const novo = F.rodando && F.fase === 'foco' && (c.silencio || c.semJogos) ? { silencio: c.silencio, semJogos: c.semJogos, fim: F.fim } : null;
+  if (JSON.stringify(novo) === JSON.stringify(estado.emFoco)) return;
+  estado.emFoco = novo;
+  eventos.emit('modoFoco', novo);
+}
+
 function tique() {
   if (new Date().toDateString() !== F.dia) { F.dia = new Date().toDateString(); F.hoje = 0; }
   if (F.rodando && Date.now() >= F.fim) terminouFase();
   if (T.rodando && Date.now() >= T.fim) terminouTemporizador();
+  modoFoco();
   avisarBarra();
   if (janela) janela.atualizar();
 }
@@ -173,6 +186,8 @@ function terminouFase() {
   proximaFase();
   F.rodando = false;
   F.resta = 0;
+  // O aviso do fim do foco aparece: o "Não perturbe" do bloco acaba antes dele.
+  modoFoco();
   tocar('foco');
   avisar(eraFoco ? tr('Fim do foco!') : tr('Fim da pausa'), eraFoco ? (F.fase === 'longa' ? tr('Bom trabalho. Hora de uma pausa longa.') : tr('Bom trabalho. Hora de uma pausa curta.')) : tr('Hora de voltar ao trabalho.'), { icone: 'foco', som: null, ms: 12000, aoClicar: () => abrirFoco() });
   // A próxima fase começa sozinha.
@@ -192,16 +207,21 @@ class JanelaFoco {
     this.cPausa = num(c.pausa, 1, 60);
     this.cLonga = num(c.longa, 1, 90);
     this.cMinimizar = h('input', { type: 'checkbox', checked: c.minimizar });
-    const salvar = () => definirConfig({ foco: { minutos: +this.cMin.value || 25, pausa: +this.cPausa.value || 5, longa: +this.cLonga.value || 15, ciclo: 4, minimizar: this.cMinimizar.checked } }).then(tique);
-    for (const x of [this.cMin, this.cPausa, this.cLonga, this.cMinimizar]) x.addEventListener('change', salvar);
+    this.cSilencio = h('input', { type: 'checkbox', checked: c.silencio });
+    this.cSemJogos = h('input', { type: 'checkbox', checked: c.semJogos });
+    const salvar = () => definirConfig({ foco: { minutos: +this.cMin.value || 25, pausa: +this.cPausa.value || 5, longa: +this.cLonga.value || 15, ciclo: 4, minimizar: this.cMinimizar.checked, silencio: this.cSilencio.checked, semJogos: this.cSemJogos.checked } }).then(tique);
+    for (const x of [this.cMin, this.cPausa, this.cLonga, this.cMinimizar, this.cSilencio, this.cSemJogos]) x.addEventListener('change', salvar);
     this.j.corpo.style.padding = '6px 8px 8px';
     const pPomodoro = h('div.painel-aba.foco-painel',
       h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } }, img('foco', 32), h('div', h('b', tr('Foco (Pomodoro)')), h('div', tr('Trabalhe em blocos, com pausas no meio.')))),
       this.tempo, this.fase, this.hoje,
       h('div.acoes', this.btIniciar, h('button', { on: { click: pular } }, tr('Pular')), h('button', { on: { click: zerar } }, tr('Zerar'))),
       h('fieldset', { style: { margin: '10px 0 0' } }, h('legend', tr('Minutos')),
-        h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'space-between' } }, tr('Foco'), this.cMin, tr('Pausa'), this.cPausa, tr('Longa'), this.cLonga),
-        h('div', { style: { marginTop: '8px' } }, h('label', this.cMinimizar, h('span', tr('Minimizar as outras janelas no começo do foco'))))));
+        h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'space-between' } }, tr('Foco'), this.cMin, tr('Pausa'), this.cPausa, tr('Longa'), this.cLonga)),
+      h('fieldset', { style: { margin: '8px 0 0' } }, h('legend', tr('Durante o foco')),
+        h('div', h('label', this.cSilencio, h('span', tr('Não perturbe: os avisos esperam no sino')))),
+        h('div', { style: { marginTop: '4px' } }, h('label', this.cSemJogos, h('span', tr('Deixar os jogos para as pausas')))),
+        h('div', { style: { marginTop: '4px' } }, h('label', this.cMinimizar, h('span', tr('Minimizar as outras janelas no começo do foco'))))));
     this.paineis = [pPomodoro, this.montarCronometro(), this.montarTemporizador()];
     this.abasEl = h('div.abas');
     this.j.corpo.append(this.abasEl, h('div.foco-paineis', ...this.paineis));
@@ -219,7 +239,7 @@ class JanelaFoco {
       el.addEventListener('mousedown', () => { this.mostrarAba(k); definirConfig({ foco: { aba: k } }).catch(() => { }); });
       return el;
     }));
-    this.paineis.forEach((p, k) => { p.hidden = k !== i; });
+    this.paineis.forEach((p, k) => { p.classList.toggle('oculto', k !== i); p.inert = k !== i; });
     this.atualizar();
     // O cronômetro mostra os décimos: com ele à vista, a tela acompanha cada quadro.
     cancelAnimationFrame(this.raf);

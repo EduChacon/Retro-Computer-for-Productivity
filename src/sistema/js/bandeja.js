@@ -5,7 +5,7 @@
  * o volume muda só os sons do Retro Computer e a rede mostra só se há internet.
  */
 import { h, img, icone } from './util.js';
-import { estado, abrir, eventos, definirConfig, avisar, avisos, esquecerAviso, avisosLidos } from './sistema.js';
+import { estado, abrir, eventos, definirConfig, avisar, avisos, esquecerAviso, avisosLidos, naoPerturbeAgora } from './sistema.js';
 import { alternarFlutuante, fecharFlutuante } from './barra-extras.js';
 import { entrada } from './dialogos.js';
 import { tocar } from './sons.js';
@@ -426,8 +426,10 @@ function atualizarSino() {
   const num = sino.querySelector('.sino-num');
   num.textContent = n > 9 ? '9+' : String(n);
   num.hidden = !n;
-  sino.classList.toggle('nao-perturbe', !!estado.config.naoPerturbe);
-  sino.dataset.dica = estado.config.naoPerturbe ? tr('Não perturbe: os avisos ficam só aqui') : (n ? tr('{n} notificação(ões) nova(s)', { n }) : tr('Notificações'));
+  sino.classList.toggle('nao-perturbe', naoPerturbeAgora());
+  sino.dataset.dica = estado.config.naoPerturbe ? tr('Não perturbe: os avisos ficam só aqui')
+    : naoPerturbeAgora() ? tr('Não perturbe durante o foco: os avisos ficam só aqui')
+      : (n ? tr('{n} notificação(ões) nova(s)', { n }) : tr('Notificações'));
 }
 
 function horaAviso(em) {
@@ -481,6 +483,7 @@ export function montarBandeja() {
 
   eventos.on('config', () => { atualizarSom(); atualizarSino(); });
   eventos.on('avisos', atualizarSino);
+  eventos.on('modoFoco', atualizarSino);
   window.addEventListener('online', () => lerRede());
   window.addEventListener('offline', () => lerRede());
   lerVolume();
