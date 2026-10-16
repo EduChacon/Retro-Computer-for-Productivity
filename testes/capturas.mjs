@@ -812,6 +812,38 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('noutro site:', JSON.stringify(await ler()));
   },
 
+  // O vídeo em janela flutuante (o PiP do Chromium): pelo menu Exibir, e ele continua tocando com o
+  // Navegador minimizado. O vídeo de exemplo é feito pelo ffmpeg; a foto da tela inteira, pelo import.
+  async pip() {
+    const http = await import('node:http');
+    const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-pip-'));
+    execFileSync('ffmpeg', ['-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=duration=20:size=320x240:rate=25', '-c:v', 'libvpx', '-b:v', '300k', path.join(pasta, 'v.webm')]);
+    const video = fs.readFileSync(path.join(pasta, 'v.webm'));
+    const servidor = http.createServer((req, res) => {
+      if (req.url === '/v.webm') { res.writeHead(200, { 'Content-Type': 'video/webm', 'Content-Length': video.length }); return res.end(video); }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<!doctype html><meta charset="utf-8"><title>Vídeo</title><body style="font-family:sans-serif;padding:20px"><h1>Vídeo de teste</h1><video id="v" src="/v.webm" loop muted autoplay width="320" height="240"></video></body>');
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    servidor.unref();
+    await fecharTudo();
+    await abrir('navegador', { url: `http://127.0.0.1:${servidor.address().port}/`, interno: true });
+    await pagina.waitForTimeout(4000);
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const estado = () => pagina.evaluate((s) => document.querySelector(s).executeJavaScript('({ flutuando: !!document.pictureInPictureElement, pausado: document.getElementById("v").paused, tempo: Math.round(document.getElementById("v").currentTime * 10) / 10 })'), wv);
+    console.log('antes:', JSON.stringify(await estado()));
+    await pagina.click(`.janela.ativa .menubar > div:has-text("${T('E&xibir').replace('&', '')}")`);
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.menu .opcao:has-text("${T('Vídeo em janela flu&tuante').replace('&', '')}")`);
+    await pagina.waitForTimeout(2000);
+    console.log('no menu Exibir:', JSON.stringify(await estado()));
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().minimizar());
+    await pagina.waitForTimeout(3000);
+    const minimizado = await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('({ flutuando: !!document.pictureInPictureElement, pausado: document.getElementById("v").paused, tempo: Math.round(document.getElementById("v").currentTime * 10) / 10 })'), '.janela.minimizada .nav-conteudo:not(.escondida) webview');
+    console.log('com o Navegador minimizado:', JSON.stringify(minimizado));
+    try { execFileSync('import', ['-window', 'root', path.join(SAIDA, `${String(++n).padStart(2, '0')}-pip-tela-inteira.png`)]); console.log('captura: tela inteira'); } catch (e) { console.log('sem o import:', e.message); }
+  },
+
   // As abas e a barra de favoritos do Navegador (com uma página de teste local, com ícone): a estrela,
   // o Ctrl+T, o botão do meio num link (a aba por trás), o Ctrl+Tab, o Ctrl+W, o Ctrl+Shift+T e o »
   // numa janela estreita. E o painel de visualização numa janela estreita, que não sai da janela.

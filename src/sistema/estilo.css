@@ -508,6 +508,7 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   pointer-events: none;
 }
 .janela.maximizada .pegador { display: none; }
+.janela.sem-status .pegador { display: none; }
 
 /* ---------- Diálogos ---------- */
 
@@ -1045,6 +1046,13 @@ button.ferramenta.nav-link span { overflow: hidden; text-overflow: ellipsis; whi
 button.ferramenta.nav-mais { flex: none; width: 20px; height: 22px; justify-content: center; font-weight: bold; }
 .nav-links-vazio { color: #404040; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-area { position: relative; flex: 1; min-height: 0; box-shadow: var(--campo); padding: 2px; background: #fff; display: flex; }
+/* O endereço do link sob o mouse, sem a barra de status: um quadrinho de dica no canto de baixo. */
+.nav-dica-link {
+  position: absolute; left: 2px; bottom: 2px; z-index: 4; max-width: 60%; padding: 1px 4px 2px;
+  background: #ffffe1; color: #000; border: 1px solid #000; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; pointer-events: none;
+}
+.nav-dica-link[hidden], .janela .status[hidden] { display: none; }
 /* Cada aba é uma camada da área: só a da frente fica à vista (as de trás continuam carregando). */
 .nav-conteudo { position: absolute; inset: 2px; display: flex; z-index: 1; background: #fff; }
 .nav-conteudo.escondida { visibility: hidden; z-index: 0; pointer-events: none; }

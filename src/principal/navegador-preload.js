@@ -65,6 +65,7 @@ function atalho(e) {
   if (ctrl && e.key === 'Tab') return e.shiftKey ? 'abaAnterior' : 'proximaAba';
   if (ctrl && e.shiftKey && k === 't') return 'reabrirAba';
   if (ctrl && e.shiftKey && k === 'b') return 'barraFavoritos';
+  if (ctrl && e.shiftKey && k === 'p') return 'videoFlutuante';
   if (ctrl && /^[1-9]$/.test(e.key)) return 'aba:' + e.key;
   if (ctrl && k === 't') return 'novaAba';
   if (ctrl && k === 'n') return 'nova';

@@ -11,7 +11,7 @@ import { zoomInterface } from '../aparencia.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, avisar, eventos } from '../sistema.js';
-import { entrada, confirmar, ajustarAoConteudo } from '../dialogos.js';
+import { entrada, confirmar, mensagem, ajustarAoConteudo } from '../dialogos.js';
 import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
 
@@ -240,8 +240,12 @@ class Navegador {
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.ajustarLinks()).observe(this.barraLinks);
 
     this.area = h('div.nav-area');
+    // Sem a barra de status, o endereço do link sob o mouse aparece num quadrinho no canto da página.
+    this.dicaLink = h('div.nav-dica-link', { hidden: true });
+    this.area.append(this.dicaLink);
     if (app) this.j.corpo.append(this.area);
     else this.j.corpo.append(faixa, linha, this.barraLinks, this.area);
+    this.mostrarBarraStatus();
     this.mostrarBarraLinks();
     this.desenharLinks();
     this.j.ev.on('ativada', () => setTimeout(() => this.focarPagina(), 0));
@@ -409,6 +413,9 @@ class Navegador {
       {
         rotulo: tr('E&xibir'), itens: () => [
           { rotulo: tr('Barra de &favoritos'), atalho: 'Ctrl+Shift+B', marcado: barraLinksLigada(), acao: () => alternarBarraLinks() },
+          { rotulo: tr('Barra de &status'), marcado: barraStatusLigada(), acao: () => alternarBarraStatus() },
+          { separador: true },
+          { rotulo: tr('Vídeo em janela flu&tuante'), atalho: 'Ctrl+Shift+P', desativado: !this.visivel(), acao: () => this.videoFlutuante() },
           { separador: true },
           { rotulo: tr('&Parar'), atalho: 'Esc', desativado: !this.carregando, acao: () => this.wv.stop() },
           { rotulo: tr('&Atualizar'), atalho: 'F5', desativado: !this.visivel(), acao: () => this.atualizar() },
@@ -465,6 +472,9 @@ class Navegador {
       },
       {
         rotulo: tr('E&xibir'), itens: () => [
+          { rotulo: tr('Barra de &status'), marcado: barraStatusLigada(), acao: () => alternarBarraStatus() },
+          { rotulo: tr('Vídeo em janela flu&tuante'), atalho: 'Ctrl+Shift+P', desativado: !this.visivel(), acao: () => this.videoFlutuante() },
+          { separador: true },
           { rotulo: tr('A&umentar'), atalho: 'Ctrl++', desativado: !this.visivel(), acao: () => this.mudarZoom(0.1) },
           { rotulo: tr('&Diminuir'), atalho: 'Ctrl+-', desativado: !this.visivel(), acao: () => this.mudarZoom(-0.1) },
           { rotulo: tr('Tamanho &normal'), atalho: 'Ctrl+0', desativado: !this.visivel(), acao: () => this.mudarZoom(0) },
@@ -572,7 +582,11 @@ class Navegador {
         guardarIcone(origemDe(pagina), icone);
       });
     });
-    wv.addEventListener('update-target-url', (e) => { if (daFrente()) this.j.definirStatus([e.url || (aba.carregando ? tr('Carregando…') : tr('Concluído')), this.textoZoom()]); });
+    wv.addEventListener('update-target-url', (e) => {
+      if (!daFrente()) return;
+      this.j.definirStatus([e.url || (aba.carregando ? tr('Carregando…') : tr('Concluído')), this.textoZoom()]);
+      this.mostrarDicaLink(e.url);
+    });
     wv.addEventListener('did-fail-load', async (e) => {
       // -3 é a carga interrompida (outro clique, o botão Parar): não é erro.
       if (e.errorCode === -3 || e.isMainFrame === false) return;
@@ -740,6 +754,7 @@ class Navegador {
       case 'barraFavoritos': return this.app ? null : alternarBarraLinks();
       case 'favorito': return this.adicionarFavorito();
       case 'imprimir': return this.visivel() && this.wv.print().catch(() => { });
+      case 'videoFlutuante': return this.videoFlutuante();
       case 'aumentar': return this.mudarZoom(0.1);
       case 'diminuir': return this.mudarZoom(-0.1);
       case 'zoom100': return this.mudarZoom(0);
@@ -822,10 +837,10 @@ class Navegador {
     if (!this.visivel() || !this.url) return;
     const a = this.aba;
     const titulo = (a.wv.getTitle() || a.url).slice(0, 80);
-    const nome = await entrada({ titulo: tr('Adicionar aos favoritos'), texto: tr('Nome do favorito:'), valor: titulo, icone: 'favoritos' });
+    const nome = await entrada({ titulo: tr('Adicionar aos favoritos'), texto: tr('Nome do favorito:'), valor: titulo, icone: 'navegador' });
     if (!nome) return;
     await salvarFavoritos([...favoritos(), { nome: nome.trim() || titulo, url: a.url, ...(a.icone ? { icone: a.icone } : {}) }]);
-    avisar(tr('Favorito adicionado'), nome, { icone: 'favoritos', som: null, guardar: false });
+    avisar(tr('Favorito adicionado'), nome, { icone: 'navegador', som: null, guardar: false });
   }
 
   async removerFavorito(i) {
@@ -838,7 +853,7 @@ class Navegador {
   async renomearFavorito(i) {
     const lista = favoritos();
     if (!lista[i]) return;
-    const nome = await entrada({ titulo: tr('Renomear o favorito'), texto: tr('Nome do favorito:'), valor: lista[i].nome, icone: 'favoritos' });
+    const nome = await entrada({ titulo: tr('Renomear o favorito'), texto: tr('Nome do favorito:'), valor: lista[i].nome, icone: 'navegador' });
     if (!nome || !nome.trim()) return;
     await salvarFavoritos(lista.map((f, k) => (k === i ? { ...f, nome: nome.trim() } : f)));
   }
@@ -860,6 +875,20 @@ class Navegador {
   mostrarBarraLinks() {
     this.barraLinks.hidden = !!this.app || !barraLinksLigada();
     this.ajustarLinks();
+  }
+
+  /** A barra de status embaixo da janela (escondida por padrão: Exibir › Barra de status). */
+  mostrarBarraStatus() {
+    const ligada = barraStatusLigada();
+    if (this.j.statusEl) this.j.statusEl.hidden = !ligada;
+    this.j.el.classList.toggle('sem-status', !ligada);
+    if (ligada) this.mostrarDicaLink('');
+  }
+
+  mostrarDicaLink(url) {
+    const mostrar = !!url && !barraStatusLigada();
+    this.dicaLink.hidden = !mostrar;
+    if (mostrar) this.dicaLink.textContent = url;
   }
 
   desenharLinks() {
@@ -917,11 +946,43 @@ class Navegador {
 
   /* ---------- O menu do botão direito na página ---------- */
 
+  /**
+   * O vídeo em janela flutuante (o "picture-in-picture" do Chromium): uma janelinha que fica por
+   * cima da área de trabalho, também com o Navegador minimizado. Vale o vídeo sob o ponteiro (no
+   * botão direito) ou o que está tocando; com um já flutuando, ele volta para a página.
+   */
+  async videoFlutuante(x, y) {
+    const aba = this.aba;
+    if (!aba || !aba.wv || !this.visivel()) return;
+    const ponto = x != null ? `document.elementFromPoint(${Number(x) || 0}, ${Number(y) || 0})` : 'null';
+    const codigo = `(async () => {
+      if (document.pictureInPictureElement) { await document.exitPictureInPicture(); return 'saiu'; }
+      const el = ${ponto};
+      let v = el && el.closest ? el.closest('video') : null;
+      if (!v) {
+        const vs = [...document.querySelectorAll('video')].filter((e) => e.readyState >= 1);
+        v = vs.find((e) => !e.paused) || vs.sort((a, b) => b.clientWidth * b.clientHeight - a.clientWidth * a.clientHeight)[0];
+      }
+      if (!v) return 'nenhum';
+      v.disablePictureInPicture = false;
+      await v.requestPictureInPicture();
+      return 'ok';
+    })().catch((e) => 'erro:' + e.message)`;
+    const r = await aba.wv.executeJavaScript(codigo, true).catch(() => 'erro');
+    if (r === 'nenhum') mensagem({ titulo: tr('Vídeo em janela flutuante'), tipo: 'info', texto: tr('Esta página não tem um vídeo para assistir em janela flutuante. Comece o vídeo e tente de novo.') });
+    else if (String(r).startsWith('erro')) mensagem({ titulo: tr('Vídeo em janela flutuante'), tipo: 'aviso', texto: tr('Este site não deixou o vídeo sair da página.') });
+  }
+
   menuDaPagina(p) {
     // As coordenadas vêm na escala da janela do aplicativo; a área de trabalho tem o próprio zoom.
     const x = p.x / zoomInterface();
     const y = p.y / zoomInterface();
     const itens = [];
+    // Sobre um vídeo: assistir numa janelinha que fica por cima de tudo (também com o Navegador minimizado).
+    if (p.mediaType === 'video') {
+      const z = (this.aba && this.aba.zoom) || 1;
+      itens.push({ rotulo: tr('Assistir em janela flu&tuante'), negrito: !p.linkURL, acao: () => this.videoFlutuante(p.x / z, p.y / z) }, { separador: true });
+    }
     if (p.linkURL) {
       itens.push(
         { rotulo: tr('&Abrir o link'), negrito: true, acao: () => this.ir(p.linkURL) },
@@ -962,6 +1023,11 @@ class Navegador {
 /* ---------- A barra de favoritos ligada ou não (Exibir › Barra de favoritos, Ctrl+Shift+B) ---------- */
 
 const barraLinksLigada = () => cfg().barraFavoritos !== false;
+const barraStatusLigada = () => cfg().barraStatus === true;
+async function alternarBarraStatus() {
+  await definirConfig({ navegador: { barraStatus: !barraStatusLigada() } });
+  for (const n of abertos) if (!n.j.fechada) n.mostrarBarraStatus();
+}
 async function alternarBarraLinks() {
   await definirConfig({ navegador: { barraFavoritos: !barraLinksLigada() } });
   for (const n of abertos) if (!n.j.fechada) n.mostrarBarraLinks();
@@ -974,6 +1040,7 @@ function atalhoDoNavegador(e) {
   if (ctrl && e.key === 'Tab') return e.shiftKey ? 'abaAnterior' : 'proximaAba';
   if (ctrl && e.shiftKey && k === 't') return 'reabrirAba';
   if (ctrl && e.shiftKey && k === 'b') return 'barraFavoritos';
+  if (ctrl && e.shiftKey && k === 'p') return 'videoFlutuante';
   if (ctrl && /^[1-9]$/.test(e.key)) return 'aba:' + e.key;
   if (ctrl && k === 't') return 'novaAba';
   if (ctrl && k === 'w') return 'fechar';
