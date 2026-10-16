@@ -49,6 +49,7 @@ src/principal/         o processo principal (Node)
   tela.js              a resolução e a luz noturna do modo sistema (xrandr)
   mouse.js             o mouse e o touchpad do modo sistema (xinput e libinput)
   diario.js            o Diário de trabalho: um .txt por dia, só acrescentando linhas
+  copia.js             a cópia de segurança do disco C: (só acrescenta e atualiza)
   transferencia.js     o histórico da área de transferência (só na memória)
   firewall.js          o firewall do Linux (ufw)
   https.js             só conexões seguras no Navegador (http:// vira https://)
@@ -115,7 +116,7 @@ Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 - a internet: `navegador`, `permissoes` (com `RETRO_MIDIA_FALSA=1`), `webapps`;
 - as ferramentas: `calculadora`, `jogos`, `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;
 - a barra e o sistema: `barra`, `fixados`, `bandeja` (com `RETRO_BANDEJA_FALSA=1`), `bloqueio`, `sistema` (com `RETRO_SISTEMA=1` e `RETRO_ENERGIA_FALSA=1`), `impressoras`, `bluetooth`, `atualizacoesLinux` e `janelasLinux` (cada um com a sua variável de mentira);
-- as janelas e o teclado: `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`), `mouse` (com `RETRO_MOUSE_FALSO=1`), `caracteres` (o Mapa de caracteres), `caixas` (confere se cada caixa do Painel cabe sem rolar, sem fotos), `diario` (o Diário de trabalho), `pedirClaude` (o "Pedir ao Claude" do botão direito, com `RETRO_CLAUDE_FALSO` apontando para um script que mostra o pedido recebido);
+- as janelas e o teclado: `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`), `mouse` (com `RETRO_MOUSE_FALSO=1`), `caracteres` (o Mapa de caracteres), `caixas` (confere se cada caixa do Painel cabe sem rolar, sem fotos), `diario` (o Diário de trabalho), `copia` (a cópia de segurança para uma pasta temporária), `pedirClaude` (o "Pedir ao Claude" do botão direito, com `RETRO_CLAUDE_FALSO` apontando para um script que mostra o pedido recebido);
 - o que veio das distribuições: `produtividade` (o histórico da área de transferência, a conta na busca, a luz noturna, o modo de energia, o firewall e a aba Atalhos; com `RETRO_BANDEJA_FALSA=1` e `RETRO_FIREWALL_FALSO=1`) e `seguranca` (a Central de segurança e o aviso do site sem HTTPS; com `RETRO_FIREWALL_FALSO=1` e `RETRO_ATUALIZACOES_FALSAS=1`, e a internet).
 
 As teclas simuladas pelo Playwright não passam pelo `before-input-event` do Electron: os roteiros mandam a ação como o processo principal a manda (`tecla('alternar')`), e a leitura das teclas fica em `src/principal/atalhos.js`, testada à parte. Para o modo sistema com janelas do Linux de verdade, o Xvfb com o openbox, o `xdotool key` e o `import -window root` (ImageMagick) funcionam.

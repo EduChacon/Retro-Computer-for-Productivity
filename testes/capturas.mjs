@@ -410,6 +410,21 @@ const ROTEIROS = {
     await pagina.waitForTimeout(2500);
     await foto('claude-maximizado');
   },
+  async copia() {
+    // A cópia de segurança: o destino (a caixa de escolher pasta é a do sistema, por isso vem
+    // pela configuração), a cópia na hora e o aviso do fim.
+    const destino = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-destino-'));
+    await fecharTudo();
+    await pagina.evaluate((d) => window.__retro.definirConfig({ copia: { destino: d } }), destino);
+    await abrir('painel', { secao: 'copia' });
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.janela.ativa input[type=checkbox]').check();
+    await foto('copia-antes');
+    await pagina.click(`.janela.ativa button:has-text("${T('&Fazer a cópia agora')}")`);
+    await pagina.waitForTimeout(2500);
+    await foto('copia-pronta');
+    console.log('na cópia:', JSON.stringify(fs.readdirSync(destino).map((p) => [p, fs.readdirSync(path.join(destino, p))])));
+  },
   async diario() {
     // O Diário de trabalho: ligar, uma nota, um arquivo gravado e o dia aberto no Bloco de notas.
     await fecharTudo();

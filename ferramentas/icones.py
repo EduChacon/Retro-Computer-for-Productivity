@@ -879,6 +879,9 @@ def gerar(serenity):
     feitos[32]['firewall'] = colar(colar(Image.new('RGBA', (32, 32), (0, 0, 0, 0)), globo16, 8, 2), grade(muro(32)), 0, 0)
     feitos[16]['firewall'] = colar(colar(Image.new('RGBA', (16, 16), (0, 0, 0, 0)), globo16.resize((10, 10), Image.NEAREST), 3, 1), grade(muro(16)), 0, 0)
     feitos[16]['transferencia'] = abrir_serenity(serenity, 16, 'paste')
+    # A cópia de segurança: o disco rígido com as setas verdes da atualização (SerenityOS).
+    feitos[32]['copia'] = colar(abrir_serenity(serenity, 32, 'hard-disk'), abrir_serenity(serenity, 16, 'reload'), 16, 16)
+    feitos[16]['copia'] = colar(abrir_serenity(serenity, 16, 'hard-disk'), abrir_serenity(serenity, 16, 'reload').resize((9, 9), Image.NEAREST), 7, 7)
     # A Central de segurança: o escudo com o cadeado da bandeja (desenhos próprios).
     feitos[32]['seguranca'] = colar(grade(escudo(32)), grade(CADEADO_16), 8, 7)
     feitos[16]['seguranca'] = grade(escudo(16))

@@ -24,6 +24,7 @@ const ITENS = [
   { chave: 'claude', rotulo: marcar('Claude'), icone: 'claude', descricao: marcar('Instala o Claude Code e guarda a chave de API.'), abrir: () => dialogoClaude() },
   { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e em qual navegador os links abrem.'), abrir: () => dialogoInternet() },
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
+  { chave: 'copia', rotulo: marcar('Cópia de segurança'), icone: 'copia', descricao: marcar('Copia o disco C: para um disco externo ou outra pasta, todo dia ou toda semana.'), abrir: () => dialogoCopia() },
   { chave: 'seguranca', rotulo: marcar('Segurança'), icone: 'seguranca', descricao: marcar('A proteção do computador num lugar só: a senha, o firewall, as atualizações e a privacidade.'), abrir: () => dialogoSeguranca() },
   { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
   { chave: 'bluetooth', rotulo: marcar('Bluetooth'), icone: 'bluetooth', descricao: marcar('Os mouses, os teclados e os fones sem fio: parear, conectar e esquecer.'), abrir: () => import('../bluetooth.js').then((m) => m.abrirBluetooth()) },
@@ -650,6 +651,81 @@ function dialogoSeguranca() {
     aoAplicar: () => definirConfig({ navegador: { soHttps: chkHttps.checked, limparAoFechar: chkLimpar.checked }, transferencia: { historico: chkHistorico.checked } }),
   });
   if (j) ler();
+  return j;
+}
+
+/* A cópia de segurança do disco C: */
+
+// O que dizer de cada erro da cópia (copia.js).
+export function erroDaCopia(r) {
+  if (r.erro === 'destino') return tr('Escolha uma pasta fora do disco C: (e que não o contenha).');
+  if (r.erro === 'semDestino') return tr('A pasta da cópia não está disponível. O disco externo ou o pendrive está ligado?');
+  if (r.erro === 'espaco') return tr('Falta espaço no destino: a cópia precisa de {precisa}, e há {livre}.', { precisa: tamanho(r.bytes), livre: tamanho(r.livre) });
+  if (r.erros && r.erros.length) return tr('{n} arquivo(s) não foram copiados.', { n: typeof r.erros === 'number' ? r.erros : r.erros.length });
+  return '';
+}
+
+function dialogoCopia() {
+  const c = { ligada: false, destino: '', quando: 'diaria', ...(estado.config.copia || {}) };
+  let destino = c.destino || '';
+  const campo = h('input', { type: 'text', readOnly: true, value: destino, placeholder: tr('Nenhuma pasta escolhida'), style: { flex: '1', minWidth: '0' } });
+  const chk = h('input', { type: 'checkbox', checked: !!c.ligada });
+  const sel = h('select', h('option', { value: 'diaria' }, tr('Todo dia')), h('option', { value: 'semanal' }, tr('Toda semana')));
+  sel.value = c.quando === 'semanal' ? 'semanal' : 'diaria';
+  const situacao = h('div', { style: { lineHeight: '13px', minHeight: '26px' } });
+  const btAgora = h('button', { type: 'button' }, rotulo(tr('&Fazer a cópia agora')));
+  const btAbrir = h('button', { type: 'button' }, rotulo(tr('A&brir a cópia')));
+  const quando = (t) => new Date(t).toLocaleString(localidade(), { dateStyle: 'short', timeStyle: 'short' });
+  const mostrar = () => {
+    const r = (estado.config.copia || {}).resultado;
+    const ultima = (estado.config.copia || {}).ultima;
+    if (!r && !ultima) situacao.textContent = tr('Nenhuma cópia feita ainda.');
+    else if (r && !r.ok) situacao.textContent = tr('A última tentativa ({quando}) não terminou: {erro}', { quando: quando(r.em), erro: erroDaCopia(r) || '?' });
+    else situacao.textContent = tr('Última cópia: {quando} ({n} arquivo(s) copiado(s); {iguais} já estavam iguais).', { quando: quando(ultima), n: r ? r.copiados : 0, iguais: r ? r.iguais : 0 });
+  };
+  const atualizarBotoes = () => { sel.disabled = !chk.checked; btAgora.disabled = !destino; };
+  chk.addEventListener('change', atualizarBotoes);
+  const escolher = async () => {
+    const r = await retro.copia.escolher().catch(() => null);
+    if (!r) return;
+    if (!r.valido) { erro(tr('Escolha uma pasta fora do disco C: (e que não o contenha).')); return; }
+    destino = r.destino;
+    campo.value = destino;
+    atualizarBotoes();
+  };
+  const desligar = [];
+  btAgora.addEventListener('click', async () => {
+    btAgora.disabled = true;
+    situacao.textContent = tr('Copiando…');
+    desligar.push(retro.copia.aoProgresso((p) => { situacao.textContent = tr('Copiando: {n} de {total} arquivo(s)…', { n: p.copiados, total: p.total }); }));
+    await definirConfig({ copia: { destino } });
+    await retro.copia.fazer(destino).catch(() => null);
+    await carregarConfig();
+    mostrar();
+    atualizarBotoes();
+  });
+  btAbrir.addEventListener('click', async () => { if (!(await retro.copia.abrir().catch(() => false))) erro(tr('A cópia ainda não existe nesse destino, ou ele não está disponível.')); });
+  mostrar();
+  atualizarBotoes();
+  const conteudo = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('copia', 32),
+      h('div', { style: { lineHeight: '13px' } }, tr('A cópia leva o disco C: inteiro, com a Lixeira e as versões anteriores, para outra pasta: um disco externo, um pendrive ou a pasta de uma nuvem do computador principal. Ela só acrescenta e atualiza: nada é apagado na cópia.'))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Destino')),
+      h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, campo, h('button', { type: 'button', on: { click: escolher } }, rotulo(tr('&Escolher…'))))),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Quando')),
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, h('label', chk, h('span', tr('Fazer a cópia sozinho:'))), h('div.select-caixa', sel)),
+      h('div', { style: { color: '#808080', marginTop: '6px', lineHeight: '13px' } }, tr('Com o destino desligado (o disco externo guardado), a cópia espera: ela é feita quando ele voltar.'))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Situação')), situacao,
+      h('div.acoes', { style: { marginTop: '8px' } }, btAgora, btAbrir)));
+  const j = dialogoBase({
+    titulo: tr('Propriedades de Cópia de segurança'), icone: 'copia', larg: 440,
+    abas: [{ titulo: tr('Geral'), conteudo }],
+    aoAplicar: async () => {
+      if (chk.checked && !destino) { erro(tr('Escolha antes a pasta da cópia.')); chk.checked = false; atualizarBotoes(); }
+      await definirConfig({ copia: { ligada: chk.checked, quando: sel.value, destino } });
+    },
+  });
+  if (j) j.ev.on('fechada', () => desligar.forEach((f) => f && f()));
   return j;
 }
 

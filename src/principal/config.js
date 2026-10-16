@@ -37,6 +37,8 @@ const PADRAO = {
   navegador: { soHttps: true, limparAoFechar: false },
   // O Diário de trabalho: anotar sozinho os focos concluídos e os arquivos alterados.
   diario: { ligado: false },
+  // A cópia de segurança do disco C: (todo dia ou toda semana), para uma pasta fora dele.
+  copia: { ligada: false, destino: '', quando: 'diaria', ultima: 0, resultado: null },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,

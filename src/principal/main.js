@@ -36,6 +36,7 @@ const { acaoDaTecla, trazORetro, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atal
 const { Tela, TelaFalsa } = require('./tela');
 const { Mouse, MouseFalso, limparEscolhas } = require('./mouse');
 const { Diario } = require('./diario');
+const { CopiaSeguranca, destinoValido, venceu } = require('./copia');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -105,6 +106,7 @@ let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefa
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
 let diario = null; // o Diário de trabalho (diario.js)
+let copia = null; // a cópia de segurança do disco C: (copia.js)
 let historico = null; // o histórico da área de transferência (transferencia.js)
 let pararObservar = () => { };
 
@@ -141,6 +143,34 @@ async function abrirDisco() {
   if (primeiraVez && !fs.existsSync(path.join(raiz, pastas.documentos, pastas.leiame))) await criarBoasVindas(pastas);
   pararObservar();
   pararObservar = disco.observar((mudancas) => enviar('disco:mudou', mudancas), (rel) => { if (diario) diario.arquivoMudou(rel).catch(() => { }); });
+}
+
+/** O nome da pasta da cópia de segurança dentro do destino (guardado, como o do diário). */
+function pastaCopia() {
+  if (!(config.obter().pastas || {}).copia) config.definir({ pastas: { copia: idioma.tr('Cópia do Retro Computer') } });
+  return config.obter().pastas.copia;
+}
+
+/** Faz a cópia de segurança e guarda o resultado (a hora só conta quando deu certo). */
+async function fazerCopia(destino, { manual = false } = {}) {
+  const c = config.obter().copia || {};
+  const r = await copia.fazer({ destino: destino || c.destino, pasta: pastaCopia(), aoProgresso: (p) => enviar('copia:progresso', p) });
+  const resumo = { em: Date.now(), ok: r.ok, erro: r.erro || null, copiados: r.copiados || 0, iguais: r.iguais || 0, erros: (r.erros || []).length };
+  config.definir({ copia: { ...(r.ok ? { ultima: resumo.em } : {}), resultado: resumo } });
+  enviar('copia:fim', { ...r, manual });
+  return r;
+}
+
+/** De dez em dez minutos: se a cópia automática venceu, ela é feita (sem o destino à mão, fica para a próxima). */
+function agendarCopia() {
+  const conferir = () => {
+    const c = config.obter().copia || {};
+    if (!c.ligada || !c.destino || copia.rodando || !venceu(c.ultima, c.quando)) return;
+    if (!fs.existsSync(c.destino)) return;
+    fazerCopia(c.destino).catch(() => { });
+  };
+  setTimeout(conferir, 2 * 60 * 1000).unref();
+  setInterval(conferir, 10 * 60 * 1000).unref();
 }
 
 /** A pasta do Diário de trabalho (o nome fica guardado: trocar de idioma não cria outra). */
@@ -673,6 +703,20 @@ function registrarPonte() {
     return { pasta, hoje: diario.arquivoDeHoje() };
   });
   tratar('diario:hoje', () => diario.garantirHoje());
+  // A cópia de segurança (Painel › Cópia de segurança).
+  tratar('copia:escolher', async () => {
+    const r = await dialog.showOpenDialog(janela, { title: tr('Copiar o disco C: para qual pasta?'), properties: ['openDirectory', 'createDirectory'] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    return { destino: r.filePaths[0], valido: destinoValido(disco.raiz, r.filePaths[0]) };
+  });
+  tratar('copia:fazer', (destino) => fazerCopia(destino ? String(destino) : null, { manual: true }));
+  tratar('copia:estado', () => ({ rodando: !!copia.rodando, pasta: pastaCopia() }));
+  tratar('copia:abrir', async () => {
+    const c = config.obter().copia || {};
+    const alvo = c.destino ? path.join(c.destino, pastaCopia()) : '';
+    if (!alvo || !fs.existsSync(alvo)) return false;
+    return (await shell.openPath(alvo)) === '';
+  });
   // A versão de agora de um arquivo, antes de outro programa (o Claude Code) gravar nele.
   tratar('disco:guardarVersao', async (rel) => { const n = disco.normalizar(rel); if ((await disco.info(n)).pasta) return false; await disco.guardarVersao(n); return true; });
   tratar('disco:lixeira', () => disco.listarLixeira());
@@ -1097,6 +1141,8 @@ app.whenReady().then(async () => {
   // O histórico da área de transferência: só na memória, lido de tempos em tempos.
   historico = new HistoricoTransferencia({ clipboard, parado: () => powerMonitor.getSystemIdleTime(), aoMudar: () => enviar('transferencia:mudou') });
   historico.ligar((config.obter().transferencia || {}).historico !== false);
+  copia = new CopiaSeguranca({ origem: () => disco.raiz });
+  agendarCopia();
   diario = new Diario({
     disco: () => disco, pasta: pastaDiario, ligado: () => !!(config.obter().diario || {}).ligado,
     tr: idioma.tr, localidade: () => idioma.idioma(),

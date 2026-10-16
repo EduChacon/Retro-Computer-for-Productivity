@@ -124,6 +124,16 @@ async function iniciar() {
   aplicarFundo(estado.config.papel);
   await aplicarEscala(estado.config.escala);
   iniciarLuzNoturna();
+  // O fim da cópia de segurança (a automática e a feita na hora): um aviso, e o erro quando houver.
+  retro.copia.aoFim(async (r) => {
+    await carregarConfig();
+    if (r.ok) {
+      if (r.manual || r.copiados) avisar(tr('Cópia de segurança'), tr('Pronta: {n} arquivo(s) copiado(s).', { n: r.copiados }), { icone: 'copia' });
+    } else {
+      const { erroDaCopia } = await import('./apps/painel.js');
+      avisar(tr('Cópia de segurança'), erroDaCopia(r) || tr('A cópia não terminou.'), { icone: 'copia', aoClicar: () => abrir('painel', { secao: 'copia' }) });
+    }
+  });
   const rapido = estado.config.inicioRapido || new URLSearchParams(location.search).has('rapido');
   if (!rapido) {
     await telaBios();

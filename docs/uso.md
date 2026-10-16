@@ -111,6 +111,8 @@ Painel de controle › **Segurança** mostra o estado de cada proteção, com o 
 - **Apagar os dados de navegação ao fechar** (desligada): os cookies, os dados dos sites e os arquivos temporários do Navegador.
 - **O histórico da área de transferência** (ligado).
 
+Painel de controle › **Cópia de segurança** copia o disco C: inteiro, com a Lixeira e as versões anteriores, para outra pasta (um disco externo, um pendrive, a pasta de uma nuvem do computador principal), todo dia ou toda semana, ou na hora ("Fazer a cópia agora"). Ela fica numa pasta "Cópia do Retro Computer" dentro do destino e só acrescenta e atualiza: um arquivo excluído do disco C: continua na cópia. Com o destino desligado, a cópia espera e é feita quando ele voltar; o fim (ou o erro) aparece num aviso.
+
 No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw`, que o pacote do Retro Computer recomenda): ele recusa as conexões que chegam de outros computadores, e a internet continua como antes. Ligar e desligar pedem a senha de administrador.
 
 ### A tela e a energia
@@ -251,8 +253,6 @@ b) **Várias telas**: a área de trabalho estendida por dois ou mais monitores, 
 c) **Papel de parede, esquemas de cores e cursores**: imagens de fundo, esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS.
 
 d) **Navegador focado**: uma janela de navegador com uma lista de "sites" permitidos (por exemplo, o portal do tribunal, a pesquisa de jurisprudência e o e-mail), sem abas infinitas.
-
-h) **Cópia de segurança agendada** do disco C: para uma segunda pasta ou um disco externo.
 
 i) **Instaladores assinados** (o caminho e os custos estão em [instalacao.md](instalacao.md), seção "Os avisos de segurança").
 

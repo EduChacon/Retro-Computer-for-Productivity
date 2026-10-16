@@ -67,6 +67,15 @@ contextBridge.exposeInMainWorld('retro', {
     definir: (saida, modo) => chamar('tela:definir', saida, modo),
     luzNoturna: (k) => chamar('tela:luzNoturna', k),
   },
+  // A cópia de segurança do disco C:.
+  copia: {
+    escolher: () => chamar('copia:escolher'),
+    fazer: (destino) => chamar('copia:fazer', destino),
+    estado: () => chamar('copia:estado'),
+    abrir: () => chamar('copia:abrir'),
+    aoProgresso: ouvir('copia:progresso'),
+    aoFim: ouvir('copia:fim'),
+  },
   // O Diário de trabalho (Acessórios).
   diario: {
     anotar: (texto, o) => chamar('diario:anotar', texto, o),
