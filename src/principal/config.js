@@ -9,7 +9,7 @@ const path = require('node:path');
 const { tr } = require('./idioma');
 
 const PADRAO = {
-  versao: 3,
+  versao: 4,
   disco: null,
   idioma: 'auto',
   atualizacoes: 'automatico',
@@ -22,8 +22,9 @@ const PADRAO = {
   protecaoTela: { ligada: true, minutos: 10, tipo: 'estrelas' },
   // Os ícones da área de trabalho (Painel › Aparência › Área de trabalho); o Prompt fica no Iniciar.
   mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'] },
-  // A tela de bloqueio (a senha fica em bloqueio.senha, só o resumo; ver bloqueio.js).
-  bloqueio: { aoVoltar: true, aoAbrir: false, naProtecao: false },
+  // A tela de bloqueio (a senha fica em bloqueio.senha, só o resumo; ver bloqueio.js). Com uma senha,
+  // ela é pedida ao abrir, como no Windows (desliga em Painel › Senhas).
+  bloqueio: { aoVoltar: true, aoAbrir: true, naProtecao: false },
   // A barra de tarefas: os programas fixados (ao lado da busca) e os botões das janelas ('nomes' ou 'icones').
   barra: { fixados: ['explorador', 'navegador', 'correio', 'bloco'], botoes: 'nomes' },
   // Os sites instalados como programas: [{ id, nome, url, icone (PNG em data:) }].
@@ -74,6 +75,7 @@ function mesclar(base, extra) {
  * 1 → 2 (0.3.0): os ícones do Navegador e do E-mail na área de trabalho, depois da Lixeira.
  * 2 → 3 (1.0.0): sem o Prompt de comando na área de trabalho padrão (só para quem ainda tem a
  * lista padrão de antes; quem a mudou fica como está).
+ * 3 → 4 (1.1.0): com uma senha, ela passa a ser pedida ao abrir (antes, só marcando a opção).
  */
 function migrar(dados) {
   const d = JSON.parse(JSON.stringify(dados));
@@ -90,6 +92,10 @@ function migrar(dados) {
     const at = d.mesa && Array.isArray(d.mesa.atalhos) ? d.mesa.atalhos : null;
     if (at && at.length === antes.length && at.every((k, i) => k === antes[i])) d.mesa.atalhos = at.filter((k) => k !== 'prompt');
     d.versao = 3;
+  }
+  if (d.versao < 4) {
+    if (d.bloqueio) d.bloqueio.aoAbrir = true;
+    d.versao = 4;
   }
   return d;
 }

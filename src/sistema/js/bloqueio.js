@@ -97,7 +97,7 @@ export function bloquear() {
 retro.bloqueio.aoBloquear(() => bloquear());
 document.addEventListener('retro-protecao-saiu', () => { if (opcao('naProtecao', false)) bloquear(); });
 
-/** Na abertura: com "pedir a senha ao abrir", já começa bloqueado. */
+/** Na abertura: com "pedir a senha ao abrir" (o padrão desde a 1.1), já começa bloqueado. */
 export function bloquearAoAbrir() {
-  if (opcao('aoAbrir', false)) bloquear();
+  if (opcao('aoAbrir', true)) bloquear();
 }

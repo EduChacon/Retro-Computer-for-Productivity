@@ -1506,6 +1506,12 @@ function registrarPonte() {
     reabrirApp();
   });
   tratar('sistema:escalaTela', () => (janela ? screen.getDisplayMatching(janela.getBounds()).scaleFactor : 1));
+  // O monitor da janela em pixels de verdade (para o tamanho automático dos pixels da interface).
+  tratar('sistema:telaFisica', () => {
+    if (!janela) return null;
+    const d = screen.getDisplayMatching(janela.getBounds());
+    return { escala: d.scaleFactor, w: Math.round(d.size.width * d.scaleFactor), h: Math.round(d.size.height * d.scaleFactor) };
+  });
   // As impressoras (RETRO_IMPRESSORAS_FALSAS: duas de mentira, para os testes).
   const impressoras = new (process.env.RETRO_IMPRESSORAS_FALSAS ? ImpressorasFalsas : Impressoras)({ webContents: () => janela && janela.webContents, BrowserWindow, shell });
   tratar('impressoras:listar', () => impressoras.listar());

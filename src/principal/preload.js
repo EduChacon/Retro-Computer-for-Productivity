@@ -239,6 +239,7 @@ contextBridge.exposeInMainWorld('retro', {
     reabrir: () => chamar('sistema:reabrir'),
     novaVersao: (forcar) => chamar('sistema:novaVersao', forcar),
     escalaTela: () => chamar('sistema:escalaTela'),
+    telaFisica: () => chamar('sistema:telaFisica'),
     zoom: (f) => chamar('sistema:zoom', f),
     aoTelaCheia: ouvir('sistema:telaCheia'),
     aoPedidoDesligar: ouvir('sistema:pedidoDesligar'),

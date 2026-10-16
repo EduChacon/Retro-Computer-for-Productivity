@@ -459,19 +459,19 @@ const TOPICOS = [
 <h2>Bloquear o computador</h2>
 <p>Com uma senha (Painel de controle › Senhas), <b>Iniciar › Bloquear o computador</b> cobre a tela até a senha ser digitada. Nenhuma tecla passa para os programas por trás, e as tentativas erradas seguidas demoram cada vez mais.</p>
 <h2>Quando pedir a senha</h2>
-<p>Além do bloqueio pelo Iniciar, a senha pode ser pedida ao voltar da suspensão (ou ao fechar a tampa), ao sair da proteção de tela e ao abrir o Retro Computer.</p>
+<p>Com uma senha, ela é pedida ao abrir o Retro Computer (como no Windows) e ao voltar da suspensão (ou ao fechar a tampa); também pode ser pedida ao sair da proteção de tela. Cada um desses momentos se liga e se desliga em Painel de controle › Senhas.</p>
 <p>No Linux, a senha de entrada do Linux também desbloqueia, para o caso de esquecer a do Retro Computer. No Retro Computer como sistema, a tecla do logotipo + L bloqueia.</p>`],
     en: ['Password and lock', `
 <h2>Locking the computer</h2>
 <p>With a password (Control Panel › Passwords), <b>Start › Lock the Computer</b> covers the screen until the password is typed. No key reaches the programs behind it, and repeated wrong attempts take longer and longer.</p>
 <h2>When to ask for the password</h2>
-<p>Besides locking from Start, the password can be asked when waking from sleep (or closing the lid), when leaving the screen saver and when opening Retro Computer.</p>
+<p>With a password, it is asked when Retro Computer opens (as on Windows) and when waking from sleep (or closing the lid); it can also be asked when leaving the screen saver. Each of these moments is turned on and off in Control Panel › Passwords.</p>
 <p>On Linux, the Linux login password also unlocks, in case you forget the Retro Computer one. With Retro Computer as the system, the logo key + L locks.</p>`],
     es: ['Contraseña y bloqueo', `
 <h2>Bloquear la computadora</h2>
 <p>Con una contraseña (Panel de control › Contraseñas), <b>Inicio › Bloquear la computadora</b> cubre la pantalla hasta que se escribe la contraseña. Ninguna tecla llega a los programas de detrás, y los intentos fallidos seguidos tardan cada vez más.</p>
 <h2>Cuándo pedir la contraseña</h2>
-<p>Además del bloqueo desde Inicio, la contraseña se puede pedir al volver de la suspensión (o al cerrar la tapa), al salir del protector de pantalla y al abrir Retro Computer.</p>
+<p>Con una contraseña, se pide al abrir Retro Computer (como en Windows) y al volver de la suspensión (o al cerrar la tapa); también se puede pedir al salir del protector de pantalla. Cada uno de estos momentos se activa y se desactiva en Panel de control › Contraseñas.</p>
 <p>En Linux, la contraseña de entrada de Linux también desbloquea, por si olvidas la de Retro Computer. Con Retro Computer como sistema, la tecla del logotipo + L bloquea.</p>`],
   },
   {

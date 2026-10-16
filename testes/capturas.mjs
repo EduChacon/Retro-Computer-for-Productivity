@@ -116,11 +116,11 @@ if (ROTEIRO === 'acentos' || ROTEIRO === 'cedilha') {
 const erros = [];
 let app = null;
 let pagina = null;
-async function lancar() {
+async function lancar(extra = {}) {
   app = await electron.launch({
     executablePath: empacotado || require('electron'),
     args: empacotado ? ['--no-sandbox'] : ['--no-sandbox', RAIZ],
-    env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: process.env.RETRO_BOOT ? '' : '1' },
+    env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: process.env.RETRO_BOOT ? '' : '1', ...extra },
   });
   pagina = await app.firstWindow();
   pagina.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') erros.push(`[${m.type()}] ${m.text()}`); });
@@ -128,6 +128,12 @@ async function lancar() {
   // O console só diz "404"; o endereço ajuda a achar o recurso que falta.
   pagina.on('response', (r) => { if (r.status() >= 400) erros.push(`[resposta ${r.status()}] ${r.url()}`); });
   await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; w.setContentSize(1024, 700); });
+}
+/** Fecha o Retro Computer de vez (sem a caixa Desligar), para abrir de novo com a mesma pasta de dados. */
+async function fecharApp() {
+  const fechou = new Promise((r) => app.process().once('exit', r));
+  await app.evaluate(({ app: a }) => { setTimeout(() => a.exit(0), 50); }).catch(() => { });
+  await Promise.race([fechou, new Promise((r) => setTimeout(r, 15000))]);
 }
 /** Espera o Retro Computer fechar sozinho (a troca de usuário, o logoff) e o abre de novo. */
 async function abrirDeNovo() {
@@ -709,7 +715,58 @@ const ROTEIROS = {
     const ler = () => pagina.evaluate(() => document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').executeJavaScript('[location.host, navigator.userAgent, !!navigator.userAgentData && navigator.userAgentData.brands.map((b) => b.brand).join(",")]'));
     console.log('no login do Google:', JSON.stringify(await ler()));
     await foto('login-google');
-    await pagina.evaluate(() => document.querySelector('.janela.ativa .nav-conteudo:not(.escondida) webview').loadURL('https://www.wikipedia.org/'));
+    // O Google recusa o navegador ao passar do e-mail para a senha: o roteiro digita um e-mail (o de
+    // RETRO_EMAIL_TESTE ou um que não existe), como o usuário, e mostra a página que vem depois.
+    const email = process.env.RETRO_EMAIL_TESTE || `retro.computer.teste.${Date.now()}@gmail.com`;
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    // O que dá errado no caminho: os pedidos do Google que falham e os erros da página.
+    await app.evaluate(({ session }) => {
+      const s = session.fromPartition('persist:navegador');
+      globalThis.__login = [];
+      s.webRequest.onErrorOccurred({ urls: ['https://*.google.com/*', 'https://*.gstatic.com/*'] }, (d) => globalThis.__login.push(`${d.error} ${d.method} ${d.url}`));
+      s.webRequest.onCompleted({ urls: ['https://accounts.google.com/*'] }, (d) => { if (d.method !== 'GET' || d.statusCode >= 400) globalThis.__login.push(`${d.statusCode} ${d.method} ${d.url.slice(0, 110)}`); });
+    });
+    await pagina.evaluate((s) => {
+      const w = document.querySelector(s);
+      window.__consoleLogin = [];
+      w.addEventListener('console-message', (e) => { if (e.level >= 2 || /error|erro/i.test(e.message)) window.__consoleLogin.push(String(e.message).slice(-260)); });
+    }, wv);
+    await pagina.evaluate((s) => { const w = window.__retro.janelas.janelaAtiva(); w.ret = { x: 10, y: 10, w: 1000, h: 640 }; w.aplicarRet(); return document.querySelector(s).loadURL('https://accounts.google.com/signin'); }, wv).catch(() => { });
+    let campo = null;
+    for (let i = 0; i < 20 && !campo; i++) {
+      await pagina.waitForTimeout(1000);
+      campo = await pagina.evaluate(async (s) => {
+        const w = document.querySelector(s);
+        const r = w.getBoundingClientRect();
+        const c = await w.executeJavaScript('(() => { const e = document.querySelector("#identifierId, input[type=email]"); if (!e) return null; const r = e.getBoundingClientRect(); return r.width ? [r.x + r.width / 2, r.y + r.height / 2] : null; })()').catch(() => null);
+        return c && [r.x + c[0], r.y + c[1]];
+      }, wv);
+    }
+    if (!campo) return console.log('login do Google: sem o campo do e-mail');
+    await pagina.mouse.click(campo[0], campo[1]);
+    await pagina.keyboard.type(email, { delay: 40 });
+    await pagina.waitForTimeout(800);
+    // O "Avançar", clicado como o usuário (o Enter nem sempre passa).
+    const avancar = await pagina.evaluate(async (s) => {
+      const w = document.querySelector(s);
+      const r = w.getBoundingClientRect();
+      const c = await w.executeJavaScript('(() => { const e = document.querySelector("#identifierNext button, #identifierNext"); if (!e) return null; const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()').catch(() => null);
+      return c && [r.x + c[0], r.y + c[1]];
+    }, wv);
+    if (avancar) await pagina.mouse.click(avancar[0], avancar[1]);
+    else await pagina.keyboard.press('Enter');
+    let depois = [];
+    for (let i = 0; i < 25; i++) {
+      await pagina.waitForTimeout(1000);
+      depois = await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('[location.href, document.body.innerText.replace(/\\s+/g, " ").slice(0, 260)]'), wv).catch(() => []);
+      if (depois[0] && !/\/signin\/identifier/.test(depois[0])) break;
+      if (/Não foi possível|Couldn.t|No se pudo/i.test(depois[1] || '')) break;
+    }
+    console.log('depois do e-mail:', JSON.stringify(depois), /rejected|não ser seguro|may not be secure|no sea seguro/i.test(depois.join(' ')) ? 'RECUSADO' : /\/signin\/identifier/.test(depois[0] || '') ? 'PARADO no e-mail' : 'aceito');
+    console.log('pedidos:', JSON.stringify(await app.evaluate(() => globalThis.__login)));
+    console.log('erros da página:', JSON.stringify(await pagina.evaluate(() => window.__consoleLogin)));
+    await foto('login-google-email');
+    await pagina.evaluate((s) => document.querySelector(s).loadURL('https://www.wikipedia.org/'), wv).catch(() => { });
     await pagina.waitForTimeout(6000);
     console.log('noutro site:', JSON.stringify(await ler()));
   },
@@ -1925,6 +1982,20 @@ const ROTEIROS = {
     await pagina.keyboard.press('Enter');
     await pagina.waitForTimeout(1500);
     console.log('desbloqueado:', await pagina.evaluate(() => !document.getElementById('bloqueio')));
+    // A senha ao abrir: o Retro Computer fecha e abre de novo, com a abertura direta e com a introdução.
+    console.log('pedir ao abrir (padrão):', await pagina.evaluate(() => window.__retro.estado.config.bloqueio.aoAbrir));
+    for (const rapido of [true, false]) {
+      await pagina.evaluate((r) => window.__retro.definirConfig({ inicioRapido: r }), rapido);
+      await fecharApp();
+      await lancar({ RETRO_RAPIDO: '' });
+      await pagina.waitForSelector('#iniciar', { timeout: 60000 });
+      await pagina.waitForTimeout(1500);
+      console.log(`ao abrir ${rapido ? 'sem' : 'com'} a introdução: bloqueado?`, await pagina.evaluate(() => !!document.getElementById('bloqueio')));
+      await foto(rapido ? 'bloqueio-ao-abrir' : 'bloqueio-ao-abrir-introducao');
+      await pagina.keyboard.type('abcd1234');
+      await pagina.keyboard.press('Enter');
+      await pagina.waitForTimeout(1500);
+    }
   },
 
   // Os pendrives: no Meu computador, abrir, trazer para o C:, levar do C:, Enviar para e remover.

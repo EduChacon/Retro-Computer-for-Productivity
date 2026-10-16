@@ -61,9 +61,22 @@ let zoomAtual = 1;
 /** O zoom da área de trabalho (pixels da interface por pixel da tela, sobre a escala do monitor). */
 export const zoomInterface = () => zoomAtual;
 
+// A menor área que a interface precisa (as caixas do Painel e as janelas cabem nela).
+const AREA_MINIMA = { w: 1024, h: 720 };
+
+/**
+ * O tamanho automático: a escala do sistema arredondada (150% vira 2), mas sem deixar a área da
+ * tela menor que a mínima (num monitor de 1920 × 1080 a 150%, o 2 deixaria só 960 × 540).
+ */
+export function pixelsAutomaticos({ escala = 1, w = 0, h = 0 } = {}) {
+  const max = w && h ? Math.max(1, Math.floor(Math.min(w / AREA_MINIMA.w, h / AREA_MINIMA.h))) : 4;
+  return Math.min(Math.max(1, Math.round(escala)), max);
+}
+
 export async function aplicarEscala(escala) {
-  const dpr = await retro.sistema.escalaTela().catch(() => window.devicePixelRatio || 1);
-  const n = escala === 'auto' || !escala ? Math.max(1, Math.round(dpr)) : Number(escala);
+  const tela = await retro.sistema.telaFisica().catch(() => null);
+  const dpr = (tela && tela.escala) || window.devicePixelRatio || 1;
+  const n = escala === 'auto' || !escala ? pixelsAutomaticos(tela || { escala: dpr }) : Number(escala);
   zoomAtual = n / dpr;
   await retro.sistema.zoom(zoomAtual);
   return n;

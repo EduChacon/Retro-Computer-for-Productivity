@@ -126,7 +126,7 @@ As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a 
 
 ### Senha e bloqueio
 
-Painel de controle › Senhas cria a senha da tela de bloqueio. Com ela, Iniciar › Bloquear o computador cobre a tela até a senha ser digitada, e a senha pode ser pedida também ao voltar da suspensão (ou ao fechar a tampa), ao sair da proteção de tela e ao abrir o Retro Computer. A senha fica guardada só como resumo (PBKDF2). No Linux, a senha de entrada do Linux também desbloqueia.
+Painel de controle › Senhas cria a senha da tela de bloqueio. Com ela, Iniciar › Bloquear o computador cobre a tela até a senha ser digitada; a senha é pedida também ao abrir o Retro Computer (como no Windows, desde a 1.1) e ao voltar da suspensão (ou ao fechar a tampa) e, se escolhido, ao sair da proteção de tela. A senha fica guardada só como resumo (PBKDF2). No Linux, a senha de entrada do Linux também desbloqueia.
 
 ### Vários usuários
 

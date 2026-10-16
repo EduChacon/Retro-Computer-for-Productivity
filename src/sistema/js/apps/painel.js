@@ -556,7 +556,7 @@ function dialogoSenhas() {
   const btCriar = h('button', { type: 'button' });
   const btTirar = h('button', { type: 'button' }, tr('Tirar a senha…'));
   const chkVoltar = h('input', { type: 'checkbox', checked: b().aoVoltar !== false });
-  const chkAbrir = h('input', { type: 'checkbox', checked: !!b().aoAbrir });
+  const chkAbrir = h('input', { type: 'checkbox', checked: b().aoAbrir !== false });
   const chkProtecao = h('input', { type: 'checkbox', checked: !!b().naProtecao });
   const desenhar = () => {
     const tem = !!b().temSenha;
