@@ -33,7 +33,7 @@ const ITENS = [
   { chave: 'impressoras', rotulo: marcar('Impressoras'), icone: 'impressora', descricao: marcar('As impressoras, a padrão, a fila de impressão e a página de teste.'), abrir: () => dialogoImpressoras() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
   { chave: 'mouse', rotulo: marcar('Mouse'), icone: 'mouse', descricao: marcar('A velocidade do ponteiro, o botão principal, a rolagem e o touchpad.'), abrir: () => dialogoMouse() },
-  { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },
+  { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Os sons do sistema, a saída de som e o microfone.'), abrir: (args) => dialogoSons(args) },
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('Mostra a data e a hora do computador.'), abrir: () => dialogoData() },
   { chave: 'programas', rotulo: marcar('Adicionar ou remover programas'), icone: 'programas-caixa', descricao: marcar('Instala, atualiza e remove programas.'), abrir: () => abrir('programas') },
   { chave: 'foco', rotulo: marcar('Foco'), icone: 'foco', descricao: marcar('Abre o relógio de foco (Pomodoro).'), abrir: () => abrir('foco') },
@@ -46,7 +46,7 @@ const visiveis = () => ITENS.filter((i) => !i.mostrar || i.mostrar());
 function abrirPainel(args = {}) {
   if (args.secao) {
     const it = ITENS.find((i) => i.chave === args.secao);
-    if (it) return it.abrir();
+    if (it) return it.abrir(args);
   }
   const aberta = janelas.find((j) => j.id === 'painel');
   if (aberta) return aberta.focar();
@@ -74,11 +74,11 @@ function abrirPainel(args = {}) {
 
 /* ---------- Diálogos de propriedades ---------- */
 
-function dialogoBase({ titulo, icone, abas, larg = 380, altMin = 0, aoAplicar }) {
+function dialogoBase({ titulo, icone, abas, larg = 380, altMin = 0, aoAplicar, aba = 0 }) {
   const existente = janelas.find((x) => x.titulo === titulo);
   if (existente) { existente.focar(); return null; }
   const j = new Janela({ titulo, icone, largura: larg, altura: 420, redimensionavel: false, minimizavel: false, maximizavel: false });
-  let atual = 0;
+  let atual = Math.max(0, Math.min(abas.length - 1, aba));
   const cab = h('div.abas');
   const painel = h('div.painel-aba');
   const desenhar = () => {
@@ -920,7 +920,10 @@ function dialogoIdioma() {
 
 /* Sons */
 
-function dialogoSons() {
+async function dialogoSons(args = {}) {
+  const titulo = tr('Propriedades de Sons');
+  const aberta = janelas.find((x) => x.titulo === titulo);
+  if (aberta) return aberta.focar();
   const c = estado.config;
   const chk = h('input', { type: 'checkbox', checked: !!c.sons });
   const vol = h('input', { type: 'range', min: 0, max: 100, value: Math.round((c.volume || 0) * 100), style: { flex: '1' } });
@@ -933,11 +936,71 @@ function dialogoSons() {
         teste('inicio', tr('Abertura')), teste('desligar', tr('Desligar')), teste('erro', tr('Erro')), teste('aviso', tr('Aviso')),
         teste('pergunta', tr('Pergunta')), teste('lixeira', tr('Lixeira')), teste('foco', tr('Fim do foco')), teste('info', tr('Informação')))),
   );
+  const audio = await abaAudio();
   dialogoBase({
-    titulo: tr('Propriedades de Sons'), icone: 'sons', larg: 340,
-    abas: [{ titulo: tr('Sons'), conteudo }],
-    aoAplicar: () => definirConfig({ sons: chk.checked, volume: vol.value / 100 }),
+    titulo, icone: 'sons', larg: 440, aba: args.aba === 'audio' ? 1 : 0,
+    abas: [{ titulo: tr('Sons'), conteudo }, { titulo: tr('Áudio'), conteudo: audio.el }],
+    aoAplicar: async () => { await definirConfig({ sons: chk.checked, volume: vol.value / 100 }); await audio.aplicar(); },
   });
+}
+
+/** A aba Áudio (como a das Propriedades de Multimídia): a saída de som e o microfone preferidos. */
+async function abaAudio() {
+  const est = await retro.som.estado().catch(() => ({ disponivel: false }));
+  const cabeca = (icone, texto) => h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img(icone, 32), h('div', { style: { lineHeight: '13px' } }, texto));
+  if (!est.disponivel) {
+    const sistema = est.sistema;
+    return {
+      el: h('div',
+        cabeca('som', sistema
+          ? tr('A saída de som e o microfone são os escolhidos no computador principal.')
+          : tr('O Linux não respondeu pelo pactl (o PulseAudio ou o PipeWire): a saída de som e o microfone seguem as configurações do Linux.')),
+        sistema ? h('div.acoes', h('button', { type: 'button', on: { click: () => retro.som.configuracoesDoSistema().catch(() => { }) } }, tr('Abrir as configurações do sistema…'))) : null),
+      aplicar: async () => { },
+    };
+  }
+  const lista = (itens) => {
+    const s = h('select', { style: { width: '100%' } }, ...itens.map((x) => h('option', { value: x.id, selected: x.padrao }, x.nome)));
+    if (!itens.length) { s.append(h('option', { value: '' }, tr('(Nenhum)'))); s.disabled = true; }
+    return s;
+  };
+  const selSaida = lista(est.saidas);
+  const selEntrada = lista(est.entradas);
+  const mic = est.microfone || { nivel: 100, mudo: false };
+  const numero = h('span', { style: { width: '32px', textAlign: 'right' } }, mic.nivel + '%');
+  const nivel = deslizante({ valor: Math.min(100, mic.nivel), min: 0, max: 100, tamanho: 170, passo: 2, passoGrande: 10, rotulo: tr('Volume do microfone'), aoMudar: (n) => { numero.textContent = n + '%'; } });
+  const mudo = h('input', { type: 'checkbox', checked: !!mic.mudo });
+  const semMic = !est.microfone;
+  if (semMic) { nivel.el.style.opacity = '0.5'; mudo.disabled = true; }
+  const linhaSel = (rot, sel) => h('div', { style: { display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: '6px' } }, h('span', rot), h('div.select-caixa', { style: { width: '100%', minWidth: '0' } }, sel));
+  const el = h('div',
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Reprodução')),
+      h('div', { style: { display: 'flex', gap: '10px', alignItems: 'flex-start' } }, img('som', 32),
+        h('div', { style: { flex: '1', minWidth: '0', display: 'flex', flexDirection: 'column', gap: '6px' } },
+          linhaSel(tr('Aparelho preferido:'), selSaida),
+          h('div', { style: { lineHeight: '13px', color: '#404040' } }, tr('O que está tocando passa para o aparelho escolhido. O volume fica no ícone do alto-falante, na bandeja.')),
+          h('div', h('button', { type: 'button', on: { click: async () => { await aplicarSaida(); tocar('info'); } } }, tr('Testar')))))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Gravação')),
+      h('div', { style: { display: 'flex', gap: '10px', alignItems: 'flex-start' } }, img('microfone', 32),
+        h('div', { style: { flex: '1', minWidth: '0', display: 'flex', flexDirection: 'column', gap: '6px' } },
+          linhaSel(tr('Aparelho preferido:'), selEntrada),
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } }, h('span', tr('Volume:')), nivel.el, numero),
+          h('label', mudo, h('span', tr('Microfone sem som (mudo)')))))),
+  );
+  const entradaAntes = selEntrada.value;
+  const aplicarSaida = async () => { if (selSaida.value && selSaida.value !== (est.saidas.find((x) => x.padrao) || {}).id) { await retro.som.saida(selSaida.value).catch((e) => erro(e.message)); est.saidas.forEach((x) => { x.padrao = x.id === selSaida.value; }); } };
+  return {
+    el,
+    aplicar: async () => {
+      await aplicarSaida();
+      if (selEntrada.value && selEntrada.value !== entradaAntes) await retro.som.entrada(selEntrada.value).catch((e) => erro(e.message));
+      if (!semMic && (nivel.valor() !== mic.nivel || mudo.checked !== !!mic.mudo)) {
+        await retro.som.microfone({ nivel: nivel.valor(), mudo: mudo.checked }).catch((e) => erro(e.message));
+        mic.nivel = nivel.valor();
+        mic.mudo = mudo.checked;
+      }
+    },
+  };
 }
 
 /* Internet */

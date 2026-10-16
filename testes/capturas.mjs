@@ -944,10 +944,28 @@ const ROTEIROS = {
 
   // A bandeja (com RETRO_BANDEJA_FALSA=1: o volume, o brilho, a bateria e o Wi-Fi de mentira):
   // as caixinhas, conectar a uma rede protegida, as notificações e a data no relógio.
+  // A saída de som e o microfone (com RETRO_SOM_FALSO=1 e RETRO_BANDEJA_FALSA=1): a aba Áudio
+  // das Propriedades de Sons e a escolha da saída na caixa do volume.
+  async som() {
+    await fecharTudo();
+    await abrir('painel', { secao: 'sons', aba: 'audio' });
+    await pagina.waitForTimeout(900);
+    await foto('som-audio');
+    await pagina.selectOption('.janela.ativa fieldset >> nth=0 >> select', { index: 1 });
+    await pagina.click(`.janela.ativa button:has-text("${T('OK')}")`);
+    await pagina.waitForTimeout(500);
+    console.log('saída padrão:', JSON.stringify(await pagina.evaluate(() => retro.som.estado().then((e) => e.saidas.find((x) => x.padrao).nome))));
+    await pagina.click('#bandeja img.bandeja-ico[src*="som-"]');
+    await pagina.waitForTimeout(700);
+    await foto('som-bandeja');
+    await pagina.keyboard.press('Escape');
+  },
+
   async bandeja() {
     await fecharTudo();
     await pagina.waitForTimeout(800);
-    const ico = (n) => `#bandeja .bandeja-ico >> nth=${n}`; // 0 a rede, 1 o volume, 2 a bateria, 3 o sino
+    // Os ícones pelo desenho (a ordem muda: o do Bluetooth aparece quando há Bluetooth).
+    const ico = (n) => ['#bandeja img.bandeja-ico[src*="rede-"], #bandeja img.bandeja-ico[src*="sinal-"]', '#bandeja img.bandeja-ico[src*="som-"]', '#bandeja img.bandeja-ico[src*="bateria"]', '#bandeja .sino'][n];
     console.log('dicas:', JSON.stringify(await pagina.evaluate(() => [...document.querySelectorAll('#bandeja .bandeja-ico')].map((e) => [e.getAttribute('src') || e.querySelector('img').getAttribute('src'), e.dataset.dica, e.hidden]))));
     await pagina.click(ico(1));
     await pagina.waitForTimeout(300);

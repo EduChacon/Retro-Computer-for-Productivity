@@ -146,7 +146,7 @@ const TOPICOS = [
 <p>Uma conta na caixa de busca (<b>12*3,5</b>, <b>200 × 15%</b>, <b>√2</b>) mostra o resultado primeiro; Enter o copia.</p>
 <p>Os botões das janelas mostram o nome. Para ver só os ícones, agrupados por programa, use o botão direito na barra › <b>Botões das janelas</b>. A roda do mouse num botão abre outra janela do programa.</p>
 <h2>A bandeja, à direita</h2>
-<p><b>Rede</b>: as redes Wi-Fi, conectar e desconectar (no Linux). <b>Volume</b>: o som do computador. <b>Bateria</b>: a carga, o brilho da tela, o modo de energia (economia, equilibrado ou desempenho, no Linux) e a bateria do mouse e do teclado sem fio, com o aviso de bateria fraca. <b>Bluetooth</b>: os aparelhos sem fio (no Linux). <b>Sino</b>: as notificações e o <b>Não perturbe</b>.</p>
+<p><b>Rede</b>: as redes Wi-Fi, conectar e desconectar (no Linux). <b>Volume</b>: o som do computador e, com mais de uma saída (os alto-falantes, um fone, a tela pela HDMI), a escolha dela; o microfone fica em Painel de controle › Sons › Áudio. <b>Bateria</b>: a carga, o brilho da tela, o modo de energia (economia, equilibrado ou desempenho, no Linux) e a bateria do mouse e do teclado sem fio, com o aviso de bateria fraca. <b>Bluetooth</b>: os aparelhos sem fio (no Linux). <b>Sino</b>: as notificações e o <b>Não perturbe</b>.</p>
 <p>Um clique no <b>relógio</b> abre o calendário; o botão direito nele › <b>Mostrar a data</b> põe a data embaixo da hora.</p>`],
     en: ['The taskbar', `
 <h2>On the left</h2>
@@ -154,7 +154,7 @@ const TOPICOS = [
 <p>A calculation in the search box (<b>12*3.5</b>, <b>200 × 15%</b>, <b>√2</b>) shows the result first; Enter copies it.</p>
 <p>The window buttons show the name. To see only the icons, grouped by program, right-click the taskbar › <b>Taskbar buttons</b>. The mouse wheel on a button opens another window of the program.</p>
 <h2>The tray, on the right</h2>
-<p><b>Network</b>: the Wi-Fi networks, connecting and disconnecting (on Linux). <b>Volume</b>: the computer's sound. <b>Battery</b>: the charge, the screen brightness, the power mode (power saver, balanced or performance, on Linux) and the battery of a wireless mouse or keyboard, with the low battery notice. <b>Bluetooth</b>: the wireless devices (on Linux). <b>Bell</b>: the notifications and <b>Do not disturb</b>.</p>
+<p><b>Network</b>: the Wi-Fi networks, connecting and disconnecting (on Linux). <b>Volume</b>: the computer's sound and, with more than one output (the speakers, headphones, the screen through HDMI), the choice of it; the microphone is in Control Panel › Sounds › Audio. <b>Battery</b>: the charge, the screen brightness, the power mode (power saver, balanced or performance, on Linux) and the battery of a wireless mouse or keyboard, with the low battery notice. <b>Bluetooth</b>: the wireless devices (on Linux). <b>Bell</b>: the notifications and <b>Do not disturb</b>.</p>
 <p>A click on the <b>clock</b> opens the calendar; right-click it › <b>Show the date</b> to put the date under the time.</p>`],
     es: ['La barra de tareas', `
 <h2>A la izquierda</h2>
@@ -162,7 +162,7 @@ const TOPICOS = [
 <p>Una cuenta en el cuadro de búsqueda (<b>12*3,5</b>, <b>200 × 15%</b>, <b>√2</b>) muestra el resultado primero; Enter lo copia.</p>
 <p>Los botones de las ventanas muestran el nombre. Para ver solo los íconos, agrupados por programa, usa el clic derecho en la barra › <b>Botones de las ventanas</b>. La rueda del mouse en un botón abre otra ventana del programa.</p>
 <h2>La bandeja, a la derecha</h2>
-<p><b>Red</b>: las redes Wi-Fi, conectar y desconectar (en Linux). <b>Volumen</b>: el sonido de la computadora. <b>Batería</b>: la carga, el brillo de la pantalla, el modo de energía (ahorro, equilibrado o rendimiento, en Linux) y la batería del mouse y del teclado inalámbricos, con el aviso de batería baja. <b>Bluetooth</b>: los dispositivos inalámbricos (en Linux). <b>Campana</b>: las notificaciones y el <b>No molestar</b>.</p>
+<p><b>Red</b>: las redes Wi-Fi, conectar y desconectar (en Linux). <b>Volumen</b>: el sonido de la computadora y, con más de una salida (los altavoces, unos auriculares, la pantalla por HDMI), la elección de ella; el micrófono está en Panel de control › Sonidos › Audio. <b>Batería</b>: la carga, el brillo de la pantalla, el modo de energía (ahorro, equilibrado o rendimiento, en Linux) y la batería del mouse y del teclado inalámbricos, con el aviso de batería baja. <b>Bluetooth</b>: los dispositivos inalámbricos (en Linux). <b>Campana</b>: las notificaciones y el <b>No molestar</b>.</p>
 <p>Un clic en el <b>reloj</b> abre el calendario; el clic derecho en él › <b>Mostrar la fecha</b> pone la fecha debajo de la hora.</p>`],
   },
   {

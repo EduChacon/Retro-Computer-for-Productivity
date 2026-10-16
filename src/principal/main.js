@@ -39,6 +39,7 @@ const { Diario } = require('./diario');
 const { CopiaSeguranca, destinoValido, venceu } = require('./copia');
 const { Firefox, CLASSE: CLASSE_FIREFOX } = require('./firefox');
 const { Visualizador } = require('./visualizar');
+const { Som, SomFalso } = require('./som');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -895,6 +896,17 @@ function registrarPonte() {
   tratar('mouse:aplicar', async (escolhas) => {
     config.definir({ mouse: limparEscolhas(escolhas) });
     return mouse.aplicar(config.obter().mouse);
+  });
+  // As saídas de som e os microfones (Painel › Sons); fora do Linux, as configurações do sistema.
+  const som = process.env.RETRO_SOM_FALSO ? new SomFalso() : new Som();
+  tratar('som:estado', () => som.estado());
+  tratar('som:saida', (id) => som.escolherSaida(String(id || '')));
+  tratar('som:entrada', (id) => som.escolherEntrada(String(id || '')));
+  tratar('som:microfone', (o) => som.microfone(o || {}));
+  tratar('som:configuracoesDoSistema', () => {
+    if (process.platform === 'win32') return shell.openExternal('ms-settings:sound').then(() => true);
+    if (process.platform === 'darwin') return shell.openExternal('x-apple.systempreferences:com.apple.preference.sound').then(() => true);
+    return false;
   });
   tratar('mouse:configuracoesDoSistema', () => {
     if (process.platform === 'win32') return shell.openExternal('ms-settings:mousetouchpad').then(() => true);

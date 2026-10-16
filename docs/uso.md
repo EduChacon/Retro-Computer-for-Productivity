@@ -59,7 +59,7 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 
 - **À esquerda**: o Iniciar, a caixa de busca (programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados (de início, o Explorador de arquivos, o Navegador, o E-mail e o Bloco de notas). Botão direito num programa › "Fixar na barra de tarefas" ou "Desafixar".
 - **Os botões das janelas** mostram o nome, como na época, ou só os ícones, agrupados por programa (botão direito na barra › Botões das janelas). O clique com a roda num botão abre outra janela do programa.
-- **A bandeja, à direita**: a rede (as redes Wi-Fi, no Linux), o volume, a bateria com o brilho da tela e a bateria do mouse e do teclado sem fio, o Bluetooth (no Linux), o sino das notificações com o "Não perturbe" e o relógio, que abre o calendário (botão direito › Mostrar a data).
+- **A bandeja, à direita**: a rede (as redes Wi-Fi, no Linux), o volume (com a escolha da saída de som, quando há mais de uma), a bateria com o brilho da tela e a bateria do mouse e do teclado sem fio, o Bluetooth (no Linux), o sino das notificações com o "Não perturbe" e o relógio, que abre o calendário (botão direito › Mostrar a data).
 
 ### Trazer e levar arquivos
 
@@ -243,6 +243,7 @@ Na sessão:
 - Iniciar › Desligar oferece desligar, reiniciar e suspender o computador de verdade, e sair da sessão (para voltar à área de trabalho do Linux).
 - O teclado segue o layout do Linux (ou o escolhido em Painel de controle › Teclado); o touchpad do notebook ganha o "tocar para clicar"; as teclas do logotipo, de volume, de brilho, de calculadora e Print Screen funcionam.
 - A bandeja mostra a rede Wi-Fi, o volume, a bateria e o brilho, o Bluetooth e as notificações; os avisos de bateria fraca aparecem aos 10% e aos 5%.
+- **Painel de controle › Sons › Áudio**: a saída de som preferida (os alto-falantes, o fone Bluetooth, a tela pela HDMI; o que está tocando passa para ela) e o microfone preferido, com o volume e o mudo, pelo pactl (o PulseAudio ou o PipeWire). No Windows e no macOS, o botão abre as configurações de som do sistema.
 - Os programas do Linux (os da aba Programas do Linux e os outros) abrem em janelas comuns e aparecem na barra de tarefas, com os do Retro Computer: o clique traz para a frente ou minimiza, e o botão direito fixa e fecha.
 - Painel de controle › **Atualizações do Linux** mostra o que há para atualizar (as de segurança marcadas), instala tudo (`apt-get upgrade`, que nunca remove pacotes, e `flatpak update`) com a senha de administrador e pode instalar sozinho as de segurança, todo dia (o `unattended-upgrades`). Um balão avisa, uma vez por dia, quando há atualizações.
 - Os pendrives são montados sozinhos; ao bloquear, as janelas dos programas do Linux são minimizadas, e nenhuma fica por cima da tela de bloqueio.

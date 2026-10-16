@@ -129,12 +129,31 @@ function caixaVolume() {
   });
   const chkSons = h('input', { type: 'checkbox', checked: !!estado.config.sons });
   chkSons.addEventListener('change', () => definirConfig({ sons: chkSons.checked }).then(() => { atualizarSom(); if (chkSons.checked) tocar('info'); }));
+  // Com mais de uma saída (os alto-falantes, um fone, a tela pela HDMI), a escolha fica no alto,
+  // como no Windows; o volume mostrado passa a ser o da saída nova.
+  const selSaida = h('select.vol-saida', { title: tr('Saída de som') });
+  const caixaSaida = h('div.select-caixa.vol-saida-caixa', { hidden: true }, selSaida);
+  if (doSistema) {
+    retro.som.estado().then((s) => {
+      if (!s.disponivel || s.saidas.length < 2) return;
+      selSaida.replaceChildren(...s.saidas.map((x) => h('option', { value: x.id, selected: x.padrao }, x.nome)));
+      caixaSaida.hidden = false;
+    }).catch(() => { });
+    selSaida.addEventListener('change', async () => {
+      await retro.som.saida(selSaida.value).catch(() => { });
+      await lerVolume();
+      if (vol.disponivel) { d.mostrar(vol.nivel); numero.textContent = vol.nivel + '%'; chkMudo.checked = !!vol.mudo; }
+      tocar('info');
+    });
+  }
   return caixa('volume',
     cabecalho(doSistema ? tr('Volume') : tr('Volume do Retro Computer')),
+    caixaSaida,
     h('div.vol-meio', d.el, numero),
     h('label', chkMudo, h('span', tr('Sem som'))),
     doSistema ? [h('hr.sulco'), h('label', chkSons, h('span', tr('Sons do Retro Computer')))] : h('div.cxb-nota', tr('O volume do computador não respondeu; este controle muda só os sons do Retro Computer.')),
-    h('div.cxb-links', link(tr('Ajustar os sons…'), () => { fecharFlutuante(); abrir('painel', { secao: 'sons' }); })),
+    h('div.cxb-links', link(tr('Ajustar os sons…'), () => { fecharFlutuante(); abrir('painel', { secao: 'sons' }); }),
+      doSistema ? link(tr('Saída de som e microfone…'), () => { fecharFlutuante(); abrir('painel', { secao: 'sons', aba: 'audio' }); }) : null),
   );
 }
 

@@ -93,6 +93,14 @@ contextBridge.exposeInMainWorld('retro', {
     pasta: () => chamar('diario:pasta'),
     hoje: () => chamar('diario:hoje'),
   },
+  // As saídas de som e os microfones (Painel › Sons).
+  som: {
+    estado: () => chamar('som:estado'),
+    saida: (id) => chamar('som:saida', id),
+    entrada: (id) => chamar('som:entrada', id),
+    microfone: (o) => chamar('som:microfone', o),
+    configuracoesDoSistema: () => chamar('som:configuracoesDoSistema'),
+  },
   // O mouse e o touchpad (modo sistema, pelo xinput).
   mouse: {
     estado: () => chamar('mouse:estado'),

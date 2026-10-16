@@ -502,6 +502,59 @@ def escudo(tam):
     return [''.join(l) for l in linhas]
 
 
+def microfone(tam):
+    """O microfone de mesa: a cabeça com a grade, o suporte em U, a haste e a base (desenho próprio)."""
+    k = 1 if tam == 16 else 2
+    w = tam
+    c = [['.'] * w for _ in range(w)]
+
+    def ret(x0, y0, x1, y1, ch):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if 0 <= x < w and 0 <= y < w:
+                    c[y][x] = ch
+
+    meio = w // 2
+    # A cabeça: uma cápsula com o contorno preto, a luz à esquerda, a sombra à direita e a grade.
+    hx0, hx1 = meio - 3 * k, meio + 2 * k - 1 + (0 if k == 1 else 1)
+    hy0, hy1 = k, 9 * k - 1
+    for y in range(hy0, hy1 + 1):
+        canto = 1 if y in (hy0, hy1) else 0
+        for x in range(hx0 + canto, hx1 - canto + 1):
+            borda = x in (hx0 + canto, hx1 - canto) or y in (hy0, hy1)
+            if borda:
+                c[y][x] = 'K'
+            elif x == hx0 + 1:
+                c[y][x] = 'W'
+            elif x >= hx1 - k:
+                c[y][x] = 'G'
+            else:
+                c[y][x] = 'D' if (y - hy0) % 2 == 0 and (x - hx0) % 2 == 0 else 'L'
+    # O suporte em U em volta da metade de baixo da cabeça.
+    ux0, ux1 = hx0 - k - 1, hx1 + k + 1
+    uy0, uy1 = 5 * k, 10 * k
+    ret(ux0, uy0, ux0, uy1 - 1, 'K')
+    ret(ux1, uy0, ux1, uy1 - 1, 'K')
+    if k == 2:
+        ret(ux0 + 1, uy0, ux0 + 1, uy1 - 1, 'G')
+        ret(ux1 - 1, uy0, ux1 - 1, uy1 - 1, 'D')
+    ret(ux0 + 1, uy1, ux1 - 1, uy1, 'K')
+    # A haste e a base.
+    ret(meio - k, uy1 + 1, meio + k - 1, 13 * k - 1, 'G')
+    ret(meio - k - 1, uy1 + 1, meio - k - 1, 13 * k - 1, 'K')
+    ret(meio + k, uy1 + 1, meio + k, 13 * k - 1, 'K')
+    if k == 2:
+        ret(meio - k, uy1 + 1, meio - k, 13 * k - 1, 'L')
+    by0 = 13 * k
+    ret(meio - 4 * k + 1, by0, meio + 4 * k - 2, by0, 'K')
+    ret(meio - 4 * k, by0 + 1, meio + 4 * k - 1, by0 + k, 'L')
+    ret(meio - 4 * k, by0 + k, meio + 4 * k - 1, by0 + k, 'G')
+    ret(meio - 4 * k - 1, by0 + 1, meio - 4 * k - 1, by0 + k, 'K')
+    ret(meio + 4 * k, by0 + 1, meio + 4 * k, by0 + k, 'K')
+    ret(meio - 4 * k, by0 + k + 1, meio + 4 * k - 1, by0 + k + 1, 'K')
+    return [''.join(l) for l in c]
+
+
 def grade(linhas):
     a = len(linhas)
     w = max(len(x) for x in linhas)
@@ -885,6 +938,10 @@ def gerar(serenity):
     # A Central de segurança: o escudo com o cadeado da bandeja (desenhos próprios).
     feitos[32]['seguranca'] = colar(grade(escudo(32)), grade(CADEADO_16), 8, 7)
     feitos[16]['seguranca'] = grade(escudo(16))
+
+    # O microfone (a gravação nas Propriedades de Sons): desenho próprio.
+    feitos[32]['microfone'] = grade(microfone(32))
+    feitos[16]['microfone'] = grade(microfone(16))
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

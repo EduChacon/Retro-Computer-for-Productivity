@@ -1142,6 +1142,8 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 .cxb-links { display: flex; flex-direction: column; gap: 3px; }
 .caixa-bandeja.volume { min-width: 0; align-items: flex-start; }
 .vol-meio { display: flex; align-items: center; gap: 8px; align-self: center; }
+.vol-saida-caixa { align-self: stretch; max-width: 200px; }
+.vol-saida-caixa select { width: 100%; text-overflow: ellipsis; }
 .vol-numero { min-width: 30px; }
 .caixa-bandeja.rede { width: 270px; }
 .caixa-bandeja.notificacoes { width: 290px; }
