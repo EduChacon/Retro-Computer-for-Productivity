@@ -306,6 +306,29 @@ const ROTEIROS = {
     await pagina.waitForTimeout(200);
     await foto('teclado-atalhos');
   },
+  async mouse() {
+    // Painel › Mouse (com RETRO_MOUSE_FALSO=1: um mouse sem fio e o touchpad de um notebook).
+    await fecharTudo();
+    await abrir('painel', { secao: 'mouse' });
+    await pagina.waitForSelector('.janela.ativa .mouse-teste', { timeout: 5000 });
+    await pagina.locator('.janela.ativa input[type=radio] >> nth=1').check();
+    await pagina.locator('.janela.ativa .mouse-teste').dblclick();
+    await pagina.waitForTimeout(300);
+    await foto('mouse-botoes');
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Movimento') }).click();
+    await pagina.locator('.janela.ativa .deslizante').focus();
+    for (let i = 0; i < 4; i++) await pagina.keyboard.press('ArrowRight');
+    await pagina.waitForTimeout(200);
+    await foto('mouse-movimento');
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Touchpad') }).click();
+    await pagina.locator('.janela.ativa input[type=checkbox] >> nth=1').uncheck();
+    await pagina.waitForTimeout(200);
+    await foto('mouse-touchpad');
+    await pagina.locator('.janela.ativa .acoes button.padrao').click();
+    await pagina.waitForTimeout(600);
+    console.log('mouse:', JSON.stringify(await pagina.evaluate(async () => (await retro.mouse.estado()).aparelhos.map((a) => [a.tipo, a.valores]))));
+    console.log('config:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.mouse || (async () => null)())));
+  },
   async seguranca() {
     // A Central de segurança (com RETRO_FIREWALL_FALSO=1 e RETRO_ATUALIZACOES_FALSAS=1) e o aviso do
     // site sem conexão segura (precisa de internet: o example.com tem HTTPS; o neverssl.com, não).

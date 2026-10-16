@@ -47,6 +47,7 @@ src/principal/         o processo principal (Node)
   janelas-linux.js     as janelas dos programas do Linux (wmctrl, xprop -spy, xdotool)
   atalhos.js           os atalhos do Windows: de uma tecla para a ação (Alt+Tab, Alt+F4, o logotipo)
   tela.js              a resolução e a luz noturna do modo sistema (xrandr)
+  mouse.js             o mouse e o touchpad do modo sistema (xinput e libinput)
   transferencia.js     o histórico da área de transferência (só na memória)
   firewall.js          o firewall do Linux (ufw)
   https.js             só conexões seguras no Navegador (http:// vira https://)
@@ -104,7 +105,7 @@ npx electron-builder --linux dir --publish never     # empacotar sem instalar
 
 Variáveis úteis: `RETRO_DADOS` (pasta das configurações), `RETRO_DISCO` (pasta do disco C:), `RETRO_JANELA=1` (sem tela cheia), `RETRO_RAPIDO=1` (sem a abertura), `RETRO_IDIOMA=en` ou `es` (o idioma, por cima da configuração), `RETRO_SISTEMA=1` (o modo sistema), `RETRO_ZIP` (no roteiro de capturas: instala pacotes `.zip` antes), `RETRO_FALSA_VERSAO=9.9.9` (no roteiro de capturas: finge que a busca achou essa versão), `RETRO_SEM_BOAS_VINDAS=1` (sem a Ajuda e o balão da primeira vez), `RETRO_EXECUTAVEL` (testa o aplicativo empacotado).
 
-As ferramentas do sistema têm versões de mentira, para os testes e as capturas sem o aparelho: `RETRO_ENERGIA_FALSA=1` (desligar, reiniciar e suspender só são anotados: use-a sempre com `RETRO_SISTEMA=1` fora de um computador dedicado), `RETRO_BANDEJA_FALSA=1` (volume, brilho, bateria e Wi-Fi), `RETRO_LOJA_FALSA=1` (o Flathub de verdade, o flatpak de mentira), `RETRO_UNIDADES_FALSAS=<pasta>` (um pendrive), `RETRO_IMPRESSORAS_FALSAS=1`, `RETRO_BLUETOOTH_FALSO=1`, `RETRO_ATUALIZACOES_FALSAS=1` (a senha de teste é "certa"), `RETRO_JANELAS_FALSAS=1` (dois programas do Linux abertos), `RETRO_TELA_FALSA=1` (a resolução de um notebook de 1440 × 900), `RETRO_FIREWALL_FALSO=1` (a senha de teste é "certa") e `RETRO_MIDIA_FALSA=1` (a câmera e o microfone do Chromium). Como administrador (root), o Electron precisa de `--no-sandbox` (o roteiro de capturas já passa).
+As ferramentas do sistema têm versões de mentira, para os testes e as capturas sem o aparelho: `RETRO_ENERGIA_FALSA=1` (desligar, reiniciar e suspender só são anotados: use-a sempre com `RETRO_SISTEMA=1` fora de um computador dedicado), `RETRO_BANDEJA_FALSA=1` (volume, brilho, bateria e Wi-Fi), `RETRO_LOJA_FALSA=1` (o Flathub de verdade, o flatpak de mentira), `RETRO_UNIDADES_FALSAS=<pasta>` (um pendrive), `RETRO_IMPRESSORAS_FALSAS=1`, `RETRO_BLUETOOTH_FALSO=1`, `RETRO_ATUALIZACOES_FALSAS=1` (a senha de teste é "certa"), `RETRO_JANELAS_FALSAS=1` (dois programas do Linux abertos), `RETRO_TELA_FALSA=1` (a resolução de um notebook de 1440 × 900), `RETRO_MOUSE_FALSO=1` (um mouse sem fio e o touchpad de um notebook), `RETRO_FIREWALL_FALSO=1` (a senha de teste é "certa") e `RETRO_MIDIA_FALSA=1` (a câmera e o microfone do Chromium). Como administrador (root), o Electron precisa de `--no-sandbox` (o roteiro de capturas já passa).
 
 Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 
@@ -113,7 +114,7 @@ Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 - a internet: `navegador`, `permissoes` (com `RETRO_MIDIA_FALSA=1`), `webapps`;
 - as ferramentas: `calculadora`, `jogos`, `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;
 - a barra e o sistema: `barra`, `fixados`, `bandeja` (com `RETRO_BANDEJA_FALSA=1`), `bloqueio`, `sistema` (com `RETRO_SISTEMA=1` e `RETRO_ENERGIA_FALSA=1`), `impressoras`, `bluetooth`, `atualizacoesLinux` e `janelasLinux` (cada um com a sua variável de mentira);
-- as janelas e o teclado: `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`);
+- as janelas e o teclado: `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`), `mouse` (com `RETRO_MOUSE_FALSO=1`);
 - o que veio das distribuições: `produtividade` (o histórico da área de transferência, a conta na busca, a luz noturna, o modo de energia, o firewall e a aba Atalhos; com `RETRO_BANDEJA_FALSA=1` e `RETRO_FIREWALL_FALSO=1`) e `seguranca` (a Central de segurança e o aviso do site sem HTTPS; com `RETRO_FIREWALL_FALSO=1` e `RETRO_ATUALIZACOES_FALSAS=1`, e a internet).
 
 As teclas simuladas pelo Playwright não passam pelo `before-input-event` do Electron: os roteiros mandam a ação como o processo principal a manda (`tecla('alternar')`), e a leitura das teclas fica em `src/principal/atalhos.js`, testada à parte. Para o modo sistema com janelas do Linux de verdade, o Xvfb com o openbox, o `xdotool key` e o `import -window root` (ImageMagick) funcionam.

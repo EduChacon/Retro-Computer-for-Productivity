@@ -34,6 +34,7 @@ const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux'
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
 const { acaoDaTecla, trazORetro, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atalhos');
 const { Tela, TelaFalsa } = require('./tela');
+const { Mouse, MouseFalso, limparEscolhas } = require('./mouse');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -101,6 +102,7 @@ let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
+let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
 let historico = null; // o histórico da área de transferência (transferencia.js)
 let pararObservar = () => { };
 
@@ -778,6 +780,17 @@ function registrarPonte() {
   tratar('tela:modos', () => tela.modos());
   tratar('tela:definir', (saida, modo) => tela.definir(String(saida), String(modo)));
   tratar('tela:luzNoturna', (k) => tela.luzNoturna(Number(k) || 0));
+  // O mouse e o touchpad (Painel › Mouse): as escolhas ficam guardadas e voltam a cada abertura.
+  tratar('mouse:estado', () => mouse.estado());
+  tratar('mouse:aplicar', async (escolhas) => {
+    config.definir({ mouse: limparEscolhas(escolhas) });
+    return mouse.aplicar(config.obter().mouse);
+  });
+  tratar('mouse:configuracoesDoSistema', () => {
+    if (process.platform === 'win32') return shell.openExternal('ms-settings:mousetouchpad').then(() => true);
+    if (process.platform === 'darwin') return shell.openExternal('x-apple.systempreferences:com.apple.preference.mouse').then(() => true);
+    return false;
+  });
   // O histórico da área de transferência (logotipo + V).
   tratar('transferencia:listar', () => historico.listar());
   tratar('transferencia:usar', (id) => historico.usar(id));
@@ -1063,6 +1076,10 @@ app.whenReady().then(async () => {
   tela = new (process.env.RETRO_TELA_FALSA ? TelaFalsa : Tela)({ sistema: MODO_SISTEMA });
   const t = config.obter().tela;
   if (MODO_SISTEMA && t && t.modo) await tela.definir(t.saida, t.modo).catch(() => { });
+  // As escolhas do mouse e do touchpad (modo sistema), também para os aparelhos ligados depois.
+  mouse = new (process.env.RETRO_MOUSE_FALSO ? MouseFalso : Mouse)({ sistema: MODO_SISTEMA });
+  if (config.obter().mouse) mouse.aplicar(config.obter().mouse).catch(() => { });
+  mouse.vigiar(() => config.obter().mouse);
   criarJanela();
   if (janelasLinux) janela.webContents.once('did-finish-load', () => janelasLinux.vigiar());
 });

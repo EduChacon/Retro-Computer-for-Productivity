@@ -66,6 +66,12 @@ contextBridge.exposeInMainWorld('retro', {
     definir: (saida, modo) => chamar('tela:definir', saida, modo),
     luzNoturna: (k) => chamar('tela:luzNoturna', k),
   },
+  // O mouse e o touchpad (modo sistema, pelo xinput).
+  mouse: {
+    estado: () => chamar('mouse:estado'),
+    aplicar: (escolhas) => chamar('mouse:aplicar', escolhas),
+    configuracoesDoSistema: () => chamar('mouse:configuracoesDoSistema'),
+  },
   // O histórico da área de transferência (só na memória do processo principal).
   transferencia: {
     listar: () => chamar('transferencia:listar'),

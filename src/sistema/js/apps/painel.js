@@ -1,8 +1,8 @@
 /*
- * O Painel de controle: Aparência, Disco C:, Claude, Idioma, Sons, Data e hora,
+ * O Painel de controle: Aparência, Disco C:, Claude, Idioma, Teclado, Mouse, Sons, Data e hora,
  * Adicionar ou remover programas, Foco e Sobre.
  */
-import { h, img, tamanho, caminhoTela, rotulo } from '../util.js';
+import { h, img, icone, tamanho, caminhoTela, rotulo } from '../util.js';
 import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
@@ -31,6 +31,7 @@ const ITENS = [
   { chave: 'atualizacoes', rotulo: marcar('Atualizações do Linux'), icone: 'atualizacoes', descricao: marcar('As atualizações de segurança do Linux e dos programas da Loja.'), abrir: () => abrir('atualizacoes'), mostrar: () => estado.config.plataforma === 'linux' },
   { chave: 'impressoras', rotulo: marcar('Impressoras'), icone: 'impressora', descricao: marcar('As impressoras, a padrão, a fila de impressão e a página de teste.'), abrir: () => dialogoImpressoras() },
   { chave: 'teclado', rotulo: marcar('Teclado'), icone: 'teclado', descricao: marcar('O layout do teclado e um lugar para testar as teclas.'), abrir: () => dialogoTeclado() },
+  { chave: 'mouse', rotulo: marcar('Mouse'), icone: 'mouse', descricao: marcar('A velocidade do ponteiro, o botão principal, a rolagem e o touchpad.'), abrir: () => dialogoMouse() },
   { chave: 'sons', rotulo: marcar('Sons'), icone: 'sons', descricao: marcar('Liga, desliga e ajusta os sons do sistema.'), abrir: () => dialogoSons() },
   { chave: 'data', rotulo: marcar('Data e hora'), icone: 'relogio', descricao: marcar('Mostra a data e a hora do computador.'), abrir: () => dialogoData() },
   { chave: 'programas', rotulo: marcar('Adicionar ou remover programas'), icone: 'programas-caixa', descricao: marcar('Instala, atualiza e remove programas.'), abrir: () => abrir('programas') },
@@ -449,6 +450,106 @@ function dialogoTeclado() {
       const r = await retro.sistema.teclado(l, v).catch((e) => ({ ok: false, erro: e.message }));
       if (!r.ok) erro(tr('Não foi possível trocar o layout do teclado: {erro}', { erro: r.erro || '?' }));
       teste.focus();
+    },
+  });
+}
+
+/* Mouse e touchpad (no modo sistema, pelo xinput; fora dele, os do computador principal) */
+
+async function dialogoMouse() {
+  const titulo = tr('Propriedades de Mouse');
+  const aberta = janelas.find((x) => x.titulo === titulo);
+  if (aberta) return aberta.focar();
+  const est = await retro.mouse.estado().catch(() => ({ disponivel: false }));
+  const aparelhos = est.disponivel ? est.aparelhos || [] : [];
+  const m = aparelhos.find((a) => a.tipo === 'mouse');
+  const t = aparelhos.find((a) => a.tipo === 'touchpad');
+  const cabeca = (icone, texto) => h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img(icone, 32), h('div', { style: { lineHeight: '13px' } }, texto));
+
+  if (!m && !t) {
+    const plat = estado.config.plataforma;
+    const texto = est.disponivel
+      ? tr('Nenhum mouse ou touchpad com o controlador libinput foi encontrado. Os aparelhos com outro controlador seguem as configurações do Linux.')
+      : tr('O mouse e o touchpad seguem as configurações do computador principal.');
+    const botao = !est.disponivel && (plat === 'win32' || plat === 'darwin')
+      ? h('div.acoes', h('button', { type: 'button', on: { click: () => retro.mouse.configuracoesDoSistema().catch(() => { }) } }, tr('Abrir as configurações do sistema…')))
+      : null;
+    return dialogoBase({ titulo, icone: 'mouse', larg: 380, abas: [{ titulo: tr('Geral'), conteudo: h('div', cabeca('mouse', texto), botao) }] });
+  }
+
+  // Uma caixa de marcar com o valor do aparelho (apagada quando ele não tem a opção). Sem o
+  // aparelho ligado, ela começa no padrão do libinput e vale para quando ele for ligado.
+  const caixa = (ap, chave, rotuloCaixa, padrao = false) => {
+    const c = h('input', { type: 'checkbox', checked: ap ? !!ap.valores[chave] : padrao, disabled: ap ? !ap.pode[chave] : false });
+    return { c, chave, el: h('div', { style: { marginTop: '4px' } }, h('label', c, h('span', rotuloCaixa))) };
+  };
+  // A velocidade: o deslizante vai de 0 a 20, e o libinput, de -1 a 1.
+  const velocidade = (ap, rotuloDesl) => {
+    const d = deslizante({ valor: Math.round(((ap && ap.valores.velocidade) || 0) * 10) + 10, min: 0, max: 20, tamanho: 180, passo: 1, passoGrande: 4, rotulo: rotuloDesl });
+    if (ap && !ap.pode.velocidade) d.el.style.opacity = '0.5';
+    return { d, el: h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' } }, h('span', tr('Lenta')), d.el, h('span', tr('Rápida'))) };
+  };
+  const grupo = (legenda, ...filhos) => h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', legenda), ...filhos);
+
+  // Botões: a mão do botão principal (para o mouse e o touchpad) e a área de teste.
+  const podeCanhoto = aparelhos.some((a) => a.pode.canhoto);
+  const canhoto = aparelhos.some((a) => a.valores.canhoto);
+  const radioDestro = h('input', { type: 'radio', name: 'mouse-mao', checked: !canhoto, disabled: !podeCanhoto });
+  const radioCanhoto = h('input', { type: 'radio', name: 'mouse-mao', checked: canhoto, disabled: !podeCanhoto });
+  const funcoes = h('div', { style: { lineHeight: '13px', marginTop: '8px' } });
+  const mostrarFuncoes = () => {
+    funcoes.textContent = radioCanhoto.checked
+      ? tr('Botão direito: selecionar e arrastar. Botão esquerdo: o menu de cada objeto.')
+      : tr('Botão esquerdo: selecionar e arrastar. Botão direito: o menu de cada objeto.');
+  };
+  for (const r of [radioDestro, radioCanhoto]) r.addEventListener('change', mostrarFuncoes);
+  mostrarFuncoes();
+  const pasta = img('pasta', 32);
+  let pastaAberta = false;
+  const teste = h('div.mouse-teste.afundado', { title: tr('Clique duas vezes na pasta para testar.') }, pasta);
+  teste.addEventListener('dblclick', () => { pastaAberta = !pastaAberta; pasta.src = icone(pastaAberta ? 'pasta-aberta' : 'pasta', 32); });
+  const botoes = h('div',
+    grupo(tr('Configuração dos botões'),
+      h('div', { style: { display: 'flex', gap: '16px' } }, h('label', radioDestro, h('span', tr('Destro'))), h('label', radioCanhoto, h('span', tr('Canhoto')))),
+      funcoes),
+    grupo(tr('Área de teste'), h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } }, teste,
+      h('div', { style: { lineHeight: '13px' } }, tr('Clique duas vezes na pasta para testar: ela abre e fecha.')))));
+
+  // Movimento: o mouse.
+  const velM = velocidade(m, tr('Velocidade do ponteiro do mouse'));
+  const acelM = caixa(m, 'aceleracao', tr('Aceleração: o ponteiro vai mais longe quando o mouse anda depressa'), true);
+  const natM = caixa(m, 'natural', tr('Rolagem natural (ao contrário da de costume, como na tela de um celular)'));
+  const movimento = h('div',
+    grupo(tr('Velocidade do ponteiro'), velM.el, acelM.el),
+    grupo(tr('Roda do mouse'), natM.el),
+    m ? null : h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Nenhum mouse ligado agora: estas opções valem quando um for ligado.')));
+
+  // O touchpad.
+  const velT = velocidade(t, tr('Velocidade do ponteiro do touchpad'));
+  const caixasT = [
+    caixa(t, 'tocar', tr('Tocar para clicar (com dois dedos, o botão direito)')),
+    caixa(t, 'doisDedos', tr('Rolar com dois dedos (sem esta opção, pela borda direita)')),
+    caixa(t, 'cliqueDedos', tr('Clicar com dois dedos para o botão direito (sem esta opção, no canto de baixo à direita)')),
+    caixa(t, 'natural', tr('Rolagem natural (como na tela de um celular)')),
+  ];
+  const deslT = [caixa(t, 'digitando', tr('Enquanto se digita')), caixa(t, 'comMouse', tr('Quando um mouse estiver ligado'))];
+  const touchpad = t ? h('div',
+    grupo(tr('Velocidade do ponteiro'), velT.el),
+    grupo(tr('Toques e gestos'), ...caixasT.map((x) => x.el)),
+    grupo(tr('Desligar o touchpad'), ...deslT.map((x) => x.el))) : null;
+
+  const abas = [{ titulo: tr('Botões'), conteudo: botoes }, { titulo: tr('Movimento'), conteudo: movimento }];
+  if (touchpad) abas.push({ titulo: tr('Touchpad'), conteudo: touchpad });
+  return dialogoBase({
+    titulo, icone: 'mouse', larg: 420, altMin: touchpad ? 430 : 0, abas,
+    aoAplicar: async () => {
+      const marcadas = (lista) => Object.fromEntries(lista.filter((x) => !x.c.disabled).map((x) => [x.chave, x.c.checked]));
+      const esc = { mouse: marcadas([acelM, natM]), touchpad: t ? marcadas([...caixasT, ...deslT]) : {} };
+      if (podeCanhoto) esc.canhoto = radioCanhoto.checked;
+      if (!m || m.pode.velocidade) esc.mouse.velocidade = (velM.d.valor() - 10) / 10;
+      if (t && t.pode.velocidade) esc.touchpad.velocidade = (velT.d.valor() - 10) / 10;
+      const r = await retro.mouse.aplicar(esc).catch((e) => ({ ok: false, erro: e.message }));
+      if (!r || !r.ok) erro(tr('Não foi possível mudar o mouse: {erro}', { erro: (r && r.erro) || '?' }));
     },
   });
 }
