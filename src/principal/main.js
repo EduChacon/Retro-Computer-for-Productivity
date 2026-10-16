@@ -39,6 +39,7 @@ const { Diario } = require('./diario');
 const { CopiaSeguranca, destinoValido, venceu } = require('./copia');
 const { Firefox, CLASSE: CLASSE_FIREFOX } = require('./firefox');
 const { Visualizador } = require('./visualizar');
+const { pastaPortatil, caminhosPortateis } = require('./portatil');
 const { Som, SomFalso } = require('./som');
 const { Energia } = require('./energia');
 const { DataHora, DataHoraFalsa } = require('./datahora');
@@ -81,7 +82,13 @@ function arquivoVendor(rel) {
   return null;
 }
 
+// O modo portátil: uma pasta "Retro Computer (dados)" ao lado do programa guarda tudo (portatil.js).
+const PORTATIL = process.env.RETRO_DADOS ? null : pastaPortatil({ env: process.env, exe: app.getPath('exe'), plataforma: process.platform });
 if (process.env.RETRO_DADOS) app.setPath('userData', path.resolve(process.env.RETRO_DADOS));
+else if (PORTATIL) {
+  fs.mkdirSync(caminhosPortateis(PORTATIL).dados, { recursive: true });
+  app.setPath('userData', caminhosPortateis(PORTATIL).dados);
+}
 
 // O idioma escolhido vale também para os programas (o WordCraft segue o do navegador).
 // No "automático", o Chromium usa o idioma do sistema.
@@ -157,6 +164,8 @@ function nomesDasPastas(raiz) {
 
 async function abrirDisco() {
   let raiz = config.obter().disco;
+  // No modo portátil, o disco é sempre o da pasta (o caminho do pendrive muda de um computador para outro).
+  if (PORTATIL) raiz = caminhosPortateis(PORTATIL).disco;
   if (!raiz) {
     raiz = process.env.RETRO_DISCO || path.join(app.getPath('documents'), 'Retro Computer');
     config.definir({ disco: raiz });
@@ -685,6 +694,7 @@ function registrarPonte() {
     ...semSegredos(config.obter()),
     plataforma: process.platform,
     modoSistema: MODO_SISTEMA,
+    portatil: PORTATIL,
     versaoApp: app.getVersion(),
     temChave: config.temChave(),
     cofre: config.cofreDisponivel(),
@@ -834,6 +844,7 @@ function registrarPonte() {
     return disco.importar(r.filePaths, destino);
   });
   tratar('disco:trocar', async () => {
+    if (PORTATIL) throw new Error(tr('No modo portátil, o disco C: é sempre a pasta "Disco C" ao lado do programa.'));
     const r = await dialog.showOpenDialog(janela, {
       title: tr('Escolha a pasta do disco C:'),
       properties: ['openDirectory', 'createDirectory'],

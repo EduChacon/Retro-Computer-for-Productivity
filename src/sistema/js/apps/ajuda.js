@@ -50,6 +50,7 @@ const TOPICOS = [
     'pt-BR': ['O disco C: e os arquivos', `
 <h2>Onde ficam os arquivos</h2>
 <p>O disco C: é uma pasta do computador principal (veja qual em Painel de controle › Disco C:). Tudo o que você salva fica nela e pode ser aberto também fora do Retro Computer.</p>
+<p><b>No pendrive</b>: com uma pasta chamada <b>Retro Computer (dados)</b> ao lado do programa (o do .zip do Windows, o AppImage do Linux ou o aplicativo do Mac), as configurações, os programas e o disco C: ficam nela, e o pendrive leva tudo de um computador para outro.</p>
 <h2>O Explorador</h2>
 <p><b>Meu computador</b> mostra o disco C:, os pendrives e a Lixeira. <b>Exibir › Barra de pastas</b> (ou o botão <b>Pastas</b>) mostra as pastas à esquerda. Cada nome do endereço, no alto, leva àquela pasta; para digitar um endereço, clique no espaço vazio ao lado (ou Alt+D). <b>Exibir › Miniaturas</b> mostra as fotos encolhidas.</p>
 <h2>Painel de visualização</h2>
@@ -70,6 +71,7 @@ const TOPICOS = [
     en: ['Drive C: and your files', `
 <h2>Where the files are</h2>
 <p>Drive C: is a folder on the main computer (see which one in Control Panel › Drive C:). Everything you save stays there and can also be opened outside Retro Computer.</p>
+<p><b>On a USB drive</b>: with a folder named <b>Retro Computer (dados)</b> next to the program (the one from the Windows .zip, the Linux AppImage or the Mac app), the settings, the programs and drive C: stay in it, and the USB drive takes everything from one computer to another.</p>
 <h2>The Explorer</h2>
 <p><b>Computer</b> shows drive C:, the USB drives and the Trash. <b>View › Folders Bar</b> (or the <b>Folders</b> button) shows the folders on the left. Each name in the address at the top leads to that folder; to type an address, click the empty space next to it (or Alt+D). <b>View › Thumbnails</b> shows the pictures in small size.</p>
 <h2>Preview pane</h2>
@@ -90,6 +92,7 @@ const TOPICOS = [
     es: ['El disco C: y los archivos', `
 <h2>Dónde están los archivos</h2>
 <p>El disco C: es una carpeta de la computadora principal (mira cuál en Panel de control › Disco C:). Todo lo que guardas queda en ella y también se puede abrir fuera de Retro Computer.</p>
+<p><b>En una memoria USB</b>: con una carpeta llamada <b>Retro Computer (dados)</b> junto al programa (el del .zip de Windows, el AppImage de Linux o la aplicación de Mac), la configuración, los programas y el disco C: quedan en ella, y la memoria lleva todo de una computadora a otra.</p>
 <h2>El Explorador</h2>
 <p><b>Mi computadora</b> muestra el disco C:, las memorias USB y la Papelera. <b>Ver › Panel de carpetas</b> (o el botón <b>Carpetas</b>) muestra las carpetas a la izquierda. Cada nombre de la dirección, arriba, lleva a esa carpeta; para escribir una dirección, haz clic en el espacio vacío de al lado (o Alt+D). <b>Ver › Miniaturas</b> muestra las fotos en pequeño.</p>
 <h2>Panel de vista previa</h2>

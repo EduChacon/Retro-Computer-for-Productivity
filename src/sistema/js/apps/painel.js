@@ -808,7 +808,9 @@ async function dialogoDisco() {
     caminho,
     h('div', { style: { display: 'flex', gap: '6px', marginBottom: '10px' } },
       h('button', { on: { click: () => retro.disco.mostrar('') } }, tr('Mostrar a pasta')),
-      h('button', { on: { click: trocar } }, tr('Trocar a pasta…'))),
+      estado.config.portatil ? null : h('button', { on: { click: trocar } }, tr('Trocar a pasta…'))),
+    // No modo portátil, o disco vai junto com o programa (num pendrive, por exemplo).
+    estado.config.portatil ? h('div', { style: { color: '#404040', lineHeight: '13px', marginBottom: '10px' } }, tr('Modo portátil: as configurações, os programas e o disco C: ficam na pasta "Retro Computer (dados)", ao lado do programa.')) : null,
     h('hr.sulco'),
     h('div', { style: { display: 'grid', gridTemplateColumns: '14px 100px 1fr', gap: '4px 6px', alignItems: 'center' } },
       h('div', { style: { width: '12px', height: '12px', background: '#0000ff', boxShadow: 'inset 0 0 0 1px #000' } }), tr('Espaço usado:'), tamanho(usado),

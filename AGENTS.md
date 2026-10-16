@@ -56,6 +56,7 @@ src/principal/         o processo principal (Node)
   energia.js           as opções de energia do modo sistema (xset, o tempo parado, a tampa pelo logind)
   datahora.js          a data, a hora e o fuso do modo sistema (timedatectl)
   acessibilidade.js    as teclas de aderência e as do mouse do modo sistema (xkbset)
+  portatil.js          o modo portátil: a pasta "Retro Computer (dados)" ao lado do programa
   transferencia.js     o histórico da área de transferência (só na memória)
   firewall.js          o firewall do Linux (ufw)
   https.js             só conexões seguras no Navegador (http:// vira https://)

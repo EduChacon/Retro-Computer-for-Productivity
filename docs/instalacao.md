@@ -12,13 +12,14 @@ Um guia curto para cada tipo de computador. Os instaladores ficam na página de 
 | Qualquer Mac, para experimentar sem mexer no sistema | Uma máquina virtual no UTM, com o Linux e o `.deb` |
 | Notebook antigo ou mini PC | O Linux Mint e o `.deb`, com a sessão "Retro Computer" |
 | Raspberry Pi 4 ou 5 | O Raspberry Pi OS de 64 bits e o `arm64.deb` |
+| Levar no bolso, de um computador para outro | O modo portátil num pendrive, ou o Linux Mint inteiro num pendrive ou SSD externo (seção 8) |
 
 O Retro Computer pede um sistema de 64 bits e uns 4 GB de memória para tudo ir bem (o Claude Code pede 4 GB; a área de trabalho sozinha vai com menos).
 
 ## 1. Windows
 
 1. Baixe o `Retro-Computer-…-win-x64.exe` e abra.
-2. Na primeira vez, o Windows mostra o aviso do SmartScreen (o instalador ainda não é assinado; veja a seção 8): clique em **Mais informações** › **Executar assim mesmo**.
+2. Na primeira vez, o Windows mostra o aviso do SmartScreen (o instalador ainda não é assinado; veja a seção 9): clique em **Mais informações** › **Executar assim mesmo**.
 3. Escolha a pasta (ou deixe a sugerida) e termine. O Retro Computer fica no menu Iniciar.
 
 Quem prefere não instalar pode usar o `.zip`: é só extrair e abrir o `Retro Computer.exe`.
@@ -31,7 +32,7 @@ O item "Linux" do Explorador do Windows é o WSL (o Subsistema do Windows para L
 
 1. Baixe o `.dmg` do seu Mac: `x64` (Intel) ou `arm64` (chip Apple, do M1 em diante).
 2. Abra o `.dmg` e arraste o Retro Computer para a pasta Aplicativos.
-3. Na primeira vez, o macOS avisa que não pode verificar o desenvolvedor (seção 8): abra **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir Mesmo Assim** (até o macOS 14, também vale o botão direito no aplicativo › Abrir › Abrir).
+3. Na primeira vez, o macOS avisa que não pode verificar o desenvolvedor (seção 9): abra **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir Mesmo Assim** (até o macOS 14, também vale o botão direito no aplicativo › Abrir › Abrir).
 
 A tecla Command funciona como a tecla do logotipo do Windows nos atalhos do Retro Computer que não são do próprio macOS.
 
@@ -98,7 +99,31 @@ Com ela, o computador abre direto no Retro Computer, sem a área de trabalho do 
 
 Outros detalhes estão em [uso.md](uso.md), seção 7.
 
-## 8. Os avisos de segurança
+## 8. No pendrive
+
+Há dois jeitos de levar o Retro Computer de um computador para outro.
+
+### O modo portátil (o programa e os arquivos no pendrive)
+
+O programa roda no Windows, no Mac ou no Linux do computador da vez, e tudo o que é seu (as configurações, os programas instalados e o disco C:) fica no pendrive.
+
+1. Copie para o pendrive o programa sem instalador: no Windows, o `.zip` extraído (a pasta com o `Retro Computer.exe`); no Linux, o `.AppImage`; no Mac, o aplicativo de dentro do `.dmg`.
+2. Ao lado dele, crie uma pasta chamada exatamente **`Retro Computer (dados)`**.
+3. Abra o programa pelo pendrive. Com a pasta ao lado, ele entra no modo portátil: as configurações vão para `Retro Computer (dados)/Sistema` e o disco C:, para `Retro Computer (dados)/Disco C` (Painel de controle › Disco C: avisa). Nada fica no computador.
+
+Os programas Craft e os sites instalados como programas vão junto. A chave do Claude, não: ela é cifrada pelo cofre de cada computador e, num computador novo, é pedida de novo (ou use a sua conta do Claude). Use um pendrive rápido (USB 3) e tire-o só depois de fechar o Retro Computer.
+
+### O computador inteiro (o Linux Mint no pendrive)
+
+Para ligar qualquer PC já no Retro Computer como sistema, sem tocar no disco dele, o Linux Mint pode morar num pendrive ou, melhor, num **SSD externo** (bem mais rápido e mais durável que um pendrive comum):
+
+1. Grave o Linux Mint num primeiro pendrive (seção 3, passo 2) e ligue o computador por ele.
+2. Ligue também o pendrive ou o SSD de destino (32 GB ou mais) e, em **Instalar o Linux Mint**, escolha **Outra opção** no tipo de instalação: apague e use só o disco de destino (confira o tamanho e o nome, para não escolher o disco do computador) e, em "Dispositivo para a instalação do carregador de inicialização", escolha esse mesmo disco.
+3. Depois de instalar, ligue o computador pelo disco de destino (a tecla do menu de inicialização costuma ser F12, F11, F9 ou Esc; no Mac, Option), instale o `.deb` e escolha a sessão **Retro Computer** (seção 7).
+
+Um atalho é o [Ventoy](https://www.ventoy.net/) com a "persistência" (um arquivo no pendrive que guarda as mudanças do Linux de teste); ele é mais rápido de montar, mas a instalação completa do passo 2 é mais estável para o dia a dia.
+
+## 9. Os avisos de segurança
 
 Os instaladores ainda não são **assinados digitalmente**, e por isso o Windows e o macOS pedem uma confirmação na primeira vez (o caminho de cada um está nas seções 1 e 2). O Linux não pede.
 
@@ -111,7 +136,7 @@ A assinatura é um certificado comprado de quem o sistema confia:
 
 Enquanto isso, os instaladores vêm sempre da página oficial de lançamentos, compilados pelo GitHub Actions a partir do código deste repositório.
 
-## 9. Atualizar e remover
+## 10. Atualizar e remover
 
 - **Atualizar**: o Retro Computer procura uma versão nova uma vez por dia e avisa. Com o instalador do Windows e no Linux (o `.deb`, que pede a senha de administrador, e o `.AppImage`), ele baixa e instala pelo próprio aplicativo; no macOS e no `.zip` do Windows, o aviso leva à página do lançamento para baixar. Os seus arquivos e configurações ficam.
 - **Remover**: no Windows, em Configurações › Aplicativos; no macOS, arrastando o aplicativo para o Lixo; no Linux, `sudo apt remove retro-computer`. A pasta do disco C: (os seus arquivos) nunca é apagada.

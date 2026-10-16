@@ -28,7 +28,9 @@ Sem assinatura digital (ainda não há certificado da Apple nem da Microsoft), o
 - **macOS**: Ajustes do Sistema › Privacidade e Segurança › Abrir Mesmo Assim (até o macOS 14, também o botão direito no aplicativo › Abrir › Abrir).
 - **Windows**: na tela azul do SmartScreen, "Mais informações" › "Executar assim mesmo".
 
-O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.md), seção 8.
+O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.md), seção 9.
+
+**No pendrive**: com uma pasta `Retro Computer (dados)` ao lado do programa sem instalador (o `.zip` do Windows, o `.AppImage` do Linux ou o aplicativo do Mac), o Retro Computer entra no modo portátil: as configurações, os programas e o disco C: ficam nela, e nada fica no computador. O Linux Mint inteiro também pode ir num pendrive ou SSD externo; os dois caminhos estão em [instalacao.md](instalacao.md), seção 8.
 
 ## 2. O dia a dia
 
