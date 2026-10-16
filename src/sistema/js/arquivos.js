@@ -4,7 +4,7 @@
  * arrastar entre pastas e trazer ou levar arquivos do computador principal.
  */
 import { h, nomeDe, paiDe, juntar, caminhoTela, extensao } from './util.js';
-import { confirmar, erro, mensagem, propriedades } from './dialogos.js';
+import { confirmar, entrada, erro, mensagem, propriedades } from './dialogos.js';
 import { abrir, abrirArquivo, programasPara, avisar, pastaMesa } from './sistema.js';
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
@@ -162,6 +162,47 @@ export async function levar(rels, onde) {
 }
 
 /**
+ * "Pedir ao Claude": o Claude Code abre na pasta do arquivo (ou na própria pasta), já com o
+ * pedido. Antes, a versão de agora do arquivo é guardada (Versões anteriores…): o Claude grava
+ * direto no disco, e assim nada se perde.
+ */
+function pedidosAoClaude(um) {
+  const pedir = async (pedido) => {
+    if (!pedido) return;
+    if (!um.pasta) await retro.disco.guardarVersao(um.rel).catch(() => { });
+    abrir('claude', { pasta: um.pasta ? um.rel : paiDe(um.rel), pedido });
+  };
+  const arquivo = um.nome;
+  const outro = async () => {
+    const texto = await entrada({
+      titulo: tr('Pedir ao Claude'), icone: 'claude', larg: 420,
+      texto: um.pasta ? tr('O que o Claude deve fazer na pasta "{pasta}"?', { pasta: arquivo }) : tr('O que o Claude deve fazer com o arquivo "{arquivo}"?', { arquivo }),
+    });
+    if (texto && texto.trim()) pedir(um.pasta ? texto.trim() : tr('Sobre o arquivo "{arquivo}": {pedido}', { arquivo, pedido: texto.trim() }));
+  };
+  if (um.pasta) {
+    return [
+      { rotulo: tr('Or&ganizar a pasta'), acao: () => pedir(tr('Organize os arquivos desta pasta em subpastas, por assunto ou por tipo. Antes de mover qualquer coisa, mostre o plano e espere a minha confirmação. Não apague nada.')) },
+      { rotulo: tr('&Outro pedido…'), acao: outro },
+    ];
+  }
+  const traduzir = (idioma) => pedir(tr('Traduza o arquivo "{arquivo}" para o {idioma}. Grave a tradução num arquivo novo, ao lado do original, sem mudar o original.', { arquivo, idioma }));
+  return [
+    { rotulo: tr('&Revisar o texto'), acao: () => pedir(tr('Revise a ortografia, a gramática e a clareza do arquivo "{arquivo}". Antes de mudar qualquer coisa, mostre o que vai mudar e espere a minha confirmação.', { arquivo })) },
+    { rotulo: tr('Re&sumir'), acao: () => pedir(tr('Leia o arquivo "{arquivo}" e faça um resumo curto, com os pontos principais. Não mude o arquivo.', { arquivo })) },
+    {
+      rotulo: tr('&Traduzir'), sub: () => [
+        { rotulo: tr('Para o &português'), acao: () => traduzir(tr('português')) },
+        { rotulo: tr('Para o &inglês'), acao: () => traduzir(tr('inglês')) },
+        { rotulo: tr('Para o &espanhol'), acao: () => traduzir(tr('espanhol')) },
+      ],
+    },
+    { separador: true },
+    { rotulo: tr('&Outro pedido…'), acao: outro },
+  ];
+}
+
+/**
  * O menu do botão direito para arquivos e pastas selecionados.
  * @param {Array<{rel:string, nome:string, pasta:boolean}>} sel
  * @param {{ aoRenomear?: Function, abrirPasta?: Function }} o
@@ -175,6 +216,7 @@ export function menuDeItens(sel, o = {}) {
     itens.push({ rotulo: tr('Expl&orar'), acao: () => abrir('explorador', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Abrir o &Prompt de comando aqui'), acao: () => abrir('prompt', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Abrir o C&laude aqui'), icone: 'claude', acao: () => abrir('claude', { pasta: um.rel }) });
+    itens.push({ rotulo: tr('Pe&dir ao Claude'), sub: () => pedidosAoClaude(um) });
   } else if (um) {
     const progs = programasPara(um.nome);
     itens.push({ rotulo: tr('&Abrir'), negrito: true, acao: () => abrirArquivo(um.rel) });
@@ -186,6 +228,7 @@ export function menuDeItens(sel, o = {}) {
       ],
     });
     if (ehCompactado(um.nome)) itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(um.rel) });
+    itens.push({ rotulo: tr('Pe&dir ao Claude'), icone: 'claude', sub: () => pedidosAoClaude(um) });
   }
   if (sel.length) {
     itens.push({ separador: true });

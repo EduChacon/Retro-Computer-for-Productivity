@@ -17,7 +17,7 @@ const path = require('node:path');
 const { Disco } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
-const { Terminais, acharClaude, comandoInstalarClaude } = require('./terminal');
+const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude } = require('./terminal');
 const { Aplicativos } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
@@ -656,6 +656,8 @@ function registrarPonte() {
   tratar('disco:copiar', (rel, destino) => disco.copiar(rel, destino));
   tratar('disco:importar', (caminhos, destino) => disco.importar(caminhos, destino));
   tratar('disco:paraLixeira', (rel) => disco.paraLixeira(rel));
+  // A versão de agora de um arquivo, antes de outro programa (o Claude Code) gravar nele.
+  tratar('disco:guardarVersao', async (rel) => { const n = disco.normalizar(rel); if ((await disco.info(n)).pasta) return false; await disco.guardarVersao(n); return true; });
   tratar('disco:lixeira', () => disco.listarLixeira());
   tratar('disco:restaurar', (id) => disco.restaurar(id));
   tratar('disco:apagarDaLixeira', (id) => disco.apagarDaLixeira(id));
@@ -759,7 +761,13 @@ function registrarPonte() {
     const chave = config.lerChave();
     if (chave && o.comChave !== false) env.ANTHROPIC_API_KEY = chave;
     const cwd = o.pasta != null ? disco.real(o.pasta) : disco.raiz;
-    return terminais.criar({ cols: o.cols, rows: o.rows, cwd, comando: o.comando, env });
+    let comando = o.comando;
+    if (o.claude) {
+      const pedido = typeof o.claude.pedido === 'string' ? o.claude.pedido.slice(0, 4000) : '';
+      if (pedido) env.RETRO_PEDIDO = pedido;
+      comando = comandoClaude({ pedido: !!pedido });
+    }
+    return terminais.criar({ cols: o.cols, rows: o.rows, cwd, comando, env });
   });
   tratar('terminal:escrever', (id, dados) => terminais.escrever(id, dados));
   tratar('terminal:redimensionar', (id, c, l) => terminais.redimensionar(id, c, l));

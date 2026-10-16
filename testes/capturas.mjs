@@ -410,8 +410,28 @@ const ROTEIROS = {
     await pagina.waitForTimeout(2500);
     await foto('claude-maximizado');
   },
+  async pedirClaude() {
+    // O "Pedir ao Claude" do botão direito (com RETRO_CLAUDE_FALSO: um script que mostra o
+    // pedido recebido). O nome com aspas e $ mostra que o pedido chega inteiro, sem passar pelo shell.
+    const nome = 'Contrato "final" $1.txt';
+    fs.writeFileSync(path.join(disco, DOCS, nome), 'O contrato tem tres clausulas.\n');
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.click(`.janela.ativa .item:has-text("Contrato")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('Pe&dir ao Claude')}")`);
+    await pagina.waitForTimeout(500);
+    await pagina.hover(`.menu .opcao:has-text("${T('&Traduzir')}")`);
+    await pagina.waitForTimeout(500);
+    await foto('pedir-claude-menu');
+    await pagina.click(`.menu .opcao:has-text("${T('Re&sumir')}")`);
+    await pagina.waitForTimeout(3500);
+    await foto('pedir-claude-prompt');
+    console.log('versões guardadas:', JSON.stringify(await pagina.evaluate((r) => retro.disco.versoes(r), `${DOCS}/${nome}`)));
+  },
   async lixo() {
-    const src = () => pagina.evaluate(() => [...document.querySelectorAll('#mesa .item')].find((e) => e.textContent.includes(T('Lixeira'))).querySelector('img').getAttribute('src'));
+    const src =() => pagina.evaluate(() => [...document.querySelectorAll('#mesa .item')].find((e) => e.textContent.includes(T('Lixeira'))).querySelector('img').getAttribute('src'));
     console.log('antes:', await src());
     await pagina.evaluate(async (docs) => {
       await retro.disco.gravar(`${docs}/apagar.txt`, new TextEncoder().encode('x'));

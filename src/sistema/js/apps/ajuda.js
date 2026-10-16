@@ -271,6 +271,7 @@ const TOPICOS = [
 <p>O Claude Code é o assistente da Anthropic que trabalha nos seus arquivos pelo terminal: escreve, revisa, organiza pastas, programa e responde perguntas.</p>
 <h2>Como usar</h2>
 <p>Clique duas vezes no ícone <b>Claude</b>. Ele abre no Prompt de comando, na pasta Meus documentos. Para outra pasta, use o botão direito nela › <b>Abrir o Claude aqui</b>.</p>
+<p>O botão direito num arquivo › <b>Pedir ao Claude</b> abre o Claude já com o pedido: revisar o texto, resumir, traduzir ou outro pedido escrito na hora (numa pasta: organizá-la). Antes, o Retro Computer guarda a versão de agora do arquivo, em <b>Versões anteriores…</b>.</p>
 <h2>Instalação e acesso</h2>
 <p>Na primeira vez, o Retro Computer oferece instalar o Claude Code com o instalador oficial. Para entrar, use a conta da sua assinatura do Claude (o Claude Code pede) ou guarde uma chave de API em Painel de controle › Claude.</p>
 <p>A chave é cifrada pelo cofre de senhas do sistema e só é entregue ao Prompt de comando.</p>`],
@@ -279,6 +280,7 @@ const TOPICOS = [
 <p>Claude Code is Anthropic's assistant that works on your files from the terminal: it writes, reviews, organizes folders, programs and answers questions.</p>
 <h2>How to use it</h2>
 <p>Double-click the <b>Claude</b> icon. It opens in the Command Prompt, in the Documents folder. For another folder, right-click it › <b>Open Claude here</b>.</p>
+<p>Right-clicking a file › <b>Ask Claude</b> opens Claude with the request already made: review the text, summarize, translate or another request typed on the spot (on a folder: organize it). First, Retro Computer keeps the current version of the file, in <b>Previous versions…</b>.</p>
 <h2>Installation and access</h2>
 <p>The first time, Retro Computer offers to install Claude Code with the official installer. To sign in, use your Claude subscription account (Claude Code asks for it) or store an API key in Control Panel › Claude.</p>
 <p>The key is encrypted by the system's password vault and is only handed to the Command Prompt.</p>`],
@@ -287,6 +289,7 @@ const TOPICOS = [
 <p>Claude Code es el asistente de Anthropic que trabaja en tus archivos desde la terminal: escribe, revisa, organiza carpetas, programa y responde preguntas.</p>
 <h2>Cómo usarlo</h2>
 <p>Haz doble clic en el icono <b>Claude</b>. Se abre en la Línea de comandos, en la carpeta Mis documentos. Para otra carpeta, clic derecho en ella › <b>Abrir Claude aquí</b>.</p>
+<p>El clic derecho en un archivo › <b>Pedir a Claude</b> abre Claude con el pedido ya hecho: revisar el texto, resumir, traducir u otro pedido escrito en el momento (en una carpeta: organizarla). Antes, Retro Computer guarda la versión actual del archivo, en <b>Versiones anteriores…</b>.</p>
 <h2>Instalación y acceso</h2>
 <p>La primera vez, Retro Computer ofrece instalar Claude Code con el instalador oficial. Para entrar, usa la cuenta de tu suscripción de Claude (Claude Code la pide) o guarda una clave de API en Panel de control › Claude.</p>
 <p>La clave se cifra con el almacén de contraseñas del sistema y solo se entrega a la Línea de comandos.</p>`],

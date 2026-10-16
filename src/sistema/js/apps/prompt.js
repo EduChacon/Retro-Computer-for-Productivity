@@ -29,9 +29,11 @@ function ouvirTerminais() {
 }
 
 class Prompt {
-  constructor({ pasta, comando, titulo, icone } = {}) {
+  constructor({ pasta, comando, claude, titulo, icone } = {}) {
     this.pasta = pasta != null ? pasta : '';
     this.comando = comando || null;
+    // O Claude Code: o processo principal monta o comando (e o pedido vai por uma variável, sem aspas a escapar).
+    this.claude = claude || null;
     this.tituloBase = titulo || tr('Prompt de comando');
     this.id = null;
     this.encerrado = false;
@@ -124,7 +126,7 @@ class Prompt {
     });
     new ResizeObserver(() => this.ajustar()).observe(this.areaTerm);
     try {
-      this.id = await retro.terminal.criar({ cols: this.term.cols, rows: this.term.rows, pasta: this.pasta, comando: this.comando });
+      this.id = await retro.terminal.criar({ cols: this.term.cols, rows: this.term.rows, pasta: this.pasta, comando: this.comando, claude: this.claude });
       terminais.set(this.id, this);
     } catch (e) {
       this.term.write(`\r\n${tr('Não foi possível abrir o terminal: {erro}', { erro: e.message })}\r\n`);
@@ -205,7 +207,7 @@ async function abrirClaude(args = {}) {
   const pasta = args.pasta != null ? args.pasta : pastaDocs();
   const caminho = await retro.terminal.acharClaude().catch(() => null);
   if (caminho) {
-    return new Prompt({ pasta, comando: 'claude', titulo: 'Claude', icone: 'claude' });
+    return new Prompt({ pasta, claude: { pedido: args.pedido || '' }, titulo: 'Claude', icone: 'claude' });
   }
   const comando = await retro.terminal.comandoInstalarClaude();
   const temChave = estado.config.temChave;

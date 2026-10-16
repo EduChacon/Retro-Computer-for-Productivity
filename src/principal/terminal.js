@@ -101,6 +101,8 @@ class Terminais {
 
 /** Procura o comando "claude" no PATH do shell de login. */
 function acharClaude() {
+  // Para as capturas: um "claude" de mentira, que só mostra o pedido recebido.
+  if (process.env.RETRO_CLAUDE_FALSO) return Promise.resolve(process.env.RETRO_CLAUDE_FALSO);
   return new Promise((resolve) => {
     const { arquivo } = shellPadrao();
     const pronto = (erro, saida) => {
@@ -115,8 +117,18 @@ function acharClaude() {
   });
 }
 
+/**
+ * O comando que abre o Claude Code. O pedido (do botão direito, "Pedir ao Claude") vai pela
+ * variável RETRO_PEDIDO: o texto nunca passa pelo shell, e nenhuma aspa precisa ser escapada.
+ */
+function comandoClaude({ pedido = false, plataforma = process.platform } = {}) {
+  const partes = [process.env.RETRO_CLAUDE_FALSO || 'claude'];
+  if (pedido) partes.push(plataforma === 'win32' ? '$env:RETRO_PEDIDO' : '"$RETRO_PEDIDO"');
+  return partes.join(' ');
+}
+
 function comandoInstalarClaude() {
   return process.platform === 'win32' ? INSTALAR_CLAUDE.win32 : INSTALAR_CLAUDE.outros;
 }
 
-module.exports = { Terminais, acharClaude, comandoInstalarClaude, shellPadrao };
+module.exports = { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, shellPadrao };

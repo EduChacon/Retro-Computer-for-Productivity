@@ -162,6 +162,7 @@ No Linux, "Adicionar ou remover programas" tem a aba "Programas do Linux": os ma
    - a conta da assinatura do Claude: o próprio Claude Code pede o acesso na primeira vez;
    - uma chave de API: Painel de controle › Claude › "Guardar". A chave é cifrada pelo cofre de senhas do sistema e só vai para o Prompt de comando, na variável `ANTHROPIC_API_KEY`.
 4. O Claude abre na pasta `Meus documentos`. Para outra pasta, use o botão direito nela › "Abrir o Claude aqui".
+5. O botão direito num arquivo › "Pedir ao Claude" abre o Claude já com o pedido: revisar o texto, resumir, traduzir (para o português, o inglês ou o espanhol) ou outro pedido escrito na hora; numa pasta, organizá-la. Antes, o Retro Computer guarda a versão de agora do arquivo (botão direito › "Versões anteriores…"), porque o Claude grava direto no disco. O pedido vai ao Claude por uma variável do terminal (`RETRO_PEDIDO`), sem passar pelo shell.
 
 Exemplos de uso: "organize os arquivos desta pasta por assunto", "revise o texto de `relatorio.md`", "transforme estas anotações num roteiro".
 
@@ -249,8 +250,6 @@ b) **Várias telas**: a área de trabalho estendida por dois ou mais monitores, 
 c) **Papel de parede, esquemas de cores e cursores**: imagens de fundo, esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS.
 
 d) **Navegador focado**: uma janela de navegador com uma lista de "sites" permitidos (por exemplo, o portal do tribunal, a pesquisa de jurisprudência e o e-mail), sem abas infinitas.
-
-f) **Atalhos do Claude no menu do arquivo**: botão direito num documento › "Pedir ao Claude…" (revisar, resumir, traduzir), abrindo o Claude Code já com o pedido.
 
 g) **Diário de trabalho**: um registro automático do que foi feito no dia (arquivos editados, focos concluídos), num `.txt` do disco.
 

@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('retro', {
     copiar: (rel, destino) => chamar('disco:copiar', rel, destino),
     importar: (caminhos, destino) => chamar('disco:importar', caminhos, destino),
     paraLixeira: (rel) => chamar('disco:paraLixeira', rel),
+    guardarVersao: (rel) => chamar('disco:guardarVersao', rel),
     lixeira: () => chamar('disco:lixeira'),
     restaurar: (id) => chamar('disco:restaurar', id),
     apagarDaLixeira: (id) => chamar('disco:apagarDaLixeira', id),
