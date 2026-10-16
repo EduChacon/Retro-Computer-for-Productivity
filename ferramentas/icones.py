@@ -463,6 +463,43 @@ def muro(tam):
     return [''.join(l) for l in linhas]
 
 
+def escudo(tam):
+    """O escudo da Central de segurança (desenho próprio): azul, com a metade da direita mais
+    escura, o brilho na borda de cima à esquerda e o contorno preto; o fundo reto e a ponta embaixo."""
+    import math
+    m = tam / 32
+    x0, x1 = 5 * m, 27 * m      # as bordas dos lados
+    y0, yr, y1 = 2 * m, 15 * m, 30 * m  # o alto, onde começa a curva e a ponta
+    cx = tam / 2
+
+    def dentro(x, y):
+        x += 0.5
+        y += 0.5
+        if y < y0 or y > y1 or x < x0 or x > x1:
+            return False
+        if y <= yr:
+            return True
+        # Abaixo de yr, os lados descem em curva até a ponta.
+        f = (y - yr) / (y1 - yr)
+        meia = (x1 - x0) / 2 * math.cos(f * math.pi / 2) ** 0.8
+        return abs(x - cx) <= meia
+
+    linhas = [['.'] * tam for _ in range(tam)]
+    for y in range(tam):
+        for x in range(tam):
+            if not dentro(x, y):
+                continue
+            borda = not all(dentro(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            if borda:
+                linhas[y][x] = 'K'
+            elif x + 0.5 < cx:
+                brilho = (y < y0 + 2 * m) or (x < x0 + 2 * m)
+                linhas[y][x] = 'c' if brilho else 'b'
+            else:
+                linhas[y][x] = 'B'
+    return [''.join(l) for l in linhas]
+
+
 def grade(linhas):
     a = len(linhas)
     w = max(len(x) for x in linhas)
@@ -840,6 +877,9 @@ def gerar(serenity):
     feitos[32]['firewall'] = colar(colar(Image.new('RGBA', (32, 32), (0, 0, 0, 0)), globo16, 8, 2), grade(muro(32)), 0, 0)
     feitos[16]['firewall'] = colar(colar(Image.new('RGBA', (16, 16), (0, 0, 0, 0)), globo16.resize((10, 10), Image.NEAREST), 3, 1), grade(muro(16)), 0, 0)
     feitos[16]['transferencia'] = abrir_serenity(serenity, 16, 'paste')
+    # A Central de segurança: o escudo com o cadeado da bandeja (desenhos próprios).
+    feitos[32]['seguranca'] = colar(grade(escudo(32)), grade(CADEADO_16), 8, 7)
+    feitos[16]['seguranca'] = grade(escudo(16))
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)

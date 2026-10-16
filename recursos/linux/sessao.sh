@@ -35,6 +35,13 @@ if command -v xset >/dev/null 2>&1; then
   xset +dpms dpms 0 0 900 2>/dev/null
 fi
 
+# O chaveiro do Linux (GNOME Keyring), que a tela de entrada já abriu com a senha: guarda os
+# cookies do Navegador, a chave do Claude e as senhas dos outros programas cifrados.
+if command -v gnome-keyring-daemon >/dev/null 2>&1; then
+  eval "$(gnome-keyring-daemon --start --components=secrets,pkcs11 2>/dev/null)" || true
+  export GNOME_KEYRING_CONTROL
+fi
+
 # O pedido da senha de administrador dos outros programas (o Flatpak do sistema, por exemplo).
 for agente in lxpolkit /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 \
   /usr/libexec/polkit-gnome-authentication-agent-1 /usr/libexec/polkit-mate-authentication-agent-1 \

@@ -86,3 +86,32 @@ test('servir: os trechos pedidos pelo vídeo', async () => {
   assert.strictEqual((await servirArquivo(arq, 'bytes=20-')).status, 416);
   assert.strictEqual((await servirArquivo(path.join(p, 'nao-existe.mp4'), null)).status, 404);
 });
+
+test('compactados: o .tar não deixa atalhos que levam para fora da pasta', { skip: process.platform === 'win32' }, async () => {
+  const p = pasta();
+  const fonte = path.join(p, 'fonte');
+  fs.mkdirSync(path.join(fonte, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(fonte, 'docs', 'nota.txt'), 'oi');
+  fs.symlinkSync('/etc/passwd', path.join(fonte, 'senhas'));
+  fs.symlinkSync('docs/nota.txt', path.join(fonte, 'atalho-bom'));
+  const tar = path.join(p, 'pacote.tar');
+  require('node:child_process').execFileSync('tar', ['-cf', tar, '-C', fonte, '.']);
+  const destino = path.join(p, 'saida');
+  fs.mkdirSync(destino);
+  assert.strictEqual(await c.extrairTar(tar, destino), 1);
+  assert.ok(!fs.existsSync(path.join(destino, 'senhas')) && !fs.lstatSync(path.join(destino, 'docs')).isSymbolicLink());
+  assert.strictEqual(fs.readFileSync(path.join(destino, 'atalho-bom'), 'utf8'), 'oi');
+});
+
+test('programas: o pacote grande demais não é extraído', async () => {
+  const { extrairZip } = require('../src/principal/programas.js');
+  const p = pasta();
+  fs.writeFileSync(path.join(p, 'a.txt'), 'x'.repeat(4000));
+  const zip = path.join(p, 'pacote.zip');
+  await c.compactar([{ abs: path.join(p, 'a.txt'), nome: 'a.txt' }], zip);
+  const destino = path.join(p, 'saida');
+  fs.mkdirSync(destino);
+  await assert.rejects(extrairZip(zip, destino, { max: 1000 }), /grande demais|too big/);
+  await extrairZip(zip, destino);
+  assert.strictEqual(fs.readFileSync(path.join(destino, 'a.txt'), 'utf8').length, 4000);
+});

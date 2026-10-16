@@ -36,6 +36,7 @@ const { acaoDaTecla, trazORetro, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atal
 const { Tela, TelaFalsa } = require('./tela');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
+const { paraHttps, Subidos } = require('./https');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -71,6 +72,12 @@ if (idioma.CODIGOS.includes(idiomaEscolhido)) app.commandLine.appendSwitch('lang
 app.commandLine.appendSwitch('enable-unsafe-swiftshader');
 // Para os testes: câmera e microfone de mentira (o Chromium os gera).
 if (process.env.RETRO_MIDIA_FALSA) app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+// No modo sistema, o Chromium não reconhece a sessão "Retro Computer" e guardaria os cookies do
+// Navegador e a chave do Claude só embaralhados (o "basic_text"): com o GNOME Keyring instalado
+// (o Ubuntu e o Linux Mint o trazem), o chaveiro do Linux, aberto pela senha de entrada, guarda a chave.
+if (MODO_SISTEMA && !app.commandLine.hasSwitch('password-store') && fs.existsSync('/usr/bin/gnome-keyring-daemon')) {
+  app.commandLine.appendSwitch('password-store', 'gnome-libsecret');
+}
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'sistema', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
@@ -333,6 +340,17 @@ function receberDownloads(s) {
  */
 // As respostas às permissões dadas sem "lembrar": valem até o Retro Computer fechar.
 let destaVez = {};
+// Só conexões seguras (https.js): os endereços trocados para https, os sites que o usuário
+// escolheu abrir sem segurança (até fechar) e os que mandam de volta para o http.
+const subidos = new Subidos();
+const liberadosHttp = new Set();
+const recusadosHttp = new Set();
+
+/** Apaga os cookies, os dados dos sites e os arquivos temporários do Navegador. */
+function limparNavegador() {
+  const s = session.fromPartition(SESSAO_NAVEGADOR);
+  return s.clearStorageData().then(() => s.clearCache());
+}
 
 function configurarNavegador() {
   const s = session.fromPartition(SESSAO_NAVEGADOR);
@@ -388,6 +406,21 @@ function configurarNavegador() {
     }
   });
   receberDownloads(s);
+  // Só conexões seguras (Painel › Segurança, ligado por padrão): o http:// das páginas vira https://.
+  s.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (d, cb) => {
+    if (d.resourceType !== 'mainFrame' || (config.obter().navegador || {}).soHttps === false) return cb({});
+    const seguro = paraHttps(d.url, liberadosHttp);
+    if (!seguro) return cb({});
+    // A versão segura mandou de volta para o http: o site não tem HTTPS de verdade. A carga é
+    // cancelada (sem o did-fail-load), e a janela do Navegador daquela página mostra o aviso.
+    if (subidos.voltou(d.url)) {
+      recusadosHttp.add(d.url);
+      enviar('navegador:semSeguranca', { id: d.webContentsId, url: d.url });
+      return cb({ cancel: true });
+    }
+    subidos.guardar(seguro, d.url);
+    cb({ redirectURL: seguro });
+  });
   // As páginas do Navegador (os webview e as janelinhas de login que eles abrem) seguem as mesmas regras.
   app.on('web-contents-created', (_e, wc) => {
     if (wc.session !== s) return;
@@ -551,9 +584,20 @@ function configurarSessao() {
 
 /* ---------- Ponte com a área de trabalho ---------- */
 
+/**
+ * Só a própria área de trabalho chama o processo principal: a janela do Retro Computer e, nela,
+ * o quadro principal em sistema://retro (os programas Craft rodam em quadros dentro dela e falam
+ * só por mensagens; as páginas do Navegador ficam noutro webContents).
+ */
+function deQuemPode(e) {
+  if (!janela || janela.isDestroyed() || e.sender !== janela.webContents) return false;
+  const q = e.senderFrame;
+  return !!q && !q.parent && /^sistema:\/\/retro\//.test(q.url || '');
+}
+
 function tratar(canal, fn) {
   ipcMain.handle(canal, async (e, ...args) => {
-    if (!janela || e.sender !== janela.webContents) throw new Error('origem');
+    if (!deQuemPode(e)) throw new Error('origem');
     try {
       return { ok: true, valor: await fn(...args) };
     } catch (erro) {
@@ -774,7 +818,29 @@ function registrarPonte() {
   // Navegador (só http e https, até 1 MB). A área de trabalho escolhe e converte o ícone.
   tratar('navegador:baixarIcone', (url) => baixarDoSite(url, 1 << 20, 'binario'));
   tratar('navegador:manifesto', (url) => baixarDoSite(url, 256 << 10, 'json'));
-  tratar('navegador:limparDados', () => session.fromPartition(SESSAO_NAVEGADOR).clearStorageData().then(() => session.fromPartition(SESSAO_NAVEGADOR).clearCache()));
+  tratar('navegador:limparDados', () => limparNavegador());
+  // A página que não abriu era a versão segura de um http:// (ou um http:// recusado)? Devolve o endereço sem segurança.
+  tratar('navegador:semSeguranca', (url) => {
+    const u = String(url || '');
+    return subidos.deOnde(u) || (recusadosHttp.has(u) ? u : null);
+  });
+  // O usuário escolheu abrir o site sem segurança: até fechar o Retro Computer, aquele site fica como é.
+  tratar('navegador:abrirSemSeguranca', (url) => {
+    try {
+      const u = new URL(String(url));
+      if (u.protocol !== 'http:') return false;
+      liberadosHttp.add(u.host.toLowerCase());
+      recusadosHttp.delete(u.toString());
+      return true;
+    } catch { return false; }
+  });
+  // A Central de segurança: como a chave do Claude está guardada (o cofre do sistema).
+  tratar('seguranca:estado', () => ({
+    temChave: config.temChave(),
+    cofre: config.cofreDisponivel(),
+    // No Linux, sem um chaveiro (o GNOME Keyring ou a carteira do KDE), o "cofre" é só um texto embaralhado.
+    chaveiro: process.platform === 'linux' ? (() => { try { return safeStorage.getSelectedStorageBackend(); } catch { return 'unknown'; } })() : null,
+  }));
   tratar('sistema:telaCheia', (v) => {
     if (MODO_SISTEMA) return true;
     if (v == null) alternarTelaCheia();
@@ -984,6 +1050,8 @@ app.whenReady().then(async () => {
   menuDoSistema();
   configurarSessao();
   configurarNavegador();
+  // Se o computador desligou antes de terminar a limpeza do fechamento, ela é feita agora.
+  if ((config.obter().navegador || {}).limparAoFechar) await limparNavegador().catch(() => { });
   registrarProtocolos();
   registrarPonte();
   atalhosDoWindows();
@@ -997,6 +1065,15 @@ app.whenReady().then(async () => {
   if (MODO_SISTEMA && t && t.modo) await tela.definir(t.saida, t.modo).catch(() => { });
   criarJanela();
   if (janelasLinux) janela.webContents.once('did-finish-load', () => janelasLinux.vigiar());
+});
+
+// "Apagar os dados de navegação ao fechar" (Painel › Segurança): antes de sair, com um prazo.
+let limpouAoSair = false;
+app.on('will-quit', (e) => {
+  if (limpouAoSair || !config || !(config.obter().navegador || {}).limparAoFechar) return;
+  e.preventDefault();
+  limpouAoSair = true;
+  Promise.race([limparNavegador(), new Promise((ok) => setTimeout(ok, 4000))]).catch(() => { }).finally(() => app.quit());
 });
 
 app.on('window-all-closed', () => {

@@ -13,6 +13,7 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const yauzl = require('yauzl');
 const yazl = require('yazl');
+const { tr } = require('./idioma');
 
 const TAR = /\.(tar|tar\.gz|tgz|tar\.xz|txz|tar\.bz2|tbz2?)$/i;
 const ehZip = (nome) => /\.zip$/i.test(nome);
@@ -25,6 +26,48 @@ function nomeSeguro(nome) {
   const partes = String(nome).replace(/\\/g, '/').split('/').filter((p) => p && p !== '.');
   if (!partes.length || partes.some((p) => p === '..') || /^[a-z]:$/i.test(partes[0])) return null;
   return partes.join('/');
+}
+
+// Contra as "bombas" de compactação (um .zip pequeno que vira gigabytes): a soma do que vai ser
+// gravado não passa do espaço livre (menos uma folga), nem as entradas de um número razoável.
+const FOLGA = 256 * 1024 * 1024;
+const ENTRADAS_MAX = 200000;
+
+async function espacoLivre(pasta) {
+  try {
+    const s = await fsp.statfs(pasta);
+    return s.bavail * s.bsize;
+  } catch {
+    return Infinity;
+  }
+}
+
+function grandeDemais() {
+  const e = new Error(tr('A pasta compactada é grande demais para o espaço livre do disco.'));
+  e.codigo = 'grande';
+  return e;
+}
+
+/**
+ * Depois de extrair um .tar: os atalhos (links simbólicos) que apontam para fora da pasta saem
+ * (o disco C: nunca leva a um lugar fora dele). Devolve quantos saíram.
+ */
+async function tirarLinksDeFora(raiz) {
+  let tirados = 0;
+  const base = path.resolve(raiz);
+  const andar = async (pasta) => {
+    for (const d of await fsp.readdir(pasta, { withFileTypes: true })) {
+      const abs = path.join(pasta, d.name);
+      if (d.isSymbolicLink()) {
+        const alvo = path.resolve(pasta, await fsp.readlink(abs));
+        if (alvo !== base && !alvo.startsWith(base + path.sep)) { await fsp.unlink(abs); tirados++; }
+      } else if (d.isDirectory()) {
+        await andar(abs);
+      }
+    }
+  };
+  await andar(base);
+  return tirados;
 }
 
 function abrirZip(arquivo) {
@@ -73,14 +116,21 @@ async function extrairZip(arquivo, destino, { apenas = null } = {}) {
   const entra = (nome) => !quer || quer.some((q) => nome === q || nome.startsWith(q + '/'));
   const zip = await abrirZip(arquivo);
   const feitos = [];
+  // O tamanho declarado de cada entrada é conferido pelo yauzl na leitura (validateEntrySizes).
+  const limite = (await espacoLivre(raiz)) - FOLGA;
+  let soma = 0;
+  let entradas = 0;
   try {
     await new Promise((resolve, reject) => {
       zip.on('error', reject);
       zip.on('end', resolve);
       const proxima = () => zip.readEntry();
       zip.on('entry', (e) => {
+        if (++entradas > ENTRADAS_MAX) return reject(grandeDemais());
         const nome = nomeSeguro(e.fileName);
         if (!nome || !entra(nome)) return proxima();
+        soma += e.uncompressedSize || 0;
+        if (soma > limite) return reject(grandeDemais());
         const alvo = path.resolve(raiz, ...nome.split('/'));
         if (!alvo.startsWith(raiz + path.sep)) return proxima();
         if (/\/$/.test(e.fileName)) {
@@ -112,9 +162,12 @@ async function extrairZip(arquivo, destino, { apenas = null } = {}) {
   return feitos;
 }
 
-/** Extrai um .tar (comprimido ou não) pelo "tar" do sistema. */
-function extrairTar(arquivo, destino) {
-  return new Promise((resolve, reject) => {
+/**
+ * Extrai um .tar (comprimido ou não) pelo "tar" do sistema. O GNU tar e o bsdtar já recusam os
+ * nomes com ".." e o caminho absoluto; os links que apontam para fora da pasta são tirados depois.
+ */
+async function extrairTar(arquivo, destino) {
+  await new Promise((resolve, reject) => {
     execFile('tar', ['-xf', arquivo, '-C', destino], { timeout: 30 * 60 * 1000, windowsHide: true }, (erro, _saida, serr) => {
       if (erro) {
         erro.message = String(serr || erro.message).trim().split('\n')[0];
@@ -123,6 +176,7 @@ function extrairTar(arquivo, destino) {
       resolve();
     });
   });
+  return tirarLinksDeFora(destino);
 }
 
 /** Todos os arquivos de uma pasta (com os caminhos relativos a "base"), as pastas vazias também. */
@@ -171,4 +225,4 @@ async function compactar(itens, destinoZip) {
   return lista.length;
 }
 
-module.exports = { listarZip, extrairZip, extrairTar, compactar, nomeSeguro, ehZip, ehTar, semExtensao };
+module.exports = { listarZip, extrairZip, extrairTar, compactar, nomeSeguro, ehZip, ehTar, semExtensao, tirarLinksDeFora, ENTRADAS_MAX };

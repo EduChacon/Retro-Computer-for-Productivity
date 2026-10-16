@@ -305,6 +305,14 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 .alt-icones { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 336px; }
 .alt-icone { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .alt-icone.sel { box-shadow: inset 0 0 0 2px var(--titulo); }
+/* A Central de segurança (Painel › Segurança): uma linha por proteção. */
+.seg-linha { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; margin-bottom: 6px; box-shadow: var(--raso-alto); }
+.seg-cabeca { display: flex; align-items: baseline; gap: 8px; }
+.seg-estado { font-weight: bold; }
+.seg-estado.bom { color: #006400; }
+.seg-estado.ruim { color: #a00000; }
+.seg-texto { margin-top: 2px; color: #404040; line-height: 13px; }
+
 /* A luz noturna fora do modo sistema: a cor multiplica a da tela inteira (menos azul), sem pegar os cliques. */
 #luz-noturna { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; mix-blend-mode: multiply; transition: background 1.5s; }
 

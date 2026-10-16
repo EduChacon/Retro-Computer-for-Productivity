@@ -77,6 +77,9 @@ contextBridge.exposeInMainWorld('retro', {
     limpar: () => chamar('transferencia:limpar'),
     aoMudar: ouvir('transferencia:mudou'),
   },
+  seguranca: {
+    estado: () => chamar('seguranca:estado'),
+  },
   firewall: {
     estado: () => chamar('firewall:estado'),
     definir: (ligar, senha) => chamar('firewall:definir', ligar, senha),
@@ -238,6 +241,9 @@ contextBridge.exposeInMainWorld('retro', {
   navegador: {
     aoJanela: ouvir('navegador:janela'),
     limparDados: () => chamar('navegador:limparDados'),
+    semSeguranca: (url) => chamar('navegador:semSeguranca', url),
+    abrirSemSeguranca: (url) => chamar('navegador:abrirSemSeguranca', url),
+    aoSemSeguranca: ouvir('navegador:semSeguranca'),
     aoPermissao: ouvir('navegador:permissao'),
     aoTela: ouvir('navegador:tela'),
     responder: (id, resposta) => chamar('navegador:responder', id, resposta),

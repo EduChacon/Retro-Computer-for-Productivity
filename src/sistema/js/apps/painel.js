@@ -24,6 +24,7 @@ const ITENS = [
   { chave: 'claude', rotulo: marcar('Claude'), icone: 'claude', descricao: marcar('Instala o Claude Code e guarda a chave de API.'), abrir: () => dialogoClaude() },
   { chave: 'internet', rotulo: marcar('Internet'), icone: 'navegador', descricao: marcar('O e-mail, a pesquisa e onde abrir os links.'), abrir: () => dialogoInternet() },
   { chave: 'idioma', rotulo: marcar('Idioma'), icone: 'internet', descricao: marcar('Escolhe o idioma do Retro Computer.'), abrir: () => dialogoIdioma() },
+  { chave: 'seguranca', rotulo: marcar('Segurança'), icone: 'seguranca', descricao: marcar('A proteção do computador num lugar só: a senha, o firewall, as atualizações e a privacidade.'), abrir: () => dialogoSeguranca() },
   { chave: 'senhas', rotulo: marcar('Senhas'), icone: 'chave', descricao: marcar('A senha da tela de bloqueio e quando pedi-la.'), abrir: () => dialogoSenhas() },
   { chave: 'bluetooth', rotulo: marcar('Bluetooth'), icone: 'bluetooth', descricao: marcar('Os mouses, os teclados e os fones sem fio: parear, conectar e esquecer.'), abrir: () => import('../bluetooth.js').then((m) => m.abrirBluetooth()) },
   { chave: 'firewall', rotulo: marcar('Firewall'), icone: 'firewall', descricao: marcar('Recusa as conexões que outros computadores tentam abrir neste.'), abrir: () => dialogoFirewall(), mostrar: () => estado.config.plataforma === 'linux' },
@@ -389,7 +390,7 @@ function dialogoSenhas() {
       h('div', { style: { marginBottom: '5px' } }, h('label', chkProtecao, h('span', tr('Ao sair da proteção de tela')))),
       h('div', h('label', chkAbrir, h('span', tr('Ao abrir o Retro Computer')))),
       estado.config.plataforma === 'linux' ? h('div', { style: { color: '#808080', marginTop: '8px', lineHeight: '13px' } }, tr('No Linux, a senha de entrada do Linux também desbloqueia (para o caso de esquecer a do Retro Computer).')) : null));
-  dialogoBase({
+  return dialogoBase({
     titulo: tr('Propriedades de Senhas'), icone: 'chave', larg: 400,
     abas: [{ titulo: tr('Tela de bloqueio'), conteudo }],
     aoAplicar: () => definirConfig({ bloqueio: { aoVoltar: chkVoltar.checked, aoAbrir: chkAbrir.checked, naProtecao: chkProtecao.checked } }),
@@ -452,6 +453,87 @@ function dialogoTeclado() {
   });
 }
 
+/* A Central de segurança: o estado de cada proteção e as opções de privacidade */
+
+function dialogoSeguranca() {
+  const linux = estado.config.plataforma === 'linux';
+  // Uma linha do estado: o nome, a situação (boa ou não), o que ela quer dizer e o botão que leva à configuração.
+  const linha = (titulo, botao, aoClicar) => {
+    const situacao = h('span.seg-estado', tr('Lendo…'));
+    const texto = h('div.seg-texto');
+    const el = h('div.seg-linha',
+      h('div', h('div.seg-cabeca', h('b', titulo), situacao), texto),
+      h('button', { type: 'button', on: { click: aoClicar } }, botao));
+    const definir = (bom, etiqueta, detalhe) => {
+      situacao.textContent = etiqueta;
+      situacao.className = 'seg-estado ' + (bom ? 'bom' : 'ruim');
+      texto.textContent = detalhe;
+    };
+    return { el, definir };
+  };
+  // Quando a configuração de uma linha fecha, o estado é lido de novo.
+  const depois = (j) => { if (j && j.ev) j.ev.on('fechada', () => ler()); };
+
+  const bloq = linha(tr('Tela de bloqueio'), tr('Senhas…'), () => depois(dialogoSenhas()));
+  const fw = linux ? linha(tr('Firewall'), tr('Configurar…'), () => depois(dialogoFirewall())) : null;
+  const atl = linux ? linha(tr('Atualizações de segurança'), tr('Atualizações…'), () => abrir('atualizacoes')) : null;
+  const chave = linha(tr('Chave de API do Claude'), tr('Claude…'), () => dialogoClaude());
+
+  async function ler() {
+    const b = estado.config.bloqueio || {};
+    if (!b.temSenha) bloq.definir(false, tr('Sem senha'), tr('Qualquer pessoa perto do computador usa os seus arquivos e as suas contas.'));
+    else if (b.aoVoltar !== false && b.naProtecao) bloq.definir(true, tr('Com senha'), tr('A senha é pedida ao voltar da suspensão e ao sair da proteção de tela.'));
+    else if (b.aoVoltar !== false) bloq.definir(true, tr('Com senha'), tr('A senha é pedida ao voltar da suspensão, mas não ao sair da proteção de tela.'));
+    else if (b.naProtecao) bloq.definir(true, tr('Com senha'), tr('A senha é pedida ao sair da proteção de tela, mas não ao voltar da suspensão.'));
+    else bloq.definir(true, tr('Com senha'), tr('A senha só é pedida quando você bloqueia: Iniciar › Bloquear o computador.'));
+    if (fw) {
+      const e = await retro.firewall.estado().catch(() => null);
+      if (!e || !e.disponivel) fw.definir(false, tr('Indisponível'), tr('O firewall deste computador é configurado pelo próprio sistema.'));
+      else if (!e.instalado) fw.definir(false, tr('Não instalado'), tr('O firewall do Linux (ufw) não está instalado. Configurar… o instala e liga.'));
+      else if (e.ligado) fw.definir(true, tr('Ligado'), tr('Ligado: ninguém de fora abre conexões com este computador.'));
+      else fw.definir(false, tr('Desligado'), tr('Desligado: outros computadores da rede podem tentar se conectar a este.'));
+    }
+    if (atl) {
+      const r = await retro.atualizacoesLinux.listar().catch(() => ({ disponivel: false }));
+      if (!r.disponivel) atl.definir(true, tr('Pelo sistema'), tr('As atualizações deste sistema são feitas pelo próprio sistema.'));
+      else if (r.automaticas) atl.definir(true, tr('Automáticas'), tr('As correções de segurança do Linux entram sozinhas, todo dia.'));
+      else atl.definir(false, tr('Manuais'), tr('As correções de segurança só entram quando você as instala.'));
+    }
+    const s = await retro.seguranca.estado().catch(() => ({}));
+    if (!s.temChave) chave.definir(true, tr('Nenhuma'), tr('Nenhuma chave de API guardada (o Claude Code pode entrar com a conta).'));
+    else if (s.chaveiro === 'basic_text') chave.definir(false, tr('Sem chaveiro'), tr('Sem o chaveiro do Linux, a chave fica só embaralhada no disco. Instale o GNOME Keyring (o pacote gnome-keyring) e entre de novo no computador.'));
+    else chave.definir(true, tr('Cifrada'), tr('A chave fica cifrada pelo cofre de senhas do sistema.'));
+  }
+
+  const estadoAba = h('div',
+    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('seguranca', 32),
+      h('div', { style: { lineHeight: '13px' } }, tr('O estado das proteções deste computador. O que estiver em vermelho merece uma olhada.'))),
+    bloq.el, fw && fw.el, atl && atl.el, chave.el);
+
+  const n = estado.config.navegador || {};
+  const chkHttps = h('input', { type: 'checkbox', checked: n.soHttps !== false });
+  const chkLimpar = h('input', { type: 'checkbox', checked: !!n.limparAoFechar });
+  const chkHistorico = h('input', { type: 'checkbox', checked: !estado.config.transferencia || estado.config.transferencia.historico !== false });
+  const nota = (texto) => h('div', { style: { color: '#808080', margin: '4px 0 10px 18px', lineHeight: '13px' } }, texto);
+  const privacidade = h('div',
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Navegador')),
+      h('label', chkHttps, h('span', tr('Só conexões seguras (HTTPS)'))),
+      nota(tr('Os endereços http:// abrem na versão segura; o site que não a tiver só abre depois de um aviso. Os aparelhos da rede de casa (o roteador, a impressora) ficam de fora.')),
+      h('label', chkLimpar, h('span', tr('Apagar os dados de navegação ao fechar o Retro Computer'))),
+      nota(tr('Os cookies, os dados dos sites e os arquivos temporários. Ao abrir de novo, é preciso entrar outra vez nas contas.'))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Área de transferência')),
+      h('label', chkHistorico, h('span', tr('Guardar o histórico do que é copiado (logotipo + V)'))),
+      nota(tr('Os últimos 25 textos copiados, só na memória: nada vai para o disco, e tudo some ao fechar o Retro Computer. O que os gerenciadores de senhas marcam como secreto fica de fora.'))));
+
+  const j = dialogoBase({
+    titulo: tr('Central de segurança'), icone: 'seguranca', larg: 440, altMin: 470,
+    abas: [{ titulo: tr('Estado'), conteudo: estadoAba }, { titulo: tr('Privacidade'), conteudo: privacidade }],
+    aoAplicar: () => definirConfig({ navegador: { soHttps: chkHttps.checked, limparAoFechar: chkLimpar.checked }, transferencia: { historico: chkHistorico.checked } }),
+  });
+  if (j) ler();
+  return j;
+}
+
 /* Firewall (o ufw do Linux) */
 
 function dialogoFirewall() {
@@ -476,7 +558,7 @@ function dialogoFirewall() {
       h('div', h('label', radioLigado, h('span', tr('Ligado (recomendado)')))),
       h('div', { style: { marginTop: '6px' } }, h('label', radioDesligado, h('span', tr('Desligado')))),
       nota));
-  dialogoBase({
+  return dialogoBase({
     titulo: tr('Propriedades do Firewall'), icone: 'firewall', larg: 400, altMin: 320,
     abas: [{ titulo: tr('Geral'), conteudo }],
     aoAplicar: async () => {

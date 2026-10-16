@@ -293,10 +293,14 @@ class Navegador {
     wv.addEventListener('did-navigate-in-page', navegou);
     wv.addEventListener('page-title-updated', (e) => this.j.definirTitulo(e.title ? `${e.title} - ${this.base}` : this.base));
     wv.addEventListener('update-target-url', (e) => this.j.definirStatus([e.url || (this.carregando ? tr('Carregando…') : tr('Concluído')), this.textoZoom()]));
-    wv.addEventListener('did-fail-load', (e) => {
+    wv.addEventListener('did-fail-load', async (e) => {
       // -3 é a carga interrompida (outro clique, o botão Parar): não é erro.
       if (e.errorCode === -3 || e.isMainFrame === false) return;
-      this.mostrarErro(e.validatedURL || this.url, e.errorDescription);
+      const url = e.validatedURL || this.url;
+      // A versão segura de um http:// não abriu (ou mandou de volta para o http): o aviso, com a escolha.
+      const semSeguranca = await retro.navegador.semSeguranca(url).catch(() => null);
+      if (semSeguranca) return this.mostrarSemSeguranca(semSeguranca);
+      this.mostrarErro(url, e.errorDescription);
     });
     wv.addEventListener('context-menu', (e) => this.menuDaPagina(e.params));
     wv.addEventListener('ipc-message', (e) => { if (e.channel === 'navegador') this.acao(...e.args); });
@@ -363,6 +367,33 @@ class Navegador {
     this.j.definirStatus([tr('Pronto'), '']);
     this.atualizarBotoes();
     setTimeout(() => this.campo.focus(), 0);
+  }
+
+  /** O site não tem conexão segura (Painel › Segurança › Só conexões seguras): abrir só se o usuário quiser. */
+  mostrarSemSeguranca(url) {
+    if (this.wv) this.wv.hidden = true;
+    this.inicio.hidden = true;
+    let site = url;
+    try { site = new URL(url).host; } catch { }
+    const voltar = () => {
+      if (this.wv && this.wv.canGoBack()) { this.mostrarPagina(); this.wv.goBack(); } else this.mostrarInicio();
+    };
+    this.erroEl.replaceChildren(
+      h('div.nav-erro-caixa',
+        img('msg-aviso', 32),
+        h('div',
+          h('b', tr('Este site não tem conexão segura.')),
+          h('p', url),
+          h('p', tr('O Navegador tentou a versão segura (HTTPS) de {site}, e ela não respondeu. Sem ela, o que você envia ao site (senhas, números de cartão) pode ser visto por outras pessoas na rede.', { site })),
+          h('div.acoes',
+            h('button.padrao', { on: { click: voltar } }, tr('Voltar')),
+            h('button', { on: { click: async () => { await retro.navegador.abrirSemSeguranca(url).catch(() => { }); this.ir(url); } } }, tr('Abrir assim mesmo'))))));
+    this.erroEl.hidden = false;
+    this.url = url;
+    if (document.activeElement !== this.campo) this.campo.value = url;
+    this.j.definirTitulo(this.base);
+    this.j.definirStatus([tr('Sem conexão segura'), '']);
+    this.atualizarBotoes();
   }
 
   mostrarErro(url, descricao) {
@@ -601,6 +632,14 @@ registrarApp('correio', { nome: 'E-mail', icone: 'correio', abrir: () => abrirCo
 
 // As janelas novas pedidas pelas páginas (window.open, links com target).
 retro.navegador.aoJanela((url) => abrirNavegador({ url }));
+// O site cuja versão segura manda de volta para o http (Só conexões seguras): o aviso, na janela da página.
+retro.navegador.aoSemSeguranca(({ id, url }) => {
+  for (const n of abertos) {
+    let dela = false;
+    try { dela = !!n.wv && n.wv.getWebContentsId() === id; } catch { }
+    if (dela) n.mostrarSemSeguranca(url);
+  }
+});
 
 /* ---------- As permissões dos sites e a escolha da tela ---------- */
 

@@ -3,7 +3,7 @@
  * (programa://<id>/) e a conversa com o adaptador, que pede as caixas Abrir e
  * Salvar como do disco e avisa quando o programa está pronto.
  */
-import { h, img, nomeDe, paiDe, juntar, caminhoTela, extensao } from '../util.js';
+import { h, img, nomeDe, paiDe, caminhoTela, extensao } from '../util.js';
 import { Janela } from '../janelas.js';
 import { registrarApp, instalado, adicionarRecente, avisar, abrir, estado, atualizarProgramas, pastaDocs } from '../sistema.js';
 import { caixaArquivo, confirmar, erro } from '../dialogos.js';
@@ -256,7 +256,23 @@ class ProgramaCraft {
   }
 
   async gravar(m) {
-    const rel = m.caminho || juntar(this.ultimaPasta || pastaDocs(), nomeDe(m.nome || tr('Documento')));
+    // Só onde o usuário escolheu (a caixa Salvar como) ou de onde o arquivo veio: um caminho
+    // qualquer pedido pelo programa (ou um nome novo) passa pela caixa antes.
+    const conhecidos = new Set(this.arquivos.values());
+    let rel = m.caminho && conhecidos.has(m.caminho) ? m.caminho : this.arquivos.get(nomeDe(m.nome || ''));
+    if (!rel) {
+      const nome = nomeDe(m.nome || m.caminho || tr('Documento'));
+      rel = await caixaArquivo({
+        modo: 'salvar',
+        pasta: this.ultimaPasta || pastaDocs(),
+        nome,
+        tipos: this.tiposDe(extensao(nome) ? ['.' + extensao(nome)] : []),
+        titulo: `${tr('Salvar como')} - ${this.info.nome}`,
+      });
+      this.j.focar();
+      if (!rel) return this.responder(m.pedido, { ok: false, cancelado: true });
+      this.ultimaPasta = paiDe(rel);
+    }
     try {
       await retro.disco.gravar(rel, new Uint8Array(m.dados));
       this.arquivos.set(nomeDe(rel), rel);

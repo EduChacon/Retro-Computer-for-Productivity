@@ -70,14 +70,25 @@ function mimeDe(arquivo) {
   return MIME[path.extname(arquivo).toLowerCase()] || 'application/octet-stream';
 }
 
+// Um programa da web não passa disto (contra um pacote que vira gigabytes ao extrair).
+const PACOTE_MAX = 2 * 1024 * 1024 * 1024;
+const PACOTE_ENTRADAS = 50000;
+
 /** Extrai um .zip para uma pasta, sem deixar nenhum arquivo sair dela. */
-function extrairZip(arquivoZip, destino) {
+function extrairZip(arquivoZip, destino, { max = PACOTE_MAX, entradas = PACOTE_ENTRADAS } = {}) {
+  let soma = 0;
+  let n = 0;
   return new Promise((resolve, reject) => {
     yauzl.open(arquivoZip, { lazyEntries: true }, (erro, zip) => {
       if (erro) return reject(erro);
       zip.on('error', reject);
       zip.on('end', resolve);
       zip.on('entry', (entrada) => {
+        soma += entrada.uncompressedSize || 0;
+        if (++n > entradas || soma > max) {
+          zip.close();
+          return reject(new Error(tr('O pacote é grande demais para um programa.')));
+        }
         const alvo = path.resolve(destino, entrada.fileName);
         if (alvo !== destino && !alvo.startsWith(destino + path.sep)) {
           zip.close();

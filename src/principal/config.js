@@ -33,6 +33,8 @@ const PADRAO = {
   luzNoturna: { ligada: false, quando: 'noite', de: 20, ate: 7, intensidade: 50 },
   // O histórico da área de transferência (logotipo + V), só na memória.
   transferencia: { historico: true },
+  // O Navegador: só conexões seguras (http:// vira https://) e apagar os dados ao fechar.
+  navegador: { soHttps: true, limparAoFechar: false },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,

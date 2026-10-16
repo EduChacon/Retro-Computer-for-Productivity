@@ -306,6 +306,29 @@ const ROTEIROS = {
     await pagina.waitForTimeout(200);
     await foto('teclado-atalhos');
   },
+  async seguranca() {
+    // A Central de segurança (com RETRO_FIREWALL_FALSO=1 e RETRO_ATUALIZACOES_FALSAS=1) e o aviso do
+    // site sem conexão segura (precisa de internet: o example.com tem HTTPS; o neverssl.com, não).
+    await fecharTudo();
+    await abrir('painel', { secao: 'seguranca' });
+    await pagina.waitForFunction(() => ![...document.querySelectorAll('.seg-estado')].some((e) => !e.classList.contains('bom') && !e.classList.contains('ruim')), null, { timeout: 15000 }).catch(() => { });
+    await pagina.waitForTimeout(300);
+    await foto('seguranca-estado');
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Privacidade') }).click();
+    await pagina.waitForTimeout(200);
+    await foto('seguranca-privacidade');
+    await fecharTudo();
+    await abrir('navegador');
+    await pagina.waitForTimeout(800);
+    for (const [nome, url] of [['https-trocado', 'http://example.com/'], ['https-de-volta', 'http://http.badssl.com/'], ['https-sem-seguranca', 'http://neverssl.com/']]) {
+      const campo = pagina.locator('.janela.ativa input.nav-endereco');
+      await campo.fill(url);
+      await campo.press('Enter');
+      await pagina.waitForTimeout(15000);
+      console.log(nome, '→', await pagina.evaluate(() => { const j = window.__retro.janelas.lista.find((x) => x.el.classList.contains('ativa')); const wv = j && j.el.querySelector('webview'); return [wv && !wv.hidden ? wv.getURL() : '(sem página)', (j.el.querySelector('.nav-erro-caixa b') || {}).textContent || '']; }));
+      await foto(nome);
+    }
+  },
   async ajuda() {
     // Os tópicos da Ajuda, um por captura (o texto rolado até o fim mostra se cabe).
     await fecharTudo();
