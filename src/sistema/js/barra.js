@@ -327,6 +327,8 @@ async function itensProgramas() {
             prog('paciencia', tr('Paciência'), 'paciencia'),
             prog('campo-minado', tr('Campo Minado'), 'campo-minado'),
             prog('breakout', 'Breakout', 'breakout'),
+            prog('damas', tr('Damas'), 'damas'),
+            prog('xadrez', tr('Xadrez'), 'xadrez'),
           ],
         },
       ],

@@ -506,7 +506,7 @@ const ROTEIROS = {
     await foto('mesa-padrao');
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
-    await pagina.hover(`.menu .opcao:has-text("${T('&Programas')}")`);
+    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
     await pagina.waitForTimeout(700);
     await pagina.hover(`.menu .opcao:has-text("${T('Acessórios')}")`);
     await pagina.waitForTimeout(700);
@@ -1572,7 +1572,7 @@ const ROTEIROS = {
     await pagina.keyboard.press('Escape');
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
-    await pagina.hover(`.menu .opcao:has-text("${T('&Programas')}")`);
+    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
     await pagina.waitForTimeout(800);
     await foto('webapps-iniciar');
     await pagina.keyboard.press('Escape');
@@ -1872,6 +1872,120 @@ const ROTEIROS = {
     await pagina.keyboard.press('Space');
     await pagina.waitForTimeout(2500);
     await foto('breakout');
+  },
+
+  // As Damas e o Xadrez: os menus do Iniciar, a tomada obrigatória, a resposta do computador (o Worker),
+  // as regras inglesas, a escolha da promoção, o xeque-mate, a partida guardada e as pretas embaixo.
+  async tabuleiro() {
+    await fecharTudo();
+    await pagina.evaluate(() => window.__retro.definirConfig({ jogos: { damas: null, xadrez: null } }));
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(300);
+    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
+    await pagina.waitForTimeout(700);
+    await pagina.hover(`.menu .opcao:has-text("${T('Acessórios')}")`);
+    await pagina.waitForTimeout(700);
+    await pagina.hover(`.menu .opcao:has-text("${T('Jogos')}")`);
+    await pagina.waitForTimeout(700);
+    await foto('tabuleiro-iniciar');
+    await pagina.keyboard.press('Escape');
+    await pagina.mouse.click(5, 5);
+    // Clica numa casa pelo nome ("e4"), com o tabuleiro na posição em que está.
+    const casa = async (nome) => {
+      const el = pagina.locator('.janela.ativa canvas.tab-canvas');
+      const caixa = await el.boundingBox();
+      const girado = await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().el.querySelector('.tab-colunas span').textContent === 'h');
+      let k = 'abcdefgh'.indexOf(nome[0]);
+      let l = 8 - Number(nome[1]);
+      if (girado) { k = 7 - k; l = 7 - l; }
+      await pagina.mouse.click(caixa.x + (k + 0.5) * caixa.width / 8, caixa.y + (l + 0.5) * caixa.height / 8);
+      await pagina.waitForTimeout(150);
+    };
+    const pensando = () => pagina.waitForFunction(() => !document.querySelector('.janela.ativa canvas.tab-canvas.pensando'), null, { timeout: 30000 }).then(() => pagina.waitForTimeout(300));
+
+    // Damas (brasileiras, contra o computador): c3-d4, a resposta, e a tomada obrigatória marcada.
+    await abrir('damas');
+    await pagina.waitForTimeout(600);
+    await casa('c3');
+    await foto('damas-escolhida');
+    await casa('d4');
+    await pagina.waitForTimeout(300);
+    await pensando();
+    // Uma posição com tomada: as pretas avançam para ser tomadas.
+    await pagina.evaluate(async () => {
+      const a = await window.__retro.abrir('damas');
+      const c = (s) => (8 - Number(s[1])) * 8 + 'abcdefgh'.indexOf(s[0]);
+      a.ia.cancelar();
+      a.criar();
+      for (const [de, para] of [['c3', 'd4'], ['f6', 'e5']]) a.d.jogar({ de: c(de), caminho: [c(para)] });
+      a.guardar();
+      a.atualizar();
+    });
+    await pagina.waitForTimeout(300);
+    await casa('a3');
+    await foto('damas-obrigatoria');
+    await casa('d4');
+    await pagina.waitForTimeout(200);
+    await foto('damas-tomada');
+    await casa('f6');
+    await pagina.waitForTimeout(300);
+    await pensando();
+    await foto('damas-resposta');
+    console.log('damas:', JSON.stringify(await pagina.evaluate(async () => { const a = await window.__retro.abrir('damas'); return { lances: a.notacao(), worker: !a.ia.falhou, guardada: window.__retro.estado.config.jogos.damas.partida.lances.length }; })));
+    // As regras inglesas: as pretas (o computador) começam, e a notação é pelos números das casas.
+    await pagina.evaluate(async () => { const a = await window.__retro.abrir('damas'); await a.salvar({ regra: 'inglesas' }); await a.novo(true); });
+    await pagina.waitForTimeout(600);
+    await pensando();
+    await casa('c3');
+    await foto('damas-inglesas');
+    await fecharTudo();
+
+    // Xadrez entre duas pessoas: a abertura, os lances possíveis do cavalo e o xeque-mate do pastor.
+    await pagina.evaluate(() => window.__retro.definirConfig({ jogos: { xadrez: { oponente: 'pessoas' } } }));
+    await abrir('xadrez');
+    await pagina.waitForTimeout(600);
+    for (const c of ['e2', 'e4', 'e7', 'e5', 'f1', 'c4', 'b8', 'c6', 'd1', 'h5', 'g8']) await casa(c);
+    await foto('xadrez-cavalo');
+    await casa('f6');
+    await casa('h5');
+    await casa('f7');
+    await pagina.waitForTimeout(500);
+    await foto('xadrez-mate');
+    // A promoção: o peão em a7, com a caixa da escolha.
+    await pagina.evaluate(async () => {
+      await window.__retro.definirConfig({ jogos: { xadrez: { partida: { fen: '1k6/P7/8/8/8/8/5PPP/6K1 w - - 0 40', lances: [] } } } });
+      for (const j of window.__retro.janelas.lista.slice()) await j.fechar(true);
+    });
+    await abrir('xadrez');
+    await pagina.waitForTimeout(500);
+    await casa('a7');
+    await casa('a8');
+    await pagina.waitForTimeout(400);
+    await foto('xadrez-promocao');
+    await pagina.click(`.janela.ativa button.xz-promo:has-text("${T('Cavalo')}")`);
+    await pagina.waitForTimeout(400);
+    await foto('xadrez-promovido');
+    // A partida guardada: fechar e abrir de novo traz a mesma posição.
+    const antes = await pagina.evaluate(async () => (await window.__retro.abrir('xadrez')).x.fen());
+    await fecharTudo();
+    await abrir('xadrez');
+    await pagina.waitForTimeout(500);
+    const depois = await pagina.evaluate(async () => (await window.__retro.abrir('xadrez')).x.fen());
+    console.log('partida guardada:', antes === depois, depois);
+    await fecharTudo();
+    // Contra o computador, com as pretas: o tabuleiro vira, e as brancas (o computador) começam.
+    await pagina.evaluate(() => window.__retro.definirConfig({ jogos: { xadrez: { oponente: 'computador', cor: -1, nivel: 'dificil', partida: null } } }));
+    await abrir('xadrez');
+    await pagina.waitForTimeout(600);
+    await pensando();
+    await casa('e7');
+    await casa('e5');
+    await pagina.waitForTimeout(300);
+    await pensando();
+    await casa('b8');
+    await foto('xadrez-pretas');
+    console.log('xadrez:', JSON.stringify(await pagina.evaluate(async () => { const a = await window.__retro.abrir('xadrez'); return { lances: a.notacao(), worker: !a.ia.falhou, girado: a.tab.girado }; })));
+    await fecharTudo();
   },
 
   // Os programas do computador principal: a janela, o atalho na área de trabalho e um de terminal no Prompt.

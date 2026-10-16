@@ -274,7 +274,8 @@ const TOPICOS = [
 <p><b>Mapa de caracteres</b>: os acentos, os símbolos (§, º, “ ”, –, €…) e as letras de outros alfabetos, em grupos. Segurar o botão sobre um caractere o amplia; dois cliques o juntam à caixa de baixo, e Copiar o leva à área de transferência.</p>
 <p><b>Calculadora</b>, <b>Bloco de notas</b> (com Imprimir, Ctrl+P) e <b>Prompt de comando</b>.</p>
 <h2>Jogos</h2>
-<p>Paciência, Campo Minado e Breakout, para as pausas.</p>`],
+<p>Paciência, Campo Minado e Breakout, para as pausas.</p>
+<p><b>Damas</b> (as regras brasileiras ou as inglesas, em Jogo › Regras) e <b>Xadrez</b>: contra o computador, em três níveis, ou entre duas pessoas no mesmo computador. Clique na peça e depois na casa (ou arraste); Jogo › Desfazer (Ctrl+Z) volta o último lance. A partida fica guardada: fechar a janela não a perde.</p>`],
     en: ['Accessories and games', `
 <h2>In Start › Programs › Accessories</h2>
 <p><b>Image Viewer</b>: the pictures in the folder, one by one (with the arrow keys), zoom, rotate, print and the slide show (F5).</p>
@@ -286,7 +287,8 @@ const TOPICOS = [
 <p><b>Character Map</b>: accents, symbols (§, º, “ ”, –, €…) and the letters of other alphabets, in groups. Holding the button on a character enlarges it; a double-click adds it to the box below, and Copy sends it to the clipboard.</p>
 <p><b>Calculator</b>, <b>Notepad</b> (with Print, Ctrl+P) and <b>Command Prompt</b>.</p>
 <h2>Games</h2>
-<p>Solitaire, Minesweeper and Breakout, for the breaks.</p>`],
+<p>Solitaire, Minesweeper and Breakout, for the breaks.</p>
+<p><b>Checkers</b> (Brazilian draughts or American checkers, in Game › Rules) and <b>Chess</b>: against the computer, at three levels, or between two people on the same computer. Click a piece and then the square (or drag it); Game › Undo (Ctrl+Z) takes back the last move. The game is saved: closing the window does not lose it.</p>`],
     es: ['Accesorios y juegos', `
 <h2>En Inicio › Programas › Accesorios</h2>
 <p><b>Visor de imágenes</b>: las fotos de la carpeta, una a una (con las flechas), ampliar, girar, imprimir y la presentación de diapositivas (F5).</p>
@@ -298,7 +300,8 @@ const TOPICOS = [
 <p><b>Mapa de caracteres</b>: los acentos, los símbolos (§, º, “ ”, –, €…) y las letras de otros alfabetos, en grupos. Mantener el botón sobre un carácter lo amplía; el doble clic lo agrega al cuadro de abajo, y Copiar lo lleva al portapapeles.</p>
 <p><b>Calculadora</b>, <b>Bloc de notas</b> (con Imprimir, Ctrl+P) y <b>Línea de comandos</b>.</p>
 <h2>Juegos</h2>
-<p>Solitario, Buscaminas y Breakout, para las pausas.</p>`],
+<p>Solitario, Buscaminas y Breakout, para las pausas.</p>
+<p><b>Damas</b> (las reglas brasileñas o las inglesas, en Juego › Reglas) y <b>Ajedrez</b>: contra la computadora, en tres niveles, o entre dos personas en la misma computadora. Haz clic en la pieza y luego en la casilla (o arrástrala); Juego › Deshacer (Ctrl+Z) vuelve la última jugada. La partida queda guardada: cerrar la ventana no la pierde.</p>`],
   },
   {
     id: 'claude', icone: 'claude',

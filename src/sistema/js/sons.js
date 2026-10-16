@@ -162,6 +162,15 @@ const SONS = {
     const t = contexto().currentTime + 0.005;
     nota(hz(91), t, 0.04, { tipo: 'triangle', vol: 0.06, soltura: 0.03, destino: saidaSeca() });
   },
+  // A peça de madeira pousando no tabuleiro: um toque curto e grave; a tomada, dois.
+  peca() {
+    toque(contexto().currentTime + 0.005, 1);
+  },
+  tomada() {
+    const t = contexto().currentTime + 0.005;
+    toque(t, 0.8);
+    toque(t + 0.07, 1.1);
+  },
   perdeu() {
     const t = contexto().currentTime + 0.01;
     const s = saida();
@@ -192,6 +201,27 @@ const SONS = {
   },
 };
 
+/** O toque de madeira: um estalo de ruído filtrado com um tom grave que some depressa. */
+function toque(t, forca) {
+  const c = contexto();
+  const s = saidaSeca();
+  const n = Math.floor(c.sampleRate * 0.05);
+  const buf = c.createBuffer(1, n, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 6);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const f = c.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = 1500;
+  f.Q.value = 1.2;
+  const g = c.createGain();
+  g.gain.value = 0.5 * forca;
+  src.connect(f).connect(g).connect(s);
+  src.start(t);
+  nota(170, t, 0.07, { tipo: 'sine', vol: 0.12 * forca, ataque: 0.002, soltura: 0.06, destino: s });
+}
+
 /** A saída sem eco, para os bipes rápidos dos jogos. */
 function saidaSeca() {
   const c = contexto();
@@ -205,8 +235,11 @@ function saidaSeca() {
 const ouvintes = [];
 export const aoTocar = (f) => ouvintes.push(f);
 
+// Os sons frequentes dos jogos não fazem a tela piscar (os avisos visuais da Acessibilidade).
+const DOS_JOGOS = new Set(['raquete', 'tijolo', 'parede', 'carta', 'peca', 'tomada']);
+
 export function tocar(nome) {
-  if (SONS[nome]) for (const f of ouvintes) { try { f(nome); } catch { } }
+  if (SONS[nome] && !DOS_JOGOS.has(nome)) for (const f of ouvintes) { try { f(nome); } catch { } }
   if (!ligado || volume <= 0 || !SONS[nome]) return;
   try { SONS[nome](); } catch (e) { console.warn('som', nome, e); }
 }

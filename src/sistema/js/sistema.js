@@ -21,7 +21,7 @@ export const estado = {
 export const naoPerturbeAgora = () => !!(estado.config && estado.config.naoPerturbe) || !!(estado.emFoco && estado.emFoco.silencio);
 
 // Os jogos, que o modo foco completo deixa para as pausas.
-const JOGOS = new Set(['paciencia', 'campo-minado', 'breakout']);
+const JOGOS = new Set(['paciencia', 'campo-minado', 'breakout', 'damas', 'xadrez']);
 
 const apps = new Map();
 

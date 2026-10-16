@@ -47,6 +47,8 @@ registrarPreguicoso({ transferencia: { nome: 'Área de transferência', icone: '
 registrarPreguicoso({ 'campo-minado': { nome: 'Campo Minado', icone: 'campo-minado' } }, () => import('./apps/campominado.js'));
 registrarPreguicoso({ paciencia: { nome: 'Paciência', icone: 'paciencia' } }, () => import('./apps/paciencia.js'));
 registrarPreguicoso({ breakout: { nome: 'Breakout', icone: 'breakout' } }, () => import('./apps/breakout.js'));
+registrarPreguicoso({ damas: { nome: 'Damas', icone: 'damas' } }, () => import('./apps/damas.js'));
+registrarPreguicoso({ xadrez: { nome: 'Xadrez', icone: 'xadrez' } }, () => import('./apps/xadrez.js'));
 
 const boot = document.getElementById('boot');
 

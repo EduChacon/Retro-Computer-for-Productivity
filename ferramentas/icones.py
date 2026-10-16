@@ -89,6 +89,7 @@ DO_SERENITY = {
     'jogos': ('games', 'games'),
     'paciencia': ('app-solitaire', 'app-solitaire'),
     'campo-minado': ('app-minesweeper', 'app-minesweeper'),
+    'xadrez': ('app-chess', 'app-chess'),
     'voltar': (None, 'go-back'),
     'avancar': (None, 'go-forward'),
     'parar': (None, 'stop'),
@@ -556,6 +557,52 @@ def microfone(tam):
     return [''.join(l) for l in c]
 
 
+def pedra(tam, branca):
+    """Uma pedra das damas vista de cima, com a lateral, o sulco e a borda em relevo (como no jogo)."""
+    cores = ({'contorno': (0, 0, 0), 'luz': (255, 255, 255), 'base': (236, 228, 204), 'sombra': (180, 166, 132), 'sulco': (200, 188, 156), 'fundo': (124, 108, 76)}
+             if branca else
+             {'contorno': (0, 0, 0), 'luz': (122, 122, 122), 'base': (58, 58, 58), 'sombra': (32, 32, 32), 'sulco': (42, 42, 42), 'fundo': (16, 16, 16)})
+    esp = max(2, round(tam / 10))
+    r = (tam - esp) / 2 - 1
+    cx, cy = tam / 2, r + 1
+    face = lambda x, y: (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= r * r
+    toda = lambda x, y: any(face(x, y - e) for e in range(esp + 1))
+    im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
+    for y in range(tam):
+        for x in range(tam):
+            if not toda(x, y):
+                continue
+            if not (toda(x - 1, y) and toda(x + 1, y) and toda(x, y - 1) and toda(x, y + 1)):
+                cor = cores['contorno']
+            elif not face(x, y):
+                cor = cores['contorno'] if face(x, y - 1) else (cores['fundo'] if x + 0.5 - cx > r * 0.35 else cores['sombra'])
+            else:
+                dx, dy = x + 0.5 - cx, y + 0.5 - cy
+                dist = (dx * dx + dy * dy) ** 0.5
+                d = dist / r
+                lado = (-dx - dy) / (dist or 1)
+                cor = cores['base']
+                if d > 0.76:
+                    cor = cores['luz'] if lado > 0.35 else cores['sombra'] if lado < -0.35 else cores['base']
+                elif d > 0.6:
+                    cor = cores['sulco']
+                elif d > 0.48:
+                    cor = cores['sombra'] if lado > 0.2 else cores['luz'] if lado < -0.2 else cores['base']
+            im.putpixel((x, y), cor + (255,))
+    return im
+
+
+def damas(tam):
+    """As Damas: a pedra preta atrás, à direita, e a branca na frente."""
+    im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
+    lado = round(tam * 0.72) if tam >= 32 else 13
+    preta = pedra(lado, False)
+    branca = pedra(lado, True)
+    im.alpha_composite(preta, (tam - lado, 0))
+    im.alpha_composite(branca, (0, tam - lado))
+    return im
+
+
 def grade(linhas):
     a = len(linhas)
     w = max(len(x) for x in linhas)
@@ -946,6 +993,10 @@ def gerar(serenity):
     # O microfone (a gravação nas Propriedades de Sons): desenho próprio.
     feitos[32]['microfone'] = grade(microfone(32))
     feitos[16]['microfone'] = grade(microfone(16))
+
+    # As Damas: duas pedras, desenhadas como as do jogo (src/sistema/js/jogos/pecas.js).
+    feitos[32]['damas'] = damas(32)
+    feitos[16]['damas'] = damas(16)
 
     # A lixeira cheia: papéis amassados por cima.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)
