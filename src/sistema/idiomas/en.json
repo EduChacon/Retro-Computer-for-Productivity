@@ -977,7 +977,7 @@
   "Espanhol (América Latina)": "Spanish (Latin America)",
   "Inglês (Reino Unido)": "English (UK)",
   "Digite aqui para testar: ação, você, ñ…": "Type here to test: ação, você, ñ…",
-  "O layout diz o que cada tecla escreve. Para os teclados americanos com acentos por teclas mortas (´ + a = á), escolha \"Inglês (EUA, internacional com teclas mortas)\".": "The layout says what each key types. For American keyboards with accents through dead keys (´ + a = á), choose \"English (US, international with dead keys)\".",
+  "O layout diz o que cada tecla escreve. Para os teclados americanos com acentos por teclas mortas (´ + a = á, e ´ + c = ç, como no Windows), escolha \"Inglês (EUA, internacional com teclas mortas)\".": "The layout says what each key types. For American keyboards with accents through dead keys (´ + a = á, and ´ + c = ç, as on Windows), choose \"English (US, international with dead keys)\".",
   "O layout do teclado é o do computador principal: troque-o nas configurações do sistema dele.": "The keyboard layout is the main computer's: change it in that system's settings.",
   "Layout do teclado": "Keyboard layout",
   "Testar": "Test",

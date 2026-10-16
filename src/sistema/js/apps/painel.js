@@ -703,7 +703,7 @@ function dialogoTeclado() {
   const conteudo = h('div',
     h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' } }, img('teclado', 32),
       h('div', { style: { lineHeight: '13px' } }, sistema
-        ? tr('O layout diz o que cada tecla escreve. Para os teclados americanos com acentos por teclas mortas (´ + a = á), escolha "Inglês (EUA, internacional com teclas mortas)".')
+        ? tr('O layout diz o que cada tecla escreve. Para os teclados americanos com acentos por teclas mortas (´ + a = á, e ´ + c = ç, como no Windows), escolha "Inglês (EUA, internacional com teclas mortas)".')
         : tr('O layout do teclado é o do computador principal: troque-o nas configurações do sistema dele.'))),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Layout do teclado')), h('div.select-caixa', { style: { width: '100%' } }, sel)),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Testar')), teste));

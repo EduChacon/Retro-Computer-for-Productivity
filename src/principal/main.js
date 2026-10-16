@@ -58,6 +58,12 @@ const { ehExecutavel } = require('./executaveis');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
+
+// O "ç" do teclado internacional (o acento agudo seguido do c), como no Windows. No Linux, o GTK só
+// faz o ç com o sistema em português; em inglês, sai o "ć". O módulo "cedilla" do GTK faz o ç em
+// qualquer idioma. Quem usa o IBus ou o Fcitx (a variável já posta) fica como está. Vale também para
+// o Firefox e os programas abertos pelo Retro Computer, que herdam a variável.
+if (process.platform === 'linux' && !process.env.GTK_IM_MODULE) process.env.GTK_IM_MODULE = 'cedilla';
 const idioma = require('./idioma');
 const { tr } = idioma;
 

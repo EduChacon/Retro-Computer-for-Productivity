@@ -331,6 +331,24 @@ const ROTEIROS = {
     console.log(invadido ? 'AUDITORIA: FALHOU' : 'AUDITORIA: ok');
   },
 
+  // O ç do teclado EUA internacional (´ seguido de c), como no Windows, com o Linux em qualquer
+  // idioma (rode com LANG=en_US.UTF-8; precisa do setxkbmap e do xdotool): digita no Bloco de notas.
+  async cedilha() {
+    execFileSync('setxkbmap', ['-layout', 'us', '-variant', 'intl']);
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(800);
+    await pagina.click('.janela.ativa textarea');
+    for (const k of ['dead_acute', 'c', 'dead_acute', 'C', 'dead_acute', 'a', 'o']) {
+      execFileSync('xdotool', ['key', k]);
+      await pagina.waitForTimeout(250);
+    }
+    await pagina.waitForTimeout(400);
+    const v = await pagina.inputValue('.janela.ativa textarea');
+    await foto('cedilha');
+    console.log('cedilha:', JSON.stringify(v), v === 'çÇáo' ? 'ok' : 'ERRADO', '| LANG=' + (process.env.LANG || ''));
+  },
+
   async vitrine() {
     await fecharTudo();
     const lances = ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5', 'c2c3', 'g8f6', 'd2d4', 'e5d4', 'c3d4', 'c5b4', 'b1c3', 'f6e4', 'e1g1', 'e4c3', 'b2c3', 'b4c3'];
