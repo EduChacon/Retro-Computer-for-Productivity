@@ -91,6 +91,12 @@ fs.writeFileSync(path.join(disco, DOCS, 'Teste.md'), '# Título do teste\n\nUm p
 const empacotado = process.env.RETRO_EXECUTAVEL ? path.resolve(process.env.RETRO_EXECUTAVEL) : null;
 // O roteiro "perfis" troca de usuário: o Retro Computer fecha (sem se abrir sozinho) e o roteiro o abre de novo.
 if (ROTEIRO === 'perfis') process.env.RETRO_SEM_RELANCAR = '1';
+// Os roteiros do teclado: o EUA internacional antes de abrir (a regra dos acentos é escolhida ao abrir).
+if (ROTEIRO === 'acentos' || ROTEIRO === 'cedilha') {
+  execFileSync('setxkbmap', ['-layout', 'us', '-variant', 'intl']);
+  // O Xvfb não aplica a variante (o setxkbmap -query continua "us"): o Retro Computer finge o layout.
+  if (!process.env.RETRO_TECLADO) process.env.RETRO_TECLADO = 'us:intl';
+}
 const erros = [];
 let app = null;
 let pagina = null;
@@ -347,6 +353,94 @@ const ROTEIROS = {
     const v = await pagina.inputValue('.janela.ativa textarea');
     await foto('cedilha');
     console.log('cedilha:', JSON.stringify(v), v === 'çÇáo' ? 'ok' : 'ERRADO', '| LANG=' + (process.env.LANG || ''));
+  },
+
+  // Todos os acentos do português no teclado EUA internacional (pelo xdotool, como teclas de
+  // verdade), em cinco lugares: o Bloco de notas, a caixa de busca, o nome de um arquivo no
+  // Explorador, o Prompt de comando e uma página do Navegador. Rode com LANG=en_US.UTF-8 e com
+  // LANG=pt_BR.UTF-8 (veja o roteiro "cedilha").
+  async acentos() {
+    execFileSync('setxkbmap', ['-layout', 'us', '-variant', 'intl']);
+    const SEQ = [
+      ...['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'].flatMap((k) => ['dead_acute', k]),
+      ...['a', 'e', 'o', 'A', 'E', 'O'].flatMap((k) => ['dead_circumflex', k]),
+      ...['a', 'o', 'A', 'O'].flatMap((k) => ['dead_tilde', k]),
+      'dead_grave', 'a', 'dead_grave', 'A', 'dead_acute', 'c', 'dead_acute', 'C', 'dead_diaeresis', 'u', 'dead_diaeresis', 'U',
+      // Os sinais sozinhos (o acento seguido de espaço) e as letras da AltGr.
+      'dead_acute', 'space', 'dead_diaeresis', 'space', 'dead_grave', 'space', 'dead_tilde', 'space', 'dead_circumflex', 'space',
+      'ccedilla', 'aacute', 'eacute',
+    ];
+    const ESPERADO = 'áéíóúÁÉÍÓÚâêôÂÊÔãõÃÕàÀçÇüÜ\'"`~^çáé';
+    // O que o Windows faz e o Linux pode fazer diferente: o apóstrofo antes de uma consoante e o ^ antes de um número.
+    // [as teclas, o que o Windows escreve]
+    const EXTRAS = [
+      [['dead_acute', 's'], "'s"], [['dead_acute', 't'], "'t"], [['dead_acute', 'n'], "'n"], [['dead_acute', 'd'], "'d"],
+      [['dead_diaeresis', 'B'], '"B'], [['dead_diaeresis', 't'], '"t'], [['dead_diaeresis', 'o'], 'ö'], [['dead_grave', 'n'], '`n'],
+      [['dead_tilde', 's'], '~s'], [['dead_tilde', 'n'], 'ñ'], [['dead_circumflex', '2'], '^2'], [['dead_circumflex', 't'], '^t'],
+      [['dead_acute', '1'], "'1"], [['dead_diaeresis', '1'], '"1'], [['dead_acute', 'dead_acute'], "''"],
+    ];
+    const teclar = async (teclas) => { execFileSync('xdotool', ['key', '--delay', '180', ...teclas]); await pagina.waitForTimeout(400); };
+    const conferir = (onde, v) => console.log(`acentos ${onde}:`, JSON.stringify(v), v === ESPERADO ? 'ok' : 'ERRADO');
+    // 1. O Bloco de notas, com os extras numa linha cada.
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(800);
+    await pagina.click('.janela.ativa textarea');
+    await teclar(SEQ);
+    conferir('Bloco de notas', await pagina.inputValue('.janela.ativa textarea'));
+    for (const [teclas, windows] of EXTRAS) {
+      await pagina.fill('.janela.ativa textarea', '');
+      await teclar(teclas);
+      const v = await pagina.inputValue('.janela.ativa textarea');
+      console.log(`acentos extra ${teclas.join(' + ')}: ${JSON.stringify(v)} (Windows: ${JSON.stringify(windows)})`, v === windows ? 'ok' : 'DIFERENTE');
+    }
+    await pagina.fill('.janela.ativa textarea', '');
+    await fecharTudo();
+    // 2. A caixa de busca da barra de tarefas.
+    await pagina.click('#busca-barra input');
+    await teclar(SEQ);
+    conferir('caixa de busca', await pagina.inputValue('#busca-barra input'));
+    await pagina.fill('#busca-barra input', '');
+    await pagina.keyboard.press('Escape');
+    // 3. O nome de um arquivo (F2 no Explorador).
+    fs.writeFileSync(path.join(disco, DOCS, 'renomear.txt'), 'x');
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(900);
+    await pagina.locator('.janela.ativa .item', { hasText: 'renomear.txt' }).click();
+    await pagina.keyboard.press('F2');
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.press('Control+a');
+    await teclar(SEQ);
+    conferir('nome do arquivo', await pagina.inputValue('.rotulo-editor'));
+    await pagina.keyboard.press('Escape');
+    await fecharTudo();
+    // 4. O Prompt de comando: o cat grava o que chega ao terminal num arquivo do disco.
+    await abrir('prompt');
+    await pagina.waitForTimeout(2500);
+    await pagina.keyboard.type('cat > acentos-prompt.txt\n');
+    await pagina.waitForTimeout(600);
+    await teclar(SEQ);
+    await teclar(['Return', 'ctrl+d']);
+    await pagina.waitForTimeout(800);
+    const doPrompt = (() => { try { return fs.readFileSync(path.join(disco, 'acentos-prompt.txt'), 'utf8').replace(/\r?\n$/, ''); } catch (e) { return 'sem o arquivo: ' + e.message; } })();
+    conferir('Prompt de comando', doPrompt);
+    await foto('acentos-prompt');
+    await fecharTudo();
+    // 5. Uma página do Navegador.
+    const servidor = http.createServer((req, res) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end('<!doctype html><meta charset="utf-8"><textarea id="t" style="width:90%;height:120px"></textarea>'); });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    servidor.unref();
+    await abrir('navegador');
+    await pagina.waitForTimeout(600);
+    await pagina.fill('.janela.ativa .nav-endereco', `http://127.0.0.1:${servidor.address().port}/`);
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2500);
+    const r = await pagina.evaluate(() => { const b = document.querySelector('.janela.ativa webview').getBoundingClientRect(); return { x: b.left + 40, y: b.top + 30 }; });
+    await pagina.mouse.click(r.x, r.y);
+    await pagina.waitForTimeout(400);
+    await teclar(SEQ);
+    conferir('Navegador', await pagina.evaluate(() => document.querySelector('.janela.ativa webview').executeJavaScript("document.getElementById('t').value")));
+    console.log('LANG=' + (process.env.LANG || ''), '| GTK_IM_MODULE do aplicativo:', await app.evaluate(() => process.env.GTK_IM_MODULE));
   },
 
   async vitrine() {

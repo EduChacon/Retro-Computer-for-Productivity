@@ -726,6 +726,8 @@ function dialogoTeclado() {
       const [l, v] = sel.value.split(':');
       const r = await retro.sistema.teclado(l, v).catch((e) => ({ ok: false, erro: e.message }));
       if (!r.ok) erro(tr('Não foi possível trocar o layout do teclado: {erro}', { erro: r.erro || '?' }));
+      // As teclas mortas do layout novo (as regras do Windows no EUA internacional) valem ao abrir de novo.
+      else if (r.reabrir && await confirmar(tr('O jeito de juntar os acentos do layout novo vale depois de abrir o Retro Computer de novo. Abrir de novo agora?'), { titulo: tr('Propriedades de Teclado') })) return retro.sistema.reabrir();
       teste.focus();
     },
   });

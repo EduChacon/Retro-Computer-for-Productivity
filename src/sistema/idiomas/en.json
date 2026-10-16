@@ -991,6 +991,7 @@
   "Idioma do teclado": "Keyboard language",
   "Atalhos": "Shortcuts",
   "Não foi possível trocar o layout do teclado: {erro}": "Could not change the keyboard layout: {erro}",
+  "O jeito de juntar os acentos do layout novo vale depois de abrir o Retro Computer de novo. Abrir de novo agora?": "The way the new layout combines accents takes effect after Retro Computer opens again. Open it again now?",
   "Propriedades de Mouse": "Mouse Properties",
   "Nenhum mouse ou touchpad com o controlador libinput foi encontrado. Os aparelhos com outro controlador seguem as configurações do Linux.": "No mouse or touchpad with the libinput driver was found. Devices with another driver follow the Linux settings.",
   "O mouse e o touchpad seguem as configurações do computador principal.": "The mouse and the touchpad follow the main computer's settings.",

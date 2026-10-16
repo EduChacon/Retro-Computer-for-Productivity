@@ -991,6 +991,7 @@
   "Idioma do teclado": "Idioma del teclado",
   "Atalhos": "Atajos",
   "Não foi possível trocar o layout do teclado: {erro}": "No se pudo cambiar la distribución del teclado: {erro}",
+  "O jeito de juntar os acentos do layout novo vale depois de abrir o Retro Computer de novo. Abrir de novo agora?": "La forma de combinar los acentos de la distribución nueva vale después de abrir Retro Computer de nuevo. ¿Abrirlo de nuevo ahora?",
   "Propriedades de Mouse": "Propiedades de Mouse",
   "Nenhum mouse ou touchpad com o controlador libinput foi encontrado. Os aparelhos com outro controlador seguem as configurações do Linux.": "No se encontró ningún mouse ni panel táctil con el controlador libinput. Los dispositivos con otro controlador siguen la configuración de Linux.",
   "O mouse e o touchpad seguem as configurações do computador principal.": "El mouse y el panel táctil siguen la configuración de la computadora principal.",

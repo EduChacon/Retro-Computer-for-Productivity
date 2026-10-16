@@ -78,7 +78,10 @@ export function bloquear() {
   const prender = (e) => {
     if (!tela) return;
     if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); desbloquear(); return; }
-    if (e.target === campo && !e.ctrlKey && !e.altKey && !e.metaKey) { e.stopPropagation(); return; }
+    // A AltGr escreve (o @ do teclado espanhol, os acentos do EUA internacional): no Windows ela chega
+    // como Ctrl+Alt e, no Linux, como AltGraph. Ela não é um atalho.
+    const altGr = (e.getModifierState && e.getModifierState('AltGraph')) || (e.ctrlKey && e.altKey);
+    if (e.target === campo && ((!e.ctrlKey && !e.altKey && !e.metaKey) || (altGr && e.key.length === 1))) { e.stopPropagation(); return; }
     if (e.target === campo && e.ctrlKey && ['a', 'v', 'x', 'c', 'z'].includes(e.key.toLowerCase())) { e.stopPropagation(); return; }
     e.preventDefault();
     e.stopPropagation();

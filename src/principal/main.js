@@ -11,7 +11,7 @@
  */
 const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard, ClipboardItem, webContents } = require('electron');
 const fs = require('node:fs');
-const { spawn } = require('node:child_process');
+const { spawn, execFileSync } = require('node:child_process');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 
@@ -55,15 +55,11 @@ const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
 const { Perfis, PRINCIPAL } = require('./perfis');
 const { ehExecutavel } = require('./executaveis');
+const { modoAcentos, gravarCompose } = require('./teclado');
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
 
-// O "ç" do teclado internacional (o acento agudo seguido do c), como no Windows. No Linux, o GTK só
-// faz o ç com o sistema em português; em inglês, sai o "ć". O módulo "cedilla" do GTK faz o ç em
-// qualquer idioma. Quem usa o IBus ou o Fcitx (a variável já posta) fica como está. Vale também para
-// o Firefox e os programas abertos pelo Retro Computer, que herdam a variável.
-if (process.platform === 'linux' && !process.env.GTK_IM_MODULE) process.env.GTK_IM_MODULE = 'cedilla';
 const idioma = require('./idioma');
 const { tr } = idioma;
 
@@ -116,6 +112,30 @@ const PERFIL = INICIO.perfil;
 if (PERFIL !== PRINCIPAL) {
   fs.mkdirSync(perfis.pastaDados(PERFIL), { recursive: true });
   app.setPath('userData', perfis.pastaDados(PERFIL));
+}
+
+// Os acentos no Linux como no Windows (teclado.js): no EUA internacional, a tabela com as regras do
+// Windows (" + B = "B, ´ + c = ç); nos outros layouts, o "cedilla" do GTK. A regra é escolhida ao abrir,
+// pelo layout (o de Painel › Teclado no modo sistema; senão, o do X), antes de o GTK ler a variável.
+// O IBus e o Fcitx de quem os usa ficam como estão. Os programas abertos pelo Retro Computer herdam.
+const IM_ORIGINAL = { GTK_IM_MODULE: process.env.GTK_IM_MODULE, XMODIFIERS: process.env.XMODIFIERS, WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY, XDG_SESSION_TYPE: process.env.XDG_SESSION_TYPE };
+const ehIntl = (l) => !!l && l.layout === 'us' && l.variante === 'intl';
+let ACENTOS = { modo: 'sistema', env: {} };
+if (process.platform === 'linux') {
+  // RETRO_TECLADO=us:intl finge o layout (para os testes: o Xvfb não aplica a variante).
+  let layout = process.env.RETRO_TECLADO ? { layout: process.env.RETRO_TECLADO.split(':')[0], variante: process.env.RETRO_TECLADO.split(':')[1] || '' } : null;
+  if (!layout) {
+    try {
+      const t = JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'config.json'), 'utf8')).teclado;
+      if (MODO_SISTEMA && t && t.layout) layout = { layout: t.layout, variante: t.variante || '' };
+    } catch { }
+  }
+  if (!layout && process.env.DISPLAY) {
+    try { layout = sistemaLinux.lerQuery(execFileSync('setxkbmap', ['-query'], { timeout: 2000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })); } catch { }
+  }
+  const arquivo = ehIntl(layout) && !IM_ORIGINAL.GTK_IM_MODULE ? gravarCompose(BASE_DADOS) : '';
+  ACENTOS = modoAcentos({ env: IM_ORIGINAL, ...(layout || {}), arquivo });
+  Object.assign(process.env, ACENTOS.env);
 }
 
 // O idioma escolhido vale também para os programas (o WordCraft segue o do navegador).
@@ -1376,6 +1396,11 @@ function registrarPonte() {
     if (!MODO_SISTEMA) throw new Error('modo sistema');
     const r = await sistemaLinux.aplicarTeclado(String(layout), String(variante || ''));
     if (r.ok) config.definir({ teclado: { layout: String(layout), variante: String(variante || '') } });
+    // A regra dos acentos (a do Windows no EUA internacional) só muda ao abrir de novo.
+    if (r.ok && ACENTOS.modo !== 'sistema') {
+      const novo = modoAcentos({ env: IM_ORIGINAL, layout: String(layout), variante: String(variante || ''), arquivo: 'x' }).modo;
+      r.reabrir = novo !== ACENTOS.modo;
+    }
     return r;
   });
   tratar('sistema:entrarDireto', (ligar, senha) => sistemaLinux.definirEntrarDireto(!!ligar, String(senha || '')));
