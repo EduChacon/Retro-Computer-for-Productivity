@@ -277,6 +277,7 @@ contextBridge.exposeInMainWorld('retro', {
   // As pastas do computador principal no Meu computador e o que ele manda (ids 'pc:…' nas rotas das unidades).
   computador: {
     pastas: () => chamar('computador:pastas'),
+    icones: (id, rels) => chamar('computador:icones', id, rels),
     estado: () => chamar('computador:estado'),
     mostrar: (id, rel) => chamar('computador:mostrar', id, rel),
     pronto: () => chamar('computador:pronto'),

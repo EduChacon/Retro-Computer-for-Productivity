@@ -19,7 +19,7 @@ const { Disco } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
 const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
-const { Aplicativos } = require('./aplicativos');
+const { Aplicativos, iconeDoArquivo } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
@@ -1748,8 +1748,30 @@ const atalhoEnviarPara = () => path.join(app.getPath('appData'), 'Microsoft', 'W
 const atalhoMesa = () => path.join(app.getPath('desktop'), nomeAtalhoDisco() + (process.platform === 'win32' ? '.lnk' : ''));
 const existeLink = (p) => { try { fs.lstatSync(p); return true; } catch { return false; } };
 
+// Os ícones de verdade dos atalhos e dos programas nas pastas do computador principal (o .lnk, o .url
+// e o .exe no Windows; o .app no Mac), guardados pelo caminho e pela data do arquivo.
+const iconesFora = new Map();
+const COM_ICONE = { win32: /\.(lnk|url|exe)$/i, darwin: /\.app$/i };
+
+async function iconesDoComputador(id, rels) {
+  const filtro = COM_ICONE[process.platform];
+  if (!filtro || !String(id).startsWith('pc:') || !Array.isArray(rels)) return [];
+  const u = await unidadeDe(id).unidade(String(id));
+  return Promise.all(rels.slice(0, 300).map(async (rel) => {
+    rel = String(rel || '');
+    if (!filtro.test(rel)) return null;
+    try {
+      const p = dentroDaUnidade(u.raiz, rel);
+      const chave = p + '|' + fs.statSync(p).mtimeMs;
+      if (!iconesFora.has(chave)) iconesFora.set(chave, await iconeDoArquivo(p, { app, shell, nativeImage }).catch(() => null));
+      return iconesFora.get(chave);
+    } catch { return null; }
+  }));
+}
+
 function registrarComputador() {
   tratar('computador:pastas', () => (foraVisivel() ? pastasFora.listar() : []));
+  tratar('computador:icones', (id, rels) => iconesDoComputador(id, rels));
   tratar('computador:estado', () => ({
     disponivel: !MODO_SISTEMA, visivel: foraVisivel(), principal: PERFIL === PRINCIPAL, plataforma: process.platform,
     atalhoMesa: !MODO_SISTEMA && existeLink(atalhoMesa()),

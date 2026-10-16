@@ -589,10 +589,14 @@ class Explorador {
   async itensUnidade(id, rel) {
     const lista = await retro.unidades.pasta(id, rel);
     lista.sort((a, b) => (b.pasta - a.pasta) || a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true, sensitivity: 'base' }));
-    return lista.map((f) => {
+    // No computador principal, os atalhos e os programas com o ícone de verdade (o do Windows).
+    const icones = ehDoComputador(id)
+      ? await retro.computador.icones(id, lista.map((f) => (f.pasta ? '' : f.rel))).catch(() => [])
+      : [];
+    return lista.map((f, i) => {
       const t = tipoDe(f.nome, f.pasta);
       return {
-        chave: 'un:' + f.rel, rotulo: f.nome, icone: t.icone, nome: f.nome, pasta: f.pasta, arrastavel: false,
+        chave: 'un:' + f.rel, rotulo: f.nome, icone: t.icone, iconeUrl: icones[i] || null, nome: f.nome, pasta: f.pasta, arrastavel: false,
         unidade: { id, rel: f.rel }, alvo: f.pasta ? pastaDaUnidade(id, f.rel) : null,
         dica: f.pasta ? '' : tr('Tipo: {tipo}\nTamanho: {tamanho}\nModificado em: {data}', { tipo: t.descricao, tamanho: tamanho(f.tamanho), data: dataHora(f.modificado) }),
         colunas: [f.pasta ? '' : tamanho(f.tamanho), t.descricao, dataHora(f.modificado)],

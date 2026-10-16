@@ -155,6 +155,66 @@ function listarMac() {
   return [...r.values()];
 }
 
+/* ---------- O ícone de verdade de um programa, de um atalho ou de um arquivo ---------- */
+
+/** As variáveis do Windows num caminho (%SystemRoot%, %ProgramFiles%…), como o Explorer as lê. */
+function expandirVariaveis(p, env = process.env) {
+  return String(p || '').replace(/%([^%]+)%/g, (m, k) => {
+    const chave = Object.keys(env).find((x) => x.toLowerCase() === k.toLowerCase());
+    return chave ? env[chave] : m;
+  });
+}
+
+/** O IconFile de um atalho da internet (.url), um arquivo .ini pequeno. */
+function iconeDoUrl(texto) {
+  const m = /^\s*IconFile\s*=\s*(.+?)\s*$/im.exec(String(texto || ''));
+  return m ? m[1] : null;
+}
+
+/**
+ * De onde vem o ícone de um arquivo do Windows. O Chromium só lê o ícone de dentro do .exe, do .dll
+ * e do .ico; para o resto (o .lnk e o .url), ele devolve o genérico da extensão (a folha com a seta).
+ * Por isso o atalho é lido: o ícone escolhido nele ou, sem ele, o do programa para onde aponta.
+ * Os atalhos dos programas da Microsoft Store (sem um .exe) e os que usam um ícone do meio de um
+ * .dll (o Painel de controle do Windows) ficam com o genérico.
+ */
+function origemDoIcone(arquivo, { shell, existe = fs.existsSync, ler = (p) => fs.readFileSync(p, 'utf8'), env = process.env } = {}) {
+  const ext = path.extname(arquivo).toLowerCase();
+  const serve = (p) => !!p && /\.(exe|dll|ico)$/i.test(p) && existe(p);
+  if (ext === '.lnk') {
+    let l;
+    try { l = shell.readShortcutLink(arquivo); } catch { return null; }
+    const icone = expandirVariaveis(l.icon, env);
+    const alvo = expandirVariaveis(l.target, env);
+    // O Electron só lê o primeiro ícone de um .exe ou .dll: com outro número, vale o do programa.
+    if (serve(icone) && (/\.ico$/i.test(icone) || !l.iconIndex)) return icone;
+    if (serve(alvo)) return alvo;
+    return null;
+  }
+  if (ext === '.url') {
+    let icone = null;
+    try { icone = expandirVariaveis(iconeDoUrl(ler(arquivo)), env); } catch { }
+    return serve(icone) ? icone : null;
+  }
+  return /\.(exe|ico)$/i.test(ext) ? arquivo : null;
+}
+
+/** O ícone (32 pontos, em data: URL) de um programa, de um atalho ou de um .exe; null se não houver. */
+async function iconeDoArquivo(arquivo, { app, shell, nativeImage, plataforma = process.platform } = {}) {
+  let fonte = arquivo;
+  if (plataforma === 'win32') {
+    fonte = origemDoIcone(arquivo, { shell });
+    if (!fonte) return null;
+    if (/\.ico$/i.test(fonte)) {
+      const im = nativeImage.createFromPath(fonte);
+      return im.isEmpty() ? null : im.resize({ width: 32, height: 32, quality: 'best' }).toDataURL();
+    }
+  }
+  const im = await app.getFileIcon(fonte, { size: 'normal' });
+  const url = im && !im.isEmpty() ? im.toDataURL() : null;
+  return url === 'data:image/png;base64,' ? null : url;
+}
+
 /* ---------- Comum ---------- */
 
 class Aplicativos {
@@ -213,8 +273,7 @@ class Aplicativos {
         if (p && p.endsWith('.svg')) url = 'data:image/svg+xml;base64,' + fs.readFileSync(p).toString('base64');
         else if (p) url = this.nativeImage.createFromPath(p).resize({ width: 32, height: 32, quality: 'best' }).toDataURL();
       } else if (a) {
-        const im = await this.app.getFileIcon(a.arquivo, { size: 'normal' });
-        url = im && !im.isEmpty() ? im.toDataURL() : null;
+        url = await iconeDoArquivo(a.arquivo, { app: this.app, shell: this.shell, nativeImage: this.nativeImage, plataforma: this.plataforma });
       }
     } catch { url = null; }
     if (url === 'data:image/png;base64,') url = null;
@@ -246,4 +305,4 @@ class Aplicativos {
   }
 }
 
-module.exports = { Aplicativos, lerDesktop, limparExec, iconeLinux };
+module.exports = { Aplicativos, lerDesktop, limparExec, iconeLinux, iconeDoArquivo, origemDoIcone, iconeDoUrl, expandirVariaveis };

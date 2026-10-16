@@ -69,3 +69,34 @@ test('a 1.1.0 pede a senha ao abrir (quem tem senha não abria mais pedindo, a n
   assert.equal(migrar({ ...antigo, bloqueio: { ...antigo.bloqueio, aoAbrir: false } }).bloqueio.aoAbrir, false);
   assert.equal(PADRAO.bloqueio.aoAbrir, true);
 });
+
+test('o ícone de um atalho do Windows vem do programa para onde ele aponta (não o genérico da extensão)', () => {
+  const { origemDoIcone, iconeDoUrl, expandirVariaveis } = require('../src/principal/aplicativos');
+  const existe = (p) => ['C:\\Program Files\\Brave\\brave.exe', 'C:\\Windows\\system32\\imageres.dll', 'C:\\Apps\\anki.ico'].includes(p);
+  const atalhos = {
+    'brave.lnk': { target: 'C:\\Program Files\\Brave\\brave.exe', icon: '' },
+    'anki.lnk': { target: 'C:\\Apps\\anki.exe', icon: 'C:\\Apps\\anki.ico' },
+    'painel.lnk': { target: '', icon: '%SystemRoot%\\system32\\imageres.dll', iconIndex: 27 },
+    'loja.lnk': { target: '', icon: '' },
+  };
+  const shell = { readShortcutLink: (p) => { if (!atalhos[p]) throw new Error('não é atalho'); return atalhos[p]; } };
+  const env = { SystemRoot: 'C:\\Windows' };
+  assert.equal(origemDoIcone('brave.lnk', { shell, existe, env }), 'C:\\Program Files\\Brave\\brave.exe');
+  // O ícone escolhido no atalho vem antes do programa.
+  assert.equal(origemDoIcone('anki.lnk', { shell, existe, env }), 'C:\\Apps\\anki.ico');
+  // Um ícone do meio de um .dll, sem um programa: o genérico (o Electron só leria o primeiro do .dll).
+  assert.equal(origemDoIcone('painel.lnk', { shell, existe, env }), null);
+  atalhos['brave2.lnk'] = { target: 'C:\\Program Files\\Brave\\brave.exe', icon: 'C:\\Windows\\system32\\imageres.dll', iconIndex: 3 };
+  assert.equal(origemDoIcone('brave2.lnk', { shell, existe, env }), 'C:\\Program Files\\Brave\\brave.exe');
+  // Os da Microsoft Store (sem .exe) e os quebrados ficam com o genérico.
+  assert.equal(origemDoIcone('loja.lnk', { shell, existe, env }), null);
+  assert.equal(origemDoIcone('quebrado.lnk', { shell, existe, env }), null);
+  // O .exe é ele mesmo; um .txt não tem ícone próprio.
+  assert.equal(origemDoIcone('C:\\x\\programa.exe', { shell, existe, env }), 'C:\\x\\programa.exe');
+  assert.equal(origemDoIcone('C:\\x\\nota.txt', { shell, existe, env }), null);
+  // O atalho da internet: o IconFile dele.
+  assert.equal(iconeDoUrl('[InternetShortcut]\r\nURL=https://exemplo.com\r\nIconFile=C:\\Program Files\\Brave\\brave.exe\r\nIconIndex=0\r\n'), 'C:\\Program Files\\Brave\\brave.exe');
+  assert.equal(origemDoIcone('site.url', { shell, existe, env, ler: () => '[InternetShortcut]\nIconFile=C:\\Program Files\\Brave\\brave.exe' }), 'C:\\Program Files\\Brave\\brave.exe');
+  assert.equal(expandirVariaveis('%ProgramFiles%\\x', { PROGRAMFILES: 'C:\\Program Files' }), 'C:\\Program Files\\x');
+  assert.equal(expandirVariaveis('%NAOEXISTE%\\x', {}), '%NAOEXISTE%\\x');
+});
