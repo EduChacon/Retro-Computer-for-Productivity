@@ -279,6 +279,8 @@ const TOPICOS = [
 <p><b>Diário de trabalho</b>: um arquivo de texto por dia, em Meus documentos › Diário de trabalho. Com <b>Anotar sozinho</b>, ele registra a hora de cada foco concluído e de cada arquivo alterado (a primeira vez no dia); <b>Escrever uma nota…</b> acrescenta uma linha sua. O diário só acrescenta linhas: o que você escrever nele fica.</p>
 <p><b>Mapa de caracteres</b>: os acentos, os símbolos (§, º, “ ”, –, €…) e as letras de outros alfabetos, em grupos. Segurar o botão sobre um caractere o amplia; dois cliques o juntam à caixa de baixo, e Copiar o leva à área de transferência.</p>
 <p><b>Calculadora</b>, <b>Bloco de notas</b> (com Imprimir, Ctrl+P) e <b>Prompt de comando</b>.</p>
+<h2>DOS</h2>
+<p>O <b>DOS</b> (em Acessórios) é o DOSBox, um emulador do computador da época, sem internet. A unidade C: dele é a pasta <b>C:\DOS</b> do disco: ponha lá os seus programas e jogos do DOS e digite o nome para abri-los. Dois cliques num programa do DOS (.com, .bat ou um .exe do DOS) também o abrem. O que mudar volta para o disco ao fechar a janela, com a versão anterior guardada e os apagados na Lixeira.</p>
 <h2>Jogos</h2>
 <p>Paciência, Campo Minado e Breakout, para as pausas.</p>
 <p><b>Damas</b> (as regras brasileiras ou as inglesas, em Jogo › Regras) e <b>Xadrez</b>: contra o computador, em três níveis, ou entre duas pessoas no mesmo computador. Clique na peça e depois na casa (ou arraste); Jogo › Desfazer (Ctrl+Z) volta o último lance. A partida fica guardada: fechar a janela não a perde.</p>`],
@@ -292,6 +294,8 @@ const TOPICOS = [
 <p><b>Work journal</b>: one text file per day, in Documents › Work journal. With <b>Record automatically</b>, it notes the time of each focus block completed and of each file changed (the first time in the day); <b>Write a note…</b> adds a line of your own. The journal only adds lines: whatever you write in it stays.</p>
 <p><b>Character Map</b>: accents, symbols (§, º, “ ”, –, €…) and the letters of other alphabets, in groups. Holding the button on a character enlarges it; a double-click adds it to the box below, and Copy sends it to the clipboard.</p>
 <p><b>Calculator</b>, <b>Notepad</b> (with Print, Ctrl+P) and <b>Command Prompt</b>.</p>
+<h2>DOS</h2>
+<p><b>DOS</b> (in Accessories) is DOSBox, an emulator of the computers of the time, without the internet. Its drive C: is the <b>C:\DOS</b> folder on the disk: put your DOS programs and games there and type the name to open them. Double-clicking a DOS program (.com, .bat or a DOS .exe) also opens it. Whatever changes goes back to the disk when you close the window, with the previous version kept and deleted files in the Trash.</p>
 <h2>Games</h2>
 <p>Solitaire, Minesweeper and Breakout, for the breaks.</p>
 <p><b>Checkers</b> (Brazilian draughts or American checkers, in Game › Rules) and <b>Chess</b>: against the computer, at three levels, or between two people on the same computer. Click a piece and then the square (or drag it); Game › Undo (Ctrl+Z) takes back the last move. The game is saved: closing the window does not lose it.</p>`],
@@ -305,6 +309,8 @@ const TOPICOS = [
 <p><b>Diario de trabajo</b>: un archivo de texto por día, en Mis documentos › Diario de trabajo. Con <b>Anotar solo</b>, registra la hora de cada enfoque completado y de cada archivo modificado (la primera vez en el día); <b>Escribir una nota…</b> agrega una línea tuya. El diario solo agrega líneas: lo que escribas en él se queda.</p>
 <p><b>Mapa de caracteres</b>: los acentos, los símbolos (§, º, “ ”, –, €…) y las letras de otros alfabetos, en grupos. Mantener el botón sobre un carácter lo amplía; el doble clic lo agrega al cuadro de abajo, y Copiar lo lleva al portapapeles.</p>
 <p><b>Calculadora</b>, <b>Bloc de notas</b> (con Imprimir, Ctrl+P) y <b>Línea de comandos</b>.</p>
+<h2>DOS</h2>
+<p>El <b>DOS</b> (en Accesorios) es el DOSBox, un emulador de la computadora de la época, sin internet. Su unidad C: es la carpeta <b>C:\DOS</b> del disco: pon allí tus programas y juegos del DOS y escribe el nombre para abrirlos. Un doble clic en un programa del DOS (.com, .bat o un .exe del DOS) también lo abre. Lo que cambie vuelve al disco al cerrar la ventana, con la versión anterior guardada y los borrados en la Papelera.</p>
 <h2>Juegos</h2>
 <p>Solitario, Buscaminas y Breakout, para las pausas.</p>
 <p><b>Damas</b> (las reglas brasileñas o las inglesas, en Juego › Reglas) y <b>Ajedrez</b>: contra la computadora, en tres niveles, o entre dos personas en la misma computadora. Haz clic en la pieza y luego en la casilla (o arrástrala); Juego › Deshacer (Ctrl+Z) vuelve la última jugada. La partida queda guardada: cerrar la ventana no la pierde.</p>`],

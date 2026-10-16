@@ -1874,6 +1874,63 @@ const ROTEIROS = {
     await foto('breakout');
   },
 
+  // O DOS: um .COM feito aqui (só escreve uma frase) aberto com dois cliques, os comandos digitados e
+  // o arquivo criado no DOS de volta ao disco ao fechar a janela.
+  async dos() {
+    await fecharTudo();
+    // mov dx,109h; mov ah,9; int 21h; int 20h; e a frase terminada em "$".
+    const com = [0xba, 0x09, 0x01, 0xb4, 0x09, 0xcd, 0x21, 0xcd, 0x20, ...Buffer.from('Ola do Retro Computer!\r\n$', 'latin1')];
+    await pagina.evaluate((b) => retro.disco.gravar('DOS/OLA.COM', new Uint8Array(b)), com);
+    await abrir('explorador', { pasta: 'DOS' });
+    await pagina.waitForTimeout(800);
+    await pagina.locator('.janela.ativa .item', { hasText: 'OLA.COM' }).dblclick();
+    await pagina.waitForFunction(() => { const a = document.querySelector('.janela.dos .dos-aviso'); return a && a.hidden; }, null, { timeout: 60000 });
+    await pagina.waitForTimeout(2500);
+    await foto('dos-programa');
+    await pagina.locator('.janela.dos iframe.dos-quadro').click();
+    // O ">" com o Shift apertado de verdade (o type do Playwright não aperta o Shift).
+    await pagina.keyboard.type('echo teste', { delay: 40 });
+    await pagina.keyboard.press('Shift+Period');
+    await pagina.keyboard.type(' novo.txt', { delay: 40 });
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(600);
+    await pagina.keyboard.type('dir', { delay: 40 });
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1500);
+    await foto('dos-dir');
+    await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('dos')).fechar());
+    await pagina.waitForTimeout(2500);
+    console.log('dos:', JSON.stringify(await pagina.evaluate(async () => ({
+      novo: await retro.disco.existe('DOS/NOVO.TXT'),
+      texto: await retro.disco.lerTexto('DOS/NOVO.TXT').catch(() => null),
+      janela: window.__retro.janelas.lista.some((j) => j.el.classList.contains('dos')),
+    }))));
+    await fecharTudo();
+    // Com RETRO_DOOM (o .zip do Doom shareware), o jogo de verdade: abre o DOOM.EXE e começa uma partida.
+    if (process.env.RETRO_DOOM) {
+      const destino = path.join(disco, 'DOS', 'DOOM');
+      fs.mkdirSync(destino, { recursive: true });
+      execFileSync('python3', ['-I', '-c', 'import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])', process.env.RETRO_DOOM, destino]);
+      await abrir('dos', { arquivo: 'DOS/DOOM/DOOM.EXE' });
+      await pagina.waitForFunction(() => { const a = document.querySelector('.janela.dos .dos-aviso'); return a && a.hidden; }, null, { timeout: 60000 });
+      await pagina.waitForTimeout(25000);
+      await foto('dos-doom-titulo');
+      await pagina.locator('.janela.dos iframe.dos-quadro').click();
+      for (let i = 0; i < 4; i++) { await pagina.keyboard.press('Enter'); await pagina.waitForTimeout(1500); }
+      await pagina.waitForTimeout(8000);
+      await foto('dos-doom-jogo');
+      await pagina.keyboard.down('ArrowUp');
+      await pagina.waitForTimeout(2500);
+      await pagina.keyboard.up('ArrowUp');
+      await pagina.keyboard.down('ArrowLeft');
+      await pagina.waitForTimeout(800);
+      await pagina.keyboard.up('ArrowLeft');
+      await pagina.waitForTimeout(1500);
+      await foto('dos-doom-andando');
+      await fecharTudo();
+    }
+  },
+
   // O menu Iniciar configurável: fixar pelo botão direito, esconder um item, a caixa de propriedades
   // (as duas abas), os ícones pequenos e o botão direito no próprio Iniciar.
   async iniciar() {

@@ -1603,6 +1603,7 @@ function dialogoSobre() {
     h('p', h('b', tr('Créditos'))),
     h('p', tr('Ícones e fontes de sistema: SerenityOS (BSD-2-Clause), com as pastas recoloridas; o computador, o disquete, a caixa, o tomate e a pena são desenhos próprios do projeto.')),
     h('p', tr('Terminal: xterm.js (MIT) e node-pty (MIT). Aplicativo: Electron (MIT).')),
+    h('p', tr('DOS: o DOSBox do projeto js-dos (GPL-2.0), sem modificação; o código-fonte está em github.com/js-dos/emulators.')),
     h('p', tr('Os programas Craft são do ArtCraft Team (MIT ou Apache-2.0), baixados dos lançamentos oficiais; os nomes e logotipos são marcas deles.')),
     h('p', tr('Claude e Claude Code são da Anthropic.')),
     h('p', { style: { color: '#808080' } }, tr('O visual homenageia os computadores pessoais dos anos 90; nenhum ícone, som ou fonte da Microsoft ou da Apple é usado.')),

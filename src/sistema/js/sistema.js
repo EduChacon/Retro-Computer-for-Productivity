@@ -171,6 +171,11 @@ export async function abrirArquivo(rel, { com } = {}) {
     adicionarRecente(rel);
     return c.ehZip(nome) ? abrir('explorador', { pasta: c.pastaDoZip(rel) }) : c.abrirTar(rel);
   }
+  // Os programas do DOS (o .com, o .bat e o .exe do DOS, pelo cabeçalho) abrem no DOS.
+  if (!com && (/\.(com|bat)$/i.test(nome) || (/\.exe$/i.test(nome) && await retro.dos.tipo(rel).catch(() => null) === 'dos'))) {
+    adicionarRecente(rel);
+    return abrir('dos', { arquivo: rel });
+  }
   // No Linux, os programas e os instaladores do Windows abrem pelo WINE.
   if (!com && estado.config.plataforma === 'linux' && /\.(exe|msi)$/i.test(nome)) {
     adicionarRecente(rel);

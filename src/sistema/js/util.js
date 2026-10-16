@@ -117,7 +117,7 @@ const TIPOS = {
   js: ['codigo', marcar('Código JavaScript')], ts: ['codigo', marcar('Código TypeScript')], json: ['json', marcar('Dados JSON')], py: ['python', marcar('Código Python')],
   sh: ['shell', marcar('Roteiro do shell')], bat: ['shell', marcar('Arquivo de lote')], ps1: ['shell', marcar('Roteiro do PowerShell')],
   ttf: ['fonte', marcar('Fonte TrueType')], otf: ['fonte', marcar('Fonte OpenType')], woff2: ['fonte', marcar('Fonte da web')],
-  exe: ['executavel', marcar('Programa')], msi: ['executavel', marcar('Instalador')], dmg: ['executavel', marcar('Imagem de disco')], app: ['executavel', marcar('Programa')],
+  exe: ['executavel', marcar('Programa')], com: ['executavel', marcar('Programa do DOS')], msi: ['executavel', marcar('Instalador')], dmg: ['executavel', marcar('Imagem de disco')], app: ['executavel', marcar('Programa')],
   ics: ['calendario-arq', marcar('Calendário')], dxf: ['arquivo', marcar('Desenho CAD')], dwg: ['arquivo', marcar('Desenho CAD')],
 };
 

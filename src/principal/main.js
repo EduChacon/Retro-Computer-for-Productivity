@@ -47,6 +47,7 @@ const { DataHora, DataHoraFalsa } = require('./datahora');
 const { AcessibilidadeLinux } = require('./acessibilidade');
 const { Antivirus } = require('./antivirus');
 const { Wine } = require('./wine');
+const { Dos, servirEmulador } = require('./dos');
 const { dentro: dentroDaUnidade } = require('./unidades');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
@@ -120,6 +121,8 @@ if (MODO_SISTEMA && !app.commandLine.hasSwitch('password-store') && fs.existsSyn
 protocol.registerSchemesAsPrivileged([
   { scheme: 'sistema', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'programa', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  // O DOS (dos.js): o emulador numa origem só dele.
+  { scheme: 'dos', privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
 
 if (!app.requestSingleInstanceLock()) {
@@ -277,6 +280,7 @@ function registrarProtocolos() {
     });
   });
   protocol.handle('programa', (pedido) => programas.servir(pedido));
+  protocol.handle('dos', (pedido) => servirEmulador(pedido, RAIZ_APP));
 }
 
 /* ---------- A janela ---------- */
@@ -775,6 +779,11 @@ function registrarPonte() {
   });
   // Os programas do Windows no Linux, pelo WINE (o do sistema ou o do Flathub).
   const wine = new Wine({ dados: app.getPath('userData'), falso: !!process.env.RETRO_WINE_FALSO });
+  // O DOS: a unidade C: (a pasta C:\DOS ou a do programa) vai para o emulador e volta ao guardar.
+  const dos = new Dos({ disco });
+  tratar('dos:abrir', (rel) => dos.abrir(String(rel || '')));
+  tratar('dos:guardar', (pasta, foto, arquivos, pastas) => dos.guardar(String(pasta || ''), foto, arquivos, pastas));
+  tratar('dos:tipo', (rel) => dos.tipo(String(rel || '')));
   tratar('wine:estado', () => wine.estado());
   tratar('wine:abrir', (rel) => wine.abrir(disco.real(String(rel || ''))));
   tratar('wine:programas', () => wine.programas().map((p) => ({ id: p.id, nome: p.nome })));

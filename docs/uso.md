@@ -115,6 +115,7 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 | Mapa de caracteres | Os acentos, os símbolos e as letras de outros alfabetos, em grupos: segurar o botão amplia, dois cliques juntam à caixa de baixo, Copiar leva à área de transferência |
 | Área de transferência (logotipo + V) | Os últimos 25 textos copiados em qualquer programa: Enter cola o escolhido na posição do cursor; o "…" fixa ou exclui. Fica só na memória (nada vai para o disco), sem o que os gerenciadores de senhas marcam como secreto |
 | Calculadora, Bloco de notas, Prompt de comando | Os de sempre |
+| DOS | O DOSBox (do js-dos), sem internet: a unidade C: é a pasta C:\DOS do disco; dois cliques num .com, .bat ou .exe do DOS o abrem; o que mudar volta ao disco ao fechar (com a versão anterior guardada e os apagados na Lixeira) |
 | Jogos | Paciência, Campo Minado, Breakout, Damas (as regras brasileiras ou as inglesas) e Xadrez, contra o computador (três níveis) ou entre duas pessoas; a partida fica guardada ao fechar |
 
 ### Senha e bloqueio

@@ -639,6 +639,49 @@ def barra_tarefas(tam):
     return [''.join(l) for l in c]
 
 
+def dos(tam):
+    """O DOS: uma janela preta com o prompt "C:\\>" e o cursor, em pontos."""
+    c = [['.'] * tam for _ in range(tam)]
+
+    def ret(x0, y0, x1, y1, ch):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                c[y][x] = ch
+
+    if tam >= 32:
+        ret(1, 3, 30, 28, 'K')
+        ret(2, 4, 29, 7, 'B')
+        ret(26, 5, 28, 6, 'L')
+        ret(2, 8, 29, 27, 'K')
+        letras = {
+            'C': ['.LL', 'L..', 'L..', 'L..', '.LL'],
+            ':': ['.', 'L', '.', 'L', '.'],
+            '\\': ['L..', 'L..', '.L.', '..L', '..L'],
+            '>': ['L..', '.L.', '..L', '.L.', 'L..'],
+        }
+        x = 4
+        for ch in 'C:\\>':
+            for j, linha in enumerate(letras[ch]):
+                for i, p in enumerate(linha):
+                    if p == 'L':
+                        c[11 + j][x + i] = 'L'
+            x += len(letras[ch][0]) + 1
+        ret(x, 15, x + 2, 15, 'W')  # o cursor
+        ret(4, 19, 6, 19, 'G')  # as linhas de antes, mais apagadas
+        ret(8, 19, 15, 19, 'G')
+        ret(4, 22, 12, 22, 'G')
+    else:
+        ret(0, 1, 15, 14, 'K')
+        ret(1, 2, 14, 3, 'B')
+        ret(1, 4, 14, 13, 'K')
+        for i, linha in enumerate(['L..', '.L.', '..L', '.L.', 'L..']):
+            for k, p in enumerate(linha):
+                if p == 'L':
+                    c[6 + i][3 + k] = 'L'
+        ret(7, 10, 9, 10, 'W')
+    return [''.join(l) for l in c]
+
+
 def damas(tam):
     """As Damas: a pedra preta atrás, à direita, e a branca na frente."""
     im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
@@ -1044,6 +1087,10 @@ def gerar(serenity):
     # A Barra de tarefas e o menu Iniciar (Painel de controle): desenho próprio.
     feitos[32]['barra-tarefas'] = grade(barra_tarefas(32))
     feitos[16]['barra-tarefas'] = grade(barra_tarefas(16))
+
+    # O DOS (o DOSBox do js-dos): desenho próprio.
+    feitos[32]['dos'] = grade(dos(32))
+    feitos[16]['dos'] = grade(dos(16))
 
     # As Damas: duas pedras, desenhadas como as do jogo (src/sistema/js/jogos/pecas.js).
     feitos[32]['damas'] = damas(32)

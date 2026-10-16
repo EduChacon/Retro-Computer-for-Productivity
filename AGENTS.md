@@ -59,11 +59,14 @@ src/principal/         o processo principal (Node)
   portatil.js          o modo portátil: a pasta "Retro Computer (dados)" ao lado do programa
   antivirus.js         o antivírus sob demanda (o clamscan no Linux, o MpCmdRun no Windows); nada é apagado
   wine.js              os programas do Windows no Linux (o WINE do sistema ou o do Flathub) e os atalhos deles
+  dos.js               o DOS: a unidade C: (a pasta C:\DOS) vai para o emulador e volta; serve dos://emulador
   transferencia.js     o histórico da área de transferência (só na memória)
   firewall.js          o firewall do Linux (ufw)
   https.js             só conexões seguras no Navegador (http:// vira https://)
   navegador-preload.js entra nas páginas do Navegador (atalhos e botões laterais do mouse)
 src/adaptador/adaptador.js   entra em cada programa: Abrir/Salvar → caixas do disco
+src/dos/               a página do emulador do DOS (o js-dos), servida em dos://emulador: num quadro isolado,
+                       sem a ponte e sem internet, com o eval só ali (a área de trabalho não o permite)
 src/sistema/           a área de trabalho (página servida em sistema://retro/)
   index.html, estilo.css, fontes/, icones/{16,32}/
   idiomas/en.json, es.json   as traduções (a chave é o texto em português)
@@ -97,7 +100,7 @@ src/sistema/           a área de trabalho (página servida em sistema://retro/)
   janelas-nativas.js, nativos.js, atualizacao.js, admin.js   o lado da tela de cada recurso
   js/apps/             explorador, bloco, craft, prompt (e Claude), programas, loja, painel,
                        navegador, calculadora, imagens, midia, captura, monitor, atualizacoes,
-                       nativos, paciencia, campominado, breakout, damas, xadrez, transferencia, caracteres, diario, antivirus,
+                       nativos, paciencia, campominado, breakout, damas, xadrez, dos, transferencia, caracteres, diario, antivirus,
                        diversos (Executar, Localizar, Desligar), foco, protecao, ajuda
 catalogo/programas.json      os programas conhecidos (id, repo, tipos de arquivo, ícone; a categoria e a descrição nos três idiomas)
 recursos/linux/        a sessão do modo sistema (sessao.sh, o tema do Openbox, o .desktop) e os scripts do .deb
@@ -130,7 +133,7 @@ Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 - as telas: `geral`, `mais` (detalhes, Lixeira, Executar, Localizar, Foco, Ajuda), `ajuda` (os tópicos da Ajuda), `idioma` (a troca de idioma e o Sobre), `lixo` (o ícone da Lixeira), `boot` (com `RETRO_BOOT=1`);
 - os programas: `craft` (o WordCraft: abrir, salvar, salvar de novo, abrir; precisa de `RETRO_ZIP`), `atualizar` (a atualização ao abrir; precisa de `RETRO_ZIP` e `RETRO_FALSA_VERSAO`), `autoatualizar` (a do próprio aplicativo, com `RETRO_EXECUTAVEL`), `nativos`, `loja` (com `RETRO_LOJA_FALSA=1`), `claude`;
 - a internet: `navegador`, `permissoes` (com `RETRO_MIDIA_FALSA=1`), `webapps`;
-- as ferramentas: `calculadora`, `jogos`, `tabuleiro` (as Damas e o Xadrez: a tomada obrigatória, a resposta do computador, as regras inglesas, a promoção, o xeque-mate, a partida guardada e as pretas embaixo), `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;
+- as ferramentas: `calculadora`, `jogos`, `dos` (um .COM feito na hora aberto com dois cliques, os comandos e o arquivo de volta ao disco; com `RETRO_DOOM` apontando para o .zip do Doom shareware, que nunca entra no repositório, o jogo de verdade), `tabuleiro` (as Damas e o Xadrez: a tomada obrigatória, a resposta do computador, as regras inglesas, a promoção, o xeque-mate, a partida guardada e as pretas embaixo), `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;
 - a barra e o sistema: `barra`, `fixados`, `bandeja` (com `RETRO_BANDEJA_FALSA=1`), `bloqueio`, `sistema` (com `RETRO_SISTEMA=1` e `RETRO_ENERGIA_FALSA=1`), `impressoras`, `bluetooth`, `atualizacoesLinux` e `janelasLinux` (cada um com a sua variável de mentira);
 - as janelas e o teclado: `iniciar` (o menu Iniciar configurável: fixar, esconder um item, as propriedades, os ícones pequenos e o botão direito no Iniciar), `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`), `variasTelas` (o mesmo, com `RETRO_TELA_FALSA=2`), `mouse` (com `RETRO_MOUSE_FALSO=1`), `caracteres` (o Mapa de caracteres), `caixas` (confere se cada caixa do Painel cabe sem rolar, sem fotos), `mesa` (a área de trabalho padrão, o botão direito no Iniciar e a aba Ícones), `diario` (o Diário de trabalho), `copia` (a cópia de segurança para uma pasta temporária), `firefox` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1`, `RETRO_FIREFOX` e o openbox: o Firefox aberto pelo ícone do Navegador, fotografado pelo `import`; o Firefox fica aberto, então rode com `timeout`), `pedirClaude` (o "Pedir ao Claude" do botão direito, com `RETRO_CLAUDE_FALSO` apontando para um script que mostra o pedido recebido), `wine` (o instalador do Windows e Iniciar › Programas › Programas do Windows; com `RETRO_WINE_FALSO=1`), `antivirus` (a verificação de uma pasta com o arquivo de teste EICAR, a Lixeira e a caixa de formatar o pendrive; com `RETRO_ANTIVIRUS_FALSO=1`), `acessibilidade` (as abas, o alto contraste com o cursor grande, a lupa e o aviso visual; com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_ACESSIBILIDADE_FALSA=1`), `energia` (as Opções de energia e a Data e hora do modo sistema; com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_DATAHORA_FALSA=1`), `som` (a aba Áudio das Propriedades de Sons e a saída na caixa do volume; com `RETRO_SOM_FALSO=1` e `RETRO_BANDEJA_FALSA=1`), `visualizar` (o painel de visualização com um .docx, um PDF, uma planilha, um CSV, um texto e uma foto feitos na hora; e o Acesso rápido);
 - o que veio das distribuições: `produtividade` (o histórico da área de transferência, a conta na busca, a luz noturna, o modo de energia, o firewall e a aba Atalhos; com `RETRO_BANDEJA_FALSA=1` e `RETRO_FIREWALL_FALSO=1`) e `seguranca` (a Central de segurança e o aviso do site sem HTTPS; com `RETRO_FIREWALL_FALSO=1` e `RETRO_ATUALIZACOES_FALSAS=1`, e a internet).
@@ -168,6 +171,7 @@ Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do proc
 - Toda tecla do Electron que a área de trabalho também usa precisa ser conferida em `main.js` (o `before-input-event`): o F11, por exemplo, é da tela cheia do aplicativo.
 - Um tipo de arquivo novo: `TIPOS` em `js/util.js` (ícone e descrição) e, se um programa o abre, `tipos` no `catalogo/programas.json`.
 - Ícones: rode `python3 -I ferramentas/icones.py PASTA_DO_SERENITY` (com a raiz de um clone do SerenityOS); os desenhos próprios ficam no próprio roteiro, ponto a ponto. Os cursores grandes: `python3 -I ferramentas/cursores.py PASTA_DO_SERENITY`.
+- O DOS (o pacote `emulators`, GPL-2.0) vai sem modificação. Ele avalia o próprio código com `eval`, que a área de trabalho não permite: por isso roda em `dos://emulador` (um quadro com `sandbox`, sem a ponte, com a CSP própria de `dos.js` e sem internet) e só conversa por mensagens, com a origem conferida dos dois lados. Não afrouxe a CSP do `index.html` por causa dele.
 - Os cursores do `estilo.css` são escritos como `cursor: var(--cur-default, default)` (o `--cur-…` é o cursor grande da Acessibilidade); um cursor novo segue o mesmo formato.
 
 ## O que o dono gosta

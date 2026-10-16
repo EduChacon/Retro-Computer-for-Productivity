@@ -20,6 +20,7 @@
     "@xterm/addon-webgl": "^0.19.0",
     "@xterm/xterm": "^6.0.0",
     "electron-updater": "^6.8.9",
+    "emulators": "8.5.2",
     "mammoth": "^1.13.0",
     "node-pty": "^1.1.0",
     "pdfjs-dist": "^6.4.299",
@@ -53,7 +54,9 @@
       "LICENSE",
       "ATRIBUICOES.md",
       "!node_modules/pdfjs-dist/{legacy,web,types,image_decoders}/**",
-      "!node_modules/pdfjs-dist/build/{pdf.mjs,pdf.worker.mjs,pdf.sandbox.mjs,pdf.sandbox.min.mjs,*.map}"
+      "!node_modules/pdfjs-dist/build/{pdf.mjs,pdf.worker.mjs,pdf.sandbox.mjs,pdf.sandbox.min.mjs,*.map}",
+      "!node_modules/emulators/dist/{wdosbox-x*,*.map,*.symbols}",
+      "!node_modules/emulators/dist/types/**"
     ],
     "asarUnpack": [
       "node_modules/node-pty/**"
@@ -111,10 +114,10 @@
         "xinput",
         "network-manager",
         "pipewire-pulse | pulseaudio-utils | alsa-utils",
-      "pulseaudio-utils",
-      "xkbset",
-      "dosfstools",
-      "exfatprogs",
+        "pulseaudio-utils",
+        "xkbset",
+        "dosfstools",
+        "exfatprogs",
         "flatpak",
         "lxpolkit",
         "wmctrl",

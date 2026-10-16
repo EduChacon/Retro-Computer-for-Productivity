@@ -281,6 +281,11 @@ contextBridge.exposeInMainWorld('retro', {
     aoMudar: ouvir('unidades:mudou'),
   },
   // Os programas do Windows no Linux, pelo WINE.
+  dos: {
+    abrir: (rel) => chamar('dos:abrir', rel),
+    guardar: (pasta, foto, arquivos, pastas) => chamar('dos:guardar', pasta, foto, arquivos, pastas),
+    tipo: (rel) => chamar('dos:tipo', rel),
+  },
   wine: {
     estado: () => chamar('wine:estado'),
     abrir: (rel) => chamar('wine:abrir', rel),
