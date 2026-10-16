@@ -126,3 +126,46 @@ test('lojas: o programa do menu Iniciar pelo nome do pacote do winget', () => {
   assert.strictEqual(acharPorNome(lista, 'Git'), null);
   assert.strictEqual(acharPorNome(lista, ''), null);
 });
+
+test('lojas: o ícone do site oficial (o apple-touch-icon, o maior icon, o favicon.ico)', () => {
+  const html = `<html><head>
+    <link rel="icon" href="/favicon-16.png" sizes="16x16">
+    <link rel='icon' type='image/png' href='https://cdn.exemplo.org/icone-64.png' sizes='64x64'>
+    <LINK REL="apple-touch-icon" HREF="toque.png">
+    <link rel="stylesheet" href="estilo.css">
+    <link rel="icon" href="http://inseguro.org/x.png" sizes="256x256">
+  </head></html>`;
+  assert.deepStrictEqual(l.iconesDaPagina(html, 'https://www.exemplo.org/pagina/'), [
+    'https://www.exemplo.org/pagina/toque.png',
+    'https://cdn.exemplo.org/icone-64.png',
+    'https://www.exemplo.org/favicon-16.png',
+    'https://www.exemplo.org/favicon.ico',
+  ]);
+  assert.deepStrictEqual(l.iconesDaPagina('<link rel="icon" href="/logo.svg" type="image/svg+xml"><link rel="icon" href="/a.png" sizes="32x32">', 'https://x.org/'), ['https://x.org/logo.svg', 'https://x.org/a.png', 'https://x.org/favicon.ico']);
+  assert.deepStrictEqual(l.iconesDaPagina('', 'https://so.org/a/b'), ['https://so.org/favicon.ico']);
+  assert.deepStrictEqual(l.iconesDaPagina('<link rel="icon" href="/a.png">', 'http://x.org/'), []);
+});
+
+test('lojas: o tipo da imagem pelos primeiros bytes', () => {
+  assert.strictEqual(l.tipoDaImagem(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a])), 'image/png');
+  assert.strictEqual(l.tipoDaImagem(Buffer.from([0, 0, 1, 0, 1, 0]), 'application/octet-stream'), 'image/x-icon');
+  assert.strictEqual(l.tipoDaImagem(Buffer.from('<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg"></svg>'), 'image/svg+xml'), 'image/svg+xml');
+  assert.strictEqual(l.tipoDaImagem(Buffer.from('<!doctype html><html>'), 'text/html'), null);
+  assert.strictEqual(l.tipoDaImagem(Buffer.from('<svg></svg>'), 'text/html'), null);
+});
+
+test('lojas: o ícone do site é achado uma vez e guardado', async () => {
+  const pedidos = [];
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
+  const fetch = async (url) => {
+    pedidos.push(url);
+    if (url === 'https://programa.org/') return { ok: true, url, headers: new Map([['content-type', 'text/html']]), text: async () => '<link rel="apple-touch-icon" href="/t.png">' };
+    if (url === 'https://programa.org/t.png') return { ok: true, url, headers: new Map([['content-type', 'image/png']]), arrayBuffer: async () => png };
+    return { ok: false, headers: new Map() };
+  };
+  const ic = new l.IconesDoSite({ fetch });
+  assert.strictEqual(await ic.doSite('https://programa.org/'), 'data:image/png;base64,' + png.toString('base64'));
+  assert.strictEqual(await ic.doSite('https://programa.org/'), 'data:image/png;base64,' + png.toString('base64'));
+  assert.deepStrictEqual(pedidos, ['https://programa.org/', 'https://programa.org/t.png']);
+  assert.strictEqual(await ic.doSite('http://inseguro.org/'), null);
+});

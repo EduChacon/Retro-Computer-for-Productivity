@@ -270,6 +270,7 @@ contextBridge.exposeInMainWorld('retro', {
     buscar: (o) => chamar('loja:buscar', o),
     detalhes: (id, idioma) => chamar('loja:detalhes', id, idioma),
     imagem: (url) => chamar('loja:imagem', url),
+    icone: (id, idioma) => chamar('loja:icone', id, idioma),
     instalados: () => chamar('loja:instalados'),
     atualizacoes: () => chamar('loja:atualizacoes'),
     instalar: (id) => chamar('loja:instalar', id),

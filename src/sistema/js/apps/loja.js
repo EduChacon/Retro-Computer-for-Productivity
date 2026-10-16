@@ -60,15 +60,35 @@ function imagemRemota(url, tam, reserva = 'programa') {
   return el;
 }
 
+// Os ícones do winget e do Homebrew já achados (o do computador ou o do site do programa).
+const ICONES = new Map();
+
+/** Pede o ícone de um programa do winget ou do Homebrew ao processo principal (uma vez por programa). */
+function pedirIcone(id) {
+  if (!ICONES.has(id)) ICONES.set(id, retro.loja.icone(id, idiomaAtual()).catch(() => null));
+  return ICONES.get(id);
+}
+
 /**
  * O ícone de um programa da lista: o da pesquisa ou, nos instalados do Flathub (o flatpak não diz
- * qual), o da ficha. O winget e o Homebrew não têm ícones: fica o genérico.
+ * qual), o da ficha. No winget e no Homebrew, que não publicam ícones, o processo principal acha
+ * um (pedirIcone), só quando o programa aparece na lista (ver).
  */
-function iconeDoPrograma(p, comFicha) {
+function iconeDoPrograma(p, loja, ver) {
   if (p.icone) return imagemRemota(p.icone, 32);
   const el = img('programa', 32);
   el.style.imageRendering = 'auto';
-  if (comFicha) retro.loja.detalhes(p.id, idiomaAtual()).then((f) => f.icone && retro.loja.imagem(f.icone)).then((d) => { if (d) el.src = d; }).catch(() => { });
+  if (loja === 'flatpak') retro.loja.detalhes(p.id, idiomaAtual()).then((f) => f.icone && retro.loja.imagem(f.icone)).then((d) => { if (d) el.src = d; }).catch(() => { });
+  else if (loja) { el.dataset.icone = p.id; if (ver) ver.observe(el); }
+  return el;
+}
+
+/** O ícone do topo da ficha: o do Flathub ou, nas outras lojas, o mesmo da lista. */
+function iconeDaFicha(id, url, loja) {
+  if (url || loja === 'flatpak') return imagemRemota(url, 32);
+  const el = img('programa', 32);
+  el.style.imageRendering = 'auto';
+  pedirIcone(id).then((d) => { if (d) el.src = d; });
   return el;
 }
 
@@ -104,6 +124,7 @@ export class AbaLoja {
 
   fechar() {
     if (this.paraDeOuvir) this.paraDeOuvir();
+    if (this.ver) this.ver.disconnect();
   }
 
   /** Sem o Flatpak, o winget ou o Homebrew: como instalar a ferramenta da loja. */
@@ -192,6 +213,19 @@ export class AbaLoja {
 
   desenharLista() {
     if (!this.listaEl) return;
+    // Os ícones do winget e do Homebrew são pedidos quando o programa aparece na lista (cada um custa
+    // uma ida ao site dele e, no winget, uma pergunta ao winget).
+    if (!this.ver && this.info.loja !== 'flatpak') {
+      this.ver = new IntersectionObserver((vistos) => {
+        for (const v of vistos) {
+          if (!v.isIntersecting) continue;
+          const el = v.target;
+          this.ver.unobserve(el);
+          pedirIcone(el.dataset.icone).then((d) => { if (d) el.src = d; });
+        }
+      }, { root: this.listaEl, rootMargin: '64px' });
+    }
+    if (this.ver) this.ver.disconnect();
     if (!this.itens.length) {
       this.listaEl.replaceChildren(h('div.loja-vazia', tr('Nenhum programa encontrado.')));
       return;
@@ -200,7 +234,7 @@ export class AbaLoja {
       const inst = this.instalados.get(p.id);
       const marca = inst ? (this.comAtualizacao.has(p.id) ? tr('Atualização disponível') : tr('Instalado')) : '';
       const el = h('div.loja-item' + (p.id === this.sel ? '.sel' : ''), { dataset: { id: p.id } },
-        iconeDoPrograma(p, this.info.loja === 'flatpak'),
+        iconeDoPrograma(p, this.info.loja, this.ver),
         h('div.info', h('div.nome', p.nome), h('div.desc', p.resumo), marca ? h('div.det' + (inst && this.comAtualizacao.has(p.id) ? '.nova' : ''), marca) : null));
       el.addEventListener('mousedown', () => this.selecionar(p.id));
       el.addEventListener('dblclick', () => (inst ? this.abrirPrograma(p.id) : this.instalar()));
@@ -216,7 +250,7 @@ export class AbaLoja {
     this.botoes();
     if (!id) { this.fichaEl.replaceChildren(); this.ficha = null; return; }
     const p = this.itens.find((x) => x.id === id) || { id, nome: id };
-    this.fichaEl.replaceChildren(h('div.ficha-topo', imagemRemota(p.icone, 32), h('div', h('b', p.nome), h('div', p.resumo || ''))), h('div.loja-vazia', tr('Carregando…')));
+    this.fichaEl.replaceChildren(h('div.ficha-topo', iconeDaFicha(id, p.icone, this.info.loja), h('div', h('b', p.nome), h('div', p.resumo || ''))), h('div.loja-vazia', tr('Carregando…')));
     let f;
     try {
       f = await retro.loja.detalhes(id, idiomaAtual());
@@ -234,7 +268,7 @@ export class AbaLoja {
     ].filter(Boolean);
     // Sem captura (o winget e o Homebrew não têm), nada no lugar dela.
     this.fichaEl.replaceChildren(...[
-      h('div.ficha-topo', imagemRemota(f.icone, 32), h('div', h('b', f.nome), h('div', f.resumo))),
+      h('div.ficha-topo', iconeDaFicha(id, f.icone, this.info.loja), h('div', h('b', f.nome), h('div', f.resumo))),
       h('div.ficha-dados', ...dados.map((d) => h('div', d))),
       f.captura ? h('div.ficha-captura', imagemRemota(f.captura, 32, 'imagem')) : null,
       ...f.descricao.map((p) => h('p', p))].filter(Boolean));
@@ -287,6 +321,7 @@ export class AbaLoja {
       else await retro.loja.instalar(id);
       await this.lerInstalados();
       this.comAtualizacao.delete(id);
+      ICONES.delete(id); // instalado, o ícone passa a ser o do próprio computador
       this.estadoEl.textContent = atualizar ? tr('{programa} atualizado.', { programa: nome }) : tr('{programa} instalado.', { programa: nome });
       // O programa novo entra no menu Iniciar › Programas do computador.
       const lancador = this.ficha && this.ficha.id === id && this.ficha.lancador;

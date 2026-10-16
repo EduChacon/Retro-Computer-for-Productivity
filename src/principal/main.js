@@ -19,12 +19,11 @@ const { Disco } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
 const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
-const { Aplicativos, iconeDoArquivo } = require('./aplicativos');
+const { Aplicativos, iconeDoArquivo, acharPorNome } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
 const { LojaWinget, LojaBrew, LojaWingetFalsa, LojaBrewFalsa } = require('./lojas');
-const { acharPorNome } = require('./aplicativos');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
 const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
@@ -1472,6 +1471,7 @@ function registrarPonte() {
   tratar('loja:buscar', (o) => loja.buscar(o || {}));
   tratar('loja:detalhes', (id, idioma) => loja.detalhes(String(id), String(idioma || 'en')));
   tratar('loja:imagem', (url) => loja.imagem(url));
+  tratar('loja:icone', (id, idioma) => (loja.icone ? loja.icone(String(id), String(idioma || 'en')) : null));
   tratar('loja:instalados', () => loja.instalados());
   tratar('loja:atualizacoes', () => loja.atualizacoes());
   const andamento = (id) => (a) => enviar('loja:andamento', id, a);
@@ -1641,9 +1641,18 @@ function criarLoja() {
       await aplicativos.abrir(a.id);
       return true;
     };
-    return new (falsa ? LojaWingetFalsa : LojaWinget)({ ...comum, abrirPrograma, pastaDados: app.getPath('userData') });
+    // O ícone de um programa instalado é o do atalho dele no menu Iniciar.
+    const iconeLocal = async (nome) => {
+      const a = acharPorNome(aplicativos.listar(), nome);
+      return a ? aplicativos.icone(a.id) : null;
+    };
+    return new (falsa ? LojaWingetFalsa : LojaWinget)({ ...comum, abrirPrograma, iconeLocal, pastaDados: app.getPath('userData') });
   }
-  if (qual === 'darwin') return new (falsa ? LojaBrewFalsa : LojaBrew)({ ...comum, pastaDados: app.getPath('userData') });
+  if (qual === 'darwin') {
+    // O de um aplicativo da pasta Aplicativos é o do próprio .app.
+    const iconeLocal = (caminho) => iconeDoArquivo(caminho, { app, shell, nativeImage });
+    return new (falsa ? LojaBrewFalsa : LojaBrew)({ ...comum, iconeLocal, pastaDados: app.getPath('userData') });
+  }
   return new (falsa ? LojaFalsa : Loja)(comum);
 }
 

@@ -13,6 +13,10 @@
  * atualizacoes, instalar, atualizar, remover, cancelar, abrir): a aba de Adicionar ou remover
  * programas é a mesma nos três sistemas. Os programas instalados aparecem sozinhos em
  * "Programas do computador" (aplicativos.js lê o menu Iniciar e a pasta Aplicativos).
+ *
+ * Nenhuma das duas publica ícones: o de um programa instalado é o do próprio computador (o do
+ * atalho do menu Iniciar, o do aplicativo na pasta Aplicativos); o dos outros, o que o site
+ * oficial do programa publica (o apple-touch-icon ou o maior "icon" da página, ou o favicon.ico).
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -125,6 +129,142 @@ class Executor {
   }
 }
 
+/* ---------- Os ícones pelo site oficial de cada programa ---------- */
+
+/** Os atributos de uma etiqueta HTML (<link rel="icon" href="…" sizes="…">). */
+function atributos(etiqueta) {
+  const r = {};
+  for (const m of etiqueta.matchAll(/([a-zA-Z-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g)) r[m[1].toLowerCase()] = m[3] ?? m[4] ?? m[5] ?? '';
+  return r;
+}
+
+/**
+ * Os ícones que uma página declara, do melhor para o pior: o apple-touch-icon (feito para a tela
+ * de início, quase sempre de 180 pontos), os "icon" do maior para o menor (o SVG conta como
+ * grande) e, por último, o /favicon.ico do site. Só endereços https.
+ */
+function iconesDaPagina(html, base) {
+  const achados = [];
+  const cab = String(html || '').slice(0, 300000);
+  for (const m of cab.matchAll(/<link\b[^>]*>/gi)) {
+    const a = atributos(m[0]);
+    const rel = (a.rel || '').toLowerCase().split(/\s+/);
+    if (!a.href || !(rel.includes('icon') || rel.includes('apple-touch-icon') || rel.includes('apple-touch-icon-precomposed'))) continue;
+    let url;
+    try { url = new URL(a.href.trim(), base).href; } catch { continue; }
+    if (!url.startsWith('https://')) continue;
+    const tam = Math.max(0, ...String(a.sizes || '').split(/\s+/).map((s) => Number(s.split(/x/i)[0]) || 0));
+    const svg = /svg/i.test(a.type || '') || /\.svg(\?|$)/i.test(url) || a.sizes === 'any';
+    const toque = rel.some((r) => r.startsWith('apple-touch-icon'));
+    achados.push({ url, nota: (toque ? 1000 : 0) + (svg ? 512 : tam || (toque ? 180 : 16)) });
+  }
+  achados.sort((x, y) => y.nota - x.nota);
+  const lista = achados.map((x) => x.url);
+  try { const raiz = new URL('/favicon.ico', base).href; if (raiz.startsWith('https://')) lista.push(raiz); } catch { }
+  return [...new Set(lista)];
+}
+
+/** O tipo de uma imagem pelos primeiros bytes (os servidores nem sempre dizem o certo do .ico). */
+function tipoDaImagem(buf, declarado = '') {
+  const b = buf.subarray(0, 16);
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return 'image/gif';
+  if (b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01 && b[3] === 0x00) return 'image/x-icon';
+  if (b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  const ini = buf.subarray(0, 512).toString('utf8').trimStart();
+  if (/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(ini) && /svg/i.test(declarado || 'svg')) return 'image/svg+xml';
+  return null;
+}
+
+/**
+ * Acha e baixa o ícone de um programa pelo site dele. O endereço do ícone de cada site fica
+ * guardado por um mês (loja-icones.json); as imagens, na memória. No máximo três sites ao mesmo tempo.
+ */
+class IconesDoSite {
+  constructor({ fetch, pastaDados = null } = {}) {
+    this.fetch = fetch;
+    this.arquivo = pastaDados && path.join(pastaDados, 'loja-icones.json');
+    this.enderecos = null;
+    this.imagens = new Map();
+    this.fila = [];
+    this.correndo = 0;
+  }
+
+  /** Uma tarefa por vez em cada uma das três vagas. */
+  naFila(fn) {
+    return new Promise((resolve) => {
+      this.fila.push(async () => { try { resolve(await fn()); } catch { resolve(null); } });
+      this.andar();
+    });
+  }
+
+  andar() {
+    while (this.correndo < 3 && this.fila.length) {
+      const fn = this.fila.shift();
+      this.correndo++;
+      fn().finally(() => { this.correndo--; this.andar(); });
+    }
+  }
+
+  lerEnderecos() {
+    if (this.enderecos) return;
+    try { this.enderecos = JSON.parse(fs.readFileSync(this.arquivo, 'utf8')); } catch { this.enderecos = {}; }
+  }
+
+  guardar() {
+    if (!this.arquivo) return;
+    clearTimeout(this.adiado);
+    // Uma gravação só, depois de a fila acalmar.
+    this.adiado = setTimeout(() => {
+      try { fs.mkdirSync(path.dirname(this.arquivo), { recursive: true }); fs.writeFileSync(this.arquivo, JSON.stringify(this.enderecos)); } catch { }
+    }, 2000);
+  }
+
+  /** Uma imagem de um endereço https, como data: URL (até 512 KB), ou null. */
+  async baixar(url) {
+    if (this.imagens.has(url)) return this.imagens.get(url);
+    let dados = null;
+    try {
+      const r = await this.fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (r.ok) {
+        const buf = Buffer.from(await r.arrayBuffer());
+        const tipo = buf.length && buf.length <= 512 * 1024 ? tipoDaImagem(buf, r.headers.get('content-type') || '') : null;
+        if (tipo) dados = `data:${tipo};base64,${buf.toString('base64')}`;
+      }
+    } catch { }
+    this.imagens.set(url, dados);
+    return dados;
+  }
+
+  /** O ícone do site (data: URL) ou null. */
+  async doSite(site) {
+    if (!/^https:\/\//.test(site || '')) return null;
+    this.lerEnderecos();
+    const g = this.enderecos[site];
+    if (g && Date.now() - g.em < 30 * 24 * 3600 * 1000) return g.url ? this.naFila(() => this.baixar(g.url)) : null;
+    return this.naFila(async () => {
+      let candidatos = [];
+      try {
+        const r = await this.fetch(site, { signal: AbortSignal.timeout(10000), headers: { Accept: 'text/html' } });
+        const tipo = r.headers.get('content-type') || '';
+        const html = r.ok && /html/i.test(tipo) ? (await r.text()).slice(0, 300000) : '';
+        candidatos = iconesDaPagina(html, r.url || site);
+      } catch {
+        candidatos = iconesDaPagina('', site);
+      }
+      let achado = null;
+      for (const url of candidatos.slice(0, 4)) {
+        const d = await this.baixar(url);
+        if (d) { achado = { url, d }; break; }
+      }
+      this.enderecos[site] = { url: achado ? achado.url : null, em: Date.now() };
+      this.guardar();
+      return achado ? achado.d : null;
+    });
+  }
+}
+
 /* ---------- Windows: o winget ---------- */
 
 /** Os nomes de pacote do winget (Publicador.Programa): nada que o winget leia como opção. */
@@ -200,10 +340,13 @@ const pastaManifesto = (id, versao) => `manifests/${id[0].toLowerCase()}/${id.sp
 const LOCALE_WINGET = { 'pt-BR': 'pt-BR', es: 'es-ES', en: 'en-US' };
 
 class LojaWinget {
-  constructor({ fetch, aoInstalar = () => { }, abrirPrograma = () => false, comando = 'winget', pastaDados = null } = {}) {
+  constructor({ fetch, aoInstalar = () => { }, abrirPrograma = () => false, iconeLocal = async () => null, comando = 'winget', pastaDados = null } = {}) {
     this.fetch = fetch;
     this.aoInstalar = aoInstalar;
     this.abrirPrograma = abrirPrograma;
+    this.iconeLocal = iconeLocal; // o ícone de um programa do computador, pelo nome (o do atalho do menu Iniciar)
+    this.icones = new IconesDoSite({ fetch, pastaDados });
+    this.nomesInstalados = new Map();
     this.comando = comando;
     this.pastaDados = pastaDados;
     this.exec = new Executor();
@@ -223,7 +366,7 @@ class LojaWinget {
     if (g && Date.now() - g.em < 24 * 3600 * 1000) return g;
     const f = await this.detalhes(id, idioma).catch(() => null);
     if (!f || !f.versao) return g || null;
-    this.fichas[chave] = { nome: f.nome, resumo: f.resumo, versao: f.versao, em: Date.now() };
+    this.fichas[chave] = { nome: f.nome, resumo: f.resumo, versao: f.versao, site: f.site, em: Date.now() };
     return this.fichas[chave];
   }
 
@@ -316,9 +459,24 @@ class LojaWinget {
 
   async imagem() { return null; }
 
+  /**
+   * O ícone de um programa: o do computador, se ele estiver instalado (pelo nome que o winget lista);
+   * senão, o do site oficial (o da ficha guardada ou o do manifesto).
+   */
+  async icone(id, idioma = 'en') {
+    if (!idWinget(id)) return null;
+    const nome = this.nomesInstalados.get(id);
+    if (nome) { const d = await this.iconeLocal(nome).catch(() => null); if (d) return d; }
+    const guardada = this.fichas && this.fichas[idioma + ':' + id];
+    const site = guardada && guardada.site !== undefined ? guardada.site : (await this.icones.naFila(() => this.detalhes(id, idioma)) || {}).site;
+    return site ? this.icones.doSite(site) : null;
+  }
+
   async instalados() {
     const saida = await rodar(this.comando, ['list', ...ARGS_WINGET], { timeout: 90000 }).catch((e) => e.saida || '');
-    return lerTabelaWinget(saida).filter((c) => idWinget(c[1])).map((c) => ({ id: c[1], nome: c[0], versao: c[2] || '', usuario: true }));
+    const l = lerTabelaWinget(saida).filter((c) => idWinget(c[1])).map((c) => ({ id: c[1], nome: c[0], versao: c[2] || '', usuario: true }));
+    this.nomesInstalados = new Map(l.map((x) => [x.id, x.nome]));
+    return l;
   }
 
   async atualizacoes() {
@@ -418,9 +576,11 @@ function acharBrew(existe = fs.existsSync) {
 }
 
 class LojaBrew {
-  constructor({ fetch, aoInstalar = () => { }, pastaDados = null, brew = acharBrew() } = {}) {
+  constructor({ fetch, aoInstalar = () => { }, iconeLocal = async () => null, pastaDados = null, brew = acharBrew() } = {}) {
     this.fetch = fetch;
     this.aoInstalar = aoInstalar;
+    this.iconeLocal = iconeLocal; // o ícone de um aplicativo do Mac, pelo caminho (/Applications/Firefox.app)
+    this.icones = new IconesDoSite({ fetch, pastaDados });
     this.pastaDados = pastaDados;
     this.brew = brew;
     this.exec = new Executor();
@@ -485,6 +645,19 @@ class LojaBrew {
 
   async imagem() { return null; }
 
+  /** O ícone de um programa: o do aplicativo na pasta Aplicativos, se estiver lá; senão, o do site oficial. */
+  async icone(id) {
+    if (!idBrew(id)) return null;
+    const c = (await this.catalogo().catch(() => [])).find((x) => x.id === id);
+    if (!c) return null;
+    const app = c.apps.find((a) => /^[^/\\]+\.app$/.test(a));
+    if (app && fs.existsSync(path.join('/Applications', app))) {
+      const d = await this.iconeLocal(path.join('/Applications', app)).catch(() => null);
+      if (d) return d;
+    }
+    return c.site ? this.icones.doSite(c.site) : null;
+  }
+
   async instalados() {
     if (!this.brew) return [];
     const casks = await this.catalogo().catch(() => []);
@@ -545,6 +718,7 @@ class LojaWingetFalsa extends LojaWinget {
   }
 
   async info() { return { plataforma: 'win32', loja: 'winget', versao: 'v1.11.400', pronta: true }; }
+  async instalados() { this.nomesInstalados = new Map(this.lista.map((x) => [x.id, x.nome])); return this.lista.map((x) => ({ ...x })); }
   async versaoDe(id) { return VERSOES_FALSAS[id] || ''; }
   async detalhes(id, idioma) {
     const f = await super.detalhes(id, idioma);
@@ -553,7 +727,6 @@ class LojaWingetFalsa extends LojaWinget {
     return { ...f, nome, resumo: id, desenvolvedor: id.split('.')[0], versao: '1.0' };
   }
   async pesquisar(termo) { return Object.values(ESCOLHIDOS.win32).flat().filter((id, i, a) => a.indexOf(id) === i && normal(id).includes(normal(termo))).map((id) => ({ id, nome: id.split('.').pop(), versao: '1.0' })); }
-  async instalados() { return this.lista.map((x) => ({ ...x })); }
   async atualizacoes() { return ['VideoLAN.VLC']; }
   async abrir() { return true; }
   async rodarDemorado(acao, id, aoAndar) {
@@ -597,6 +770,7 @@ function falsoAndamento(aoAndar) {
 }
 
 module.exports = {
+  IconesDoSite, iconesDaPagina, tipoDaImagem, atributos,
   LojaWinget, LojaBrew, LojaWingetFalsa, LojaBrewFalsa, ESCOLHIDOS,
   aosPoucos, idWinget, idBrew, lerTabelaWinget, lerAndamentoWinget, lerManifesto, pastaManifesto,
   resumoCask, lerListaBrew, lerDesatualizadosBrew, lerAndamentoBrew, pesquisarCasks, acharBrew, erroCurto,

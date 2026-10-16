@@ -1940,8 +1940,10 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await fecharTudo();
     await abrir('programas', { aba: 'loja' });
     await pagina.waitForSelector('.janela.ativa .loja-item', { timeout: 30000 }).catch(() => console.log('a lista não carregou'));
-    await pagina.waitForTimeout(2500);
+    // No winget e no Homebrew, os ícones vêm dos sites dos programas: um tempo a mais.
+    await pagina.waitForTimeout(qual === 'linux' ? 2500 : 9000);
     await fotoLoja('loja-mais-usados');
+    console.log('ícones:', await pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .loja-item img')].filter((i) => i.src.startsWith('data:')).length));
     console.log('itens:', await pagina.locator('.janela.ativa .loja-item').count());
     await pagina.fill('.janela.ativa .loja-topo input', qual === 'linux' ? 'libreoffice' : 'firefox');
     await pagina.keyboard.press('Enter');
