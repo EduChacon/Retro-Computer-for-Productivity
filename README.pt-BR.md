@@ -15,15 +15,18 @@ Um computador retrô para produtividade: a área de trabalho de um PC dos anos 9
 - **Área de trabalho dos anos 90**: botão Iniciar, barra de tarefas, janelas que se arrastam e redimensionam, ícones, menus, a Lixeira e a caixa de Desligar, com letras e ícones nítidos em qualquer monitor.
 - **Janelas que se encaixam e os atalhos de sempre**: arraste a janela até a borda (metade da tela) ou até um canto (um quarto); Alt+Tab, Alt+F4 e a tecla do logotipo com uma letra (E, R, D, V, L…) ou com as setas; Ctrl + a roda do mouse para o zoom.
 - **Barra de tarefas como a de hoje**: a caixa de busca e os programas fixados ao lado do Iniciar; a bandeja com o Wi-Fi, o volume, a bateria e o brilho, o Bluetooth, as notificações e o calendário; e a tela de bloqueio com senha.
-- **O disco C: é uma pasta do seu computador** (`Documentos/Retro Computer`): o que você salva fica visível também fora do programa. Para trazer arquivos, arraste-os para uma janela; para levar, use "Enviar para". O Explorador tem a barra de pastas, o endereço clicável e as miniaturas; os pendrives e os cartões aparecem no Meu computador, e os `.zip` abrem como pastas.
+- **O disco C: é uma pasta do seu computador** (`Documentos/Retro Computer`): o que você salva fica visível também fora do programa. Para trazer arquivos, arraste-os para uma janela; para levar, use "Enviar para". O Explorador tem a barra de pastas, o endereço clicável, as miniaturas, o Acesso rápido e o painel de visualização dos documentos do Word, dos PDFs e das planilhas; os pendrives e os cartões aparecem no Meu computador, e os `.zip` abrem como pastas.
 - **Nada se perde**: excluir manda para a Lixeira, e cada gravação guarda a versão anterior do arquivo.
 - **Programas de trabalho**: os [Craft](https://artcraft.run/) de código aberto (WordCraft para textos `.docx`, GridCraft para planilhas, DeckCraft para apresentações, PdfCraft, PhotoCraft e outros), instalados da versão oficial para navegador e rodando dentro das janelas. As caixas "Abrir" e "Salvar" deles usam o disco C:. Os programas instalados no computador também abrem pelo Iniciar, e no Linux o "Adicionar ou remover programas" instala ainda os programas do Flathub.
 - **Sempre atualizado**: ao abrir um programa, o Retro Computer procura a versão nova e a instala antes (ou pergunta, ou não procura, como você escolher). O próprio Retro Computer também se atualiza.
-- **Claude Code** no Prompt de comando, nos seus arquivos, com a conta da assinatura ou com uma chave de API guardada no cofre de senhas do sistema.
-- **Internet**: o Navegador (câmera, microfone e notificações só com a sua permissão) e o seu e-mail da web numa janela; qualquer site pode ser instalado como programa.
-- **Ferramentas prontas**: Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora (também na própria caixa de busca), Bloco de notas, o histórico da área de transferência (logotipo + V), Foco (Pomodoro, cronômetro e temporizador), a luz noturna, impressoras, Localizar, Executar, Painel de controle, proteção de tela, Ajuda e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez, contra o computador ou contra alguém).
+- **Claude Code** no Prompt de comando, nos seus arquivos, com a conta da assinatura ou com uma chave de API guardada no cofre de senhas do sistema. O botão direito num arquivo › Pedir ao Claude revisa, resume ou traduz; e, pedindo em palavras, ele ajusta o próprio Retro Computer (o fundo, a barra de tarefas, o menu Iniciar, os programas): o que ele apagar vai para a Lixeira, e a senha e a chave ficam fora do alcance dele.
+- **Internet**: o Firefox como navegador padrão, com o visual do Retro Computer (ou o Navegador embutido, em que a câmera, o microfone e as notificações pedem a sua permissão), e o seu e-mail da web numa janela; qualquer site pode ser instalado como programa.
+- **Ferramentas prontas**: Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora (também na própria caixa de busca), Bloco de notas, o histórico da área de transferência (logotipo + V), Foco (Pomodoro, cronômetro e temporizador), a luz noturna, impressoras, Localizar, Executar, Painel de controle, proteção de tela, Ajuda, o Diário de trabalho, o Mapa de caracteres, a cópia de segurança do disco C:, o antivírus sob demanda, as Opções de acessibilidade e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez, contra o computador ou contra alguém).
+- **DOS e programas do Windows**: um emulador de DOS embutido (sem internet) para os programas e os jogos antigos do disco C: e, no Linux, os programas do Windows pelo WINE.
+- **Vários usuários**: cada pessoa com a área de trabalho, as configurações, a senha e o disco C: próprios, escolhida ao abrir o Retro Computer; os programas são de todos.
 - **Segurança e privacidade num lugar só**: a Central de segurança mostra a senha da tela de bloqueio, o firewall (no Linux), as atualizações de segurança automáticas e como a chave do Claude está guardada; o Navegador só abre conexões seguras (HTTPS), a não ser que você escolha outra coisa, e pode apagar os dados dele ao fechar.
-- **Linux como sistema**: a sessão "Retro Computer" da tela de entrada abre direto nele; Desligar desliga o computador de verdade, os programas do Linux aparecem na barra de tarefas, as atualizações de segurança são instaladas pelo Painel de controle, e as teclas do logotipo, de volume, de brilho e Print Screen funcionam.
+- **Linux como sistema**: a sessão "Retro Computer" da tela de entrada abre direto nele; Desligar desliga o computador de verdade, os programas do Linux aparecem na barra de tarefas, as atualizações de segurança são instaladas pelo Painel de controle, o som, a energia, a data e a hora, o mouse, a resolução e as várias telas se ajustam no Painel de controle, e as teclas do logotipo, de volume, de brilho e Print Screen funcionam.
+- **No pendrive**: com uma pasta `Retro Computer (dados)` ao lado do programa, as configurações, os programas e o disco C: vão junto (o modo portátil).
 
 | | |
 |---|---|
@@ -32,6 +35,7 @@ Um computador retrô para produtividade: a área de trabalho de um PC dos anos 9
 | ![Adicionar ou remover programas, com a atualização](docs/img/programas.png) | ![Desligar o computador](docs/img/desligar.png) |
 | ![O Explorador com a barra de pastas e as miniaturas](docs/img/explorador.png) | ![O Reprodutor de mídia](docs/img/reprodutor.png) |
 | ![Duas janelas lado a lado, encaixadas nas bordas](docs/img/encaixe.png) | ![A Central de segurança](docs/img/seguranca.png) |
+| ![O Xadrez contra o computador](docs/img/xadrez.png) | ![A entrada, com vários usuários](docs/img/entrada.png) |
 
 ## Instalar
 
@@ -62,6 +66,6 @@ O guia para quem programa (pessoas ou agentes de IA) está em [AGENTS.md](AGENTS
 
 ## Créditos
 
-Ícones e fontes de sistema do [SerenityOS](https://github.com/SerenityOS/serenity) (BSD-2-Clause), com desenhos próprios do projeto; terminal com xterm.js e node-pty; os `.zip` com yauzl e yazl; a atualização do aplicativo com electron-updater; aplicativo em Electron. Os programas do Linux vêm do Flathub. Os Craft são do ArtCraft Team e são baixados dos lançamentos oficiais. Detalhes em [ATRIBUICOES.md](ATRIBUICOES.md).
+Ícones e fontes de sistema do [SerenityOS](https://github.com/SerenityOS/serenity) (BSD-2-Clause), com desenhos próprios do projeto; terminal com xterm.js e node-pty; o DOS com o [js-dos](https://js-dos.com/) (o emulador DOSBox, GPL-2.0, sem modificação); a visualização dos documentos com o mammoth e o pdf.js; os `.zip` com yauzl e yazl; a atualização do aplicativo com electron-updater; aplicativo em Electron. Os programas do Linux vêm do Flathub. Os Craft são do ArtCraft Team e são baixados dos lançamentos oficiais. Detalhes em [ATRIBUICOES.md](ATRIBUICOES.md).
 
 O visual homenageia os computadores pessoais dos anos 90; nenhum ícone, fonte, som ou imagem da Microsoft ou da Apple é usado.

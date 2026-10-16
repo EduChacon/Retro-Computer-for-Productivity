@@ -135,7 +135,7 @@ As ferramentas do sistema têm versões de mentira, para os testes e as capturas
 
 Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 
-- as telas: `geral`, `mais` (detalhes, Lixeira, Executar, Localizar, Foco, Ajuda), `ajuda` (os tópicos da Ajuda), `idioma` (a troca de idioma e o Sobre), `lixo` (o ícone da Lixeira), `boot` (com `RETRO_BOOT=1`);
+- as telas: `geral`, `mais` (detalhes, Lixeira, Executar, Localizar, Foco, Ajuda), `ajuda` (os tópicos da Ajuda), `idioma` (a troca de idioma e o Sobre), `lixo` (o ícone da Lixeira), `boot` (com `RETRO_BOOT=1`), `vitrine` (o Xadrez no meio de uma partida, para os READMEs; a tela de entrada dos READMEs sai do roteiro `perfis`);
 - os programas: `craft` (o WordCraft: abrir, salvar, salvar de novo, abrir; precisa de `RETRO_ZIP`), `atualizar` (a atualização ao abrir; precisa de `RETRO_ZIP` e `RETRO_FALSA_VERSAO`), `autoatualizar` (a do próprio aplicativo, com `RETRO_EXECUTAVEL`), `nativos`, `loja` (com `RETRO_LOJA_FALSA=1`), `claude`;
 - a internet: `navegador`, `permissoes` (com `RETRO_MIDIA_FALSA=1`), `webapps`;
 - as ferramentas: `calculadora`, `jogos`, `dos` (um .COM feito na hora aberto com dois cliques, os comandos e o arquivo de volta ao disco; com `RETRO_DOOM` apontando para o .zip do Doom shareware, que nunca entra no repositório, o jogo de verdade), `tabuleiro` (as Damas e o Xadrez: a tomada obrigatória, a resposta do computador, as regras inglesas, a promoção, o xeque-mate, a partida guardada e as pretas embaixo), `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;

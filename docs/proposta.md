@@ -138,7 +138,9 @@ Cada janela do Navegador é um `<webview>` numa sessão própria (só `http` e `
 | 10. Ferramentas: pendrives, pastas compactadas, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, sites como programas, Explorador com árvore e miniaturas, impressoras, Bluetooth | Feita (1.0) |
 | 11. Cantos magnéticos e atalhos do Windows, resolução da tela, Ctrl+roda para o zoom | Feita (1.0) |
 | 12. Da pesquisa das distribuições ([pesquisa-distribuicoes.md](pesquisa-distribuicoes.md)): histórico da área de transferência, luz noturna, modos de energia, firewall, contas na busca; a Central de segurança e a auditoria; a abertura mais leve | Feita (1.0) |
-| 13. Tema Mac clássico (o Mac OS 9.2), várias telas, áreas de trabalho virtuais, papel de parede e esquemas de cores, navegador focado, modo foco completo, emulador de DOS | Sugestões ([uso.md](uso.md), seção 8) |
+| 13. O trabalho do dia a dia: o Firefox como navegador padrão (com o visual da época), a área de trabalho e o menu Iniciar personalizáveis, o painel de visualização e o Acesso rápido do Explorador, o Diário de trabalho, a cópia de segurança, o modo foco completo, o Mapa de caracteres e o "Pedir ao Claude" | Feita (1.0) |
+| 14. O computador completo: som, energia, data e hora, acessibilidade, várias telas, o modo portátil, o antivírus, os programas do Windows (WINE), o DOS, as Damas e o Xadrez, vários usuários e o Claude que ajusta o Retro Computer (o servidor MCP) | Feita (1.0) |
+| 15. Tema Mac clássico (o Mac OS 9.2), áreas de trabalho virtuais, papel de parede e esquemas de cores, a barra de tarefas em cada monitor | Sugestões ([uso.md](uso.md), seção 8) |
 
 ## Riscos conhecidos
 

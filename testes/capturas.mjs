@@ -298,6 +298,17 @@ const ROTEIROS = {
     console.log('perfis:', JSON.stringify(await pagina.evaluate(() => retro.perfis.estado())));
   },
 
+  // As imagens dos READMEs que não saem de outro roteiro: o Xadrez no meio de uma partida (o
+  // gambito italiano, com as peças tomadas à vista), contra o computador.
+  async vitrine() {
+    await fecharTudo();
+    const lances = ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5', 'c2c3', 'g8f6', 'd2d4', 'e5d4', 'c3d4', 'c5b4', 'b1c3', 'f6e4', 'e1g1', 'e4c3', 'b2c3', 'b4c3'];
+    await pagina.evaluate((l) => window.__retro.definirConfig({ jogos: { xadrez: { oponente: 'computador', nivel: 'medio', partida: { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', lances: l } } } }), lances);
+    await abrir('xadrez');
+    await pagina.waitForTimeout(1500);
+    await foto('xadrez-partida');
+  },
+
   async boot() {
     // Com RETRO_BOOT=1: a tela do BIOS e a abertura (capturadas logo no início).
   },

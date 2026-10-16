@@ -9,10 +9,11 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 - Fala português, inglês e espanhol (Painel de controle › Idioma).
 - O disco C: é uma pasta do computador principal (por padrão, `Documentos/Retro Computer`). Tudo o que se salva fica nela, visível também fora do programa.
 - Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pela Loja de programas (no alto do menu Iniciar; no Painel de controle, "Adicionar ou remover programas") e rodam em janelas da área de trabalho. No Linux, a mesma janela instala os programas do Flathub.
-- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Prompt de comando e três jogos.
+- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Prompt de comando, DOS e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
 - As janelas se encaixam nas bordas e nos cantos da tela, e os atalhos do Windows (Alt+Tab, a tecla do logotipo com uma letra) funcionam no Retro Computer como sistema.
 - Painel de controle › Segurança mostra num lugar só a senha, o firewall, as atualizações e a privacidade.
-- O Claude Code roda no Prompt de comando, nos arquivos do disco C:.
+- Várias pessoas podem dividir o mesmo Retro Computer, cada uma com a área de trabalho, a senha e o disco C: próprios (Painel de controle › Usuários).
+- O Claude Code roda no Prompt de comando, nos arquivos do disco C:, e também ajusta o próprio Retro Computer quando se pede.
 - Nada se perde: o que é excluído vai para a Lixeira, e cada gravação guarda a versão anterior do arquivo.
 
 ## 1. Instalar e abrir
