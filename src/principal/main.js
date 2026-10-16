@@ -1014,6 +1014,9 @@ function registrarPonte() {
     telaCheiaAgora: janela ? janela.isFullScreen() : false,
     idiomaEfetivo: idioma.idioma(),
     idiomaSistema: app.getLocale(),
+    // O arrastar do sistema (para soltar fora do Retro Computer). No Linux sem um idioma UTF-8, o
+    // Chromium perde os nomes com acento ("Área de trabalho" chega como "/"): fica o de dentro.
+    arrastoSistema: process.platform !== 'linux' || /utf-?8/i.test(process.env.LC_ALL || process.env.LC_CTYPE || process.env.LANG || ''),
   }));
   tratar('config:definir', (parte) => {
     const proibidas = ['disco', 'versao', 'pastas'];
@@ -1097,6 +1100,26 @@ function registrarPonte() {
 
   // Disco
   tratar('disco:raiz', () => disco.raiz);
+  // Arrastar para fora (para o computador principal, um site do Navegador ou outro programa): o
+  // arrastar do próprio sistema, com os arquivos de verdade. O sistema só recebe cópias (o Electron
+  // oferece copiar ou criar um atalho, nunca mover), e nada sai do disco C:.
+  tratar('disco:arrastar', (rels, icone) => {
+    if (!janela || !Array.isArray(rels) || !rels.length) return false;
+    const files = rels.slice(0, 500).map((r) => disco.real(String(r))).filter((p) => fs.existsSync(p));
+    if (!files.length) return false;
+    const pasta = path.join(__dirname, '..', 'sistema', 'icones', '32');
+    const nome = /^[a-z0-9-]+$/.test(String(icone || '')) ? String(icone) : 'documento';
+    let img = nativeImage.createFromPath(path.join(pasta, nome + '.png'));
+    if (img.isEmpty()) img = nativeImage.createFromPath(path.join(pasta, 'documento.png'));
+    janela.webContents.startDrag({ files, icon: img });
+    return true;
+  });
+  // O que veio de volta numa soltura: o caminho de cada arquivo no disco C: (null para o de fora).
+  tratar('disco:relDe', (caminhos) => (Array.isArray(caminhos) ? caminhos : []).slice(0, 500).map((c) => {
+    const p = path.resolve(String(c || ''));
+    if (!noDisco(disco.raiz, p) || p === disco.raiz) return null;
+    return path.relative(disco.raiz, p).split(path.sep).join('/');
+  }));
   tratar('disco:listar', (rel, o) => disco.listar(rel, o));
   tratar('disco:info', (rel) => disco.info(rel));
   tratar('disco:existe', (rel) => disco.existe(rel));

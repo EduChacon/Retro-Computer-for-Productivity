@@ -113,6 +113,8 @@ if (ROTEIRO === 'acentos' || ROTEIRO === 'cedilha') {
   // O Xvfb não aplica a variante (o setxkbmap -query continua "us"): o Retro Computer finge o layout.
   if (!process.env.RETRO_TECLADO) process.env.RETRO_TECLADO = 'us:intl';
 }
+// O arrastar do sistema no Linux precisa de um idioma UTF-8 (sem ele, o Retro Computer fica com o de dentro).
+if (ROTEIRO === 'arrastarReal' && !/utf-?8/i.test(process.env.LC_ALL || process.env.LC_CTYPE || process.env.LANG || '')) process.env.LANG = 'C.UTF-8';
 const erros = [];
 let app = null;
 let pagina = null;
@@ -592,6 +594,9 @@ const ROTEIROS = {
   async arrastar() {
     const docs = path.join(disco, DOCS);
     const mesa = path.join(disco, MESA);
+    // O Playwright só imita o arrastar do navegador: aqui, o Retro Computer usa o dele (o do sistema,
+    // que solta fora do Retro Computer, fica para o roteiro arrastarReal, com o mouse de verdade).
+    await pagina.evaluate(() => { window.__retro.arrastoSimulado = true; });
     fs.mkdirSync(path.join(docs, 'Pasta A'), { recursive: true });
     fs.mkdirSync(path.join(docs, 'Pasta B'), { recursive: true });
     fs.writeFileSync(path.join(docs, 'nota.txt'), 'nota');
@@ -669,7 +674,7 @@ const ROTEIROS = {
     };
     console.log('zoom', zoom, '| devicePixelRatio', fator);
     await arrastarX('.janela.ativa .item:has(.rotulo:text-is("nota.txt"))', '.janela.ativa .item:has(.rotulo:text-is("Pasta A"))');
-    console.log('para a pasta:', fs.existsSync(path.join(docs, 'Pasta A', 'nota.txt')));
+    console.log('para a pasta:', fs.existsSync(path.join(docs, 'Pasta A', 'nota.txt')), '| saiu de onde estava:', !fs.existsSync(path.join(docs, 'nota.txt')));
     fs.writeFileSync(path.join(docs, 'fundo.txt'), 'f');
     await pagina.waitForTimeout(1500);
     const jb = await pagina.locator('.janela.ativa').boundingBox();
@@ -677,7 +682,15 @@ const ROTEIROS = {
     xdo('mousemove', fx, fy); await pagina.waitForTimeout(200); xdo('mousedown', 1); await pagina.waitForTimeout(200);
     for (let i = 1; i <= 15; i++) { xdo('mousemove', fx + 20 * i, Math.round(cont.y + (jb.y + jb.height + 60) * fator)); await pagina.waitForTimeout(40); }
     await pagina.waitForTimeout(300); xdo('mouseup', 1); await pagina.waitForTimeout(1500);
-    console.log('para o fundo da área de trabalho:', fs.existsSync(path.join(disco, MESA, 'fundo.txt')));
+    console.log('para o fundo da área de trabalho:', fs.existsSync(path.join(disco, MESA, 'fundo.txt')), '| saiu de onde estava:', !fs.existsSync(path.join(docs, 'fundo.txt')));
+    // Na própria área de trabalho, o ícone só muda de lugar (o arquivo fica onde está).
+    const antesMesa = await pagina.locator('#mesa .item:has(.rotulo:text-is("fundo.txt"))').boundingBox();
+    const [mx, my] = await ponto('#mesa .item:has(.rotulo:text-is("fundo.txt"))');
+    xdo('mousemove', mx, my); await pagina.waitForTimeout(200); xdo('mousedown', 1); await pagina.waitForTimeout(200);
+    for (let i = 1; i <= 15; i++) { xdo('mousemove', mx + Math.round(160 * i / 15) * fator, my); await pagina.waitForTimeout(40); }
+    await pagina.waitForTimeout(300); xdo('mouseup', 1); await pagina.waitForTimeout(1500);
+    const depoisMesa = await pagina.locator('#mesa .item:has(.rotulo:text-is("fundo.txt"))').boundingBox();
+    console.log('pela área de trabalho: mudou de lugar', !!depoisMesa && depoisMesa.x > antesMesa.x + 50, '| continua lá:', fs.existsSync(path.join(disco, MESA, 'fundo.txt')));
     // A janela sai de cima do ícone da Lixeira.
     await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret.x = 300; j.ret.y = 80; j.aplicarRet(); });
     await pagina.waitForTimeout(400);
@@ -686,6 +699,34 @@ const ROTEIROS = {
     if (pergunta) { await foto('arrastar-lixeira-pergunta'); await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim').replace('&', '') }).click(); await pagina.waitForTimeout(800); }
     console.log('para a Lixeira (com a pergunta):', !!pergunta, !fs.existsSync(path.join(docs, 'lixo.txt')));
     await foto('arrastar-real');
+    // Para fora do Retro Computer: um programa de mentira (outra janela do X, ao lado) recebe o
+    // arrastar do sistema e anota os caminhos; o arquivo continua no disco C: (o sistema só copia).
+    const fora = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-receptor-'));
+    fs.writeFileSync(path.join(fora, 'package.json'), JSON.stringify({ name: 'receptor', main: 'main.js' }));
+    fs.writeFileSync(path.join(fora, 'main.js'), `const { app, BrowserWindow, ipcMain } = require('electron');
+const fs = require('fs'); const path = require('path');
+app.whenReady().then(() => {
+  const w = new BrowserWindow({ x: Number(process.env.RECEPTOR_X), y: 120, width: 200, height: 300, frame: false, webPreferences: { preload: path.join(__dirname, 'preload.js'), sandbox: false } });
+  w.loadURL('data:text/html,<body style="background:yellow;margin:0;height:100vh">solte aqui</body>');
+  ipcMain.on('soltou', (_e, l) => fs.writeFileSync(path.join(__dirname, 'soltos.json'), JSON.stringify(l)));
+});`);
+    fs.writeFileSync(path.join(fora, 'preload.js'), `const { ipcRenderer, webUtils } = require('electron');
+addEventListener('dragover', (e) => e.preventDefault());
+addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou', [...e.dataTransfer.files].map((f) => webUtils.getPathForFile(f))); });`);
+    fs.writeFileSync(path.join(docs, 'para fora ação.txt'), 'vai para fora');
+    await pagina.waitForTimeout(1500);
+    const rx = cont.x + cont.width + 20;
+    const env = { ...process.env, RECEPTOR_X: String(rx) };
+    delete env.ELECTRON_RUN_AS_NODE;
+    const receptor = spawn(require('electron'), ['--no-sandbox', fora], { env, stdio: 'ignore' });
+    await pagina.waitForTimeout(4000);
+    const [ox, oy] = await ponto('.janela.ativa .item:has(.rotulo:text-is("para fora ação.txt"))');
+    xdo('mousemove', ox, oy); await pagina.waitForTimeout(200); xdo('mousedown', 1); await pagina.waitForTimeout(200);
+    for (let i = 1; i <= 20; i++) { xdo('mousemove', Math.round(ox + (rx + 100 - ox) * i / 20), Math.round(oy + (250 - oy) * i / 20)); await pagina.waitForTimeout(40); }
+    await pagina.waitForTimeout(400); xdo('mouseup', 1); await pagina.waitForTimeout(2000);
+    const soltos = fs.existsSync(path.join(fora, 'soltos.json')) ? JSON.parse(fs.readFileSync(path.join(fora, 'soltos.json'), 'utf8')) : null;
+    console.log('para fora:', JSON.stringify(soltos), '| o caminho certo:', !!soltos && soltos[0] === path.join(docs, 'para fora ação.txt'), '| continua no C:', fs.existsSync(path.join(docs, 'para fora ação.txt')));
+    receptor.kill();
   },
 
   // A barra de ferramentas do Explorador e a do Navegador numa janela estreita: os botões não são

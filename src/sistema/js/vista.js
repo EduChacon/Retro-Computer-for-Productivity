@@ -8,7 +8,7 @@
  *         miniatura? (o endereço da miniatura de uma foto, na vista de miniaturas) }
  */
 import { h, img, limitar } from './util.js';
-import { TIPO_ARRASTO, aceitaSoltar, soltarEm } from './arquivos.js';
+import { TIPO_ARRASTO, aceitaSoltar, soltarEm, comecarArrastoNativo, arrastoDaqui, arrastoDoSistema, caminhosSoltos, relsDoArrasto } from './arquivos.js';
 
 const CEL_L = 75;
 const CEL_A = 70;
@@ -62,6 +62,17 @@ export class VistaIcones {
       if (this.modo === 'mesa' && [...e.dataTransfer.types].includes(TIPO_ARRASTO) && this.arrastando) {
         // Arrastar um ícone pela própria área de trabalho só o reposiciona.
         this.reposicionar(e);
+        return;
+      }
+      // O mesmo, com o arrastar do sistema (os arquivos do disco): se os soltos são os que saíram
+      // daqui, só reposiciona; senão, é uma soltura comum.
+      if (this.modo === 'mesa' && this.arrastando && arrastoDaqui()) {
+        const soltos = caminhosSoltos(e);
+        relsDoArrasto(soltos).then((rels) => {
+          if (rels && this.arrastando) this.reposicionar(e);
+          else if (!rels) soltarEm(e, o.pastaSoltar);
+          this.arrastando = null;
+        });
         return;
       }
       soltarEm(e, o.pastaSoltar);
@@ -144,8 +155,17 @@ export class VistaIcones {
       el.draggable = true;
       el.addEventListener('dragstart', (e) => {
         if (!this.sel.has(i)) this.selecionar([i]);
-        const rels = this.selecionados().filter((x) => x.rel).map((x) => x.rel);
-        this.arrastando = { i, x: e.clientX, y: e.clientY, chaves: this.selecionados().map((x) => x.chave) };
+        const sel = this.selecionados();
+        const rels = sel.filter((x) => x.rel).map((x) => x.rel);
+        this.arrastando = { i, x: e.clientX, y: e.clientY, chaves: sel.map((x) => x.chave) };
+        // Só arquivos e pastas do disco: o arrastar do sistema, que também solta fora do Retro Computer.
+        if (rels.length && rels.length === sel.length && arrastoDoSistema()) {
+          e.preventDefault();
+          comecarArrastoNativo(rels, it.icone);
+          // Solto fora daqui, nenhum evento volta: o próximo clique esquece o arrasto.
+          window.addEventListener('pointerdown', () => { this.arrastando = null; }, { once: true, capture: true });
+          return;
+        }
         e.dataTransfer.setData(TIPO_ARRASTO, JSON.stringify(rels));
         e.dataTransfer.setData('text/plain', rels.join('\n'));
         e.dataTransfer.effectAllowed = 'copyMove';
@@ -163,7 +183,8 @@ export class VistaIcones {
         if (this.arrastando && this.arrastando.chaves.includes(it.chave)) return;
         e.preventDefault();
         e.stopPropagation();
-        if (it.alvo === '::lixeira') e.dataTransfer.dropEffect = 'move';
+        // O arrastar do sistema só permite copiar (nada sai do disco C:): o "mover" é só o do arrasto daqui.
+        if (it.alvo === '::lixeira' && [...e.dataTransfer.types].includes(TIPO_ARRASTO)) e.dataTransfer.dropEffect = 'move';
         el.itemEl.classList.add('sobre');
       };
       el.addEventListener('dragenter', aceitar);

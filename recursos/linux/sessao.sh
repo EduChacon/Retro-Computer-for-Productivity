@@ -12,6 +12,13 @@ export XDG_CURRENT_DESKTOP=RetroComputer
 export XDG_SESSION_DESKTOP=retro-computer
 export DESKTOP_SESSION=retro-computer
 
+# Os nomes com acento (a "Área de trabalho") precisam de um idioma UTF-8: o da tela de entrada,
+# ou o C.UTF-8 se a sessão chegar sem nenhum.
+case "${LC_ALL:-${LC_CTYPE:-$LANG}}" in
+  *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) ;;
+  *) export LANG=C.UTF-8 ;;
+esac
+
 # O teclado: o mesmo escolhido na instalação do Linux (layout, variante e opções).
 if [ -r /etc/default/keyboard ] && command -v setxkbmap >/dev/null 2>&1; then
   . /etc/default/keyboard

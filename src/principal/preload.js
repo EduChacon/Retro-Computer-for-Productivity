@@ -61,6 +61,10 @@ contextBridge.exposeInMainWorld('retro', {
     exportar: (rels, onde) => chamar('disco:exportar', rels, onde),
     importarEscolhendo: (destino) => chamar('disco:importarEscolhendo', destino),
     aoMudar: ouvir('disco:mudou'),
+    /** Começa o arrastar do sistema com estes arquivos do disco (para soltar fora do Retro Computer). */
+    arrastar: (rels, icone) => chamar('disco:arrastar', rels, icone),
+    /** O caminho no disco C: de cada caminho completo (null para o que fica fora dele). */
+    relDe: (caminhos) => chamar('disco:relDe', caminhos),
     /** O caminho real de um arquivo arrastado do computador principal. */
     caminhoDe: (arquivo) => {
       try { return webUtils.getPathForFile(arquivo) || null; } catch { return null; }

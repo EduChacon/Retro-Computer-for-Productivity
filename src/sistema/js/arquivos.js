@@ -5,7 +5,7 @@
  */
 import { h, img, nomeDe, paiDe, juntar, caminhoTela, extensao } from './util.js';
 import { confirmar, entrada, erro, mensagem, propriedades, ajustarAoConteudo } from './dialogos.js';
-import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputador, padraoPara, definirConfig } from './sistema.js';
+import { abrir, abrirArquivo, programasPara, avisar, pastaMesa, abrirNoComputador, padraoPara, definirConfig, estado } from './sistema.js';
 import { Janela } from './janelas.js';
 import { tocar } from './sons.js';
 import { tr } from './idioma.js';
@@ -180,10 +180,49 @@ export async function colar(destino) {
   return n;
 }
 
+/*
+ * O arrastar dos arquivos do disco é o do próprio sistema (vista.js chama comecarArrastoNativo no
+ * dragstart): assim eles também podem ser soltos no computador principal, num site do Navegador ou
+ * noutro programa. Soltos de volta numa pasta daqui, eles chegam como arquivos de fora; o arrasto
+ * guardado aqui reconhece que são os mesmos do disco C: (e então move, como antes).
+ */
+let arrastoNativo = null;
+
+/** O arrastar do sistema está disponível? (Os testes do arrastar simulado o desligam: o Playwright só imita o do navegador.) */
+export const arrastoDoSistema = () => !!(window.retro && retro.disco.arrastar && estado.config && estado.config.arrastoSistema
+  && !(window.__retro && window.__retro.arrastoSimulado));
+
+export function comecarArrastoNativo(rels, icone) {
+  arrastoNativo = { rels: rels.slice() };
+  return retro.disco.arrastar(rels, icone).catch(() => false);
+}
+
+/** Há um arrasto que saiu daqui (para a vista decidir o reposicionar na área de trabalho)? */
+export const arrastoDaqui = () => !!arrastoNativo;
+
+/** Os caminhos dos arquivos soltos (lidos durante o evento: depois dele, a soltura fica vazia). */
+export const caminhosSoltos = (e) => [...((e.dataTransfer && e.dataTransfer.files) || [])].map((f) => retro.disco.caminhoDe(f)).filter(Boolean);
+
+/** Os arquivos soltos são os do arrasto que saiu daqui? Devolve os caminhos no disco, ou null. */
+export async function relsDoArrasto(caminhos) {
+  const a = arrastoNativo;
+  if (!a || !caminhos.length || caminhos.length !== a.rels.length) return null;
+  const rels = await retro.disco.relDe(caminhos).catch(() => null);
+  if (!rels || rels.some((r) => r == null) || !rels.every((r) => a.rels.includes(r))) return null;
+  arrastoNativo = null;
+  return rels;
+}
+
 /** Trata o que foi solto numa pasta: arquivos do computador principal ou ícones do próprio disco. */
 export async function soltarEm(e, destino) {
   const dt = e.dataTransfer;
-  const internos = dt.getData(TIPO_ARRASTO);
+  let internos = dt.getData(TIPO_ARRASTO);
+  const soltos = caminhosSoltos(e);
+  const copiar = e.ctrlKey || e.altKey;
+  if (!internos && soltos.length) {
+    const rels = await relsDoArrasto(soltos);
+    if (rels) internos = JSON.stringify(rels);
+  }
   // Numa pasta de um pendrive ou do computador principal: uma cópia do que veio do disco C: (o que
   // veio de fora já está no computador principal).
   const un = lerPastaUnidade(destino);
@@ -197,9 +236,9 @@ export async function soltarEm(e, destino) {
   if (internos) {
     const rels = JSON.parse(internos);
     if (destino === '::lixeira') return excluir(rels);
-    return moverPara(rels, destino, e.ctrlKey || e.altKey);
+    return moverPara(rels, destino, copiar);
   }
-  const caminhos = [...(dt.files || [])].map((f) => retro.disco.caminhoDe(f)).filter(Boolean);
+  const caminhos = soltos;
   if (!caminhos.length || destino === '::lixeira') return 0;
   try {
     const feitos = await retro.disco.importar(caminhos, destino);
