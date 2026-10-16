@@ -6,7 +6,8 @@ Origem:
     SerenityOS developers"), com as pastas recoloridas de amarelo;
   - os que faltam são desenhados aqui, ponto a ponto (o computador, a caixa de
     programas, o tomate do Pomodoro, o disquete do botão Iniciar, a pena do
-    processador de texto, a lixeira cheia) — desenhos próprios do projeto.
+    processador de texto, a lixeira cheia) — desenhos próprios do projeto;
+  - a lixeira vazia é a do SerenityOS sem os papéis, com a boca aberta (sem_papeis).
 
 Uso: python3 -I ferramentas/icones.py PASTA_DO_SERENITY [--folha SAIDA.png]
      (PASTA_DO_SERENITY é a raiz do repositório, com Base/res/icons)
@@ -1120,6 +1121,73 @@ def recolorir_pasta(im):
     return im
 
 
+def sem_papeis(im):
+    """A lixeira do SerenityOS (recycle-bin, 32 pontos) sem os papéis de cima: a vazia.
+
+    O cesto é uma caixa vista de frente e de cima; a boca é o losango entre o canto esquerdo, o da
+    frente, o direito e o de trás. Tudo acima da borda da frente sai, e a boca mostra as duas paredes
+    de dentro (a da esquerda na sombra, a da direita com a luz que entra), com a borda clara em cima.
+    """
+    im = im.copy().convert('RGBA')
+    px = im.load()
+    sombra = (127, 129, 126, 255)       # o lado direito e o contorno cinza
+    claro = (191, 196, 218, 255)        # o lado esquerdo
+    dentro_e = (92, 96, 112, 255)       # a parede de dentro da esquerda
+    dentro_d = (132, 137, 158, 255)     # a de dentro da direita
+    esq, fre, dir_ = (3.5, 6.5), (18.0, 14.0), (27.5, 9.5)
+    tras = (esq[0] + dir_[0] - fre[0], esq[1] + dir_[1] - fre[1])
+
+    def lado(p, a, b):
+        return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+
+    def na_boca(p):
+        quad = [esq, fre, dir_, tras]
+        s = [lado(p, quad[i], quad[(i + 1) % 4]) for i in range(4)]
+        return all(v <= 0 for v in s) or all(v >= 0 for v in s)
+
+    def frente(x):
+        """A altura da borda da frente (a de baixo da boca) na coluna x."""
+        if x <= fre[0]:
+            return esq[1] + (fre[1] - esq[1]) * (x - esq[0]) / (fre[0] - esq[0])
+        return fre[1] + (dir_[1] - fre[1]) * (x - fre[0]) / (dir_[0] - fre[0])
+
+    w, h = im.size
+    # 1. Os papéis: tudo acima da borda da frente.
+    for y in range(h):
+        for x in range(w):
+            c = (x + 0.5, y + 0.5)
+            if esq[0] - 1 <= c[0] <= dir_[0] + 1 and c[1] < frente(min(max(c[0], esq[0]), dir_[0])) - 0.6:
+                px[x, y] = (0, 0, 0, 0)
+    # 2. A boca: as duas paredes de dentro.
+    for y in range(h):
+        for x in range(w):
+            c = (x + 0.5, y + 0.5)
+            if na_boca(c) and c[1] < frente(c[0]) - 0.6:
+                px[x, y] = dentro_e if lado(c, tras, fre) > 0 else dentro_d
+    # 3. A borda de cima das paredes de trás (clara) e o contorno por fora dela.
+    for y in range(h):
+        for x in range(w):
+            if px[x, y] in (dentro_e, dentro_d):
+                for dx, dy in ((0, -1), (-1, 0), (1, 0)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] == 0:
+                        px[x, y] = claro
+                        break
+    contorno = []
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3]:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h and px[nx, ny] == claro and ny > y:
+                    contorno.append((x, y))
+                    break
+    for x, y in contorno:
+        px[x, y] = sombra
+    return im
+
+
 def colar(base, sobre, x, y):
     im = base.copy()
     im.alpha_composite(sobre, (x, y))
@@ -1257,8 +1325,10 @@ def gerar(serenity):
     feitos[32]['usuario'] = pessoa(32)
     feitos[16]['usuario'] = pessoa(16)
 
-    # A lixeira cheia: papéis amassados por cima.
+    # A lixeira cheia: papéis amassados por cima (a do SerenityOS já vem com papéis); a vazia, a
+    # mesma sem os papéis, com a boca aberta.
     feitos[32]['lixeira-cheia'] = colar(feitos[32]['lixeira'], grade(PAPEIS_32), 6, 0)
+    feitos[32]['lixeira'] = sem_papeis(feitos[32]['lixeira'])
     feitos[16]['lixeira-cheia'] = feitos[16]['lixeira']
 
     for tam in (16, 32):

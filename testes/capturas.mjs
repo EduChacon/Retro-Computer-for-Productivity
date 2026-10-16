@@ -1334,18 +1334,31 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('pedir-claude-prompt');
     console.log('versões guardadas:', JSON.stringify(await pagina.evaluate((r) => retro.disco.versoes(r), `${DOCS}/${nome}`)));
   },
+  // O ícone da Lixeira: vazio, cheio depois de excluir e vazio de novo depois de esvaziar.
   async lixo() {
-    const src =() => pagina.evaluate(() => [...document.querySelectorAll('#mesa .item')].find((e) => e.textContent.includes(T('Lixeira'))).querySelector('img').getAttribute('src'));
+    await fecharTudo();
+    const src = () => pagina.evaluate((nome) => [...document.querySelectorAll('#mesa .item')].find((e) => e.textContent.includes(nome)).querySelector('img').getAttribute('src'), T('Lixeira'));
+    const fotoLixeira = async (nome) => {
+      const caixa = await pagina.evaluate((n) => { const r = [...document.querySelectorAll('#mesa .item')].find((e) => e.textContent.includes(n)).getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }, T('Lixeira'));
+      const arq = path.join(SAIDA, `${String(++n).padStart(2, '0')}-${nome}.png`);
+      await pagina.screenshot({ path: arq, clip: { x: Math.max(0, caixa.x - 8), y: Math.max(0, caixa.y - 8), width: caixa.width + 16, height: caixa.height + 16 } });
+      console.log('captura:', arq);
+    };
+    await pagina.evaluate(() => retro.disco.esvaziarLixeira());
+    await pagina.waitForTimeout(1500);
     console.log('antes:', await src());
+    await fotoLixeira('lixeira-vazia');
     await pagina.evaluate(async (docs) => {
       await retro.disco.gravar(`${docs}/apagar.txt`, new TextEncoder().encode('x'));
       await retro.disco.paraLixeira(`${docs}/apagar.txt`);
     }, DOCS);
     await pagina.waitForTimeout(1500);
     console.log('depois de excluir:', await src());
+    await fotoLixeira('lixeira-cheia');
     await pagina.evaluate(() => retro.disco.esvaziarLixeira());
     await pagina.waitForTimeout(1500);
     console.log('depois de esvaziar:', await src());
+    await fotoLixeira('lixeira-esvaziada');
     await abrir('explorador', { pasta: DOCS });
     await pagina.waitForTimeout(400);
     await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.explorador.definirModo('detalhes'); });
