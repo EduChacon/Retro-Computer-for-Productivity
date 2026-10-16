@@ -306,6 +306,27 @@ const ROTEIROS = {
     await pagina.waitForTimeout(200);
     await foto('teclado-atalhos');
   },
+  async caracteres() {
+    // O Mapa de caracteres: a lupa com o botão apertado, dois cliques para juntar e Copiar.
+    await fecharTudo();
+    await abrir('caracteres');
+    await pagina.waitForSelector('.janela.caracteres .cm-c', { timeout: 5000 });
+    for (const i of [0, 9, 13]) await pagina.locator(`.janela.caracteres .cm-c >> nth=${i}`).dblclick();
+    await foto('caracteres');
+    await pagina.locator('.janela.caracteres select >> nth=1').selectOption('1');
+    await pagina.waitForTimeout(200);
+    const c = await pagina.locator('.janela.caracteres .cm-c >> nth=41').boundingBox();
+    await pagina.mouse.move(c.x + 10, c.y + 10);
+    await pagina.mouse.down();
+    await pagina.waitForTimeout(200);
+    await foto('caracteres-lupa');
+    await pagina.mouse.up();
+    await pagina.mouse.click(c.x + 10, c.y + 10, { clickCount: 2 });
+    await pagina.locator('.janela.caracteres button.padrao').click();
+    await pagina.waitForTimeout(400);
+    console.log('copiado:', JSON.stringify(await app.evaluate(({ clipboard }) => clipboard.readText())));
+    await foto('caracteres-copiado');
+  },
   async mouse() {
     // Painel › Mouse (com RETRO_MOUSE_FALSO=1: um mouse sem fio e o touchpad de um notebook).
     await fecharTudo();

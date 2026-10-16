@@ -42,6 +42,7 @@ DO_SERENITY = {
     'chave': ('key', 'certificate'),
     'navegador': ('search-engine', 'internet'),
     'calculadora': ('app-calculator', 'app-calculator'),
+    'caracteres': ('app-character-map', 'app-character-map'),
     'calendario': ('app-calendar', 'app-calendar'),
     'imagens': ('app-image-viewer', 'app-image-viewer'),
     'internet': ('search-engine', 'internet'),

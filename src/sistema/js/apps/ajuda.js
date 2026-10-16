@@ -237,6 +237,7 @@ const TOPICOS = [
 <p><b>Captura de tela</b>: a tela inteira, a janela da frente ou um pedaço escolhido com o mouse. As capturas ficam em <b>Meus documentos › Capturas de tela</b> e vão também para a área de transferência.</p>
 <p><b>Monitor do sistema</b> (Ctrl+Shift+Esc): os programas abertos, os processos e o uso do processador e da memória; finaliza um programa travado.</p>
 <p><b>Área de transferência</b> (logotipo + V): os últimos 25 textos copiados em qualquer programa; Enter cola o escolhido na posição do cursor, e o "…" de cada um fixa ou exclui. A lista fica só na memória e some ao fechar o Retro Computer.</p>
+<p><b>Mapa de caracteres</b>: os acentos, os símbolos (§, º, “ ”, –, €…) e as letras de outros alfabetos, em grupos. Segurar o botão sobre um caractere o amplia; dois cliques o juntam à caixa de baixo, e Copiar o leva à área de transferência.</p>
 <p><b>Calculadora</b>, <b>Bloco de notas</b> (com Imprimir, Ctrl+P) e <b>Prompt de comando</b>.</p>
 <h2>Jogos</h2>
 <p>Paciência, Campo Minado e Breakout, para as pausas.</p>`],
@@ -247,6 +248,7 @@ const TOPICOS = [
 <p><b>Screenshot</b>: the whole screen, the front window or a piece chosen with the mouse. Screenshots are kept in <b>Documents › Screenshots</b> and also go to the clipboard.</p>
 <p><b>System Monitor</b> (Ctrl+Shift+Esc): the open programs, the processes and the processor and memory use; it ends a program that froze.</p>
 <p><b>Clipboard</b> (logo + V): the last 25 texts copied in any program; Enter pastes the chosen one where the cursor was, and the "…" of each one pins or deletes it. The list stays in memory only and is gone when Retro Computer closes.</p>
+<p><b>Character Map</b>: accents, symbols (§, º, “ ”, –, €…) and the letters of other alphabets, in groups. Holding the button on a character enlarges it; a double-click adds it to the box below, and Copy sends it to the clipboard.</p>
 <p><b>Calculator</b>, <b>Notepad</b> (with Print, Ctrl+P) and <b>Command Prompt</b>.</p>
 <h2>Games</h2>
 <p>Solitaire, Minesweeper and Breakout, for the breaks.</p>`],
@@ -257,6 +259,7 @@ const TOPICOS = [
 <p><b>Captura de pantalla</b>: la pantalla entera, la ventana del frente o un trozo elegido con el mouse. Las capturas quedan en <b>Mis documentos › Capturas de pantalla</b> y también van al portapapeles.</p>
 <p><b>Monitor del sistema</b> (Ctrl+Shift+Esc): los programas abiertos, los procesos y el uso del procesador y de la memoria; finaliza un programa que se colgó.</p>
 <p><b>Portapapeles</b> (logotipo + V): los últimos 25 textos copiados en cualquier programa; Enter pega el elegido donde estaba el cursor, y el "…" de cada uno lo ancla o lo elimina. La lista queda solo en la memoria y desaparece al cerrar Retro Computer.</p>
+<p><b>Mapa de caracteres</b>: los acentos, los símbolos (§, º, “ ”, –, €…) y las letras de otros alfabetos, en grupos. Mantener el botón sobre un carácter lo amplía; el doble clic lo agrega al cuadro de abajo, y Copiar lo lleva al portapapeles.</p>
 <p><b>Calculadora</b>, <b>Bloc de notas</b> (con Imprimir, Ctrl+P) y <b>Línea de comandos</b>.</p>
 <h2>Juegos</h2>
 <p>Solitario, Buscaminas y Breakout, para las pausas.</p>`],

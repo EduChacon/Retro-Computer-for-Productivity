@@ -306,6 +306,16 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 .alt-icone { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .alt-icone.sel { box-shadow: inset 0 0 0 2px var(--titulo); }
 /* A Central de segurança (Painel › Segurança): uma linha por proteção. */
+/* O Mapa de caracteres */
+.cm-linha { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
+.cm-linha:last-child { margin: 8px 0 0; }
+.cm-linha label { gap: 6px; }
+.cm-area { position: relative; background: #fff; height: 242px; overflow: hidden; }
+.cm-grade { display: grid; height: 100%; overflow-y: auto; outline: none; align-content: start; }
+.cm-c { height: 22px; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: inset -1px -1px 0 #c0c0c0; cursor: default; user-select: none; }
+.cm-c.sel { background: var(--selecao, #000080); color: #fff; }
+.cm-grade:focus .cm-c.sel { outline: 1px dotted #fff; outline-offset: -3px; }
+.cm-lupa { position: absolute; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: #fff; border: 2px solid #000; box-shadow: 2px 2px 0 #808080; pointer-events: none; }
 .mouse-teste { width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; background: #fff; }
 .seg-linha { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; margin-bottom: 6px; box-shadow: var(--raso-alto); }
 .seg-cabeca { display: flex; align-items: baseline; gap: 8px; }
