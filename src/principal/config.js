@@ -35,6 +35,8 @@ const PADRAO = {
   transferencia: { historico: true },
   // O Navegador: só conexões seguras (http:// vira https://) e apagar os dados ao fechar.
   navegador: { soHttps: true, limparAoFechar: false },
+  // O Diário de trabalho: anotar sozinho os focos concluídos e os arquivos alterados.
+  diario: { ligado: false },
   recentes: [],
   foco: { minutos: 25, pausa: 5 },
   primeiraVez: true,

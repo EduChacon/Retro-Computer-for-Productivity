@@ -38,6 +38,7 @@ registrarPreguicoso({ foco: { nome: 'Foco', icone: 'foco' } }, () => import('./a
 registrarPreguicoso({ ajuda: { nome: 'Ajuda', icone: 'ajuda' } }, () => import('./apps/ajuda.js'));
 registrarPreguicoso({ calculadora: { nome: 'Calculadora', icone: 'calculadora' } }, () => import('./apps/calculadora.js'));
 registrarPreguicoso({ caracteres: { nome: 'Mapa de caracteres', icone: 'caracteres' } }, () => import('./apps/caracteres.js'));
+registrarPreguicoso({ diario: { nome: 'Diário de trabalho', icone: 'diario' } }, () => import('./apps/diario.js'));
 registrarPreguicoso({ captura: { nome: 'Captura de tela', icone: 'captura' } }, () => import('./apps/captura.js'));
 registrarPreguicoso({ monitor: { nome: 'Monitor do sistema', icone: 'monitor' } }, () => import('./apps/monitor.js'));
 registrarPreguicoso({ transferencia: { nome: 'Área de transferência', icone: 'transferencia' } }, () => import('./apps/transferencia.js'));

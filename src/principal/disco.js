@@ -368,8 +368,11 @@ class Disco {
     }
   }
 
-  /** Avisa quais pastas mudaram (para as janelas abertas se atualizarem). */
-  observar(aoMudar) {
+  /**
+   * Avisa quais pastas mudaram (para as janelas abertas se atualizarem) e, a cada aviso do
+   * sistema, qual arquivo (aoArquivo, para o Diário de trabalho).
+   */
+  observar(aoMudar, aoArquivo = null) {
     const pendentes = new Set();
     let timer = null;
     let w;
@@ -379,7 +382,10 @@ class Disco {
         const rel = String(arquivo).split(path.sep).join('/');
         if (rel.startsWith(LIXEIRA)) pendentes.add('::lixeira');
         else if (rel.startsWith(VERSOES) || path.posix.basename(rel).startsWith('.~')) return;
-        else pendentes.add(path.posix.dirname(rel) === '.' ? '' : path.posix.dirname(rel));
+        else {
+          pendentes.add(path.posix.dirname(rel) === '.' ? '' : path.posix.dirname(rel));
+          if (aoArquivo) aoArquivo(rel);
+        }
         clearTimeout(timer);
         timer = setTimeout(() => {
           const lista = [...pendentes];

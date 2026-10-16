@@ -35,6 +35,7 @@ const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
 const { acaoDaTecla, trazORetro, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atalhos');
 const { Tela, TelaFalsa } = require('./tela');
 const { Mouse, MouseFalso, limparEscolhas } = require('./mouse');
+const { Diario } = require('./diario');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
@@ -103,6 +104,7 @@ let unidades = null; // os pendrives e cartões (unidades.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
+let diario = null; // o Diário de trabalho (diario.js)
 let historico = null; // o histórico da área de transferência (transferencia.js)
 let pararObservar = () => { };
 
@@ -138,7 +140,14 @@ async function abrirDisco() {
   await disco.preparar([pastas.documentos, pastas.mesa]);
   if (primeiraVez && !fs.existsSync(path.join(raiz, pastas.documentos, pastas.leiame))) await criarBoasVindas(pastas);
   pararObservar();
-  pararObservar = disco.observar((mudancas) => enviar('disco:mudou', mudancas));
+  pararObservar = disco.observar((mudancas) => enviar('disco:mudou', mudancas), (rel) => { if (diario) diario.arquivoMudou(rel).catch(() => { }); });
+}
+
+/** A pasta do Diário de trabalho (o nome fica guardado: trocar de idioma não cria outra). */
+function pastaDiario() {
+  if (!(config.obter().pastas || {}).diario) config.definir({ pastas: { diario: idioma.tr('Diário de trabalho') } });
+  const p = config.obter().pastas;
+  return `${p.documentos}/${p.diario}`;
 }
 
 async function criarBoasVindas(pastas) {
@@ -656,6 +665,14 @@ function registrarPonte() {
   tratar('disco:copiar', (rel, destino) => disco.copiar(rel, destino));
   tratar('disco:importar', (caminhos, destino) => disco.importar(caminhos, destino));
   tratar('disco:paraLixeira', (rel) => disco.paraLixeira(rel));
+  // O Diário de trabalho: uma linha (o foco concluído, uma nota) e a pasta dele.
+  tratar('diario:anotar', (texto, o) => diario.anotar(String(texto || ''), { sempre: !!(o && o.sempre) }));
+  tratar('diario:pasta', async () => {
+    const pasta = pastaDiario();
+    await fsp.mkdir(disco.real(pasta), { recursive: true });
+    return { pasta, hoje: diario.arquivoDeHoje() };
+  });
+  tratar('diario:hoje', () => diario.garantirHoje());
   // A versão de agora de um arquivo, antes de outro programa (o Claude Code) gravar nele.
   tratar('disco:guardarVersao', async (rel) => { const n = disco.normalizar(rel); if ((await disco.info(n)).pasta) return false; await disco.guardarVersao(n); return true; });
   tratar('disco:lixeira', () => disco.listarLixeira());
@@ -1080,6 +1097,10 @@ app.whenReady().then(async () => {
   // O histórico da área de transferência: só na memória, lido de tempos em tempos.
   historico = new HistoricoTransferencia({ clipboard, parado: () => powerMonitor.getSystemIdleTime(), aoMudar: () => enviar('transferencia:mudou') });
   historico.ligar((config.obter().transferencia || {}).historico !== false);
+  diario = new Diario({
+    disco: () => disco, pasta: pastaDiario, ligado: () => !!(config.obter().diario || {}).ligado,
+    tr: idioma.tr, localidade: () => idioma.idioma(),
+  });
   // A resolução escolhida em Painel › Aparência volta antes de a janela abrir (modo sistema).
   tela = new (process.env.RETRO_TELA_FALSA ? TelaFalsa : Tela)({ sistema: MODO_SISTEMA });
   const t = config.obter().tela;

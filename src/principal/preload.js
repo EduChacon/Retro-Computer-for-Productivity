@@ -67,6 +67,12 @@ contextBridge.exposeInMainWorld('retro', {
     definir: (saida, modo) => chamar('tela:definir', saida, modo),
     luzNoturna: (k) => chamar('tela:luzNoturna', k),
   },
+  // O Diário de trabalho (Acessórios).
+  diario: {
+    anotar: (texto, o) => chamar('diario:anotar', texto, o),
+    pasta: () => chamar('diario:pasta'),
+    hoje: () => chamar('diario:hoje'),
+  },
   // O mouse e o touchpad (modo sistema, pelo xinput).
   mouse: {
     estado: () => chamar('mouse:estado'),

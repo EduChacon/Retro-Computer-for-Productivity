@@ -306,6 +306,9 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
 .alt-icone { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .alt-icone.sel { box-shadow: inset 0 0 0 2px var(--titulo); }
 /* A Central de segurança (Painel › Segurança): uma linha por proteção. */
+/* O Diário de trabalho */
+.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
+
 /* O Mapa de caracteres */
 .cm-linha { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
 .cm-linha:last-child { margin: 8px 0 0; }

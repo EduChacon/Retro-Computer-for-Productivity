@@ -182,7 +182,10 @@ function proximaFase() {
 
 function terminouFase() {
   const eraFoco = F.fase === 'foco';
-  if (eraFoco) F.hoje++;
+  if (eraFoco) {
+    F.hoje++;
+    retro.diario.anotar(tr('Foco concluído ({n} minutos)', { n: cfg().minutos })).catch(() => { });
+  }
   proximaFase();
   F.rodando = false;
   F.resta = 0;

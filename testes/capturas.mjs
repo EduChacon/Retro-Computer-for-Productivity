@@ -410,6 +410,25 @@ const ROTEIROS = {
     await pagina.waitForTimeout(2500);
     await foto('claude-maximizado');
   },
+  async diario() {
+    // O Diário de trabalho: ligar, uma nota, um arquivo gravado e o dia aberto no Bloco de notas.
+    await fecharTudo();
+    await abrir('diario');
+    await pagina.waitForSelector('.janela .diario-lista', { timeout: 5000 });
+    await pagina.locator('.janela.ativa input[type=checkbox]').check();
+    await pagina.waitForTimeout(300);
+    await pagina.evaluate((d) => retro.disco.gravar(`${d}/Relatório da semana.txt`, new TextEncoder().encode('Pronto.\n')), DOCS);
+    await pagina.waitForTimeout(1500);
+    await pagina.click(`.janela.ativa button:has-text("${T('&Escrever uma nota…')}")`);
+    await pagina.waitForSelector('.janela.dialogo input[type=text]');
+    await pagina.keyboard.type('Reunião com a equipe: prazo do relatório na sexta.');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(800);
+    await foto('diario-janela');
+    await pagina.click(`.janela.ativa button:has-text("${T('&Hoje')}")`);
+    await pagina.waitForTimeout(1500);
+    await foto('diario-hoje');
+  },
   async pedirClaude() {
     // O "Pedir ao Claude" do botão direito (com RETRO_CLAUDE_FALSO: um script que mostra o
     // pedido recebido). O nome com aspas e $ mostra que o pedido chega inteiro, sem passar pelo shell.
