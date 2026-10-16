@@ -182,6 +182,10 @@ Iniciar › Programas › "Programas do computador…" lista os programas instal
 
 No Linux, a Loja de programas tem a aba "Programas do Linux": os mais usados e as categorias do Flathub, a pesquisa e a ficha de cada programa (descrição, captura, versão, licença e tamanho). A instalação é só para o usuário (`flatpak --user`), sem senha, e o programa novo entra nos Programas do computador. Sem o Flatpak, a aba explica como instalá-lo.
 
+### Programas do Windows (no Linux, pelo WINE)
+
+Dois cliques num `.exe` ou num `.msi` do disco C: o abrem pelo WINE: o do sistema (com um "C:" do Windows só do Retro Computer, na pasta de dados dele, `wine/`) ou, sem ele, o do Flathub (`org.winehq.Wine`), que a pergunta oferece instalar pela Loja, sem senha. Os atalhos que os instaladores criam aparecem em Iniciar › Programas › Programas do Windows (os desinstaladores ficam de fora). Nem todo programa do Windows funciona no WINE; os mais simples e os mais antigos costumam funcionar.
+
 ## 4. Claude Code
 
 1. Dois cliques no ícone **Claude** da área de trabalho.

@@ -1411,6 +1411,7 @@
   "Remover da área de &trabalho": "Remove from the &desktop",
   "Adicionar à área de &trabalho": "Add to the &desktop",
   "Programas do computador…": "Computer programs…",
+  "Programas do Windows": "Windows Programs",
   "Instalar programas…": "Install programs…",
   "Lo&ja de programas": "Program S&tore",
   "&Programas": "&Programs",
@@ -1616,5 +1617,13 @@
   "Fixar na barra de tarefas": "Pin to the taskbar",
   "{nome} está no menu Iniciar › Programas.": "{nome} is in the Start menu › Programs.",
   "Desinstalar {nome}? O site continua no Navegador; só o programa sai do menu Iniciar, da área de trabalho e da barra de tarefas.": "Uninstall {nome}? The site stays in the Browser; only the program leaves the Start menu, the desktop and the taskbar.",
-  "Desinstalar": "Uninstall"
+  "Desinstalar": "Uninstall",
+  "Para abrir \"{nome}\", instale o WINE (o pacote \"wine\" do Linux): é ele que roda os programas do Windows.": "To open \"{nome}\", install WINE (the Linux \"wine\" package): it is what runs Windows programs.",
+  "\"{nome}\" é um programa do Windows. No Linux, ele abre pelo WINE, que ainda não está instalado.\n\nInstalar o WINE pela Loja de programas (o Flathub)? Leva alguns minutos e não pede a senha.": "\"{nome}\" is a Windows program. On Linux, it opens through WINE, which is not installed yet.\n\nInstall WINE from the Program Store (Flathub)? It takes a few minutes and does not ask for the password.",
+  "Instalar o WINE": "Install WINE",
+  "Instalando o WINE pelo Flathub… O programa abre quando terminar.": "Installing WINE from Flathub… The program opens when it finishes.",
+  "Não foi possível instalar o WINE: {erro}": "Could not install WINE: {erro}",
+  "Não foi possível abrir \"{nome}\": {erro}": "Could not open \"{nome}\": {erro}",
+  "Abrindo o instalador \"{nome}\" pelo WINE. Os programas instalados aparecem em Iniciar › Programas › Programas do Windows.": "Opening the installer \"{nome}\" through WINE. The installed programs appear in Start › Programs › Windows Programs.",
+  "Abrindo \"{nome}\" pelo WINE…": "Opening \"{nome}\" through WINE…"
 }

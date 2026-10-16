@@ -171,6 +171,11 @@ export async function abrirArquivo(rel, { com } = {}) {
     adicionarRecente(rel);
     return c.ehZip(nome) ? abrir('explorador', { pasta: c.pastaDoZip(rel) }) : c.abrirTar(rel);
   }
+  // No Linux, os programas e os instaladores do Windows abrem pelo WINE.
+  if (!com && estado.config.plataforma === 'linux' && /\.(exe|msi)$/i.test(nome)) {
+    adicionarRecente(rel);
+    return import('./wine.js').then((m) => m.abrirComWine(rel));
+  }
   const opcoes = programasPara(nome);
   const escolha = com || (opcoes[0] && opcoes[0].id);
   adicionarRecente(rel);

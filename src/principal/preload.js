@@ -280,6 +280,13 @@ contextBridge.exposeInMainWorld('retro', {
     formatarNoSistema: () => chamar('unidades:formatarNoSistema'),
     aoMudar: ouvir('unidades:mudou'),
   },
+  // Os programas do Windows no Linux, pelo WINE.
+  wine: {
+    estado: () => chamar('wine:estado'),
+    abrir: (rel) => chamar('wine:abrir', rel),
+    programas: () => chamar('wine:programas'),
+    abrirPrograma: (id) => chamar('wine:abrirPrograma', id),
+  },
   // O antivírus sob demanda.
   antivirus: {
     estado: () => chamar('antivirus:estado'),

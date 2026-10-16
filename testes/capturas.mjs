@@ -962,6 +962,32 @@ const ROTEIROS = {
 
   // A bandeja (com RETRO_BANDEJA_FALSA=1: o volume, o brilho, a bateria e o Wi-Fi de mentira):
   // as caixinhas, conectar a uma rede protegida, as notificações e a data no relógio.
+  // Os programas do Windows pelo WINE (com RETRO_WINE_FALSO=1, no Linux): o instalador abre com dois
+  // cliques, e o programa instalado aparece em Iniciar › Programas › Programas do Windows.
+  async wine() {
+    const pasta = path.join(disco, DOCS, 'Recebidos');
+    fs.mkdirSync(pasta, { recursive: true });
+    fs.writeFileSync(path.join(pasta, 'instalar-agenda.exe'), Buffer.from('MZ'));
+    await fecharTudo();
+    await abrir('explorador', { pasta: `${DOCS}/Recebidos` });
+    await pagina.waitForTimeout(900);
+    await pagina.dblclick('.janela.ativa .item:has-text("instalar-agenda")');
+    await pagina.waitForTimeout(1200);
+    await foto('wine-instalador');
+    await fecharTudo();
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(300);
+    // A primeira opção é a Loja de programas; a segunda, Programas.
+    await pagina.hover('.menu.iniciar .opcao >> nth=1');
+    await pagina.waitForTimeout(600);
+    await pagina.hover(`.menu .opcao:has-text("${T('Programas do Windows')}")`);
+    await pagina.waitForTimeout(900);
+    await foto('wine-menu');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+    await pagina.keyboard.press('Escape');
+  },
+
   // O antivírus (com RETRO_ANTIVIRUS_FALSO=1: ele acha o arquivo de teste EICAR, escrito na hora) e a
   // caixa de formatar o pendrive (com RETRO_UNIDADES_FALSAS; a senha de teste é "certa").
   async antivirus() {

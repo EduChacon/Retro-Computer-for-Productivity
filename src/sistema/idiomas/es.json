@@ -1411,6 +1411,7 @@
   "Remover da área de &trabalho": "Quitar del &escritorio",
   "Adicionar à área de &trabalho": "Agregar al &escritorio",
   "Programas do computador…": "Programas de la computadora…",
+  "Programas do Windows": "Programas de Windows",
   "Instalar programas…": "Instalar programas…",
   "Lo&ja de programas": "&Tienda de programas",
   "&Programas": "&Programas",
@@ -1616,5 +1617,13 @@
   "Fixar na barra de tarefas": "Anclar a la barra de tareas",
   "{nome} está no menu Iniciar › Programas.": "{nome} está en el menú Inicio › Programas.",
   "Desinstalar {nome}? O site continua no Navegador; só o programa sai do menu Iniciar, da área de trabalho e da barra de tarefas.": "¿Desinstalar {nome}? El sitio sigue en el Navegador; solo el programa sale del menú Inicio, del escritorio y de la barra de tareas.",
-  "Desinstalar": "Desinstalar"
+  "Desinstalar": "Desinstalar",
+  "Para abrir \"{nome}\", instale o WINE (o pacote \"wine\" do Linux): é ele que roda os programas do Windows.": "Para abrir \"{nome}\", instala WINE (el paquete \"wine\" de Linux): es el que ejecuta los programas de Windows.",
+  "\"{nome}\" é um programa do Windows. No Linux, ele abre pelo WINE, que ainda não está instalado.\n\nInstalar o WINE pela Loja de programas (o Flathub)? Leva alguns minutos e não pede a senha.": "\"{nome}\" es un programa de Windows. En Linux, se abre con WINE, que todavía no está instalado.\n\n¿Instalar WINE desde la Tienda de programas (Flathub)? Tarda unos minutos y no pide la contraseña.",
+  "Instalar o WINE": "Instalar WINE",
+  "Instalando o WINE pelo Flathub… O programa abre quando terminar.": "Instalando WINE desde Flathub… El programa se abre cuando termine.",
+  "Não foi possível instalar o WINE: {erro}": "No se pudo instalar WINE: {erro}",
+  "Não foi possível abrir \"{nome}\": {erro}": "No se pudo abrir \"{nome}\": {erro}",
+  "Abrindo o instalador \"{nome}\" pelo WINE. Os programas instalados aparecem em Iniciar › Programas › Programas do Windows.": "Abriendo el instalador \"{nome}\" con WINE. Los programas instalados aparecen en Inicio › Programas › Programas de Windows.",
+  "Abrindo \"{nome}\" pelo WINE…": "Abriendo \"{nome}\" con WINE…"
 }

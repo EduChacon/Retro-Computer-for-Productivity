@@ -46,6 +46,7 @@ const { Energia } = require('./energia');
 const { DataHora, DataHoraFalsa } = require('./datahora');
 const { AcessibilidadeLinux } = require('./acessibilidade');
 const { Antivirus } = require('./antivirus');
+const { Wine } = require('./wine');
 const { dentro: dentroDaUnidade } = require('./unidades');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
@@ -772,6 +773,12 @@ function registrarPonte() {
     if (process.platform === 'win32') { spawn('explorer.exe', ['shell:MyComputerFolder'], { detached: true, stdio: 'ignore' }).unref(); return true; }
     return false;
   });
+  // Os programas do Windows no Linux, pelo WINE (o do sistema ou o do Flathub).
+  const wine = new Wine({ dados: app.getPath('userData'), falso: !!process.env.RETRO_WINE_FALSO });
+  tratar('wine:estado', () => wine.estado());
+  tratar('wine:abrir', (rel) => wine.abrir(disco.real(String(rel || ''))));
+  tratar('wine:programas', () => wine.programas().map((p) => ({ id: p.id, nome: p.nome })));
+  tratar('wine:abrirPrograma', (id) => wine.abrirPrograma(String(id || '')));
   // O antivírus sob demanda (o ClamAV no Linux, o Microsoft Defender no Windows).
   const antivirus = new Antivirus({ comoAdmin: sistemaLinux.comoAdmin, falso: !!process.env.RETRO_ANTIVIRUS_FALSO });
   tratar('antivirus:estado', () => antivirus.estado());

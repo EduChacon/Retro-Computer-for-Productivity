@@ -186,7 +186,9 @@ const TOPICOS = [
 <h2>Programas do Linux</h2>
 <p>No Linux, Adicionar ou remover programas tem a aba <b>Programas do Linux</b>, com os programas do Flathub: pesquise, veja a ficha de cada um e instale sem senha. Eles aparecem com os Programas do computador.</p>
 <h2>Sem internet?</h2>
-<p>Baixe o pacote "nome-web-versão.zip" em outro lugar e use <b>Instalar de um arquivo .zip</b>.</p>`],
+<p>Baixe o pacote "nome-web-versão.zip" em outro lugar e use <b>Instalar de um arquivo .zip</b>.</p>
+<h2>Programas do Windows (no Linux)</h2>
+<p>Dois cliques num <b>.exe</b> ou num <b>.msi</b> do disco C: o abrem pelo WINE. Sem o WINE, o Retro Computer oferece instalá-lo pela Loja (o Flathub, sem a senha). Os programas instalados aparecem em <b>Iniciar › Programas › Programas do Windows</b>. Nem todo programa do Windows funciona no WINE.</p>`],
     en: ['Programs', `
 <h2>Installing</h2>
 <p>In <b>Add or Remove Programs</b>, choose the program and click Install. It comes from the official release (the browser version) and then works offline.</p>
@@ -200,7 +202,9 @@ const TOPICOS = [
 <h2>Linux programs</h2>
 <p>On Linux, Add or Remove Programs has the <b>Linux programs</b> tab, with the programs from Flathub: search, see each one's details and install without a password. They show up with the Computer programs.</p>
 <h2>No internet?</h2>
-<p>Download the "name-web-version.zip" package somewhere else and use <b>Install from a .zip file</b>.</p>`],
+<p>Download the "name-web-version.zip" package somewhere else and use <b>Install from a .zip file</b>.</p>
+<h2>Windows programs (on Linux)</h2>
+<p>Double-clicking an <b>.exe</b> or an <b>.msi</b> on drive C: opens it through WINE. Without WINE, Retro Computer offers to install it from the Store (Flathub, no password). The installed programs appear in <b>Start › Programs › Windows Programs</b>. Not every Windows program works in WINE.</p>`],
     es: ['Programas', `
 <h2>Instalar</h2>
 <p>En <b>Agregar o quitar programas</b>, elige el programa y haz clic en Instalar. Viene de la versión oficial (la versión para navegador) y después funciona sin internet.</p>
@@ -214,7 +218,9 @@ const TOPICOS = [
 <h2>Programas de Linux</h2>
 <p>En Linux, Agregar o quitar programas tiene la pestaña <b>Programas de Linux</b>, con los programas de Flathub: busca, mira la ficha de cada uno e instala sin contraseña. Aparecen junto a los Programas de la computadora.</p>
 <h2>¿Sin internet?</h2>
-<p>Descarga el paquete "nombre-web-versión.zip" en otro lugar y usa <b>Instalar desde un archivo .zip</b>.</p>`],
+<p>Descarga el paquete "nombre-web-versión.zip" en otro lugar y usa <b>Instalar desde un archivo .zip</b>.</p>
+<h2>Programas de Windows (en Linux)</h2>
+<p>Doble clic en un <b>.exe</b> o un <b>.msi</b> del disco C: lo abre con WINE. Sin WINE, Retro Computer ofrece instalarlo desde la Tienda (Flathub, sin contraseña). Los programas instalados aparecen en <b>Inicio › Programas › Programas de Windows</b>. No todos los programas de Windows funcionan en WINE.</p>`],
   },
   {
     id: 'internet', icone: 'navegador',

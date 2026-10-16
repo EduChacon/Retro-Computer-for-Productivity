@@ -337,6 +337,15 @@ async function itensProgramas() {
     // Os programas do computador principal que o usuário pôs no menu, e a janela com todos.
     ...noMenu().map((id) => prog('nativo:' + id, nomeNativo(id).replace(/&/g, '&&'), 'programa', () => abrirNativo(id), { iconeUrl: iconeNativoJa(id) })),
     { rotulo: tr('Programas do computador…'), icone: 'computador', acao: () => abrir('nativos') },
+    // No Linux, os programas do Windows instalados pelo WINE (os atalhos que os instaladores criaram).
+    ...(estado.config.plataforma === 'linux' ? [{
+      rotulo: tr('Programas do Windows'), icone: 'pasta-programas', sub: async () => {
+        const lista = await retro.wine.programas().catch(() => []);
+        return lista.length
+          ? lista.map((p) => ({ rotulo: p.nome.replace(/&/g, '&&'), icone: 'executavel', acao: () => retro.wine.abrirPrograma(p.id).catch(() => { }) }))
+          : [{ rotulo: tr('(Vazio)'), desativado: true }];
+      },
+    }] : []),
     { separador: true },
     prog('navegador', tr('Navegador'), 'navegador'),
     // Com o Firefox como padrão, o Navegador daqui (o dos sites instalados como programas) continua à mão.
