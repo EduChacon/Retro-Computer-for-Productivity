@@ -44,7 +44,12 @@ src/principal/         o processo principal (Node)
   bluetooth.js         o bluetoothctl: ligar, procurar, parear (a conversa), conectar
   sistema-linux.js     o modo sistema: energia (systemctl), sessão, teclado, sudo (comoAdmin)
   atualizacoes-linux.js  apt e flatpak; as atualizações de segurança automáticas
-  janelas-linux.js     as janelas dos programas do Linux (wmctrl, xprop, xdotool)
+  janelas-linux.js     as janelas dos programas do Linux (wmctrl, xprop -spy, xdotool)
+  atalhos.js           os atalhos do Windows: de uma tecla para a ação (Alt+Tab, Alt+F4, o logotipo)
+  tela.js              a resolução e a luz noturna do modo sistema (xrandr)
+  transferencia.js     o histórico da área de transferência (só na memória)
+  firewall.js          o firewall do Linux (ufw)
+  https.js             só conexões seguras no Navegador (http:// vira https://)
   navegador-preload.js entra nas páginas do Navegador (atalhos e botões laterais do mouse)
 src/adaptador/adaptador.js   entra em cada programa: Abrir/Salvar → caixas do disco
 src/sistema/           a área de trabalho (página servida em sistema://retro/)
@@ -52,7 +57,10 @@ src/sistema/           a área de trabalho (página servida em sistema://retro/)
   idiomas/en.json, es.json   as traduções (a chave é o texto em português)
   js/idioma.js         tr(), marcar(), carregarIdioma(), localidade()
   js/util.js           h() para criar elementos, caminhos, tipos de arquivo
-  js/janelas.js        o gerenciador de janelas
+  js/janelas.js        o gerenciador de janelas (e os cantos magnéticos)
+  js/atalhos.js        o Alt+Tab e as ações da tecla do logotipo
+  js/luz-noturna.js    a luz noturna (o xrandr no modo sistema; fora dele, um filtro)
+  js/conta.js          as contas da caixa de busca (um leitor próprio, sem eval)
   js/menus.js          menus suspensos e barra de menus
   js/dialogos.js       mensagem, confirmar, entrada, Abrir, Salvar como, Propriedades
   js/vista.js          a vista de ícones (seleção, laço, teclado, arrastar e soltar)
@@ -70,14 +78,15 @@ src/sistema/           a área de trabalho (página servida em sistema://retro/)
   janelas-nativas.js, nativos.js, atualizacao.js, admin.js   o lado da tela de cada recurso
   js/apps/             explorador, bloco, craft, prompt (e Claude), programas, loja, painel,
                        navegador, calculadora, imagens, midia, captura, monitor, atualizacoes,
-                       nativos, paciencia, campominado, breakout,
+                       nativos, paciencia, campominado, breakout, transferencia,
                        diversos (Executar, Localizar, Desligar), foco, protecao, ajuda
 catalogo/programas.json      os programas conhecidos (id, repo, tipos de arquivo, ícone; a categoria e a descrição nos três idiomas)
 recursos/linux/        a sessão do modo sistema (sessao.sh, o tema do Openbox, o .desktop) e os scripts do .deb
 ferramentas/           icones.py, fontes.sh, fonte-serenity.py, textos.js (as traduções que faltam)
 testes/                *.test.js (npm test: o disco, os idiomas, as atualizações e a leitura das saídas
                        de cada ferramenta do sistema) e capturas.mjs (Playwright + Electron)
-docs/                  uso.md, proposta.md, img/ (img/en e img/es para os READMEs), lancamentos/ (notas, em inglês)
+docs/                  uso.md, proposta.md, instalacao.md (o guia de cada computador), pesquisa-distribuicoes.md,
+                       img/ (img/en e img/es para os READMEs), lancamentos/ (notas, em inglês)
 .github/workflows/compilar.yml   testes e instaladores (Windows, macOS, Linux PC e ARM64) a cada push
 .github/workflows/publicar.yml   na main, com versão nova no package.json: compila e cria o lançamento vX.Y.Z
 ```
@@ -95,7 +104,7 @@ npx electron-builder --linux dir --publish never     # empacotar sem instalar
 
 Variáveis úteis: `RETRO_DADOS` (pasta das configurações), `RETRO_DISCO` (pasta do disco C:), `RETRO_JANELA=1` (sem tela cheia), `RETRO_RAPIDO=1` (sem a abertura), `RETRO_IDIOMA=en` ou `es` (o idioma, por cima da configuração), `RETRO_SISTEMA=1` (o modo sistema), `RETRO_ZIP` (no roteiro de capturas: instala pacotes `.zip` antes), `RETRO_FALSA_VERSAO=9.9.9` (no roteiro de capturas: finge que a busca achou essa versão), `RETRO_SEM_BOAS_VINDAS=1` (sem a Ajuda e o balão da primeira vez), `RETRO_EXECUTAVEL` (testa o aplicativo empacotado).
 
-As ferramentas do sistema têm versões de mentira, para os testes e as capturas sem o aparelho: `RETRO_ENERGIA_FALSA=1` (desligar, reiniciar e suspender só são anotados: use-a sempre com `RETRO_SISTEMA=1` fora de um computador dedicado), `RETRO_BANDEJA_FALSA=1` (volume, brilho, bateria e Wi-Fi), `RETRO_LOJA_FALSA=1` (o Flathub de verdade, o flatpak de mentira), `RETRO_UNIDADES_FALSAS=<pasta>` (um pendrive), `RETRO_IMPRESSORAS_FALSAS=1`, `RETRO_BLUETOOTH_FALSO=1`, `RETRO_ATUALIZACOES_FALSAS=1` (a senha de teste é "certa"), `RETRO_JANELAS_FALSAS=1` (dois programas do Linux abertos) e `RETRO_MIDIA_FALSA=1` (a câmera e o microfone do Chromium). Como administrador (root), o Electron precisa de `--no-sandbox` (o roteiro de capturas já passa).
+As ferramentas do sistema têm versões de mentira, para os testes e as capturas sem o aparelho: `RETRO_ENERGIA_FALSA=1` (desligar, reiniciar e suspender só são anotados: use-a sempre com `RETRO_SISTEMA=1` fora de um computador dedicado), `RETRO_BANDEJA_FALSA=1` (volume, brilho, bateria e Wi-Fi), `RETRO_LOJA_FALSA=1` (o Flathub de verdade, o flatpak de mentira), `RETRO_UNIDADES_FALSAS=<pasta>` (um pendrive), `RETRO_IMPRESSORAS_FALSAS=1`, `RETRO_BLUETOOTH_FALSO=1`, `RETRO_ATUALIZACOES_FALSAS=1` (a senha de teste é "certa"), `RETRO_JANELAS_FALSAS=1` (dois programas do Linux abertos), `RETRO_TELA_FALSA=1` (a resolução de um notebook de 1440 × 900), `RETRO_FIREWALL_FALSO=1` (a senha de teste é "certa") e `RETRO_MIDIA_FALSA=1` (a câmera e o microfone do Chromium). Como administrador (root), o Electron precisa de `--no-sandbox` (o roteiro de capturas já passa).
 
 Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 
@@ -103,7 +112,11 @@ Roteiros de capturas (todos aceitam `RETRO_IDIOMA`):
 - os programas: `craft` (o WordCraft: abrir, salvar, salvar de novo, abrir; precisa de `RETRO_ZIP`), `atualizar` (a atualização ao abrir; precisa de `RETRO_ZIP` e `RETRO_FALSA_VERSAO`), `autoatualizar` (a do próprio aplicativo, com `RETRO_EXECUTAVEL`), `nativos`, `loja` (com `RETRO_LOJA_FALSA=1`), `claude`;
 - a internet: `navegador`, `permissoes` (com `RETRO_MIDIA_FALSA=1`), `webapps`;
 - as ferramentas: `calculadora`, `jogos`, `ferramentas` (Visualizador e Reprodutor; os vídeos de exemplo são feitos pelo ffmpeg, se houver), `compactados`, `capturaMonitor`, `explorador`, `focoAbas`, `unidades`;
-- a barra e o sistema: `barra`, `fixados`, `bandeja` (com `RETRO_BANDEJA_FALSA=1`), `bloqueio`, `sistema` (com `RETRO_SISTEMA=1` e `RETRO_ENERGIA_FALSA=1`), `impressoras`, `bluetooth`, `atualizacoesLinux` e `janelasLinux` (cada um com a sua variável de mentira).
+- a barra e o sistema: `barra`, `fixados`, `bandeja` (com `RETRO_BANDEJA_FALSA=1`), `bloqueio`, `sistema` (com `RETRO_SISTEMA=1` e `RETRO_ENERGIA_FALSA=1`), `impressoras`, `bluetooth`, `atualizacoesLinux` e `janelasLinux` (cada um com a sua variável de mentira);
+- as janelas e o teclado: `encaixe` (os cantos magnéticos, o Alt+Tab, o Alt+F4 e o Ctrl+roda), `resolucao` (com `RETRO_SISTEMA=1`, `RETRO_ENERGIA_FALSA=1` e `RETRO_TELA_FALSA=1`);
+- o que veio das distribuições: `produtividade` (o histórico da área de transferência, a conta na busca, a luz noturna, o modo de energia, o firewall e a aba Atalhos; com `RETRO_BANDEJA_FALSA=1` e `RETRO_FIREWALL_FALSO=1`) e `seguranca` (a Central de segurança e o aviso do site sem HTTPS; com `RETRO_FIREWALL_FALSO=1` e `RETRO_ATUALIZACOES_FALSAS=1`, e a internet).
+
+As teclas simuladas pelo Playwright não passam pelo `before-input-event` do Electron: os roteiros mandam a ação como o processo principal a manda (`tecla('alternar')`), e a leitura das teclas fica em `src/principal/atalhos.js`, testada à parte. Para o modo sistema com janelas do Linux de verdade, o Xvfb com o openbox, o `xdotool key` e o `import -window root` (ImageMagick) funcionam.
 
 Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do processo principal e um roteiro (ou um passo) em `testes/capturas.mjs` quando for da tela. Olhe as capturas antes de dar por pronto.
 
@@ -128,7 +141,9 @@ Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do proc
 - Prefira a ferramenta de edição ou scripts de troca de texto que conferem se acharam o trecho. Não use `t.replace(a, b)` com texto em JavaScript (os padrões `$&` e `$'` corrompem o arquivo); use a função.
 - Comentários curtos em português, explicando o porquê.
 - A área de trabalho não tem empacotador: são módulos ES carregados direto (`src/sistema/js`). O processo principal é CommonJS.
-- Um programa novo da área de trabalho é um módulo em `js/apps/` que chama `registrarApp(id, { nome, icone, abrir })` e é importado em `js/inicio.js`. Para entrar no Iniciar, ele vai em `itensProgramas` (`js/barra.js`); para a Ajuda, um tópico em `js/apps/ajuda.js`, nos três idiomas.
+- Um programa novo da área de trabalho é um módulo em `js/apps/` que chama `registrarApp(id, { nome, icone, abrir })`. Em `js/inicio.js`, ele entra com `registrarPreguicoso` (só carrega quando abre, ou com o computador parado depois da abertura); só vai num `import` direto quando faz algo ao carregar (ouve o processo principal, tem relógio próprio) ou abre arquivos pelo tipo (`tipos`). Para entrar no Iniciar, ele vai em `itensProgramas` (`js/barra.js`); para a Ajuda, um tópico em `js/apps/ajuda.js`, nos três idiomas.
+- A ponte (`tratar` em `main.js`) só atende o quadro principal da área de trabalho (`sistema://retro`): os programas Craft falam por mensagens com `craft.js`, e as páginas do Navegador, com o `navegador-preload.js`.
+- Desde o Electron 44, a área de transferência do processo principal é assíncrona (`await clipboard.readText()`, `clipboard.write([new ClipboardItem(…)])`); não há mais `writeImage` nem `availableFormats`.
 - Um recurso que depende de uma ferramenta do sistema (o `bluetoothctl`, o `apt`, o `wmctrl`…) fica numa classe do processo principal com as funções de leitura das saídas exportadas (testadas em `testes/`) e uma versão de mentira ligada por uma variável `RETRO_*`, para as capturas. As ações de administrador passam por `comoAdmin` (`sistema-linux.js`), com a senha pedida pela caixa do Retro Computer (`js/admin.js`).
 - Toda tecla do Electron que a área de trabalho também usa precisa ser conferida em `main.js` (o `before-input-event`): o F11, por exemplo, é da tela cheia do aplicativo.
 - Um tipo de arquivo novo: `TIPOS` em `js/util.js` (ícone e descrição) e, se um programa o abre, `tipos` no `catalogo/programas.json`.

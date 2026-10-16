@@ -12,6 +12,7 @@ A retro computer for productivity: the desktop of a 1990s PC, with your work pro
 ## What it does
 
 - **A 1990s desktop**: Start button, taskbar, windows you can drag and resize, icons, menus, the Trash and the Shut Down dialog, with sharp letters and icons on any monitor.
+- **Windows that snap, and the shortcuts you know**: drag a window to an edge for half of the screen or to a corner for a quarter; Alt+Tab, Alt+F4 and the logo key with a letter (E, R, D, V, L…) or the arrow keys; Ctrl + mouse wheel to zoom.
 - **A taskbar like today's**: the search box and the pinned programs next to Start; the tray with Wi-Fi, volume, battery and brightness, Bluetooth, notifications and the calendar; and a lock screen with a password.
 - **Drive C: is a folder on your computer** (`Documents/Retro Computer`): what you save is also visible outside the program. To bring files in, drag them onto a window; to take them out, use "Send to". The Explorer has a folders bar, a clickable address and thumbnails; USB drives and memory cards show up in Computer, and `.zip` files open like folders.
 - **Nothing gets lost**: deleting sends items to the Trash, and every save keeps the previous version of the file.
@@ -19,7 +20,8 @@ A retro computer for productivity: the desktop of a 1990s PC, with your work pro
 - **Always up to date**: when you open a program, Retro Computer checks for a new version and installs it first (or asks, or never checks: your choice). Retro Computer also updates itself.
 - **Claude Code** in the Command Prompt, working on your files, with your Claude subscription or an API key kept in the system's password vault.
 - **Internet**: a Browser (camera, microphone and notifications only with your permission) and your web E-mail in a window; any site can be installed as a program.
-- **Built-in tools**: Image Viewer, Media Player, Screenshot, System Monitor, Calculator, Notepad, Focus (Pomodoro, stopwatch and timer), printers, Find, Run, Control Panel, screen saver, Help, and three games (Solitaire, Minesweeper and Breakout).
+- **Built-in tools**: Image Viewer, Media Player, Screenshot, System Monitor, Calculator (also right in the search box), Notepad, the clipboard history (logo + V), Focus (Pomodoro, stopwatch and timer), the night light, printers, Find, Run, Control Panel, screen saver, Help, and three games (Solitaire, Minesweeper and Breakout).
+- **Security and privacy in one place**: the Security Center shows the lock screen password, the firewall (Linux), the automatic security updates and how the Claude key is stored; the Browser opens only secure (HTTPS) connections unless you choose otherwise, and can delete its data on closing.
 - **Linux as the system**: the "Retro Computer" session on the login screen opens straight into it; Shut Down really turns off the computer, Linux programs show up on the taskbar, security updates install from the Control Panel, and the logo, volume, brightness and Print Screen keys work.
 
 | | |
@@ -28,6 +30,7 @@ A retro computer for productivity: the desktop of a 1990s PC, with your work pro
 | ![Claude Code in the Command Prompt](docs/img/en/claude.png) | ![The right-click menu](docs/img/en/file-menu.png) |
 | ![Add or Remove Programs](docs/img/en/programs.png) | ![Choosing the language](docs/img/en/language.png) |
 | ![The Explorer with the folders bar and thumbnails](docs/img/en/explorer.png) | ![The Media Player](docs/img/en/media-player.png) |
+| ![Two windows side by side, snapped to the edges](docs/img/en/snap.png) | ![The Security Center](docs/img/en/security.png) |
 
 ## Install
 
@@ -42,8 +45,10 @@ Download the installer for your system from the [latest release](https://github.
 
 The installers are not digitally signed yet, so the system asks for confirmation the first time:
 
-- **macOS**: right-click the app › Open › Open (or System Settings › Privacy & Security › Open Anyway).
+- **macOS**: System Settings › Privacy & Security › Open Anyway (up to macOS 14, right-click the app › Open › Open also works).
 - **Windows**: on the SmartScreen screen, "More info" › "Run anyway".
+
+The [installation guide](docs/instalacao.md) (in Portuguese) has the steps for each computer: Windows, macOS, an old Mac such as a 2014 MacBook Air with Linux Mint, a virtual machine in UTM, an old laptop or mini PC, and the Raspberry Pi.
 
 ### As the Linux system (an old laptop, a Raspberry Pi or a mini PC)
 

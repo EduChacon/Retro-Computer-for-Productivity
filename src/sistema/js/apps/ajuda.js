@@ -128,23 +128,26 @@ const TOPICOS = [
     'pt-BR': ['A barra de tarefas', `
 <h2>À esquerda</h2>
 <p>O botão <b>Iniciar</b>, a caixa de busca (que acha programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados. Para fixar um programa, use o botão direito no botão da janela dele ou num ícone › <b>Fixar na barra de tarefas</b>.</p>
+<p>Uma conta na caixa de busca (<b>12*3,5</b>, <b>200 × 15%</b>, <b>√2</b>) mostra o resultado primeiro; Enter o copia.</p>
 <p>Os botões das janelas mostram o nome. Para ver só os ícones, agrupados por programa, use o botão direito na barra › <b>Botões das janelas</b>. A roda do mouse num botão abre outra janela do programa.</p>
 <h2>A bandeja, à direita</h2>
-<p><b>Rede</b>: as redes Wi-Fi, conectar e desconectar (no Linux). <b>Volume</b>: o som do computador. <b>Bateria</b>: a carga, o brilho da tela e a bateria do mouse e do teclado sem fio, com o aviso de bateria fraca. <b>Bluetooth</b>: os aparelhos sem fio (no Linux). <b>Sino</b>: as notificações e o <b>Não perturbe</b>.</p>
+<p><b>Rede</b>: as redes Wi-Fi, conectar e desconectar (no Linux). <b>Volume</b>: o som do computador. <b>Bateria</b>: a carga, o brilho da tela, o modo de energia (economia, equilibrado ou desempenho, no Linux) e a bateria do mouse e do teclado sem fio, com o aviso de bateria fraca. <b>Bluetooth</b>: os aparelhos sem fio (no Linux). <b>Sino</b>: as notificações e o <b>Não perturbe</b>.</p>
 <p>Um clique no <b>relógio</b> abre o calendário; o botão direito nele › <b>Mostrar a data</b> põe a data embaixo da hora.</p>`],
     en: ['The taskbar', `
 <h2>On the left</h2>
 <p>The <b>Start</b> button, the search box (it finds programs, Control Panel options and files on drive C:; with Enter, it searches the internet) and the pinned programs. To pin a program, right-click its window button or an icon › <b>Pin to the taskbar</b>.</p>
+<p>A calculation in the search box (<b>12*3.5</b>, <b>200 × 15%</b>, <b>√2</b>) shows the result first; Enter copies it.</p>
 <p>The window buttons show the name. To see only the icons, grouped by program, right-click the taskbar › <b>Taskbar buttons</b>. The mouse wheel on a button opens another window of the program.</p>
 <h2>The tray, on the right</h2>
-<p><b>Network</b>: the Wi-Fi networks, connecting and disconnecting (on Linux). <b>Volume</b>: the computer's sound. <b>Battery</b>: the charge, the screen brightness and the battery of a wireless mouse or keyboard, with the low battery notice. <b>Bluetooth</b>: the wireless devices (on Linux). <b>Bell</b>: the notifications and <b>Do not disturb</b>.</p>
+<p><b>Network</b>: the Wi-Fi networks, connecting and disconnecting (on Linux). <b>Volume</b>: the computer's sound. <b>Battery</b>: the charge, the screen brightness, the power mode (power saver, balanced or performance, on Linux) and the battery of a wireless mouse or keyboard, with the low battery notice. <b>Bluetooth</b>: the wireless devices (on Linux). <b>Bell</b>: the notifications and <b>Do not disturb</b>.</p>
 <p>A click on the <b>clock</b> opens the calendar; right-click it › <b>Show the date</b> to put the date under the time.</p>`],
     es: ['La barra de tareas', `
 <h2>A la izquierda</h2>
 <p>El botón <b>Inicio</b>, el cuadro de búsqueda (encuentra programas, opciones del Panel de control y archivos del disco C:; con Enter, busca en internet) y los programas anclados. Para anclar un programa, usa el clic derecho en el botón de su ventana o en un icono › <b>Anclar a la barra de tareas</b>.</p>
+<p>Una cuenta en el cuadro de búsqueda (<b>12*3,5</b>, <b>200 × 15%</b>, <b>√2</b>) muestra el resultado primero; Enter lo copia.</p>
 <p>Los botones de las ventanas muestran el nombre. Para ver solo los íconos, agrupados por programa, usa el clic derecho en la barra › <b>Botones de las ventanas</b>. La rueda del mouse en un botón abre otra ventana del programa.</p>
 <h2>La bandeja, a la derecha</h2>
-<p><b>Red</b>: las redes Wi-Fi, conectar y desconectar (en Linux). <b>Volumen</b>: el sonido de la computadora. <b>Batería</b>: la carga, el brillo de la pantalla y la batería del mouse y del teclado inalámbricos, con el aviso de batería baja. <b>Bluetooth</b>: los dispositivos inalámbricos (en Linux). <b>Campana</b>: las notificaciones y el <b>No molestar</b>.</p>
+<p><b>Red</b>: las redes Wi-Fi, conectar y desconectar (en Linux). <b>Volumen</b>: el sonido de la computadora. <b>Batería</b>: la carga, el brillo de la pantalla, el modo de energía (ahorro, equilibrado o rendimiento, en Linux) y la batería del mouse y del teclado inalámbricos, con el aviso de batería baja. <b>Bluetooth</b>: los dispositivos inalámbricos (en Linux). <b>Campana</b>: las notificaciones y el <b>No molestar</b>.</p>
 <p>Un clic en el <b>reloj</b> abre el calendario; el clic derecho en él › <b>Mostrar la fecha</b> pone la fecha debajo de la hora.</p>`],
   },
   {
@@ -197,6 +200,7 @@ const TOPICOS = [
     'pt-BR': ['Navegador e e-mail', `
 <h2>O Navegador</h2>
 <p>Abre os sites em janelas do Retro Computer, com favoritos, pesquisa, zoom, Localizar e Imprimir. Os downloads vão para <b>Meus documentos › Recebidos</b>. A câmera, o microfone, a localização e as notificações de cada site pedem a sua permissão; para esquecer as respostas, use Painel de controle › Internet.</p>
+<p>Os endereços <b>http://</b> abrem na versão segura (https://). O site que não a tiver mostra um aviso, com a escolha de abri-lo assim mesmo; os aparelhos da rede de casa (o roteador, a impressora) ficam de fora. Para desligar: Painel de controle › Segurança › Privacidade.</p>
 <h2>Vídeos e músicas</h2>
 <p>Os sites de vídeo e de música comuns, como o YouTube, funcionam. Os serviços com proteção contra cópia (Netflix, Prime Video, Disney+ e o Spotify na web) não tocam no Navegador: use para eles o navegador do computador principal (no Linux, o Firefox ou o Chrome da aba Programas do Linux).</p>
 <h2>O e-mail</h2>
@@ -206,6 +210,7 @@ const TOPICOS = [
     en: ['Browser and e-mail', `
 <h2>The Browser</h2>
 <p>It opens websites in Retro Computer windows, with favorites, search, zoom, Find and Print. Downloads go to <b>Documents › Received</b>. Each site's access to the camera, the microphone, the location and notifications asks for your permission; to forget the answers, use Control Panel › Internet.</p>
+<p><b>http://</b> addresses open in the secure version (https://). A site without one shows a warning, with the choice to open it anyway; the devices on the home network (the router, the printer) are left out. To turn this off: Control Panel › Security › Privacy.</p>
 <h2>Videos and music</h2>
 <p>The usual video and music sites, such as YouTube, work. Services with copy protection (Netflix, Prime Video, Disney+ and Spotify on the web) do not play in the Browser: for them, use the main computer's browser (on Linux, Firefox or Chrome from the Linux programs tab).</p>
 <h2>E-mail</h2>
@@ -215,6 +220,7 @@ const TOPICOS = [
     es: ['Navegador y correo', `
 <h2>El Navegador</h2>
 <p>Abre los sitios en ventanas de Retro Computer, con favoritos, búsqueda, zoom, Buscar e Imprimir. Las descargas van a <b>Mis documentos › Recibidos</b>. La cámara, el micrófono, la ubicación y las notificaciones de cada sitio piden tu permiso; para olvidar las respuestas, usa Panel de control › Internet.</p>
+<p>Las direcciones <b>http://</b> se abren en la versión segura (https://). El sitio que no la tenga muestra un aviso, con la opción de abrirlo de todos modos; los aparatos de la red de casa (el router, la impresora) quedan fuera. Para desactivarlo: Panel de control › Seguridad › Privacidad.</p>
 <h2>Videos y música</h2>
 <p>Los sitios de video y de música comunes, como YouTube, funcionan. Los servicios con protección contra copia (Netflix, Prime Video, Disney+ y Spotify en la web) no se reproducen en el Navegador: para ellos, usa el navegador de la computadora principal (en Linux, Firefox o Chrome de la pestaña Programas de Linux).</p>
 <h2>El correo</h2>
@@ -230,6 +236,7 @@ const TOPICOS = [
 <p><b>Reprodutor de mídia</b>: os vídeos e as músicas do disco, com as legendas .srt ou .vtt de mesmo nome e a tela cheia (Alt+Enter).</p>
 <p><b>Captura de tela</b>: a tela inteira, a janela da frente ou um pedaço escolhido com o mouse. As capturas ficam em <b>Meus documentos › Capturas de tela</b> e vão também para a área de transferência.</p>
 <p><b>Monitor do sistema</b> (Ctrl+Shift+Esc): os programas abertos, os processos e o uso do processador e da memória; finaliza um programa travado.</p>
+<p><b>Área de transferência</b> (logotipo + V): os últimos 25 textos copiados em qualquer programa; Enter cola o escolhido na posição do cursor, e o "…" de cada um fixa ou exclui. A lista fica só na memória e some ao fechar o Retro Computer.</p>
 <p><b>Calculadora</b>, <b>Bloco de notas</b> (com Imprimir, Ctrl+P) e <b>Prompt de comando</b>.</p>
 <h2>Jogos</h2>
 <p>Paciência, Campo Minado e Breakout, para as pausas.</p>`],
@@ -239,6 +246,7 @@ const TOPICOS = [
 <p><b>Media Player</b>: the videos and music on the disk, with the .srt or .vtt subtitles of the same name and full screen (Alt+Enter).</p>
 <p><b>Screenshot</b>: the whole screen, the front window or a piece chosen with the mouse. Screenshots are kept in <b>Documents › Screenshots</b> and also go to the clipboard.</p>
 <p><b>System Monitor</b> (Ctrl+Shift+Esc): the open programs, the processes and the processor and memory use; it ends a program that froze.</p>
+<p><b>Clipboard</b> (logo + V): the last 25 texts copied in any program; Enter pastes the chosen one where the cursor was, and the "…" of each one pins or deletes it. The list stays in memory only and is gone when Retro Computer closes.</p>
 <p><b>Calculator</b>, <b>Notepad</b> (with Print, Ctrl+P) and <b>Command Prompt</b>.</p>
 <h2>Games</h2>
 <p>Solitaire, Minesweeper and Breakout, for the breaks.</p>`],
@@ -248,6 +256,7 @@ const TOPICOS = [
 <p><b>Reproductor multimedia</b>: los videos y la música del disco, con los subtítulos .srt o .vtt del mismo nombre y la pantalla completa (Alt+Enter).</p>
 <p><b>Captura de pantalla</b>: la pantalla entera, la ventana del frente o un trozo elegido con el mouse. Las capturas quedan en <b>Mis documentos › Capturas de pantalla</b> y también van al portapapeles.</p>
 <p><b>Monitor del sistema</b> (Ctrl+Shift+Esc): los programas abiertos, los procesos y el uso del procesador y de la memoria; finaliza un programa que se colgó.</p>
+<p><b>Portapapeles</b> (logotipo + V): los últimos 25 textos copiados en cualquier programa; Enter pega el elegido donde estaba el cursor, y el "…" de cada uno lo ancla o lo elimina. La lista queda solo en la memoria y desaparece al cerrar Retro Computer.</p>
 <p><b>Calculadora</b>, <b>Bloc de notas</b> (con Imprimir, Ctrl+P) y <b>Línea de comandos</b>.</p>
 <h2>Juegos</h2>
 <p>Solitario, Buscaminas y Breakout, para las pausas.</p>`],
@@ -307,42 +316,45 @@ const TOPICOS = [
     id: 'painel', icone: 'painel',
     'pt-BR': ['Painel de controle', `
 <h2>Configurações</h2>
-<p><b>Aparência</b>: a cor e o padrão do fundo, a proteção de tela (Voando pelas estrelas, Linhas coloridas ou Relógio), a tela cheia, o tamanho dos pixels (para as letras ficarem nítidas em qualquer monitor) e abrir o Retro Computer ao entrar no computador.</p>
+<p><b>Aparência</b>: a cor e o padrão do fundo, a proteção de tela (Voando pelas estrelas, Linhas coloridas ou Relógio), os efeitos (os cantos magnéticos das janelas e a luz noturna, com menos azul à noite), a tela cheia, o tamanho dos pixels (para as letras ficarem nítidas em qualquer monitor), a área da tela (a resolução, no Retro Computer como sistema) e abrir o Retro Computer ao entrar no computador.</p>
 <p><b>Disco C:</b>: a pasta do disco no computador principal, o espaço livre e a troca de pasta.</p>
 <p><b>Claude</b>: a instalação do Claude Code e a chave de API.</p>
 <p><b>Internet</b>: o e-mail, a pesquisa, em qual navegador os links abrem, as permissões dos sites e os programas da internet.</p>
 <p><b>Idioma</b>: português, inglês ou espanhol (o Retro Computer reinicia para trocar).</p>
+<p><b>Segurança</b>: o estado das proteções (a senha, o firewall, as atualizações, a chave do Claude) e a privacidade (só conexões seguras no Navegador, apagar os dados de navegação ao fechar, o histórico da área de transferência).</p>
 <p><b>Senhas</b>: a senha da tela de bloqueio e quando pedi-la.</p>
 <p><b>Bluetooth</b>: procurar, parear, conectar e esquecer mouses, teclados e fones sem fio (no Windows e no macOS, abre as configurações do sistema).</p>
-<p><b>Atualizações do Linux</b> (só no Linux): as atualizações de segurança do Linux e dos programas da Loja.</p>
+<p><b>Firewall</b> e <b>Atualizações do Linux</b> (só no Linux): recusar as conexões que chegam de fora e as atualizações de segurança do Linux e dos programas da Loja.</p>
 <p><b>Impressoras</b>: as impressoras, a padrão, a fila de impressão e a página de teste.</p>
-<p><b>Teclado</b>: o layout (Português ABNT2, EUA internacional com teclas mortas e outros) e um campo para testar os acentos.</p>
+<p><b>Teclado</b>: o layout (Português ABNT2, EUA internacional com teclas mortas e outros), um campo para testar os acentos e a aba <b>Atalhos</b>.</p>
 <p><b>Sons</b>, <b>Data e hora</b>, <b>Adicionar ou remover programas</b>, <b>Foco</b> e <b>Sobre o Retro Computer</b>.</p>`],
     en: ['Control Panel', `
 <h2>Settings</h2>
-<p><b>Appearance</b>: the background color and pattern, the screen saver (Flying through the stars, Colored lines or Clock), full screen, the pixel size (so the letters stay sharp on any monitor) and opening Retro Computer when signing in to the computer.</p>
+<p><b>Appearance</b>: the background color and pattern, the screen saver (Flying through the stars, Colored lines or Clock), the effects (the magnetic corners of the windows and the night light, with less blue at night), full screen, the pixel size (so the letters stay sharp on any monitor), the screen area (the resolution, with Retro Computer as the system) and opening Retro Computer when signing in to the computer.</p>
 <p><b>Drive C:</b>: the disk folder on the main computer, the free space and changing the folder.</p>
 <p><b>Claude</b>: installing Claude Code and the API key.</p>
 <p><b>Internet</b>: e-mail, search, where links open, site permissions and the internet programs.</p>
 <p><b>Language</b>: Portuguese, English or Spanish (Retro Computer restarts to switch).</p>
+<p><b>Security</b>: the status of the protections (the password, the firewall, the updates, the Claude key) and privacy (secure connections only in the Browser, deleting the browsing data on closing, the clipboard history).</p>
 <p><b>Passwords</b>: the lock screen password and when to ask for it.</p>
 <p><b>Bluetooth</b>: finding, pairing, connecting and forgetting wireless mice, keyboards and headphones (on Windows and macOS, it opens the system settings).</p>
-<p><b>Linux Updates</b> (Linux only): the security updates for Linux and for the programs from the Store.</p>
+<p><b>Firewall</b> and <b>Linux Updates</b> (Linux only): refusing the connections that come from outside, and the security updates for Linux and for the programs from the Store.</p>
 <p><b>Printers</b>: the printers, the default one, the print queue and the test page.</p>
-<p><b>Keyboard</b>: the layout (Brazilian ABNT2, US international with dead keys and others) and a field to try the accents.</p>
+<p><b>Keyboard</b>: the layout (Brazilian ABNT2, US international with dead keys and others), a field to try the accents and the <b>Shortcuts</b> tab.</p>
 <p><b>Sounds</b>, <b>Date and Time</b>, <b>Add or Remove Programs</b>, <b>Focus</b> and <b>About Retro Computer</b>.</p>`],
     es: ['Panel de control', `
 <h2>Configuración</h2>
-<p><b>Apariencia</b>: el color y el patrón del fondo, el protector de pantalla (Volando entre estrellas, Líneas de colores o Reloj), la pantalla completa, el tamaño de los píxeles (para que las letras queden nítidas en cualquier monitor) y abrir Retro Computer al entrar en la computadora.</p>
+<p><b>Apariencia</b>: el color y el patrón del fondo, el protector de pantalla (Volando entre estrellas, Líneas de colores o Reloj), los efectos (las esquinas magnéticas de las ventanas y la luz nocturna, con menos azul de noche), la pantalla completa, el tamaño de los píxeles (para que las letras queden nítidas en cualquier monitor), el área de la pantalla (la resolución, con Retro Computer como sistema) y abrir Retro Computer al entrar en la computadora.</p>
 <p><b>Disco C:</b>: la carpeta del disco en la computadora principal, el espacio libre y el cambio de carpeta.</p>
 <p><b>Claude</b>: la instalación de Claude Code y la clave de API.</p>
 <p><b>Internet</b>: el correo, la búsqueda, dónde abrir los enlaces, los permisos de los sitios y los programas de internet.</p>
 <p><b>Idioma</b>: portugués, inglés o español (Retro Computer se reinicia para cambiarlo).</p>
+<p><b>Seguridad</b>: el estado de las protecciones (la contraseña, el firewall, las actualizaciones, la clave de Claude) y la privacidad (solo conexiones seguras en el Navegador, borrar los datos de navegación al cerrar, el historial del portapapeles).</p>
 <p><b>Contraseñas</b>: la contraseña de la pantalla de bloqueo y cuándo pedirla.</p>
 <p><b>Bluetooth</b>: buscar, emparejar, conectar y olvidar mouses, teclados y auriculares inalámbricos (en Windows y macOS, abre la configuración del sistema).</p>
-<p><b>Actualizaciones de Linux</b> (solo en Linux): las actualizaciones de seguridad de Linux y de los programas de la Tienda.</p>
+<p><b>Firewall</b> y <b>Actualizaciones de Linux</b> (solo en Linux): rechazar las conexiones que llegan de fuera y las actualizaciones de seguridad de Linux y de los programas de la Tienda.</p>
 <p><b>Impresoras</b>: las impresoras, la predeterminada, la cola de impresión y la página de prueba.</p>
-<p><b>Teclado</b>: la distribución (portugués ABNT2, EE. UU. internacional con teclas muertas y otras) y un campo para probar los acentos.</p>
+<p><b>Teclado</b>: la distribución (portugués ABNT2, EE. UU. internacional con teclas muertas y otras), un campo para probar los acentos y la pestaña <b>Atajos</b>.</p>
 <p><b>Sonidos</b>, <b>Fecha y hora</b>, <b>Agregar o quitar programas</b>, <b>Enfoque</b> y <b>Acerca de Retro Computer</b>.</p>`],
   },
   {
@@ -365,6 +377,30 @@ const TOPICOS = [
 <h2>Cuándo pedir la contraseña</h2>
 <p>Además del bloqueo desde Inicio, la contraseña se puede pedir al volver de la suspensión (o al cerrar la tapa), al salir del protector de pantalla y al abrir Retro Computer.</p>
 <p>En Linux, la contraseña de entrada de Linux también desbloquea, por si olvidas la de Retro Computer. Con Retro Computer como sistema, la tecla del logotipo + L bloquea.</p>`],
+  },
+  {
+    id: 'seguranca', icone: 'seguranca',
+    'pt-BR': ['Segurança e privacidade', `
+<h2>A Central de segurança</h2>
+<p><b>Painel de controle › Segurança</b> mostra, num lugar só, a senha da tela de bloqueio, o firewall e as atualizações de segurança automáticas (no Linux) e como a chave do Claude está guardada. O que estiver em vermelho merece uma olhada; cada linha tem o botão que leva à configuração dela.</p>
+<h2>Privacidade</h2>
+<p>Na aba <b>Privacidade</b>: só conexões seguras (HTTPS) no Navegador, apagar os dados de navegação (os cookies, os dados dos sites e os arquivos temporários) ao fechar o Retro Computer e guardar ou não o histórico da área de transferência.</p>
+<h2>O firewall</h2>
+<p>No Linux, <b>Painel de controle › Firewall</b> liga o firewall do sistema (o ufw): ele recusa as conexões que outros computadores tentam abrir neste, e a internet continua como antes. Ligar e desligar pedem a senha de administrador.</p>`],
+    en: ['Security and privacy', `
+<h2>The Security Center</h2>
+<p><b>Control Panel › Security</b> shows, in one place, the lock screen password, the firewall and the automatic security updates (on Linux) and how the Claude key is stored. Whatever is in red deserves a look; each line has the button that leads to its settings.</p>
+<h2>Privacy</h2>
+<p>On the <b>Privacy</b> tab: secure connections only (HTTPS) in the Browser, deleting the browsing data (cookies, site data and temporary files) when Retro Computer closes, and keeping the clipboard history or not.</p>
+<h2>The firewall</h2>
+<p>On Linux, <b>Control Panel › Firewall</b> turns on the system firewall (ufw): it refuses the connections that other computers try to open to this one, and the internet keeps working as before. Turning it on and off asks for the administrator password.</p>`],
+    es: ['Seguridad y privacidad', `
+<h2>El Centro de seguridad</h2>
+<p><b>Panel de control › Seguridad</b> muestra, en un solo lugar, la contraseña de la pantalla de bloqueo, el firewall y las actualizaciones de seguridad automáticas (en Linux) y cómo está guardada la clave de Claude. Lo que esté en rojo merece una mirada; cada línea tiene el botón que lleva a su configuración.</p>
+<h2>Privacidad</h2>
+<p>En la pestaña <b>Privacidad</b>: solo conexiones seguras (HTTPS) en el Navegador, borrar los datos de navegación (las cookies, los datos de los sitios y los archivos temporales) al cerrar Retro Computer y guardar o no el historial del portapapeles.</p>
+<h2>El firewall</h2>
+<p>En Linux, <b>Panel de control › Firewall</b> activa el firewall del sistema (ufw): rechaza las conexiones que otras computadoras intentan abrir con esta, e internet sigue igual que antes. Activarlo y desactivarlo piden la contraseña de administrador.</p>`],
   },
   {
     id: 'linux', icone: 'computador',
@@ -410,8 +446,11 @@ const TOPICOS = [
     'pt-BR': ['Teclas de atalho', `
 <h2>Em qualquer lugar</h2>
 <p><b>F11</b>: tela cheia ou janela. <b>Ctrl+Esc</b>: menu Iniciar. <b>Alt+letra</b>: abre o menu da janela. <b>F1</b>: esta Ajuda. <b>Ctrl+Shift+Esc</b>: Monitor do sistema.</p>
+<h2>As janelas</h2>
+<p>Arraste a janela até a borda da esquerda ou da direita (metade da tela), até um canto (um quarto) ou até o alto (a tela toda). <b>Ctrl + a roda do mouse</b> aumenta e diminui o texto no Bloco de notas, no Navegador e no Prompt, e o tamanho dos ícones nas pastas.</p>
 <h2>No Retro Computer como sistema</h2>
-<p><b>Tecla do logotipo</b>: menu Iniciar. <b>Logotipo+L</b>: bloquear. <b>Print Screen</b>: captura da tela inteira; <b>Alt+Print Screen</b>: da janela; <b>Shift+Print Screen</b>: de um pedaço. As teclas de volume, de brilho e de calculadora também valem.</p>
+<p><b>Tecla do logotipo</b>: menu Iniciar. <b>Alt+Tab</b>: trocar de janela (também as do Linux). <b>Alt+F4</b>: fechar a janela. <b>Logotipo + as setas</b>: encaixar a janela. <b>Logotipo + E</b>: Explorador; <b>R</b>: Executar; <b>D</b>: mostrar a área de trabalho; <b>M</b>: minimizar tudo; <b>I</b>: Painel de controle; <b>S</b>: pesquisar; <b>V</b>: área de transferência; <b>L</b>: bloquear; <b>1 a 9</b>: os programas fixados na barra; <b>Shift+S</b>: capturar um pedaço da tela. <b>Print Screen</b>: captura da tela inteira; <b>Alt+Print Screen</b>: da janela; <b>Shift+Print Screen</b>: de um pedaço. As teclas de volume, de brilho e de calculadora também valem.</p>
+<p>Com o Retro Computer como aplicativo, o Windows, o macOS e a área de trabalho do Linux ficam com boa parte destas teclas; vale o que eles deixarem passar.</p>
 <h2>Nas pastas</h2>
 <p><b>Enter</b> abre, <b>F2</b> renomeia, <b>Delete</b> exclui, <b>Backspace</b> sobe, <b>F5</b> atualiza, <b>Ctrl+A</b> seleciona tudo, <b>Alt+D</b> digita um endereço.</p>
 <h2>Nas fotos, nos vídeos e nas músicas</h2>
@@ -423,8 +462,11 @@ const TOPICOS = [
     en: ['Shortcut keys', `
 <h2>Anywhere</h2>
 <p><b>F11</b>: full screen or window. <b>Ctrl+Esc</b>: Start menu. <b>Alt+letter</b>: opens the window's menu. <b>F1</b>: this Help. <b>Ctrl+Shift+Esc</b>: System Monitor.</p>
+<h2>Windows</h2>
+<p>Drag a window to the left or right edge (half of the screen), to a corner (a quarter) or to the top (the whole screen). <b>Ctrl + the mouse wheel</b> makes the text bigger and smaller in Notepad, the Browser and the Command Prompt, and the icons in folders.</p>
 <h2>With Retro Computer as the system</h2>
-<p><b>Logo key</b>: Start menu. <b>Logo+L</b>: lock. <b>Print Screen</b>: screenshot of the whole screen; <b>Alt+Print Screen</b>: of the window; <b>Shift+Print Screen</b>: of a piece. The volume, brightness and calculator keys also work.</p>
+<p><b>Logo key</b>: Start menu. <b>Alt+Tab</b>: switch windows (the Linux ones too). <b>Alt+F4</b>: close the window. <b>Logo + the arrow keys</b>: dock the window. <b>Logo + E</b>: Explorer; <b>R</b>: Run; <b>D</b>: show the desktop; <b>M</b>: minimize all; <b>I</b>: Control Panel; <b>S</b>: search; <b>V</b>: clipboard; <b>L</b>: lock; <b>1 to 9</b>: the programs pinned to the taskbar; <b>Shift+S</b>: capture a piece of the screen. <b>Print Screen</b>: screenshot of the whole screen; <b>Alt+Print Screen</b>: of the window; <b>Shift+Print Screen</b>: of a piece. The volume, brightness and calculator keys also work.</p>
+<p>With Retro Computer as an application, Windows, macOS and the Linux desktop keep many of these keys; what they let through works.</p>
 <h2>In folders</h2>
 <p><b>Enter</b> opens, <b>F2</b> renames, <b>Delete</b> deletes, <b>Backspace</b> goes up, <b>F5</b> refreshes, <b>Ctrl+A</b> selects all, <b>Alt+D</b> types an address.</p>
 <h2>In pictures, videos and music</h2>
@@ -436,8 +478,11 @@ const TOPICOS = [
     es: ['Teclas de acceso rápido', `
 <h2>En cualquier lugar</h2>
 <p><b>F11</b>: pantalla completa o ventana. <b>Ctrl+Esc</b>: menú Inicio. <b>Alt+letra</b>: abre el menú de la ventana. <b>F1</b>: esta Ayuda. <b>Ctrl+Shift+Esc</b>: Monitor del sistema.</p>
+<h2>Las ventanas</h2>
+<p>Arrastra la ventana hasta el borde izquierdo o derecho (la mitad de la pantalla), hasta una esquina (un cuarto) o hasta arriba (la pantalla entera). <b>Ctrl + la rueda del mouse</b> agranda y achica el texto en el Bloc de notas, en el Navegador y en la Línea de comandos, y los íconos en las carpetas.</p>
 <h2>Con Retro Computer como sistema</h2>
-<p><b>Tecla del logotipo</b>: menú Inicio. <b>Logotipo+L</b>: bloquear. <b>Impr Pant</b>: captura de la pantalla entera; <b>Alt+Impr Pant</b>: de la ventana; <b>Shift+Impr Pant</b>: de un trozo. Las teclas de volumen, brillo y calculadora también funcionan.</p>
+<p><b>Tecla del logotipo</b>: menú Inicio. <b>Alt+Tab</b>: cambiar de ventana (también las de Linux). <b>Alt+F4</b>: cerrar la ventana. <b>Logotipo + las flechas</b>: acoplar la ventana. <b>Logotipo + E</b>: Explorador; <b>R</b>: Ejecutar; <b>D</b>: mostrar el escritorio; <b>M</b>: minimizar todo; <b>I</b>: Panel de control; <b>S</b>: buscar; <b>V</b>: portapapeles; <b>L</b>: bloquear; <b>1 a 9</b>: los programas anclados en la barra; <b>Shift+S</b>: capturar un trozo de la pantalla. <b>Impr Pant</b>: captura de la pantalla entera; <b>Alt+Impr Pant</b>: de la ventana; <b>Shift+Impr Pant</b>: de un trozo. Las teclas de volumen, brillo y calculadora también funcionan.</p>
+<p>Con Retro Computer como aplicación, Windows, macOS y el escritorio de Linux se quedan con buena parte de estas teclas; vale lo que ellos dejen pasar.</p>
 <h2>En las carpetas</h2>
 <p><b>Enter</b> abre, <b>F2</b> cambia el nombre, <b>Supr</b> elimina, <b>Retroceso</b> sube, <b>F5</b> actualiza, <b>Ctrl+A</b> selecciona todo, <b>Alt+D</b> escribe una dirección.</p>
 <h2>En las fotos, los videos y la música</h2>

@@ -12,6 +12,7 @@ Una computadora retro para la productividad: el escritorio de una PC de los año
 ## Qué hace
 
 - **Un escritorio de los años 90**: botón Inicio, barra de tareas, ventanas que se arrastran y cambian de tamaño, iconos, menús, la Papelera y el cuadro Apagar, con letras e iconos nítidos en cualquier monitor.
+- **Ventanas que se acoplan y los atajos de siempre**: arrastra la ventana hasta un borde (la mitad de la pantalla) o hasta una esquina (un cuarto); Alt+Tab, Alt+F4 y la tecla del logotipo con una letra (E, R, D, V, L…) o con las flechas; Ctrl + la rueda del mouse para el zoom.
 - **Una barra de tareas como la de hoy**: el cuadro de búsqueda y los programas anclados junto a Inicio; la bandeja con el Wi-Fi, el volumen, la batería y el brillo, el Bluetooth, las notificaciones y el calendario; y la pantalla de bloqueo con contraseña.
 - **El disco C: es una carpeta de tu computadora** (`Documentos/Retro Computer`): lo que guardas también se ve fuera del programa. Para traer archivos, arrástralos a una ventana; para llevarlos, usa "Enviar a". El Explorador tiene el panel de carpetas, la dirección en la que se puede hacer clic y las miniaturas; las memorias USB y las tarjetas aparecen en Mi computadora, y los `.zip` se abren como carpetas.
 - **Nada se pierde**: eliminar manda a la Papelera, y cada vez que guardas se conserva la versión anterior del archivo.
@@ -19,13 +20,15 @@ Una computadora retro para la productividad: el escritorio de una PC de los año
 - **Siempre actualizado**: al abrir un programa, Retro Computer busca la versión nueva y la instala antes (o pregunta, o no busca, como prefieras). Retro Computer también se actualiza solo.
 - **Claude Code** en la Línea de comandos, trabajando en tus archivos, con tu suscripción de Claude o con una clave de API guardada en el almacén de contraseñas del sistema.
 - **Internet**: el Navegador (cámara, micrófono y notificaciones solo con tu permiso) y tu correo de la web en una ventana; cualquier sitio se puede instalar como programa.
-- **Herramientas incluidas**: Visor de imágenes, Reproductor multimedia, Captura de pantalla, Monitor del sistema, Calculadora, Bloc de notas, Enfoque (Pomodoro, cronómetro y temporizador), impresoras, Buscar, Ejecutar, Panel de control, protector de pantalla, Ayuda y tres juegos (Solitario, Buscaminas y Breakout).
+- **Herramientas incluidas**: Visor de imágenes, Reproductor multimedia, Captura de pantalla, Monitor del sistema, Calculadora (también en el propio cuadro de búsqueda), Bloc de notas, el historial del portapapeles (logotipo + V), Enfoque (Pomodoro, cronómetro y temporizador), la luz nocturna, impresoras, Buscar, Ejecutar, Panel de control, protector de pantalla, Ayuda y tres juegos (Solitario, Buscaminas y Breakout).
+- **Seguridad y privacidad en un solo lugar**: el Centro de seguridad muestra la contraseña de la pantalla de bloqueo, el firewall (en Linux), las actualizaciones de seguridad automáticas y cómo está guardada la clave de Claude; el Navegador solo abre conexiones seguras (HTTPS), salvo que elijas otra cosa, y puede borrar sus datos al cerrar.
 - **Linux como sistema**: la sesión "Retro Computer" de la pantalla de inicio de sesión abre directo en él; Apagar apaga la computadora de verdad, los programas de Linux aparecen en la barra de tareas, las actualizaciones de seguridad se instalan desde el Panel de control, y las teclas del logotipo, de volumen, de brillo e Impr Pant funcionan.
 
 | | |
 |---|---|
 | ![WordCraft en una ventana](docs/img/es/wordcraft.png) | ![Agregar o quitar programas](docs/img/es/programas.png) |
 | ![El Explorador con el panel de carpetas y las miniaturas](docs/img/es/explorador.png) | ![El Reproductor multimedia](docs/img/es/reproductor.png) |
+| ![Dos ventanas lado a lado, acopladas a los bordes](docs/img/es/acoplar.png) | ![El Centro de seguridad](docs/img/es/seguridad.png) |
 
 ## Instalar
 
@@ -40,8 +43,10 @@ Descarga el instalador de tu sistema en la [última versión](https://github.com
 
 Los instaladores todavía no tienen firma digital, por eso el sistema pide una confirmación la primera vez:
 
-- **macOS**: clic derecho en la aplicación › Abrir › Abrir (o Ajustes del Sistema › Privacidad y seguridad › Abrir igualmente).
+- **macOS**: Ajustes del Sistema › Privacidad y seguridad › Abrir igualmente (hasta macOS 14, también clic derecho en la aplicación › Abrir › Abrir).
 - **Windows**: en la pantalla de SmartScreen, "Más información" › "Ejecutar de todas formas".
+
+La [guía de instalación](docs/instalacao.md) (en portugués) tiene los pasos para cada computadora: Windows, macOS, una Mac vieja (como la MacBook Air de 2014, con Linux Mint), una máquina virtual en UTM, una laptop vieja o mini PC y la Raspberry Pi.
 
 ### Como sistema de Linux (una laptop vieja, una Raspberry Pi o una mini PC)
 

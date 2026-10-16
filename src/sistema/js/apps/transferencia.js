@@ -1,7 +1,7 @@
 /*
  * O histórico da área de transferência (a tecla do logotipo com V, como no Windows 10): os
  * últimos textos copiados, numa caixa que abre por cima de tudo. Enter (ou um clique) cola o
- * escolhido onde o cursor estava; Delete o tira da lista; o "…" de cada item fixa ou exclui.
+ * escolhido na posição do cursor; Delete o tira da lista; o "…" de cada item fixa ou exclui.
  * A lista fica só na memória do processo principal (transferencia.js) e some ao fechar.
  */
 import { h, img } from '../util.js';
@@ -29,7 +29,7 @@ function fechar({ devolver = true } = {}) {
   a.el.remove();
   a.largar();
   document.removeEventListener('mousedown', a.fora, true);
-  // O foco volta para onde estava (um campo, um programa, uma página do Navegador).
+  // O foco volta ao que o tinha antes (um campo, um programa, uma página do Navegador).
   if (devolver && a.alvo && a.alvo.isConnected && a.alvo.focus) a.alvo.focus();
   return a;
 }

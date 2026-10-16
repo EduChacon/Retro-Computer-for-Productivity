@@ -13,6 +13,7 @@ Um computador retrô para produtividade: a área de trabalho de um PC dos anos 9
 ## O que ele faz
 
 - **Área de trabalho dos anos 90**: botão Iniciar, barra de tarefas, janelas que se arrastam e redimensionam, ícones, menus, a Lixeira e a caixa de Desligar, com letras e ícones nítidos em qualquer monitor.
+- **Janelas que se encaixam e os atalhos de sempre**: arraste a janela até a borda (metade da tela) ou até um canto (um quarto); Alt+Tab, Alt+F4 e a tecla do logotipo com uma letra (E, R, D, V, L…) ou com as setas; Ctrl + a roda do mouse para o zoom.
 - **Barra de tarefas como a de hoje**: a caixa de busca e os programas fixados ao lado do Iniciar; a bandeja com o Wi-Fi, o volume, a bateria e o brilho, o Bluetooth, as notificações e o calendário; e a tela de bloqueio com senha.
 - **O disco C: é uma pasta do seu computador** (`Documentos/Retro Computer`): o que você salva fica visível também fora do programa. Para trazer arquivos, arraste-os para uma janela; para levar, use "Enviar para". O Explorador tem a barra de pastas, o endereço clicável e as miniaturas; os pendrives e os cartões aparecem no Meu computador, e os `.zip` abrem como pastas.
 - **Nada se perde**: excluir manda para a Lixeira, e cada gravação guarda a versão anterior do arquivo.
@@ -20,7 +21,8 @@ Um computador retrô para produtividade: a área de trabalho de um PC dos anos 9
 - **Sempre atualizado**: ao abrir um programa, o Retro Computer procura a versão nova e a instala antes (ou pergunta, ou não procura, como você escolher). O próprio Retro Computer também se atualiza.
 - **Claude Code** no Prompt de comando, nos seus arquivos, com a conta da assinatura ou com uma chave de API guardada no cofre de senhas do sistema.
 - **Internet**: o Navegador (câmera, microfone e notificações só com a sua permissão) e o seu e-mail da web numa janela; qualquer site pode ser instalado como programa.
-- **Ferramentas prontas**: Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Foco (Pomodoro, cronômetro e temporizador), impressoras, Localizar, Executar, Painel de controle, proteção de tela, Ajuda e três jogos (Paciência, Campo Minado e Breakout).
+- **Ferramentas prontas**: Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora (também na própria caixa de busca), Bloco de notas, o histórico da área de transferência (logotipo + V), Foco (Pomodoro, cronômetro e temporizador), a luz noturna, impressoras, Localizar, Executar, Painel de controle, proteção de tela, Ajuda e três jogos (Paciência, Campo Minado e Breakout).
+- **Segurança e privacidade num lugar só**: a Central de segurança mostra a senha da tela de bloqueio, o firewall (no Linux), as atualizações de segurança automáticas e como a chave do Claude está guardada; o Navegador só abre conexões seguras (HTTPS), a não ser que você escolha outra coisa, e pode apagar os dados dele ao fechar.
 - **Linux como sistema**: a sessão "Retro Computer" da tela de entrada abre direto nele; Desligar desliga o computador de verdade, os programas do Linux aparecem na barra de tarefas, as atualizações de segurança são instaladas pelo Painel de controle, e as teclas do logotipo, de volume, de brilho e Print Screen funcionam.
 
 | | |
@@ -29,6 +31,7 @@ Um computador retrô para produtividade: a área de trabalho de um PC dos anos 9
 | ![O Claude Code no Prompt de comando](docs/img/claude.png) | ![O menu do botão direito](docs/img/menu-arquivo.png) |
 | ![Adicionar ou remover programas, com a atualização](docs/img/programas.png) | ![Desligar o computador](docs/img/desligar.png) |
 | ![O Explorador com a barra de pastas e as miniaturas](docs/img/explorador.png) | ![O Reprodutor de mídia](docs/img/reprodutor.png) |
+| ![Duas janelas lado a lado, encaixadas nas bordas](docs/img/encaixe.png) | ![A Central de segurança](docs/img/seguranca.png) |
 
 ## Instalar
 
@@ -41,7 +44,7 @@ Baixe o instalador do seu sistema no [último lançamento](https://github.com/Ed
 | Linux (PC) | `…-linux-amd64.deb` ou `…-linux-x86_64.AppImage` |
 | Linux (Raspberry Pi, 64 bits) | `…-linux-arm64.deb` ou `…-linux-arm64.AppImage` |
 
-Os instaladores ainda não têm assinatura digital: na primeira abertura, o sistema pede uma confirmação (veja [docs/uso.md](docs/uso.md)).
+Os instaladores ainda não têm assinatura digital: na primeira abertura, o sistema pede uma confirmação. O [guia de instalação](docs/instalacao.md) traz o passo a passo de cada computador: o Windows, o macOS, um Mac antigo (como o MacBook Air de 2014, com o Linux Mint), uma máquina virtual no UTM, um notebook antigo ou mini PC e o Raspberry Pi.
 
 ### Como o sistema do Linux (um notebook antigo, um Raspberry Pi ou um mini PC)
 

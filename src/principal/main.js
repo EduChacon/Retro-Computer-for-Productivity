@@ -793,7 +793,7 @@ function registrarPonte() {
       await new Promise((ok) => setTimeout(ok, 150));
       return janelasLinux.colar();
     }
-    // No Retro Computer: cola onde o cursor estava (a área de trabalho já devolveu o foco).
+    // No Retro Computer: cola na posição do cursor (a área de trabalho já devolveu o foco).
     const wc = webContents.getFocusedWebContents() || (janela && janela.webContents);
     if (wc && !wc.isDestroyed()) wc.paste();
     return true;

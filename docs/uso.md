@@ -9,7 +9,9 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 - Fala português, inglês e espanhol (Painel de controle › Idioma).
 - O disco C: é uma pasta do computador principal (por padrão, `Documentos/Retro Computer`). Tudo o que se salva fica nela, visível também fora do programa.
 - Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pelo "Adicionar ou remover programas" e rodam em janelas da área de trabalho. No Linux, a mesma janela instala os programas do Flathub.
-- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Foco (Pomodoro, cronômetro e temporizador), Prompt de comando e três jogos.
+- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Foco (Pomodoro, cronômetro e temporizador), Prompt de comando e três jogos.
+- As janelas se encaixam nas bordas e nos cantos da tela, e os atalhos do Windows (Alt+Tab, a tecla do logotipo com uma letra) funcionam no Retro Computer como sistema.
+- Painel de controle › Segurança mostra num lugar só a senha, o firewall, as atualizações e a privacidade.
 - O Claude Code roda no Prompt de comando, nos arquivos do disco C:.
 - Nada se perde: o que é excluído vai para a Lixeira, e cada gravação guarda a versão anterior do arquivo.
 
@@ -23,8 +25,10 @@ O Retro Computer procura a versão nova dele uma vez por dia. No Windows e no `.
 
 Sem assinatura digital (ainda não há certificado da Apple nem da Microsoft), o sistema avisa na primeira abertura:
 
-- **macOS**: clique com o botão direito no aplicativo › Abrir › Abrir (ou Ajustes do Sistema › Privacidade e Segurança › Abrir mesmo assim).
+- **macOS**: Ajustes do Sistema › Privacidade e Segurança › Abrir Mesmo Assim (até o macOS 14, também o botão direito no aplicativo › Abrir › Abrir).
 - **Windows**: na tela azul do SmartScreen, "Mais informações" › "Executar assim mesmo".
+
+O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.md), seção 8.
 
 ## 2. O dia a dia
 
@@ -34,6 +38,10 @@ Sem assinatura digital (ainda não há certificado da Apple nem da Microsoft), o
 | Abrir um documento | Dois cliques nele: o programa certo abre (o `.docx` no WordCraft, o `.txt` no Bloco de notas, a foto no Visualizador de imagens) |
 | Salvar | O comando Salvar do programa: na primeira vez, a caixa "Salvar como" mostra o disco C:; depois, grava direto no mesmo arquivo |
 | Achar um arquivo | A caixa de busca da barra de tarefas ou Iniciar › Localizar |
+| Fazer uma conta rápida | Digite na caixa de busca (`12*3,5`, `200 × 15%`, `√2`): o resultado vem primeiro, e Enter o copia |
+| Pôr duas janelas lado a lado | Arraste uma até a borda da esquerda e a outra até a da direita (num canto, um quarto da tela; no alto, a tela toda) |
+| Colar algo copiado antes | Logotipo + V (o histórico da área de transferência), ou Iniciar › Programas › Acessórios › Área de transferência |
+| Ver maior | Ctrl + a roda do mouse (no Bloco de notas, no Navegador e no Prompt; nas pastas, o tamanho dos ícones) |
 | Desfazer uma gravação | Botão direito no arquivo › Versões anteriores |
 | Recuperar um arquivo excluído | Lixeira › botão direito › Restaurar |
 | Concentrar-se | Iniciar › Programas › Acessórios › Foco (o "Pomodoro"), com a tela cheia (F11) |
@@ -85,6 +93,7 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 | Captura de tela | A tela inteira, a janela da frente ou um pedaço, com atraso opcional; tudo fica em `Meus documentos/Capturas de tela` e na área de transferência |
 | Monitor do sistema (Ctrl+Shift+Esc) | Os programas abertos (finalizar e alternar), os processos do computador e o desempenho (processador e memória) |
 | Foco | O Pomodoro (25/5/15 minutos, ajustáveis), o cronômetro com voltas e o temporizador; os três continuam com a janela fechada |
+| Área de transferência (logotipo + V) | Os últimos 25 textos copiados em qualquer programa: Enter cola o escolhido na posição do cursor; o "…" fixa ou exclui. Fica só na memória (nada vai para o disco), sem o que os gerenciadores de senhas marcam como secreto |
 | Calculadora, Bloco de notas, Prompt de comando | Os de sempre |
 | Jogos | Paciência, Campo Minado e Breakout |
 
@@ -92,11 +101,28 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 
 Painel de controle › Senhas cria a senha da tela de bloqueio. Com ela, Iniciar › Bloquear o computador cobre a tela até a senha ser digitada, e a senha pode ser pedida também ao voltar da suspensão (ou ao fechar a tampa), ao sair da proteção de tela e ao abrir o Retro Computer. A senha fica guardada só como resumo (PBKDF2). No Linux, a senha de entrada do Linux também desbloqueia.
 
+### Segurança e privacidade
+
+Painel de controle › **Segurança** mostra o estado de cada proteção, com o botão que leva à configuração dela: a senha da tela de bloqueio, o firewall e as atualizações de segurança automáticas (no Linux) e como a chave do Claude está guardada (cifrada pelo cofre de senhas do sistema; no Linux sem chaveiro, só embaralhada, com o aviso em vermelho). A aba Privacidade tem:
+
+- **Só conexões seguras (HTTPS)** no Navegador (ligada): os endereços `http://` abrem na versão segura; o site que não a tiver mostra um aviso, com a escolha de abri-lo assim mesmo (até fechar o Retro Computer). Os aparelhos da rede de casa (o roteador, a impressora) ficam de fora.
+- **Apagar os dados de navegação ao fechar** (desligada): os cookies, os dados dos sites e os arquivos temporários do Navegador.
+- **O histórico da área de transferência** (ligado).
+
+No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw`, que o pacote do Retro Computer recomenda): ele recusa as conexões que chegam de outros computadores, e a internet continua como antes. Ligar e desligar pedem a senha de administrador.
+
+### A tela e a energia
+
+- **Luz noturna** (Painel de controle › Aparência › Efeitos): as cores mais quentes, com menos azul, das 20h às 7h (as horas se escolhem) ou o dia todo, na intensidade escolhida. No Retro Computer como sistema, ela vale também para os programas do Linux.
+- **Cantos magnéticos** (Aparência › Efeitos, ligados): arrastar a janela até a borda a encaixa; a tecla do logotipo com as setas faz o mesmo.
+- **Área da tela** (Aparência › Configurações, no Retro Computer como sistema): a resolução do monitor; se a tela nova não aparecer bem, ela volta à anterior em 15 segundos.
+- **Modo de energia** (a caixa da bateria, no Linux com o `power-profiles-daemon`): economia de energia, equilibrado ou desempenho.
+
 ### Impressoras, Bluetooth e teclado
 
 - **Painel de controle › Impressoras**: as impressoras do computador, a padrão, a fila de impressão (no Linux e no macOS, pelo CUPS), a página de teste e "Adicionar impressora…" (o configurador do sistema; no Linux sem ele, a página do CUPS no Navegador).
 - **Painel de controle › Bluetooth** (no Linux): procurar, parear, conectar, desconectar e esquecer. Ao parear um teclado, o código para digitar nele aparece na tela. No Windows e no macOS, o Painel abre as configurações de Bluetooth do sistema.
-- **Painel de controle › Teclado**: o layout (Português ABNT2, EUA internacional com teclas mortas e outros) e um campo para testar os acentos.
+- **Painel de controle › Teclado**: o layout (Português ABNT2, EUA internacional com teclas mortas e outros), um campo para testar os acentos e a aba Atalhos (com a opção do histórico da área de transferência).
 
 ## 3. Programas
 
@@ -160,12 +186,20 @@ As pastas do disco C: ficam com os nomes de quando foram criadas: quem começou 
 | Espaço, Alt+Enter | Tocar e pausar, tela cheia no Reprodutor de mídia |
 | Ctrl+Shift+C, Ctrl+Shift+V | Copiar e colar no Prompt de comando (no Mac, Cmd+C e Cmd+V) |
 | Botões laterais do mouse | Voltar e avançar no Meu computador e no Navegador |
+| Ctrl + roda do mouse | Aumentar e diminuir o texto (Bloco de notas, Navegador, Prompt) e os ícones (nas pastas) |
 
-No Retro Computer como sistema do Linux, valem também:
+No Retro Computer como sistema do Linux, valem também (com o Retro Computer como aplicativo, o Windows, o macOS e a área de trabalho do Linux ficam com boa parte delas):
 
 | Tecla | Efeito |
 |---|---|
 | Logotipo | Abre e fecha o Iniciar |
+| Alt+Tab, Alt+Shift+Tab | Trocar de janela (também as dos programas do Linux): a caixa com os ícones, como na época |
+| Alt+F4 | Fechar a janela da frente (sem nenhuma, abre o Desligar) |
+| Logotipo + setas | Encaixar a janela: metade da tela, um quarto, a tela toda, minimizar |
+| Logotipo+E, R, D, M, I, S | Explorador, Executar, mostrar a área de trabalho, minimizar tudo, Painel de controle, pesquisar |
+| Logotipo+V | O histórico da área de transferência |
+| Logotipo+1 a 9 | Os programas fixados na barra de tarefas, na ordem |
+| Logotipo+Shift+S | Capturar um pedaço da tela |
 | Logotipo+L | Bloqueia o computador |
 | Print Screen, Alt+Print Screen, Shift+Print Screen | Captura da tela, da janela ou de um pedaço (também com um programa do Linux na frente) |
 | Volume, brilho, calculadora | Mudam o som e a tela (com o indicador acima da bandeja) e abrem a Calculadora |
@@ -197,6 +231,7 @@ Na sessão:
 - Os programas do Linux (os da aba Programas do Linux e os outros) abrem em janelas comuns e aparecem na barra de tarefas, com os do Retro Computer: o clique traz para a frente ou minimiza, e o botão direito fixa e fecha.
 - Painel de controle › **Atualizações do Linux** mostra o que há para atualizar (as de segurança marcadas), instala tudo (`apt-get upgrade`, que nunca remove pacotes, e `flatpak update`) com a senha de administrador e pode instalar sozinho as de segurança, todo dia (o `unattended-upgrades`). Um balão avisa, uma vez por dia, quando há atualizações.
 - Os pendrives são montados sozinhos; ao bloquear, as janelas dos programas do Linux são minimizadas, e nenhuma fica por cima da tela de bloqueio.
+- A área da tela (a resolução) e a luz noturna valem para o monitor inteiro (pelo `xrandr`); o chaveiro do Linux (o GNOME Keyring, aberto pela senha de entrada) guarda cifrados os cookies do Navegador e a chave do Claude.
 - Se o Retro Computer parar com erro, a sessão o abre de novo.
 
 Fora da sessão, o Retro Computer pode simplesmente abrir junto com o computador: Painel de controle › Aparência › Configurações › "Abrir o Retro Computer ao entrar no computador" (Windows, macOS e Linux).
@@ -224,3 +259,15 @@ h) **Cópia de segurança agendada** do disco C: para uma segunda pasta ou um di
 i) **Instaladores assinados** (o caminho e os custos estão em [instalacao.md](instalacao.md), seção "Os avisos de segurança").
 
 j) **Emulador de DOS embutido**: o motor do DOSBox (GPL) numa janela do Retro Computer, para abrir com dois cliques os jogos e programas de DOS guardados no disco C:, com o Micropolis (a versão aberta do SimCity) como exemplo. Até lá, no Linux, o DOSBox Staging pode ser instalado pela aba Programas do Linux.
+
+k) **Áreas de trabalho virtuais** (como no Pop!_OS, no GNOME e no Windows 10): várias mesas, cada uma com as suas janelas.
+
+l) **Programas do Windows pelo WINE** (como o "Windows App Support" do Zorin OS), junto do emulador de DOS.
+
+m) **Enviar arquivos a outro computador da casa** (como o Warpinator do Linux Mint) e o celular ligado ao computador (como o KDE Connect).
+
+n) **Mapa de caracteres** (o do Windows 95 e o do GNOME), para os acentos e os símbolos.
+
+o) **Mouse e touchpad** no Painel de controle (no Retro Computer como sistema): a velocidade do ponteiro, a rolagem "natural", o tocar para clicar e o desligar ao digitar.
+
+A pesquisa das distribuições do Linux que deu origem a algumas destas ideias (e aos recursos da 1.0) está em [pesquisa-distribuicoes.md](pesquisa-distribuicoes.md).

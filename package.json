@@ -114,7 +114,9 @@
         "x11-utils",
         "udisks2",
         "bluez",
-        "cups"
+        "cups",
+        "gnome-keyring",
+        "ufw"
       ]
     }
   },

@@ -102,14 +102,16 @@ O Prompt de comando é um terminal de verdade (node-pty e xterm.js) com o shell 
 O pacote `.deb` instala a sessão "Retro Computer" em `/usr/share/xsessions`. O script da sessão (`recursos/linux/sessao.sh`) aplica o teclado do sistema, o "tocar para clicar" do touchpad, a economia de energia do monitor, o agente de senha do sistema (lxpolkit) e um gerenciador de janelas leve (Openbox, com o tema "Retro" e a faixa da barra de tarefas livre) para os programas do Linux, e abre o Retro Computer de novo se ele parar com erro. Com `RETRO_SISTEMA=1`:
 
 - a tela cheia fica fixa; Desligar vale para o computador (`systemctl`, pelo logind) e oferece sair da sessão;
-- as teclas do logotipo, de volume, de brilho, de calculadora e Print Screen são atalhos globais, mesmo com um programa do Linux na frente;
-- as janelas dos programas do Linux entram na barra de tarefas (o `wmctrl` lista, o `xprop` diz a ativa, o `xdotool` minimiza), ligadas ao programa do menu pela classe da janela;
+- as teclas do logotipo, de volume, de brilho, de calculadora e Print Screen e os atalhos do Windows (Alt+Tab, Alt+F4, a tecla do logotipo com uma letra, um número ou uma seta, lidos em `src/principal/atalhos.js`) são atalhos globais, mesmo com um programa do Linux na frente; os que mostram algo do Retro Computer o trazem para a frente;
+- as janelas dos programas do Linux entram na barra de tarefas (o `wmctrl` lista, o `xprop` diz a ativa e, com o `-spy`, avisa na hora quando a lista muda, o `xdotool` minimiza e cola), ligadas ao programa do menu pela classe da janela; a tecla do logotipo com as setas as encaixa (`wmctrl -e`, na área útil e com a moldura descontada);
+- a resolução e a luz noturna passam pelo `xrandr` (a troca de resolução volta à anterior em 15 segundos sem confirmação);
+- o chaveiro do Linux (`--password-store=gnome-libsecret`, com o `gnome-keyring-daemon` da sessão) guarda cifrados os cookies do Navegador e a chave do Claude;
 - os pendrives são montados sozinhos (`udisksctl`);
 - a senha de administrador é pedida numa caixa do Retro Computer e passada ao `sudo -S`, sem ficar guardada.
 
 ### O Navegador
 
-Cada janela do Navegador é um `<webview>` numa sessão própria (só `http` e `https`, sem Node), com um preload isolado que repassa os atalhos e os botões laterais do mouse. As permissões (câmera, microfone, localização, notificações, área de transferência, compartilhamento da tela) passam por uma caixa do Retro Computer; os sites instalados como programas usam a mesma sessão, numa janela sem a barra de endereço. O Electron não traz o Widevine: os serviços de vídeo com proteção contra cópia não tocam.
+Cada janela do Navegador é um `<webview>` numa sessão própria (só `http` e `https`, sem Node), com um preload isolado que repassa os atalhos e os botões laterais do mouse. Com "Só conexões seguras" (ligado), o `webRequest` troca o `http://` das páginas por `https://` (menos a rede de casa); se a versão segura falha ou manda de volta para o `http`, a janela mostra o aviso e só abre a outra com a escolha do usuário (`src/principal/https.js`). As permissões (câmera, microfone, localização, notificações, área de transferência, compartilhamento da tela) passam por uma caixa do Retro Computer; os sites instalados como programas usam a mesma sessão, numa janela sem a barra de endereço. O Electron não traz o Widevine: os serviços de vídeo com proteção contra cópia não tocam.
 
 ### O visual
 
@@ -134,7 +136,9 @@ Cada janela do Navegador é um `<webview>` numa sessão própria (só `http` e `
 | 8. Bandeja (rede, volume, bateria, brilho, notificações), barra de tarefas com busca e programas fixados, tela de bloqueio | Feita (1.0) |
 | 9. Modo sistema no Linux: sessão própria, teclado, mouse e toque, Loja (Flathub), atualizações, programas do Linux na barra | Feita (1.0) |
 | 10. Ferramentas: pendrives, pastas compactadas, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, sites como programas, Explorador com árvore e miniaturas, impressoras, Bluetooth | Feita (1.0) |
-| 11. Tema Mac clássico, várias telas, papel de parede e esquemas de cores, navegador focado, modo foco completo | Sugestões ([uso.md](uso.md), seção 8) |
+| 11. Cantos magnéticos e atalhos do Windows, resolução da tela, Ctrl+roda para o zoom | Feita (1.0) |
+| 12. Da pesquisa das distribuições ([pesquisa-distribuicoes.md](pesquisa-distribuicoes.md)): histórico da área de transferência, luz noturna, modos de energia, firewall, contas na busca; a Central de segurança e a auditoria; a abertura mais leve | Feita (1.0) |
+| 13. Tema Mac clássico (o Mac OS 9.2), várias telas, áreas de trabalho virtuais, papel de parede e esquemas de cores, navegador focado, modo foco completo, emulador de DOS | Sugestões ([uso.md](uso.md), seção 8) |
 
 ## Riscos conhecidos
 
@@ -142,5 +146,5 @@ Cada janela do Navegador é um `<webview>` numa sessão própria (só `http` e `
 - Os Craft precisam de WebGPU ou WebGL2. Sem placa de vídeo utilizável, o Retro Computer liga o WebGL2 por software (mais lento); se nem isso funcionar, a janela explica o motivo.
 - Sem certificados, os instaladores do macOS e do Windows mostram um aviso na primeira abertura.
 - No macOS, o aplicativo aberto pelo Finder não herda o PATH do terminal; por isso o Prompt abre o shell como "login", que lê o perfil do usuário.
-- O que depende do aparelho no Linux (o pareamento do Bluetooth, o CUPS, o `apt`, o `wmctrl` e o `xdotool`, a captura de tela pelo `desktopCapturer` no modo sistema) foi testado com saídas simuladas (as variáveis `RETRO_*_FALSO(S)` e os testes de leitura); o uso num notebook de verdade pode pedir ajustes.
+- O que depende do aparelho no Linux (o pareamento do Bluetooth, o CUPS, o `apt`, o `ufw`, o `powerprofilesctl`, o `xrandr`, a captura de tela pelo `desktopCapturer` no modo sistema) foi testado com saídas simuladas (as variáveis `RETRO_*_FALSO(S)` e os testes de leitura); o uso num notebook de verdade pode pedir ajustes. A barra de tarefas com as janelas do Linux, o encaixe e as teclas globais foram testados também com o openbox e janelas de verdade (no Xvfb, com o `xdotool`).
 - O modo sistema supõe o X11 (Openbox). Numa sessão Wayland, a lista das janelas do Linux e os atalhos globais não funcionam.

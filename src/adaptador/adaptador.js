@@ -92,6 +92,8 @@
           abort: function () { partes = []; return Promise.resolve(); },
           close: function () {
             return salvar(caminho, alca.name, juntar(partes)).then(function (r) {
+              // Cancelado na caixa "Salvar como": como no navegador, um AbortError (o programa não mostra erro).
+              if (r && r.cancelado) throw new DOMException('Cancelado.', 'AbortError');
               if (!r || !r.ok) throw new Error((r && r.erro) || 'Não foi possível gravar.');
               alca.name = r.nome || alca.name;
             });
