@@ -283,6 +283,61 @@ IMPRESSORA_16 = [
     "................",
 ]
 
+# 1.6: o scanner de mesa (Digitalizar), com a tampa erguida, a luz e a folha, desenho próprio.
+SCANNER_32 = [
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "...........KKKKKKKKKKKKK........",
+    "...........KWWWWWWWWWWWK........",
+    "...........KWGGGGGGGGGWK........",
+    "...........KWWWWWWWWWWWK........",
+    "...........KWGGGGGGGWWWK........",
+    "...........KWWWWWWWWWWWK........",
+    "...KKKKKKKKKKKKKKKKKKKKKKKKKK...",
+    "...KlllllllllllllllllllllllLK...",
+    "...KlLLLLLLLLLLLLLLLLLLLLLLGK...",
+    "...KGGGGGGGGGGGGGGGGGGGGGGGGK...",
+    "...KKKKKKKKKKKKKKKKKKKKKKKKKK...",
+    "....KuuuuuuuuuuuuuuuuuuuuuuK....",
+    "...KKKKKKKKKKKKKKKKKKKKKKKKKK...",
+    "..KlWWWWWWWWWWWWWWWWWWWWWWWWLK..",
+    "..KlLLLLLLLLLLLLLLLLLLLLLLLLGK..",
+    "..KlLLLLLLLLLLLLLLLLLLLgLDDLGK..",
+    "..KlLLLLLLLLLLLLLLLLLLLLLLLLGK..",
+    "..KGGGGGGGGGGGGGGGGGGGGGGGGGGK..",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKK..",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+]
+
+SCANNER_16 = [
+    "................",
+    "................",
+    "................",
+    ".....KKKKKKK....",
+    ".....KWWWWWK....",
+    ".....KWGGGWK....",
+    ".KKKKKKKKKKKKKK.",
+    ".KlllllllllllLK.",
+    ".KGGGGGGGGGGGGK.",
+    ".KKKKKKKKKKKKKK.",
+    "..KuuuuuuuuuuK..",
+    "KKKKKKKKKKKKKKKK",
+    "KlWWWWWWWWWWWWLK",
+    "KlLLLLLLLLLgLDGK",
+    "KGGGGGGGGGGGGGGK",
+    "KKKKKKKKKKKKKKKK",
+]
+
 BLUETOOTH_16 = [
     "................",
     "................",
@@ -1411,6 +1466,8 @@ def gerar(serenity):
     feitos[16]['atualizacoes'] = abrir_serenity(serenity, 16, 'download')
     feitos[32]['impressora'] = grade(IMPRESSORA_32)
     feitos[16]['impressora'] = grade(IMPRESSORA_16)
+    feitos[32]['scanner'] = grade(SCANNER_32)
+    feitos[16]['scanner'] = grade(SCANNER_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)
     feitos[32]['bluetooth'] = grade(BLUETOOTH_16).resize((32, 32), Image.NEAREST)
 

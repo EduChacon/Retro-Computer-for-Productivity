@@ -580,6 +580,7 @@ async function itensProgramas() {
         prog('calculadora', tr('Calculadora'), 'calculadora'),
         prog('captura', tr('Captura de tela'), 'captura'),
         prog('diario', tr('Diário de trabalho'), 'diario'),
+        prog('scanner', tr('Digitalizar'), 'scanner'),
         prog('discos', tr('Discos'), 'discos'),
         prog('dos', tr('DOS'), 'dos'),
         prog('foco', tr('Foco (Pomodoro)'), 'foco'),

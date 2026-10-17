@@ -38,6 +38,7 @@ const { Impressoras, ImpressorasFalsas, papelDoPais } = require('./impressoras')
 const { Trabalhos } = require('./trabalho');
 const { FerramentasPdf } = require('./pdf');
 const { Ocr } = require('./ocr');
+const { Scanners, ScannersFalsos } = require('./scanner');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
@@ -1872,6 +1873,20 @@ function registrarPonte() {
   // O texto das imagens e das páginas digitalizadas (OCR), também no processo de trabalho.
   const ocr = new Ocr({ disco, trabalhos, pasta: path.join(BASE_DADOS, 'ocr') });
   tratar('ocr:imagem', (item, idioma) => ocr.imagem(item, String(idioma || '')));
+  // Os scanners (o SANE no Linux, o WIA no Windows; no Mac, a Captura de Imagem do sistema).
+  const desenharPagina = (html, largura, altura) => new Promise((resolve, reject) => {
+    const w = new BrowserWindow({ show: false, width: largura, height: altura, useContentSize: true, webPreferences: { offscreen: true, sandbox: true, javascript: false } });
+    w.webContents.once('did-finish-load', () => setTimeout(() => {
+      w.webContents.capturePage().then((img) => resolve(img.toPNG()), reject).finally(() => { if (!w.isDestroyed()) w.destroy(); });
+    }, 400));
+    w.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  });
+  const scanners = process.env.RETRO_SCANNER_FALSO ? new ScannersFalsos({ desenhar: desenharPagina }) : new Scanners({ shell });
+  tratar('scanner:listar', () => scanners.listar());
+  tratar('scanner:opcoes', (id) => scanners.opcoes(String(id)).then(({ modos, resolucoes, origens }) => ({ modos, resolucoes, origens })));
+  tratar('scanner:digitalizar', (id, o) => scanners.digitalizar(String(id), o && typeof o === 'object' ? { cor: String(o.cor || 'cor'), dpi: Number(o.dpi) || 200, origem: String(o.origem || '') } : {}));
+  tratar('scanner:parar', () => scanners.parar());
+  tratar('scanner:doSistema', () => scanners.abrirDoSistema());
   // O Bluetooth (no Linux, pelo bluetoothctl; no Windows e no macOS, as configurações do sistema).
   const bluetooth = new (process.env.RETRO_BLUETOOTH_FALSO ? BluetoothFalso : Bluetooth)({ aoPergunta: (p) => enviar('bluetooth:pergunta', p) });
   tratar('bluetooth:estado', () => bluetooth.estado());

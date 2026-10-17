@@ -3738,6 +3738,42 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await lerTexto('Contrato.pdf', 'ocr-pdf-texto');
   },
 
+  // O Digitalizar (com RETRO_SCANNER_FALSO=1): dois scanners de mentira, duas páginas, o PDF salvo e o
+  // texto dele pelo OCR (a página de mentira é um ofício desenhado na hora).
+  async scanner() {
+    await fecharTudo();
+    await abrir('scanner');
+    await pagina.waitForSelector('.janela.ativa .scn-opcoes select option', { state: 'attached', timeout: 15000 });
+    await pagina.waitForTimeout(800);
+    await foto('scanner-aberto');
+    const botao = `.janela.ativa .scn-opcoes button.padrao`;
+    for (let i = 0; i < 2; i++) {
+      await pagina.click(botao);
+      await pagina.waitForFunction((n) => document.querySelectorAll('.janela.ativa .scn-pagina').length === n, i + 1, { timeout: 30000 });
+      await pagina.waitForTimeout(400);
+    }
+    await foto('scanner-paginas');
+    await pagina.selectOption('.janela.ativa .scn-opcoes select >> nth=0', 'falso:adf');
+    await pagina.waitForTimeout(600);
+    console.log('origens do multifuncional:', await pagina.$$eval('.janela.ativa .scn-opcoes select >> nth=3', (s) => [...s[0].options].map((o) => o.value)).catch(() => '?'));
+    await pagina.check('#scn-ocr');
+    await pagina.click(`.janela.ativa button:has-text("${T('Salvar…')}")`);
+    await pagina.waitForSelector('#camada-modal .janela', { timeout: 10000 });
+    await pagina.waitForTimeout(400);
+    await foto('scanner-salvar');
+    const nome = await pagina.inputValue('#camada-modal .janela input[type=text]');
+    await pagina.keyboard.press('Enter');
+    const arq = path.join(disco, DOCS, nome);
+    for (let i = 0; i < 100 && !fs.existsSync(arq); i++) await pagina.waitForTimeout(200);
+    let paginas = '?';
+    try { paginas = /Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [arq]).toString())[1]; } catch { }
+    console.log('digitalização salva:', nome, fs.existsSync(arq) ? fs.statSync(arq).size + ' bytes' : '(não gravada)', 'páginas', paginas);
+    await pagina.waitForFunction(() => { const t = document.querySelector('.janela.ativa .ocr-texto'); return t && t.value && !t.closest('.janela').querySelector('select').disabled; }, null, { timeout: 120000 }).catch(() => { });
+    await pagina.waitForTimeout(500);
+    console.log('texto da digitalização:', JSON.stringify((await pagina.inputValue('.janela.ativa .ocr-texto').catch(() => '')).slice(0, 160)));
+    await foto('scanner-ocr');
+  },
+
   // O Bluetooth (com RETRO_BLUETOOTH_FALSO=1): a bandeja, o Painel, procurar e parear um teclado.
   async bluetooth() {
     await fecharTudo();

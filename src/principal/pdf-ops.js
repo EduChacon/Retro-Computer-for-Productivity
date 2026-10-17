@@ -36,6 +36,12 @@ async function abrir(bytes) {
   return doc;
 }
 
+/**
+ * Os bytes num buffer só deles. O pdf-lib lê o JPEG por "bytes.buffer" (sem o deslocamento da vista), e
+ * os bytes que chegam pelas mensagens às vezes são uma vista no meio de um buffer maior.
+ */
+const proprio = (b) => (b instanceof Uint8Array && b.byteOffset === 0 && b.byteLength === b.buffer.byteLength ? b : new Uint8Array(b));
+
 /** Quem fez: o Retro Computer, sem o "pdf-lib" no lugar do programa. */
 function marcarAutor(doc) {
   doc.setProducer('Retro Computer');
@@ -96,7 +102,8 @@ async function acrescentar(saida, it, tamanho) {
   }
   if (it.tipo === 'jpg' || it.tipo === 'png') {
     let img;
-    try { img = it.tipo === 'jpg' ? await saida.embedJpg(it.bytes) : await saida.embedPng(it.bytes); } catch (e) { throw erro('imagem', e && e.message); }
+    const bytes = proprio(it.bytes);
+    try { img = it.tipo === 'jpg' ? await saida.embedJpg(bytes) : await saida.embedPng(bytes); } catch (e) { throw erro('imagem', e && e.message); }
     const [w, h] = paginaDaImagem(img.width, img.height, tamanho);
     const p = saida.addPage([w, h]);
     p.drawImage(img, { x: 0, y: 0, width: w, height: h });

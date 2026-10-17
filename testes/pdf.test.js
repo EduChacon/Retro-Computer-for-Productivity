@@ -81,6 +81,16 @@ test('pdf: combinar PDFs e imagens na ordem, extrair, separar e girar', async ()
   assert.deepEqual(await ops.info(a), { paginas: 3, senha: false });
 });
 
+test('pdf: o JPEG que chega como vista no meio de um buffer maior (como nas mensagens entre processos)', async () => {
+  // Um JPEG de 4 × 2 pontos (branco), posto a 7 bytes do começo de um buffer maior.
+  const jpg = Buffer.from('/9j/4AAQSkZJRgABAgAAAQABAAD//gAQTGF2YzYwLjMxLjEwMgD/2wBDAAgEBAQEBAUFBQUFBQYGBgYGBgYGBgYGBgYHBwcICAgHBwcGBgcHCAgICAkJCQgICAgJCQoKCgwMCwsODg4RERT/xABLAAEBAAAAAAAAAAAAAAAAAAAABwEBAAAAAAAAAAAAAAAAAAAAABABAAAAAAAAAAAAAAAAAAAAABEBAAAAAAAAAAAAAAAAAAAAAP/AABEIAAIABAMBIgACEQADEQD/2gAMAwEAAhEDEQA/AL+AD//Z', 'base64');
+  const grande = new Uint8Array(jpg.length + 20);
+  grande.set(jpg, 7);
+  const vista = new Uint8Array(grande.buffer, 7, jpg.length);
+  const doc = await PDFDocument.load(await ops.combinar([{ tipo: 'jpg', bytes: vista }, { tipo: 'jpg', bytes: jpg }]));
+  assert.equal(doc.getPageCount(), 2);
+});
+
 test('pdf: o protegido e o que não é PDF são recusados com o código certo', async () => {
   assert.deepEqual(await ops.info(pdfProtegido()), { paginas: 0, senha: true });
   await assert.rejects(ops.girar(pdfProtegido(), 90), (e) => e.codigo === 'senha');

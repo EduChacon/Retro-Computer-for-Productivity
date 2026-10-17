@@ -74,8 +74,8 @@ class FerramentasPdf {
   }
 
   /**
-   * Um PDF só com os itens na ordem: { rel } (PDF, JPG ou PNG do disco) ou { png, nome } (uma imagem
-   * de outro tipo, já desenhada em PNG pela tela).
+   * Um PDF só com os itens na ordem: { rel } (PDF, JPG ou PNG do disco) ou { png, nome } e { jpg, nome }
+   * (uma imagem de outro tipo ou uma página digitalizada, já desenhada pela tela).
    */
   async combinar(itens, relDestino) {
     const destino = this.destino(relDestino);
@@ -84,11 +84,11 @@ class FerramentasPdf {
     const soma = { total: 0 };
     const lidos = [];
     for (const it of itens) {
-      if (it && it.png) {
-        const bytes = Buffer.from(it.png);
+      if (it && (it.png || it.jpg)) {
+        const bytes = Buffer.from(it.png || it.jpg);
         soma.total += bytes.length;
         if (bytes.length > MAX_ARQUIVO || soma.total > MAX_TOTAL) throw new Error(tr('Os arquivos juntos passam de {max} MB.', { max: MAX_TOTAL / 1048576 }));
-        lidos.push({ tipo: 'png', bytes, nome: String(it.nome || '') });
+        lidos.push({ tipo: it.png ? 'png' : 'jpg', bytes, nome: String(it.nome || '') });
         continue;
       }
       const tipo = TIPO_DA_EXT[path.posix.extname(String(it && it.rel)).toLowerCase()];

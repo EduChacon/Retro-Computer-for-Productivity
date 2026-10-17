@@ -220,6 +220,14 @@ contextBridge.exposeInMainWorld('retro', {
   ocr: {
     imagem: (item, idioma) => chamar('ocr:imagem', item, idioma),
   },
+  // Os scanners: a lista, as escolhas de cada um e uma página em PNG.
+  scanner: {
+    listar: () => chamar('scanner:listar'),
+    opcoes: (id) => chamar('scanner:opcoes', id),
+    digitalizar: (id, o) => chamar('scanner:digitalizar', id, o),
+    parar: () => chamar('scanner:parar'),
+    doSistema: () => chamar('scanner:doSistema'),
+  },
   monitor: {
     amostra: () => chamar('monitor:amostra'),
     processos: () => chamar('monitor:processos'),
