@@ -406,7 +406,10 @@ export class Janela {
     this.ev.emit('fechada');
     if (ativa === this) {
       ativa = null;
-      const prox = [...lista].reverse().find((j) => !j.minimizada && !j.fechada && daAreaAtual(j));
+      // Outra caixa aberta fica com o foco; senão, a última janela usada (não a última criada).
+      const ok = (j) => !j.minimizada && !j.fechada && daAreaAtual(j);
+      const caixa = [...lista].reverse().find((j) => j.dialogo && ok(j));
+      const prox = caixa || [...recentes].reverse().find(ok) || [...lista].reverse().find(ok);
       if (prox) prox.focar();
       else document.getElementById('mesa').focus();
     }

@@ -3048,6 +3048,35 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.waitForTimeout(800);
   },
 
+  // As letras em cada tamanho dos pixels, nos pontos da tela (o capturePage, não a foto da página, que
+  // sai nos pixels da interface): o menu da área de trabalho ampliado, para ver se sobra fresta entre
+  // os pontos das letras (o defeito do Linux com o "hinting" leve; rode também com o FONTCONFIG_FILE
+  // de um fonts.conf com hintslight, como o do Linux Mint).
+  async letras() {
+    await fecharTudo();
+    const escalas = (process.env.RETRO_ESCALAS || '1,1.25,1.5,1.75,2,2.5,3').split(',').map(Number);
+    for (const e of escalas) {
+      await pagina.evaluate((x) => { window.__retro.estado.config.escala = x; return import('./js/aparencia.js').then((m) => m.aplicarEscala(x)); }, e);
+      await pagina.waitForTimeout(700);
+      await pagina.keyboard.press('Escape');
+      const { w, h } = await pagina.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+      await pagina.mouse.click(Math.round(w * 0.35), Math.round(h * 0.3), { button: 'right' });
+      await pagina.waitForTimeout(400);
+      const caixa = await pagina.evaluate(() => { const r = document.querySelector('.menu').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+      const png = await app.evaluate(async ({ BrowserWindow }, c) => {
+        const j = BrowserWindow.getAllWindows().find((x) => x.isVisible());
+        const z = j.webContents.getZoomFactor();
+        const img = await j.webContents.capturePage({ x: Math.floor(c.x * z), y: Math.floor(c.y * z), width: Math.ceil(c.w * z), height: Math.ceil(c.h * z) });
+        return img.toPNG().toString('base64');
+      }, caixa);
+      const arq = path.join(SAIDA, `${String(++n).padStart(2, '0')}-letras-${String(e).replace('.', '_')}.png`);
+      fs.writeFileSync(arq, Buffer.from(png, 'base64'));
+      console.log('captura:', arq, '| área:', `${w} x ${h}`, '| zoom:', await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.isVisible()).webContents.getZoomFactor()));
+      await pagina.keyboard.press('Escape');
+    }
+    await pagina.evaluate(() => { window.__retro.estado.config.escala = 'auto'; return import('./js/aparencia.js').then((m) => m.aplicarEscala('auto')); });
+  },
+
   // O fundo da página inicial do Navegador (Painel › Internet › Página inicial): o de sempre (o azul
   // com losangos), outra cor e outro padrão, com o Navegador aberto mudando na hora, e o Restaurar.
   // E a aba Plano de fundo da Aparência, que usa a mesma escolha.
