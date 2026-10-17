@@ -2,9 +2,11 @@
  * A abertura: a tela do BIOS, a marca do Retro Computer e a área de trabalho.
  */
 import { h, img, esperar } from './util.js';
-import { carregarConfig, atualizarProgramas, estado, abrir, avisar, avisarRecebido, definirConfig, abrirEndereco, registrarPreguicoso, carregarOsQueFaltam } from './sistema.js';
-import { aplicarFundo, aplicarEscala } from './aparencia.js';
+import { carregarConfig, atualizarProgramas, estado, abrir, avisar, avisarRecebido, definirConfig, abrirEndereco, registrarPreguicoso, carregarOsQueFaltam, eventos as evSistema } from './sistema.js';
+import { aplicarFundo, aplicarEscala, fundoParaTema } from './aparencia.js';
 import { montarBarra } from './barra.js';
+import { montarBarraMac } from './barra-mac.js';
+import { aplicarTema, temaMac, temaAtual } from './tema.js';
 import { montarMesa, atualizar as atualizarMesa } from './mesa.js';
 import { tocar } from './sons.js';
 import { confirmar } from './dialogos.js';
@@ -82,11 +84,32 @@ async function telaBios() {
 }
 
 async function telaAbertura() {
+  if (temaMac()) return aberturaMac();
   const abertura = h('div.abertura',
     h('div.marca', img('logo', 32), h('div.nome', h('b', 'Retro Computer'), h('span', tr('para produtividade')))),
     h('div.barra-carga'));
   boot.replaceChildren(abertura);
   await esperar(1500);
+}
+
+/**
+ * A abertura do tema Mac clássico, como a do Mac da época: a caixa no meio, com a marca e a barra de
+ * progresso, e os ícones dos programas aparecendo embaixo, um a um (sem a tela do BIOS).
+ */
+async function aberturaMac() {
+  const barra = h('div');
+  const icones = h('div.am-icones');
+  boot.replaceChildren(h('div.abertura-mac',
+    h('div.am-caixa', h('div.am-marca', img('logo', 32), h('b', 'Retro Computer')), h('div.am-texto', tr('Iniciando…')), h('div.progresso', barra)),
+    icones));
+  boot.classList.add('visivel');
+  const nomes = ['disco', 'computador', 'pasta', 'documentos', 'navegador', 'correio', 'painel', 'claude'];
+  for (let i = 0; i < nomes.length; i++) {
+    barra.style.width = Math.round(((i + 1) / nomes.length) * 100) + '%';
+    icones.append(img(nomes[i], 32));
+    await esperar(170);
+  }
+  await esperar(250);
 }
 
 function dicas() {
@@ -130,6 +153,22 @@ async function iniciar() {
   await carregarIdioma(estado.config.idiomaEfetivo || 'pt-BR');
   estado.raizDisco = await retro.disco.raiz();
   await atualizarProgramas().catch(() => { });
+  aplicarTema(estado.config.tema);
+  evSistema.on('config', () => {
+    // O fundo de sempre de um tema vira o do outro, mude o tema por onde mudar (o Painel já manda
+    // o fundo trocado; o Claude, pelo servidor MCP, só o tema).
+    const antes = temaAtual();
+    const depois = estado.config.tema === 'mac' ? 'mac' : 'pc';
+    if (antes !== depois) {
+      const atual = estado.config.papel || {};
+      const papel = fundoParaTema(atual, antes, depois);
+      if (papel.cor !== atual.cor || papel.padrao !== atual.padrao) {
+        aplicarFundo(papel);
+        definirConfig({ papel }).catch(() => { });
+      }
+    }
+    aplicarTema(estado.config.tema);
+  });
   aplicarFundo(estado.config.papel);
   await aplicarEscala(estado.config.escala);
   // As duas telas em tela cheia: onde está cada monitor dentro da janela (telas.js).
@@ -152,7 +191,7 @@ async function iniciar() {
   const perfis = await carregarPerfis();
   const rapido = estado.config.inicioRapido || new URLSearchParams(location.search).has('rapido') || perfis.reaberto;
   if (!rapido) {
-    await telaBios();
+    if (!temaMac()) await telaBios();
     await telaAbertura();
   }
   // Com mais de um usuário (ou depois do logoff), a tela de entrada vem antes da área de trabalho.
@@ -164,6 +203,7 @@ async function iniciar() {
     entrou = true;
   }
   montarBarra();
+  montarBarraMac();
   await montarMesa();
   dicas();
   // Com "pedir a senha ao abrir", a área de trabalho só aparece depois da senha (a não ser que ela
@@ -207,8 +247,9 @@ async function iniciar() {
   }, 20000);
 }
 
-// Para os testes e as capturas.
-window.__retro = { abrir, estado, janelas, definirConfig };
+// Para os testes e as capturas (mostrarAbertura: a tela da marca, a do tema de agora, por cima da área de trabalho).
+const mostrarAbertura = async () => { await telaAbertura(); boot.classList.remove('visivel'); boot.replaceChildren(); };
+window.__retro = { abrir, estado, janelas, definirConfig, mostrarAbertura };
 
 iniciar().catch((e) => {
   console.error(e);

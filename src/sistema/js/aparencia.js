@@ -43,6 +43,18 @@ export function escurecer(hex, f = 0.55) {
   return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
 }
 
+/**
+ * O fundo de cada tema (Painel › Aparência › Tema): o verde-azulado do PC e o azul-arroxeado do Mac.
+ * Ao trocar de tema, o fundo de um vira o do outro; um fundo escolhido pelo usuário fica como está.
+ */
+export const FUNDO_TEMA = Object.freeze({ pc: Object.freeze({ cor: '#008080', padrao: 'nenhum' }), mac: Object.freeze({ cor: '#6a6aa8', padrao: 'nenhum' }) });
+export function fundoParaTema(papel, de, para) {
+  const p = papel || {};
+  const a = FUNDO_TEMA[de];
+  const igual = a && !p.imagem && (p.cor || '#008080').toLowerCase() === a.cor && (p.padrao || 'nenhum') === a.padrao;
+  return igual && FUNDO_TEMA[para] ? { ...p, ...FUNDO_TEMA[para] } : p;
+}
+
 /** O fundo de sempre da página inicial do Navegador (Painel › Internet › Página inicial). */
 export const FUNDO_INICIO = Object.freeze({ cor: '#3a6ea5', padrao: 'losangos' });
 

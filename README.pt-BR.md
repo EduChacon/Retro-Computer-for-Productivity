@@ -4,7 +4,7 @@
 
 Um computador retrô para produtividade: a área de trabalho de um PC dos anos 90, com os programas de trabalho, os seus arquivos e o Claude Code, sem as distrações do computador de hoje. Funciona no Windows, no macOS e no Linux (inclusive no Raspberry Pi), e no Linux pode ser o sistema inteiro do computador, transformando um notebook antigo ou um mini PC num computador retrô dedicado. Código aberto (licença MIT).
 
-- **Versão:** 1.3.0 · [Baixar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Versão:** 1.4.0 · [Baixar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
 - **Idiomas:** português, inglês e espanhol (Painel de controle › Idioma)
 - **Como usar:** [docs/uso.md](docs/uso.md) · **Arquitetura e decisões:** [docs/proposta.md](docs/proposta.md)
 
@@ -13,6 +13,7 @@ Um computador retrô para produtividade: a área de trabalho de um PC dos anos 9
 ## O que ele faz
 
 - **Área de trabalho dos anos 90**: botão Iniciar, barra de tarefas, janelas que se arrastam e redimensionam, ícones, menus, a Lixeira e a caixa de Desligar, com letras e ícones nítidos em qualquer monitor.
+- **Ou um Mac dos anos 90**: o tema Mac clássico, inspirado no Mac OS 9 (Painel de controle › Aparência › Tema), põe a barra de menus no alto da tela, dá às janelas o título listrado e a caixa de recolher, traz a Faixa de controle com os programas fixados e tem ícones próprios, todos desenhados pelo projeto.
 - **Janelas que se encaixam e os atalhos de sempre**: arraste a janela até a borda (metade da tela) ou até um canto (um quarto); Alt+Tab, Alt+F4 e a tecla do logotipo com uma letra (E, R, D, V, L…) ou com as setas; Ctrl + a roda do mouse para o zoom.
 - **Barra de tarefas como a de hoje**: a caixa de busca e os programas fixados ao lado do Iniciar; a bandeja com o Wi-Fi, o volume, a bateria e o brilho, o Bluetooth, as notificações e o calendário; e a tela de bloqueio com senha.
 - **O disco C: é uma pasta do seu computador** (`Documentos/Retro Computer`): o que você salva fica visível também fora do programa. Para trazer arquivos, arraste-os para uma janela; para levar, use "Enviar para". Meu computador › Computador principal mostra a área de trabalho, os documentos e os downloads do computador principal, e o Retro Computer pode entrar no "Enviar para" do Windows (no Mac, solte os arquivos no ícone dele no Dock): os arquivos vão e voltam, sempre como cópias. Você escolhe o programa padrão de cada tipo de arquivo. O Explorador tem a barra de pastas, o endereço clicável, as miniaturas, o Acesso rápido e o painel de visualização dos documentos do Word, dos PDFs e das planilhas; os pendrives e os cartões aparecem no Meu computador, e os `.zip` abrem como pastas.

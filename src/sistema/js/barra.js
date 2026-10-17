@@ -20,6 +20,7 @@ import { naMesa, adicionarAtalho, removerAtalho } from './mesa.js';
 import { reorganizavel as reorganizavelFaixa, arrastando } from './reorganizar.js';
 import { variasTelas, listaTelas, mesmaTela, aoMudarTelas, definirBarraNasOutras } from './telas.js';
 import { reajustarJanelas } from './janelas.js';
+import { temaMac, aoMudarTema } from './tema.js';
 
 let btIniciar;
 let tarefas;
@@ -72,12 +73,13 @@ export function montarBarra() {
   evSistema.on('config', () => {
     tique();
     busca.hidden = !mostrarBusca();
-    if (barraEmTodas() !== ligadaNasOutras) { montarOutras(); reajustarJanelas(); }
+    if (querOutras() !== ligadaNasOutras) { montarOutras(); reajustarJanelas(); }
     desenharTarefas();
   });
   evSistema.on('programas', desenharTarefas);
   // As duas telas: uma barra em cada outra tela (e nenhuma, com uma tela só).
   aoMudarTelas(() => { montarOutras(); desenharTarefas(); });
+  aoMudarTema(() => { montarOutras(); reajustarJanelas(); desenharTarefas(); });
   montarOutras();
   desenharTarefas();
   evSistema.on('foco', (f) => {
@@ -88,6 +90,20 @@ export function montarBarra() {
   });
   tique();
   setInterval(tique, 1000);
+}
+
+/** A busca e a bandeja (o relógio, a rede, o volume…): o tema Mac as leva para a barra de menus do alto. */
+export function pecasDaBarra() {
+  return { busca, bandeja: document.getElementById('bandeja') };
+}
+
+/** Devolve a busca e a bandeja para a barra de tarefas, nos lugares de sempre. */
+export function devolverPecas() {
+  const barra = document.getElementById('barra');
+  const bandeja = document.getElementById('bandeja');
+  if (!barra || !busca) return;
+  if (busca.parentNode !== barra) fixadosEl.before(busca);
+  if (bandeja && bandeja.parentNode !== barra) barra.append(bandeja);
 }
 
 /** O botão direito na barra de tarefas (a principal e a de cada outra tela). */
@@ -438,6 +454,8 @@ function desenharGrupos(visiveis, ativa, { alvo = tarefas, comFixados = true, or
  * e a bandeja (como a escolha do Windows "a barra principal e a barra em que a janela está aberta").
  */
 export const barraEmTodas = () => !(estado.config.barra && estado.config.barra.todasTelas === false);
+// No tema Mac, a barra de tarefas não aparece (a barra de menus do alto fica no lugar dela).
+const querOutras = () => barraEmTodas() && !temaMac();
 let outras = []; // { tela, el, tarefas, relogio }
 let ligadaNasOutras = null;
 const ordemOutras = new Map(); // só com os ícones: a ordem arrastada dos grupos de cada tela (pelo lugar dela)
@@ -446,7 +464,7 @@ const ordemOutras = new Map(); // só com os ícones: a ordem arrastada dos grup
 function montarOutras() {
   for (const o of outras) o.el.remove();
   outras = [];
-  ligadaNasOutras = barraEmTodas();
+  ligadaNasOutras = querOutras();
   definirBarraNasOutras(ligadaNasOutras);
   if (!variasTelas() || !ligadaNasOutras) return;
   const antesDe = document.getElementById('camada-menus');
@@ -487,6 +505,7 @@ function reordenarParte(js) {
 
 /** O Iniciar da tela da janela da frente (a tecla do logotipo e o Ctrl+Esc abrem o menu lá). */
 function iniciarDaFrente() {
+  if (temaMac()) return document.querySelector('#barra-mac .bm-logo') || btIniciar;
   const j = janelaAtiva();
   const t = j && !j.minimizada && j.tela ? j.tela() : null;
   const o = t && outras.find((x) => mesmaTela(x.tela, t));
@@ -595,14 +614,15 @@ function itensDocumentos() {
 
 /** A tecla do logotipo: abre o Iniciar, ou fecha se já estiver aberto. */
 export function alternarIniciar() {
-  if (document.querySelector('#iniciar.apertado, .bt-iniciar.apertado')) fecharMenus();
+  if (document.querySelector('#iniciar.apertado, .bt-iniciar.apertado, #barra-mac .bm-logo.apertado')) fecharMenus();
   else abrirIniciar(iniciarDaFrente());
 }
 
 /** Abre o menu Iniciar sobre o botão bt (o da barra principal, ou o de outra tela). */
 export async function abrirIniciar(bt = btIniciar) {
   const r = bt.getBoundingClientRect();
-  const pequenos = !!cfgIniciar().pequenos;
+  const mac = temaMac();
+  const pequenos = mac || !!cfgIniciar().pequenos;
   // Com os ícones pequenos, como no Windows 95, o menu fica mais baixo e sem a faixa do lado.
   const el = h('div.menu.iniciar.com-icones' + (pequenos ? '.pequenos' : ''));
   const itens = h('div.itens');
@@ -615,7 +635,10 @@ export async function abrirIniciar(bt = btIniciar) {
     .map((p) => ({ rotulo: p.nome.replace(/&/g, '&&'), icone: p.icone, iconeUrl: p.iconeUrl || null, acao: p.abrir, contexto: contextoPrograma(p.chave, p.abrir) }));
   // A loja (os Craft e, no Linux, os programas do Flathub), à vista no alto, como o Windows Update da época.
   const loja = se('loja', { rotulo: tr('Lo&ja de programas'), icone: 'programas-caixa', acao: () => abrir('programas') });
+  // O menu do logotipo do tema Mac começa pelo "Sobre", como o da época.
+  const sobre = mac ? [{ rotulo: tr('&Sobre o Retro Computer'), icone: 'computador', acao: () => abrir('painel', { secao: 'sobre' }) }, { separador: true }] : [];
   await abrirMenu([
+    ...sobre,
     ...fixos,
     ...(fixos.length ? [{ separador: true }] : []),
     ...loja,
@@ -642,8 +665,8 @@ export async function abrirIniciar(bt = btIniciar) {
     { rotulo: tr('Desli&gar…'), icone: 'desligar', acao: () => abrir('desligar') },
   ], {
     x: r.left,
-    y: r.top + 1,
-    acima: true,
+    y: mac ? r.bottom : r.top + 1,
+    acima: !mac,
     elemento: el,
     corpo: itens,
     tamIcone: pequenos ? 16 : 32,

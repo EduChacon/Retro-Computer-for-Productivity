@@ -16,6 +16,8 @@ const PADRAO = {
   telaCheia: true,
   escala: 'auto',
   papel: { cor: '#008080', padrao: 'nenhum' },
+  // O tema da interface: 'pc' (o PC clássico) ou 'mac' (o Mac clássico, inspirado no Mac OS 9.2).
+  tema: 'pc',
   sons: true,
   volume: 0.5,
   inicioRapido: true, // a área de trabalho direto; o BIOS e a marca, em Painel › Aparência › Configurações

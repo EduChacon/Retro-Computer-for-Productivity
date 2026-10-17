@@ -7,7 +7,7 @@
  *         atalho?, arrastavel?, colunas? (vista de detalhes), pos? ([x, y] na área de trabalho),
  *         miniatura? (o endereço da miniatura de uma foto, na vista de miniaturas) }
  */
-import { h, img, limitar } from './util.js';
+import { h, img, icone as enderecoIcone, limitar } from './util.js';
 import { TIPO_ARRASTO, TIPO_ATALHOS, aceitaSoltar, soltarEm, comecarArrastoNativo, arrastoDaqui, arrastoDoSistema, caminhosSoltos, relsDoArrasto } from './arquivos.js';
 
 const CEL_L = 75;
@@ -26,6 +26,8 @@ export class VistaIcones {
    * @param {Function} [o.aoMover] (item, [x, y]) => void   (área de trabalho)
    * @param {string}   [o.pastaSoltar]  pasta que recebe o que for solto no fundo
    * @param {Array}    [o.colunas]  cabeçalhos da vista de detalhes
+   * @param {Function} [o.espelhada] () => boolean: na mesa, as colunas começam pela direita (o tema Mac)
+   * @param {string}   [o.noCanto]  na mesa espelhada, o item que fica no canto de baixo, à direita (a Lixeira)
    */
   constructor(raiz, o) {
     this.raiz = raiz;
@@ -117,7 +119,7 @@ export class VistaIcones {
     // iconeUrl: o ícone de fora (um programa do computador principal), no lugar dos do sistema.
     const icone = it.iconeUrl
       ? h('div.icone', { style: { '--ico': `url("${it.iconeUrl}")` } }, h('img.de-fora', { src: it.iconeUrl, width: tam, height: tam, alt: '', draggable: 'false' }))
-      : h('div.icone', { style: { '--ico': `url(icones/${tam}/${it.icone}.png)` } }, img(it.icone, tam));
+      : h('div.icone', { style: { '--ico': `url(${enderecoIcone(it.icone, tam)})` } }, img(it.icone, tam));
     // Na vista de miniaturas, a foto encolhida no quadro (se não carregar, fica o ícone).
     if (this.modo === 'miniaturas' && it.miniatura) {
       const mini = h('img.mini', { src: it.miniatura, alt: '', draggable: 'false', loading: 'lazy', decoding: 'async' });
@@ -209,8 +211,12 @@ export class VistaIcones {
   posicionarMesa() {
     const alt = this.raiz.clientHeight || 600;
     const linhas = Math.max(1, Math.floor((alt - 4) / CEL_A));
+    const espelhada = !!(this.o.espelhada && this.o.espelhada());
     const ocupado = new Set();
     const livres = [];
+    // No tema Mac, a Lixeira fica no canto de baixo, à direita, como na época (se não foi arrastada).
+    const canto = espelhada && this.o.noCanto ? this.itens.find((it) => it.chave === this.o.noCanto && !it.pos) : null;
+    if (canto) canto.pos = [0, linhas - 1];
     this.itens.forEach((it, i) => {
       if (it.pos) {
         const k = `${it.pos[0]},${it.pos[1]}`;
@@ -227,7 +233,7 @@ export class VistaIcones {
     }
     this.itens.forEach((it, i) => {
       const [cc, ll] = it.pos;
-      this.els[i].style.left = 4 + cc * CEL_L + 'px';
+      this.els[i].style.left = (espelhada ? this.raiz.clientWidth - CEL_L - 2 - cc * CEL_L : 4 + cc * CEL_L) + 'px';
       this.els[i].style.top = 4 + Math.min(ll, linhas - 1) * CEL_A + 'px';
     });
   }
@@ -235,7 +241,8 @@ export class VistaIcones {
   reposicionar(e) {
     const r = this.raiz.getBoundingClientRect();
     const a = this.arrastando;
-    const dx = Math.round((e.clientX - a.x) / CEL_L);
+    // Na mesa espelhada, ir para a direita é ir para a coluna de antes.
+    const dx = Math.round((e.clientX - a.x) / CEL_L) * (this.o.espelhada && this.o.espelhada() ? -1 : 1);
     const dy = Math.round((e.clientY - a.y) / CEL_A);
     if (!dx && !dy) return;
     const maxC = Math.max(0, Math.floor((r.width - 8) / CEL_L) - 1);
@@ -414,7 +421,7 @@ export class VistaIcones {
   passoTeclado() {
     if (this.modo === 'mesa') {
       const linhas = Math.max(1, Math.floor((this.raiz.clientHeight - 4) / CEL_A));
-      return { dir: linhas, baixo: 1 };
+      return { dir: this.o.espelhada && this.o.espelhada() ? -linhas : linhas, baixo: 1 };
     }
     if (this.modo === 'lista') {
       const linhas = Math.max(1, Math.floor((this.raiz.clientHeight - 4) / 18));

@@ -152,6 +152,7 @@ No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw
 
 ### A tela e a energia
 
+- **Tema** (Painel de controle › Aparência › Tema): o **PC clássico**, o de sempre, ou o **Mac clássico**, inspirado no Mac OS 9.2. No Mac clássico, a barra de tarefas dá lugar à barra de menus no alto da tela: o logotipo abre o menu Iniciar (a tecla do logotipo também); os menus da janela da frente sobem para ela (com a área de trabalho na frente, os dela: Arquivo, Editar, Exibir, Especial, com o Esvaziar a Lixeira, e Ajuda); e, à direita, ficam a busca, a bandeja com o relógio e o menu dos programas abertos (o da frente, a troca entre eles, Ocultar, que minimiza, e Mostrar todas). As janelas têm o título listrado, a caixa de fechar à esquerda e as de aumentar e recolher à direita; o duplo clique no título recolhe a janela (só o título fica). No canto de baixo, à esquerda, a Faixa de controle traz os programas fixados na barra de tarefas. Os ícones da mesa começam do canto de cima, à direita, com a Lixeira no de baixo (as posições de cada tema ficam à parte), e o tema tem ícones próprios, desenhados ponto a ponto no estilo da época (`ferramentas/icones-mac.py`). Ao trocar de tema, o fundo de sempre de um vira o do outro; um fundo escolhido pelo usuário fica. Cada usuário tem o seu tema.
 - **Papel de parede** (Painel de controle › Aparência › Plano de fundo): a cor, o padrão 8×8 e, se quiser, uma imagem sua. "Procurar…" escolhe uma imagem do disco C: (PNG, JPEG, GIF, WebP ou BMP, conferida pelo conteúdo, até 50 MB), e o "Ajuste" a deixa centralizada (um pixel dela por pixel do monitor, com a cor e o padrão em volta), lado a lado ou preenchendo a tela sem deformar. O botão direito numa imagem do Explorador › "Usar como papel de parede" faz o mesmo. O Retro Computer guarda uma cópia na pasta de dados do usuário (`papeis-de-parede`): o fundo continua se o arquivo do disco for movido ou apagado, e "Remover…" tira só a cópia. Cada usuário tem os seus.
 - **Luz noturna** (Painel de controle › Aparência › Efeitos): as cores mais quentes, com menos azul, das 20h às 7h (as horas se escolhem) ou o dia todo, na intensidade escolhida. No Retro Computer como sistema, ela vale também para os programas do Linux.
 - **Cantos magnéticos** (Aparência › Efeitos, ligados): arrastar a janela até a borda a encaixa; a tecla do logotipo com as setas faz o mesmo.
@@ -310,7 +311,7 @@ Fora da sessão, o Retro Computer pode simplesmente abrir junto com o computador
 
 As ideias abaixo ainda não foram feitas; ficam registradas para decisão:
 
-a) **Tema Mac clássico**, inspirado no Mac OS 9.2 (o visual "Platinum": as janelas cinza-claro com a barra de título listrada, a barra de menus no alto, a Lixeira no canto), escolhido no Painel de controle. Como em todo o projeto, nada da Apple: os ícones, as letras e as molduras são desenhados aqui (o tema "Cupertino" do SerenityOS, BSD-2-Clause, serve de ponto de partida para as cores).
+a) **Mais ícones no tema Mac clássico** (o tema entrou na 1.4): os programas que ainda usam o ícone do tema do PC (os acessórios, os jogos, os Craft), desenhados no mesmo estilo.
 
 b) **Esquemas de cores e cursores**: esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS (as imagens próprias como papel de parede entraram na 1.2).
 

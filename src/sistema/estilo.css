@@ -817,6 +817,7 @@ html.varias-telas #barra { left: var(--tela-x); right: auto; width: var(--tela-w
 .abas { display: flex; padding-left: 2px; position: relative; z-index: 1; }
 .abas > div {
   padding: 3px 8px 3px;
+  white-space: nowrap;
   margin-right: -1px;
   margin-top: 2px;
   background: var(--face);
@@ -969,6 +970,27 @@ html.varias-telas #barra { left: var(--tela-x); right: auto; width: var(--tela-w
   image-rendering: pixelated;
 }
 .monitor-previa .tela-previa { position: absolute; left: 60px; top: 36px; width: 78px; height: 54px; image-rendering: auto; }
+/* A aba Tema da Aparência: cada tema numa telinha desenhada (a mesa, uma janela e a barra de cada um). */
+.temas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tema-opcao { flex-direction: column; align-items: center; gap: 6px; }
+.tema-opcao > span { display: inline-flex; align-items: center; }
+.previa-tema { position: relative; width: 160px; height: 104px; box-shadow: 0 0 0 1px #000, 2px 2px 0 rgba(0, 0, 0, .3); overflow: hidden; }
+.previa-tema > div { position: absolute; }
+.previa-tema.pc { background: #008080; }
+.previa-tema.pc .pt-menus { display: none; }
+.previa-tema.pc .pt-janela { left: 22px; top: 14px; width: 104px; height: 66px; background: #c0c0c0; box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080; padding: 3px; }
+.previa-tema.pc .pt-titulo { height: 9px; background: linear-gradient(90deg, #000080, #1084d0); }
+.previa-tema.pc .pt-corpo { position: absolute; left: 5px; right: 5px; top: 15px; bottom: 5px; background: #fff; box-shadow: inset 1px 1px #808080; }
+.previa-tema.pc .pt-barra { left: 0; right: 0; bottom: 0; height: 12px; background: #c0c0c0; box-shadow: inset 0 1px #fff; }
+.previa-tema.pc .pt-barra::before { content: ''; position: absolute; left: 2px; top: 2px; width: 22px; height: 8px; box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff; }
+.previa-tema.mac { background: #6a6aa8; }
+.previa-tema.mac .pt-menus { left: 0; right: 0; top: 0; height: 9px; background: #ddd; box-shadow: inset 0 -1px #000; }
+.previa-tema.mac .pt-menus::before { content: ''; position: absolute; left: 6px; top: 2px; width: 60px; height: 4px; background: repeating-linear-gradient(90deg, #000 0 12px, transparent 12px 16px); opacity: .7; }
+.previa-tema.mac .pt-janela { left: 26px; top: 20px; width: 104px; height: 64px; background: #ddd; box-shadow: inset 0 0 0 1px #555, inset 1px 1px #fff; padding: 1px 3px 3px; }
+.previa-tema.mac .pt-titulo { height: 9px; margin: 0 -2px; background: repeating-linear-gradient(to bottom, #fff 0 1px, #999 1px 2px) 0 2px / 100% 6px no-repeat; }
+.previa-tema.mac .pt-titulo::before { content: ''; position: absolute; left: 4px; top: 2px; width: 5px; height: 5px; background: #ddd; box-shadow: inset 0 0 0 1px #000; }
+.previa-tema.mac .pt-corpo { position: absolute; left: 4px; right: 4px; top: 12px; bottom: 4px; background: #fff; box-shadow: inset 0 0 0 1px #777; }
+.previa-tema.mac .pt-barra { left: 0; bottom: 0; width: 34px; height: 8px; background: #ddd; box-shadow: inset 0 0 0 1px #000; border-radius: 0 3px 0 0; }
 
 .texto-ajuda { user-select: text; line-height: 15px; }
 .texto-ajuda h2 { font-size: 10px; font-weight: bold; margin: 12px 0 4px; color: var(--titulo); }

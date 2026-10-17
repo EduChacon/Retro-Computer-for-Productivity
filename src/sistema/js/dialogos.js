@@ -2,7 +2,7 @@
  * As caixas de diálogo: mensagem, pergunta, entrada de texto, Abrir, Salvar como
  * e Propriedades. Todas devolvem promessas.
  */
-import { h, img, rotulo, tipoDe, caminhoTela, caminhoInterno, juntar, paiDe, nomeDe, extensao, tamanho, dataHora } from './util.js';
+import { h, img, icone, rotulo, tipoDe, caminhoTela, caminhoInterno, juntar, paiDe, nomeDe, extensao, tamanho, dataHora } from './util.js';
 import { Janela } from './janelas.js';
 import { tocar } from './sons.js';
 import { tr, localidade } from './idioma.js';
@@ -234,7 +234,7 @@ export function caixaArquivo(o) {
       listaEl.replaceChildren(...itens.map((it, i) => {
         const t = it.pasta ? { icone: iconeDaPasta(it.rel) } : tipoDe(it.nome, it.pasta);
         const el = h('div.item', { dataset: { i } },
-          h('div.icone', { style: { '--ico': `url(icones/16/${t.icone}.png)` } }, img(t.icone, 16)),
+          h('div.icone', { style: { '--ico': `url(${icone(t.icone, 16)})` } }, img(t.icone, 16)),
           h('div.rotulo', it.nome));
         el.addEventListener('mousedown', (e) => {
           if (o.varios && (e.ctrlKey || e.metaKey)) {

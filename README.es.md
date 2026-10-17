@@ -4,7 +4,7 @@
 
 Una computadora retro para la productividad: el escritorio de una PC de los años 90, con tus programas de trabajo, tus archivos y Claude Code, sin las distracciones de la computadora de hoy. Funciona en Windows, macOS y Linux (incluida la Raspberry Pi), y en Linux puede ser el sistema completo de la computadora, convirtiendo una laptop vieja o una mini PC en una computadora retro dedicada. Código abierto (licencia MIT).
 
-- **Versión:** 1.3.0 · [Descargar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Versión:** 1.4.0 · [Descargar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
 - **Idiomas:** español, inglés y portugués (Panel de control › Idioma)
 
 ![El escritorio y el menú Inicio](docs/img/es/inicio.png)
@@ -12,6 +12,7 @@ Una computadora retro para la productividad: el escritorio de una PC de los año
 ## Qué hace
 
 - **Un escritorio de los años 90**: botón Inicio, barra de tareas, ventanas que se arrastran y cambian de tamaño, iconos, menús, la Papelera y el cuadro Apagar, con letras e iconos nítidos en cualquier monitor.
+- **O un Mac de los años 90**: el tema Mac clásico, inspirado en Mac OS 9 (Panel de control › Apariencia › Tema), pone la barra de menús arriba de la pantalla, da a las ventanas el título con rayas y la casilla de contraer, trae la Tira de control con los programas anclados y tiene iconos propios, todos dibujados por el proyecto.
 - **Ventanas que se acoplan y los atajos de siempre**: arrastra la ventana hasta un borde (la mitad de la pantalla) o hasta una esquina (un cuarto); Alt+Tab, Alt+F4 y la tecla del logotipo con una letra (E, R, D, V, L…) o con las flechas; Ctrl + la rueda del mouse para el zoom.
 - **Una barra de tareas como la de hoy**: el cuadro de búsqueda y los programas anclados junto a Inicio; la bandeja con el Wi-Fi, el volumen, la batería y el brillo, el Bluetooth, las notificaciones y el calendario; y la pantalla de bloqueo con contraseña.
 - **El disco C: es una carpeta de tu computadora** (`Documentos/Retro Computer`): lo que guardas también se ve fuera del programa. Para traer archivos, arrástralos a una ventana; para llevarlos, usa "Enviar a". Mi computadora › Computadora principal muestra el escritorio, los documentos y las descargas de la computadora principal, y Retro Computer puede entrar en "Enviar a" de Windows (en Mac, suelta los archivos en su icono del Dock): los archivos van y vuelven, siempre como copias. Eliges el programa predeterminado de cada tipo de archivo. El Explorador tiene el panel de carpetas, la dirección en la que se puede hacer clic, las miniaturas, el Acceso rápido y el panel de vista previa de los documentos de Word, los PDF y las hojas de cálculo; las memorias USB y las tarjetas aparecen en Mi computadora, y los `.zip` se abren como carpetas.

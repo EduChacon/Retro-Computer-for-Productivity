@@ -38,7 +38,6 @@ DO_SERENITY = {
     'executar': ('app-run', 'app-run'),
     'ajuda': ('app-help', 'app-help'),
     'localizar': ('app-magnifier', 'find'),
-    'desligar': ('shutdown', 'power'),
     'configuracoes': ('app-settings', 'settings'),
     'chave': ('key', 'certificate'),
     'usuarios': ('app-user-settings', 'app-user-settings'),
@@ -809,6 +808,62 @@ COMPUTADOR_16 = [
     "................",
 ]
 
+# Desligar: o mesmo computador, com a tela apagada, o símbolo de desligar e as luzes vermelhas (o
+# "shutdown" do SerenityOS é um notebook; em 16 pontos, só o monitor, para o símbolo caber).
+DESLIGAR_32 = [
+    "................................",
+    "................................",
+    ".....KKKKKKKKKKKKKKKKKKKKKK.....",
+    ".....KWWWWWWWWWWWWWWWWWWWGK.....",
+    ".....KWLLLLLLLLLLLLLLLLLLGK.....",
+    ".....KWLGGGGGGGGGGGGGGGLLGK.....",
+    ".....KWLGSSSSSSSSSSSSSSWLGK.....",
+    ".....KWLGSGGKKKKKKKKKKKWLGK.....",
+    ".....KWLGSGKKKKKWKKKKKKWLGK.....",
+    ".....KWLGSKKKKWKWKWKKKKWLGK.....",
+    ".....KWLGSKKKWKKWKKWKKKWLGK.....",
+    ".....KWLGSKKKWKKKKKWKKKWLGK.....",
+    ".....KWLGSKKKWKKKKKWKKKWLGK.....",
+    ".....KWLGSKKKKWKKKWKKKKWLGK.....",
+    ".....KWLGSKKKKKWWWKKKKKWLGK.....",
+    ".....KWLGSKKKKKKKKKKKKKWLGK.....",
+    ".....KWLGWWWWWWWWWWWWWWWLGK.....",
+    ".....KWLLLLLLLLLLLLLLLLGRGK.....",
+    ".....KWGGGGGGGGGGGGGGGGGGGK.....",
+    ".....KKKKKKKKKKKKKKKKKKKKKK.....",
+    "...........KWLLLLLLGK...........",
+    ".........KKKKKKKKKKKKKK.........",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKK..",
+    "..KWWWWWWWWWWWWWWWWWWWWWWWWWGK..",
+    "..KWLLLLLLLLLLLLLLLLLLLLLLLLGK..",
+    "..KWLRLLLLLLLLLLKKKKKKKKKKLLGK..",
+    "..KWLrLLLLLLLLLLGGGGGGGGGGLLGK..",
+    "..KWLLLLLLLLLLLLLLLLLLLLLLLLGK..",
+    "..KWGGGGGGGGGGGGGGGGGGGGGGGGGK..",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKK..",
+    "................................",
+    "................................",
+]
+
+DESLIGAR_16 = [
+    "................",
+    ".KKKKKKKKKKKKKK.",
+    ".KWWWWWWWWWWWGK.",
+    ".KWSSSSSSSSSSGK.",
+    ".KWSGKKKWKKKKGK.",
+    ".KWSKKWKWKWKKGK.",
+    ".KWSKWKKWKKWKGK.",
+    ".KWSKWKKKKKWKGK.",
+    ".KWSKWKKKKKWKGK.",
+    ".KWSKKWKKKWKKGK.",
+    ".KWSKKKWWWKKKGK.",
+    ".KWLLLLLLLLLRGK.",
+    ".KGGGGGGGGGGGGK.",
+    ".KKKKKKKKKKKKKK.",
+    ".....KWLLGK.....",
+    "...KKKKKKKKKK...",
+]
+
 # Os emblemas pequenos das pastas especiais (no ícone de 16 pontos), ponto a ponto: o emblema de
 # 16 reduzido não se lê.
 EMBLEMAS_16 = {
@@ -1211,6 +1266,8 @@ def gerar(serenity):
 
     feitos[32]['computador'] = grade(COMPUTADOR_32)
     feitos[16]['computador'] = grade(COMPUTADOR_16)
+    feitos[32]['desligar'] = grade(DESLIGAR_32)
+    feitos[16]['desligar'] = grade(DESLIGAR_16)
     feitos[32]['logo'] = grade(LOGO_32)
     feitos[16]['logo'] = grade(LOGO_16)
     feitos[32]['foco'] = grade(TOMATE_32)

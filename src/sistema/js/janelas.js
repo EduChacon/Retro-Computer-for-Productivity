@@ -2,10 +2,11 @@
  * O gerenciador de janelas: abrir, focar, arrastar, redimensionar, minimizar,
  * maximizar e fechar, com a barra de tarefas acompanhando.
  */
-import { h, img, Eventos, limitar } from './util.js';
+import { h, img, icone, Eventos, limitar } from './util.js';
 import { barraDeMenus, fecharMenus } from './menus.js';
 import { tr } from './idioma.js';
 import { variasTelas, telaDoPonto, telaPrincipal, areaUtil, aoMudarTelas, listaTelas } from './telas.js';
+import { temaMac, aoMudarTema } from './tema.js';
 
 const area = () => document.getElementById('janelas');
 
@@ -103,7 +104,7 @@ export class Janela {
     this.textoEl = h('span.texto', this.titulo);
     const botoes = h('div.botoes');
     if (o.ajuda) botoes.append(h('button.b-ajuda', { title: tr('Ajuda'), tabIndex: -1, on: { click: () => o.ajuda() } }));
-    if (min) botoes.append(this.bMin = h('button.b-min', { title: tr('Minimizar'), tabIndex: -1, on: { click: () => this.minimizar() } }));
+    if (min) botoes.append(this.bMin = h('button.b-min', { title: dicaMin(), tabIndex: -1, on: { click: () => (temaMac() ? this.alternarRecolher() : this.minimizar()) } }));
     if (max) botoes.append(this.bMax = h('button.b-max', { title: tr('Maximizar'), tabIndex: -1, on: { click: () => this.alternarMaximizar() } }));
     botoes.append(h('button.b-fechar', { title: tr('Fechar'), tabIndex: -1, on: { click: () => this.fechar() } }));
     for (const b of botoes.children) b.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -132,11 +133,13 @@ export class Janela {
     }
 
     this.barraTitulo.addEventListener('pointerdown', (e) => this.iniciarArrasto(e));
+    // O duplo clique no título: no tema Mac, recolhe a janela (como na época); no PC, maximiza.
     this.barraTitulo.addEventListener('dblclick', (e) => {
-      if (max && !e.target.closest('button')) this.alternarMaximizar();
+      if (e.target.closest('button')) return;
+      if (temaMac()) { if (min || this.redim) this.alternarRecolher(); } else if (max) this.alternarMaximizar();
     });
     if (this.icoEl) {
-      this.icoEl.addEventListener('dblclick', (e) => { e.stopPropagation(); this.fechar(); });
+      this.icoEl.addEventListener('dblclick', (e) => { if (temaMac()) return; e.stopPropagation(); this.fechar(); });
     }
     this.el.addEventListener('pointerdown', () => this.focar(), true);
     this.el.addEventListener('keydown', (e) => this.teclado(e));
@@ -224,7 +227,7 @@ export class Janela {
 
   definirIcone(n) {
     this.icone = n;
-    if (this.icoEl) this.icoEl.src = `icones/16/${n}.png`;
+    if (this.icoEl) this.icoEl.src = icone(n, 16);
     eventos.emit('mudou');
   }
 
@@ -288,7 +291,17 @@ export class Janela {
     eventos.emit('mudou');
   }
 
+  /** Recolhe a janela (só a barra de título fica à vista) ou a abre de novo: o tema Mac clássico. */
+  alternarRecolher(v = !this.recolhida) {
+    if (this.fechada || !!v === !!this.recolhida) return;
+    this.recolhida = !!v;
+    this.el.classList.toggle('recolhida', this.recolhida);
+    this.ev.emit('tamanho');
+    eventos.emit('lugar', this);
+  }
+
   maximizar() {
+    if (this.recolhida) this.alternarRecolher(false);
     if (this.maximizada) return;
     this.maximizada = true;
     this.retAntes = { ...this.ret };
@@ -319,6 +332,7 @@ export class Janela {
    */
   encaixar(nome, t = null) {
     if (!this.redim || !nome) return;
+    if (this.recolhida) this.alternarRecolher(false);
     if (nome === 'max') { this.maximizar(); return; }
     const tela = t || (this.maximizada && this.pontoMax ? areaDaTela(this.pontoMax.x, this.pontoMax.y) : this.areaAtual());
     if (this.maximizada) this.restaurar();
@@ -608,6 +622,18 @@ function trazerParaAVista(j) {
 
 aoMudarTelas(() => { if (area()) { ajustarAsTelas(); eventos.emit('lugar'); } });
 
+/** A dica da caixa da direita do título: recolher (tema Mac) ou minimizar. */
+const dicaMin = () => (temaMac() ? tr('Recolher') : tr('Minimizar'));
+
+// O tema mudou: as dicas da caixa da direita, e as janelas recolhidas abrem de novo no tema do PC.
+aoMudarTema(() => {
+  for (const j of lista) {
+    if (j.bMin) { j.bMin.dataset.dica = dicaMin(); j.bMin.removeAttribute('title'); }
+    if (!temaMac() && j.recolhida) j.alternarRecolher(false);
+  }
+  if (area()) ajustarAsTelas();
+});
+
 /** Refaz as maximizadas e os encaixes (a barra de tarefas apareceu ou sumiu na outra tela). */
 export function reajustarJanelas() { if (area()) ajustarAsTelas(); }
 
@@ -650,6 +676,17 @@ export function lado(vertical) {
 
 export function minimizarTodas() {
   for (const j of lista) if (!j.dialogo) j.minimizar();
+}
+
+/**
+ * A área de trabalho vai para a frente (o clique na mesa, no tema Mac clássico): nenhuma janela fica
+ * ativa, e a barra de menus do alto mostra os menus da área de trabalho. Com um diálogo aberto, nada muda.
+ */
+export function desativarJanelas() {
+  if (!ativa || ativa.dialogo || lista.some((j) => j.dialogo && !j.fechada)) return;
+  ativa.el.classList.remove('ativa');
+  ativa = null;
+  eventos.emit('mudou');
 }
 
 // Logotipo+D: a primeira vez mostra a área de trabalho; a segunda devolve as mesmas janelas.

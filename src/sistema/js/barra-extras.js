@@ -43,7 +43,8 @@ export function alternarFlutuante(ancora, montar, { aoFechar, tecla } = {}) {
   const r = ancora.getBoundingClientRect();
   const t = tela.getBoundingClientRect();
   el.style.right = Math.max(2, Math.round(t.right - r.right)) + 'px';
-  el.style.bottom = Math.round(t.bottom - r.top + 4) + 'px';
+  if (r.top < t.top + t.height / 2) el.style.top = Math.round(r.bottom - t.top + 2) + 'px';
+  else el.style.bottom = Math.round(t.bottom - r.top + 4) + 'px';
   // Sem passar da borda esquerda da tela.
   if (el.getBoundingClientRect().left < t.left + 2) { el.style.right = 'auto'; el.style.left = '2px'; }
   const fora = (e) => { if (!el.contains(e.target) && !ancora.contains(e.target)) fecharFlutuante(); };
@@ -243,11 +244,12 @@ export function montarBusca() {
     web.addEventListener('mousedown', (e) => { e.preventDefault(); pesquisarNaInternet(); });
     painel.append(h('div.busca-grupo', tr('Internet')), web);
     document.getElementById('tela').append(painel);
-    // Aberto para cima, sem passar da borda direita da tela.
+    // Aberto para cima (ou para baixo, com a caixa no alto: o tema Mac), sem passar da borda direita da tela.
     const r = caixa.getBoundingClientRect();
     const tela = document.getElementById('tela').getBoundingClientRect();
     painel.style.left = Math.max(0, Math.min(r.left, tela.width - painel.offsetWidth - 2)) + 'px';
-    painel.style.bottom = (tela.bottom - r.top + 2) + 'px';
+    if (r.top < tela.top + tela.height / 2) painel.style.top = (r.bottom - tela.top + 2) + 'px';
+    else painel.style.bottom = (tela.bottom - r.top + 2) + 'px';
   };
   campo.addEventListener('input', () => {
     clearTimeout(timer);

@@ -3,7 +3,7 @@
  * começa sozinho), as legendas .srt e .vtt de mesmo nome, a velocidade, a tela cheia e as
  * teclas de mídia do teclado. Nas músicas, as barras de som da época.
  */
-import { h, img, nomeDe, paiDe, juntar, extensao, semExtensao, urlDoDisco } from '../util.js';
+import { h, img, icone, nomeDe, paiDe, juntar, extensao, semExtensao, urlDoDisco } from '../util.js';
 import { Janela } from '../janelas.js';
 import { registrarApp, abrir, programasPara, adicionarRecente, pastaDocs, estado, definirConfig, abrirNoComputador } from '../sistema.js';
 import { caixaArquivo, erro, info, propriedades } from '../dialogos.js';
@@ -356,7 +356,7 @@ class Reprodutor {
     const v = this.video.muted ? 0 : this.video.volume;
     const nome = this.video.muted ? 'som-mudo' : v === 0 ? 'som-zero' : v < 0.34 ? 'som-baixo' : v < 0.67 ? 'som-medio' : 'som-alto';
     const im = this.btSom.querySelector('img');
-    if (im) im.src = `icones/16/${nome}.png`;
+    if (im) im.src = icone(nome, 16);
   }
 
   opcao(k, v) {
@@ -423,7 +423,7 @@ class Reprodutor {
     this.j.definirTitulo(nome ? `${nome} - ${tr('Reprodutor de mídia')}` : tr('Reprodutor de mídia'));
     const tocando = !!this.rel && !this.video.paused && !this.video.ended;
     const im = this.btTocar.querySelector('img');
-    if (im) im.src = `icones/16/${tocando ? 'pausar' : 'tocar'}.png`;
+    if (im) im.src = icone(tocando ? 'pausar' : 'tocar', 16);
     this.btTocar.title = tocando ? tr('Pausar (Espaço)') : tr('Reproduzir (Espaço)');
     this.btParar.disabled = !this.rel;
     this.btAnterior.disabled = this.lista.length < 2;

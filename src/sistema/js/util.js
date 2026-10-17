@@ -1,4 +1,5 @@
 /* Utilidades da área de trabalho: criar elementos, caminhos, formatos e tipos de arquivo. */
+import { caminhoIcone } from './tema.js';
 import { tr, marcar, localidade } from './idioma.js';
 
 /** Cria um elemento: h('div.classe#id', { atributos, on: { click } }, filhos…) */
@@ -162,10 +163,13 @@ export function tipoDe(nome, pasta) {
 
 export const ehTexto = (nome) => ['txt', 'log', 'ini', 'md', 'markdown', 'csv', 'tsv', 'json', 'js', 'ts', 'py', 'sh', 'bat', 'ps1', 'css', 'xml', 'yml', 'yaml', 'toml', 'html', 'htm', 'url'].includes(extensao(nome));
 
-/** Ícone: icone('pasta', 16) → "icones/16/pasta.png" (um endereço, como o ícone de um site, fica como está). */
+/**
+ * Ícone: icone('pasta', 16) → "icones/16/pasta.png" (no tema Mac, "icones-mac/16/pasta.png", se ele o
+ * tiver: tema.js); um endereço, como o ícone de um site, fica como está.
+ */
 export function icone(nome, tam = 32) {
   if (/^(data:|blob:)/.test(nome || '')) return nome;
-  return `icones/${tam}/${nome || 'arquivo'}.png`;
+  return caminhoIcone(nome || 'arquivo', tam);
 }
 
 export function img(nome, tam = 32, props = {}) {

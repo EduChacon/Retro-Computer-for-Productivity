@@ -118,6 +118,18 @@ if (ROTEIRO === 'arrastarReal' && !/utf-?8/i.test(process.env.LC_ALL || process.
 const erros = [];
 let app = null;
 let pagina = null;
+// RETRO_TEMA=mac: o botão Iniciar e a barra de menus da janela da frente viram o logotipo e os menus
+// no alto da tela, para os roteiros do PC rodarem no tema Mac sem mudar cada seletor.
+let temaMacLigado = false;
+const SELETORES_MAC = [['#iniciar', '#barra-mac .bm-logo'], ['.janela.ativa .menubar', '#barra-mac .bm-menus .menubar']];
+function seletoresDoTema(p) {
+  if (process.env.RETRO_TEMA !== 'mac') return;
+  const trocar = (s) => (temaMacLigado && typeof s === 'string' ? SELETORES_MAC.reduce((x, [de, para]) => x.split(de).join(para), s) : s);
+  for (const m of ['click', 'dblclick', 'hover', 'locator', 'waitForSelector', '$', '$$', '$eval', '$$eval', 'isVisible', 'dispatchEvent', 'fill', 'focus']) {
+    const original = p[m].bind(p);
+    p[m] = (s, ...resto) => original(trocar(s), ...resto);
+  }
+}
 async function lancar(extra = {}) {
   app = await electron.launch({
     executablePath: empacotado || require('electron'),
@@ -125,6 +137,7 @@ async function lancar(extra = {}) {
     env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: process.env.RETRO_BOOT ? '' : '1', ...extra },
   });
   pagina = await app.firstWindow();
+  seletoresDoTema(pagina);
   pagina.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') erros.push(`[${m.type()}] ${m.text()}`); });
   pagina.on('pageerror', (e) => erros.push(`[pageerror] ${e.message}\n${e.stack}`));
   // O console só diz "404"; o endereço ajuda a achar o recurso que falta.
@@ -154,7 +167,15 @@ if (process.env.RETRO_BOOT) {
   await pagina.screenshot({ path: path.join(SAIDA, '00-abertura.png') });
 }
 await pagina.waitForSelector('#iniciar', { timeout: 30000 });
+// RETRO_TEMA=mac: qualquer roteiro no tema Mac clássico.
+if (process.env.RETRO_TEMA) await pagina.evaluate((tema) => window.__retro.definirConfig({ tema }), process.env.RETRO_TEMA);
+temaMacLigado = process.env.RETRO_TEMA === 'mac';
 await pagina.waitForTimeout(800);
+
+/** O mouse sobre o Programas do Iniciar aberto, pelo nome: a posição muda com os fixados e, no tema Mac, com o Sobre no alto. */
+async function sobreProgramas() {
+  await (await pagina.evaluateHandle((t) => [...document.querySelectorAll('.menu.iniciar .opcao')].find((o) => o.textContent.trim() === t), T('&Programas'))).asElement().hover();
+}
 
 let n = 0;
 async function foto(nome) {
@@ -1269,6 +1290,126 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('telas:', JSON.stringify(await pagina.evaluate(() => Promise.all([retro.tela.telas().then((e) => e.arranjo), window.__retro.estado.config.tela]))));
   },
 
+  // O tema Mac clássico (Painel › Aparência › Tema): a escolha, a mesa com a barra de menus no alto e a
+  // Faixa de controle, as janelas com o título listrado, os menus da janela da frente e os da área de
+  // trabalho, o menu do logotipo e o dos programas, uma janela recolhida, uma caixa de diálogo, os
+  // controles do Painel e a volta para o tema do PC.
+  async temaMac() {
+    await fecharTudo();
+    const estadoTema = () => pagina.evaluate(() => ({
+      classe: document.documentElement.classList.contains('tema-mac'),
+      barraMac: (({ x, y, width: w, height: h }) => ({ x, y, w, h }))(document.getElementById('barra-mac').getBoundingClientRect()),
+      menus: [...document.querySelectorAll('#barra-mac .menubar > div')].map((d) => d.textContent),
+      app: document.querySelector('#barra-mac .bm-app') && document.querySelector('#barra-mac .bm-app').textContent,
+      barraTarefas: getComputedStyle(document.getElementById('barra')).display,
+      faixa: [...document.querySelectorAll('#faixa-controle .fc-botoes button')].length,
+      lixeira: (() => { const el = [...document.querySelectorAll('#mesa .item')].find((e) => /^(Lixeira|Trash|Papelera)$/.test(e.textContent)); return el ? (({ x, y }) => ({ x, y }))(el.getBoundingClientRect()) : null; })(),
+      icones: [...document.querySelectorAll('#mesa .item img')].slice(0, 3).map((i) => i.getAttribute('src')),
+    }));
+    await abrir('painel', { secao: 'aparencia', aba: 'tema' });
+    await pagina.waitForTimeout(600);
+    await foto('tema-escolha-pc');
+    await pagina.locator('.janela.ativa .tema-opcao', { hasText: T('Mac clássico') }).click();
+    await pagina.waitForTimeout(200);
+    await pagina.locator('.janela.ativa button', { hasText: T('OK') }).first().click();
+    await pagina.waitForTimeout(1200);
+    console.log('no tema Mac:', JSON.stringify(await estadoTema()), '| fundo:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.papel)));
+    await foto('tema-mac-mesa');
+    // Duas janelas: o Explorador na frente, com os menus dele no alto.
+    await abrir('bloco');
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.type('Um texto no Bloco de notas, no tema Mac clássico.');
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(800);
+    console.log('com o Explorador na frente:', JSON.stringify(await estadoTema()));
+    await foto('tema-mac-janelas');
+    await pagina.locator('#barra-mac .menubar > div').first().dispatchEvent('mousedown');
+    await pagina.waitForTimeout(300);
+    await foto('tema-mac-menu-arquivo');
+    await pagina.keyboard.press('Escape');
+    // O menu do logotipo (o Iniciar) e o dos programas abertos.
+    await pagina.locator('#barra-mac .bm-logo').dispatchEvent('mousedown');
+    await pagina.waitForTimeout(300);
+    await foto('tema-mac-menu-logotipo');
+    await pagina.keyboard.press('Escape');
+    await pagina.locator('#barra-mac .bm-app').dispatchEvent('mousedown');
+    await pagina.waitForTimeout(300);
+    await foto('tema-mac-menu-programas');
+    await pagina.keyboard.press('Escape');
+    // O Bloco recolhido (duplo clique no título): só a barra de título fica.
+    await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('bloco')).focar());
+    await pagina.waitForTimeout(200);
+    await pagina.locator('.janela.ativa .titulo .texto').dblclick();
+    await pagina.waitForTimeout(300);
+    console.log('recolhida:', await pagina.evaluate(() => { const j = window.__retro.janelas.lista.find((x) => x.el.classList.contains('bloco')); return { recolhida: !!j.recolhida, altura: Math.round(j.el.getBoundingClientRect().height) }; }));
+    await foto('tema-mac-recolhida');
+    // A área de trabalho na frente: os menus dela.
+    await pagina.mouse.click(600, 600);
+    await pagina.waitForTimeout(300);
+    console.log('com a mesa na frente:', JSON.stringify(await estadoTema()));
+    await pagina.locator('#barra-mac .menubar > div', { hasText: T('E&special').replace('&', '') }).dispatchEvent('mousedown');
+    await pagina.waitForTimeout(300);
+    await foto('tema-mac-menu-especial');
+    await pagina.keyboard.press('Escape');
+    // Uma caixa de diálogo e os controles do Painel.
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Efeitos') }).click();
+    await pagina.waitForTimeout(300);
+    await foto('tema-mac-painel-efeitos');
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Configurações') }).click();
+    await pagina.waitForTimeout(300);
+    await foto('tema-mac-painel-config');
+    await pagina.locator('.janela.ativa button', { hasText: T('Cancelar') }).first().click();
+    await pagina.waitForTimeout(300);
+    await pagina.evaluate(() => import('./js/dialogos.js').then((m) => { m.confirmar('Esvaziar a Lixeira? Os 3 itens são apagados de vez.', { titulo: 'Lixeira' }); }));
+    await pagina.waitForTimeout(400);
+    await foto('tema-mac-dialogo');
+    await pagina.keyboard.press('Escape');
+    await pagina.waitForTimeout(200);
+    // O calendário do relógio e um aviso: os dois descem da barra de menus, no canto de cima.
+    await pagina.click('#bandeja .relogio');
+    await pagina.waitForTimeout(400);
+    const lugar = (sel) => pagina.evaluate((s) => { const el = document.querySelector(s); return el ? (({ x, y, right: d }) => ({ x: Math.round(x), y: Math.round(y), direita: Math.round(d) }))(el.getBoundingClientRect()) : null; }, sel);
+    console.log('calendário:', JSON.stringify(await lugar('.calendario')));
+    await foto('tema-mac-calendario');
+    await pagina.keyboard.press('Escape');
+    await pagina.waitForTimeout(200);
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.avisar('Cópia de segurança', 'A cópia do disco C: terminou.', { guardar: false, som: null })));
+    await pagina.waitForSelector('.aviso-balao');
+    await pagina.waitForTimeout(400);
+    console.log('aviso:', JSON.stringify(await lugar('.aviso-balao')));
+    await foto('tema-mac-aviso');
+    await pagina.evaluate(() => document.querySelectorAll('.aviso-balao').forEach((b) => b.remove()));
+    // A tecla do logotipo abre o menu do logotipo, no alto.
+    await tecla('iniciar');
+    await pagina.waitForTimeout(300);
+    console.log('tecla do logotipo:', await pagina.evaluate(() => { const m = document.querySelector('.menu.iniciar'); return m ? Math.round(m.getBoundingClientRect().top) : null; }));
+    await pagina.keyboard.press('Escape');
+    // O Navegador no tema (a página inicial, as abas e os favoritos).
+    await abrir('navegador', { interno: true });
+    await pagina.waitForTimeout(1500);
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().maximizar());
+    await pagina.waitForTimeout(500);
+    await foto('tema-mac-navegador');
+    await fecharTudo();
+    // A abertura do tema: a caixa com a marca e a barra, e os ícones aparecendo embaixo.
+    const fim = pagina.evaluate(() => window.__retro.mostrarAbertura());
+    await pagina.waitForSelector('#boot .abertura-mac', { timeout: 10000 });
+    await pagina.waitForTimeout(1100);
+    await foto('tema-mac-abertura');
+    await fim;
+    await pagina.waitForTimeout(300);
+    // A volta para o tema do PC: a barra de tarefas, o fundo de sempre e as barras de menus nas janelas.
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(500);
+    await pagina.evaluate(() => window.__retro.definirConfig({ tema: 'pc', papel: { cor: '#008080', padrao: 'nenhum' } }));
+    await pagina.waitForTimeout(800);
+    console.log('de volta ao PC:', JSON.stringify(await estadoTema()), '| barra de menus na janela:', await pagina.evaluate(() => !!document.querySelector('.janela.ativa > .menubar')));
+    await foto('tema-pc-de-volta');
+  },
+
   // As duas telas em tela cheia (Windows e Mac), com dois monitores de mentira de tamanhos diferentes:
   // RETRO_MONITORES_FALSOS="1024x768+0+0,1280x800+1024+0" e o Xvfb com "-screen 0 2304x800x24".
   // A opção do Painel, a barra e os ícones na principal, o papel de parede em cada tela, maximizar e
@@ -1345,25 +1486,29 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('duas-telas-menu-fundo');
     await pagina.keyboard.press('Escape');
     await pagina.mouse.click(1700, 600);
-    // O botão direito na barra da outra tela.
-    await pagina.mouse.click(1700, 786, { button: 'right' });
-    await pagina.waitForTimeout(300);
-    console.log('menu da barra da outra tela:', JSON.stringify(await menuAberto()));
-    await foto('duas-telas-menu-barra');
-    await pagina.keyboard.press('Escape');
-    // O Iniciar da outra tela abre o menu lá; o da principal, na principal.
-    await pagina.locator('.barra-tela .bt-iniciar').click();
-    await pagina.waitForTimeout(300);
-    console.log('Iniciar da outra tela:', JSON.stringify(await menuAberto()));
-    await foto('duas-telas-iniciar-outra');
-    await pagina.keyboard.press('Escape');
+    // O botão direito na barra da outra tela (no tema Mac não há barra nas outras telas, como no Mac:
+    // a barra de menus fica só na principal).
+    if (!temaMacLigado) {
+      await pagina.mouse.click(1700, 786, { button: 'right' });
+      await pagina.waitForTimeout(300);
+      console.log('menu da barra da outra tela:', JSON.stringify(await menuAberto()));
+      await foto('duas-telas-menu-barra');
+      await pagina.keyboard.press('Escape');
+      // O Iniciar da outra tela abre o menu lá; o da principal, na principal.
+      await pagina.locator('.barra-tela .bt-iniciar').click();
+      await pagina.waitForTimeout(300);
+      console.log('Iniciar da outra tela:', JSON.stringify(await menuAberto()));
+      await foto('duas-telas-iniciar-outra');
+      await pagina.keyboard.press('Escape');
+    }
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
     console.log('Iniciar da principal:', JSON.stringify(await menuAberto()));
     await foto('duas-telas-iniciar');
     await pagina.keyboard.press('Escape');
-    // Desligada a barra das outras telas: a maximizada lá ocupa a tela inteira.
-    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().maximizar());
+    // Desligada a barra das outras telas: a maximizada lá ocupa a tela inteira. (No tema Mac, o clique
+    // no fundo deixou a área de trabalho na frente: o Explorador volta para a frente antes.)
+    await pagina.evaluate(() => { const j = window.__retro.janelas.lista.find((x) => x.id === 'explorador'); j.focar(); j.maximizar(); });
     await pagina.waitForTimeout(200);
     console.log('maximizada com a barra:', JSON.stringify(await ret()));
     await pagina.evaluate(() => window.__retro.definirConfig({ barra: { todasTelas: false } }));
@@ -1698,7 +1843,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('mesa-padrao');
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
-    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
+    await sobreProgramas();
     await pagina.waitForTimeout(700);
     await pagina.hover(`.menu .opcao:has-text("${T('Acessórios')}")`);
     await pagina.waitForTimeout(700);
@@ -2680,7 +2825,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await fecharTudo();
     await abrir('painel', { secao: 'aparencia' });
     await pagina.waitForTimeout(600);
-    await pagina.click('.janela.ativa .abas > div >> nth=4');
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Configurações') }).click();
     await pagina.waitForTimeout(800);
     console.log('opções:', await pagina.evaluate(() => { const s = [...document.querySelectorAll('.janela.ativa select')].find((x) => [...x.options].some((o) => o.value === 'auto')); return [...s.options].map((o) => o.textContent).join(' | '); }));
     await foto('pixels');
@@ -2815,7 +2960,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('modo sistema:', await pagina.evaluate(() => window.__retro.estado.config.modoSistema), '| tela cheia:', await pagina.evaluate(() => retro.sistema.telaCheia(false)));
     await abrir('painel', { secao: 'aparencia' });
     await pagina.waitForTimeout(400);
-    await pagina.click('.janela.ativa .abas > div >> nth=2');
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Proteção de tela') }).click();
     await pagina.waitForTimeout(600);
     await foto('sistema-inicializacao');
     await fecharTudo();
@@ -3159,7 +3304,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.keyboard.press('Escape');
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
-    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
+    await sobreProgramas();
     await pagina.waitForTimeout(800);
     await foto('webapps-iniciar');
     await pagina.keyboard.press('Escape');
@@ -3633,7 +3778,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.evaluate(() => window.__retro.definirConfig({ jogos: { damas: null, xadrez: null } }));
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
-    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
+    await sobreProgramas();
     await pagina.waitForTimeout(700);
     await pagina.hover(`.menu .opcao:has-text("${T('Acessórios')}")`);
     await pagina.waitForTimeout(700);
@@ -3817,7 +3962,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('mesa');
     await pagina.click('#iniciar');
     await pagina.waitForTimeout(300);
-    await pagina.hover('.menu.iniciar .opcao >> nth=1'); // Programas (o primeiro é a Loja de programas)
+    await sobreProgramas();
     await pagina.waitForTimeout(500);
     await pagina.hover('.menu:not(.iniciar) .opcao >> nth=0');
     await pagina.waitForTimeout(500);

@@ -6,6 +6,7 @@
 import { tipoDe, juntar } from './util.js';
 import { VistaIcones } from './vista.js';
 import { abrirMenu } from './menus.js';
+import { temaMac, aoMudarTema } from './tema.js';
 import { estado, abrir, abrirArquivo, eventos, definirConfig, instalado, pastaMesa, pastaDocs, app, iconeDaPasta } from './sistema.js';
 import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir } from './arquivos.js';
 import { confirmar } from './dialogos.js';
@@ -74,6 +75,9 @@ export async function montarMesa() {
   vista = new VistaIcones(raiz, {
     modo: 'mesa',
     pastaSoltar: pastaMesa(),
+    // No tema Mac, os ícones começam do canto de cima, à direita, e a Lixeira fica no de baixo.
+    espelhada: () => temaMac(),
+    noCanto: 'lixeira',
     aoAbrir: (it) => {
       if (it.sistema) return atalhoDe(it.chave).abrir();
       if (it.pasta) return abrir('explorador', { pasta: it.rel });
@@ -86,8 +90,9 @@ export async function montarMesa() {
       if (rels.length) excluir(rels);
     },
     aoMover: (it, pos) => {
-      estado.config.mesa.posicoes = { ...(estado.config.mesa.posicoes || {}), [it.chave]: pos };
-      definirConfig({ mesa: { posicoes: { [it.chave]: pos } } });
+      const k = chavePosicoes();
+      estado.config.mesa[k] = { ...(estado.config.mesa[k] || {}), [it.chave]: pos };
+      definirConfig({ mesa: { [k]: { [it.chave]: pos } } });
     },
   });
   await atualizar();
@@ -99,6 +104,7 @@ export async function montarMesa() {
     if (pastas.includes('::lixeira')) atualizarLixeira();
   });
   eventos.on('programas', () => atualizar());
+  aoMudarTema(() => atualizar());
   window.addEventListener('resize', () => vista.posicionarMesa());
   // Com as duas telas, o fundo da outra tela também é a área de trabalho (o botão direito).
   document.getElementById('tela').addEventListener('contextmenu', (e) => {
@@ -120,9 +126,12 @@ async function atualizarLixeira() {
   }
 }
 
+/** Onde ficam as posições dos ícones: as do tema Mac (a mesa espelhada) são outras. */
+const chavePosicoes = () => (temaMac() ? 'posicoesMac' : 'posicoes');
+
 export async function atualizar(selecionarChaves) {
   const c = estado.config;
-  const posicoes = (c.mesa && c.mesa.posicoes) || {};
+  const posicoes = (c.mesa && c.mesa[chavePosicoes()]) || {};
   const atalhos = ((c.mesa && c.mesa.atalhos) || []).map((k) => ({ k, a: atalhoDe(k) })).filter((x) => x.a);
   const itens = atalhos.map(({ k, a }) => ({
     chave: k, rotulo: a.semTraducao ? a.rotulo : tr(a.rotulo), icone: a.icone, iconeUrl: a.iconeUrl, sistema: true, alvo: a.alvo, atalho: a.atalhoSeta,
@@ -149,13 +158,14 @@ async function renomearItem(it) {
   if (it.extOculta && !novo.toLowerCase().endsWith(it.extOculta.toLowerCase())) novo += it.extOculta;
   const rel = await renomear(it.rel, novo);
   if (rel) {
-    const posicoes = { ...(estado.config.mesa.posicoes || {}) };
+    const k = chavePosicoes();
+    const posicoes = { ...(estado.config.mesa[k] || {}) };
     if (posicoes[it.chave]) {
       const mudanca = { [it.chave]: null, ['arq:' + novo]: posicoes[it.chave] };
       posicoes['arq:' + novo] = posicoes[it.chave];
       delete posicoes[it.chave];
-      estado.config.mesa.posicoes = posicoes;
-      definirConfig({ mesa: { posicoes: mudanca } });
+      estado.config.mesa[k] = posicoes;
+      definirConfig({ mesa: { [k]: mudanca } });
     }
     atualizar(['arq:' + novo]);
   }
@@ -240,6 +250,9 @@ export async function adicionarAtalho(chave) {
   definirConfig({ mesa: { atalhos: estado.config.mesa.atalhos } }).then(() => atualizar());
 }
 
+/** Organiza os ícones da mesa: 'nome', 'tipo' ou 'alinhar' (o botão direito na mesa e o menu Exibir do tema Mac). */
+export function organizarMesa(como) { organizar(como); }
+
 function organizar(como) {
   const itens = vista.itens.slice();
   if (como !== 'alinhar') {
@@ -256,10 +269,11 @@ function organizar(como) {
     });
   }
   for (const it of itens) it.pos = null;
-  const apagar = Object.fromEntries(Object.keys(estado.config.mesa.posicoes || {}).map((k) => [k, null]));
-  estado.config.mesa.posicoes = {};
+  const kp = chavePosicoes();
+  const apagar = Object.fromEntries(Object.keys(estado.config.mesa[kp] || {}).map((k) => [k, null]));
+  estado.config.mesa[kp] = {};
   vista.desenhar(itens);
-  definirConfig({ mesa: { posicoes: apagar } });
+  definirConfig({ mesa: { [kp]: apagar } });
 }
 
 export { juntar };

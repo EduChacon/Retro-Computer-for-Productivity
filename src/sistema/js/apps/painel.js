@@ -9,7 +9,8 @@ import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco, programasPara, pastaDocs, adicionarPapel, removerPapel } from '../sistema.js';
 import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada, caixaArquivo } from '../dialogos.js';
 import { deslizante } from '../controles.js';
-import { CORES, PADROES, FUNDO_INICIO, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS } from '../aparencia.js';
+import { CORES, PADROES, FUNDO_INICIO, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS, fundoParaTema } from '../aparencia.js';
+import { TEMAS } from '../tema.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
@@ -22,7 +23,7 @@ import { perfisInfo, atualizarPerfis, nomeDoPerfil } from '../perfis.js';
 import { escolherPrograma } from '../arquivos.js';
 
 const ITENS = [
-  { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: () => dialogoAparencia() },
+  { chave: 'aparencia', rotulo: marcar('Aparência'), icone: 'aparencia', descricao: marcar('Muda o tema, a cor e o padrão do fundo, a tela cheia e o tamanho dos pixels.'), abrir: (args) => dialogoAparencia(args) },
   { chave: 'barra', rotulo: marcar('Barra de tarefas e menu Iniciar'), icone: 'barra-tarefas', descricao: marcar('Os programas fixados, os itens do menu Iniciar, os ícones pequenos e os documentos recentes.'), abrir: (args) => dialogoBarra(args) },
   { chave: 'disco', rotulo: marcar('Disco C:'), icone: 'disco', descricao: marcar('Mostra a pasta do disco C: no computador principal e permite trocá-la.'), abrir: () => dialogoDisco() },
   { chave: 'claude', rotulo: marcar('Claude'), icone: 'claude', descricao: marcar('Instala o Claude Code e guarda a chave de API.'), abrir: () => dialogoClaude() },
@@ -195,7 +196,8 @@ function dialogoBarra(args = {}) {
   const chkTodas = h('input', { type: 'checkbox', checked: b.todasTelas !== false });
   const linhaTodas = h('label', chkTodas, h('span', tr('Mostrar a barra de tarefas em todas as telas')));
   linhaTodas.hidden = true;
-  retro.tela.duasTelas().then((d) => { if (d && d.possivel) linhaTodas.hidden = false; }).catch(() => { });
+  // No tema Mac não há barra de tarefas (a barra de menus fica no alto da principal): a opção não aparece.
+  retro.tela.duasTelas().then((d) => { if (d && d.possivel && c.tema !== 'mac') linhaTodas.hidden = false; }).catch(() => { });
   const radNomes = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes !== 'icones' });
   const radIcones = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes === 'icones' });
   const fixBarra = listaDeProgramas(b.fixados || [], tr('Nenhum programa fixado. Clique com o botão direito num programa do Iniciar para fixá-lo.'));
@@ -267,7 +269,8 @@ function escolhaDeFundo(papel, aoMudar) {
   return { el, atualizar };
 }
 
-function dialogoAparencia() {
+// A Aparência abre no Plano de fundo, como antes; args.aba === 'tema' abre no Tema.
+function dialogoAparencia(args = {}) {
   const c = estado.config;
   const papel = { ...c.papel };
   let telaCheia = c.telaCheiaAgora;
@@ -316,11 +319,32 @@ function dialogoAparencia() {
   desenharImagens();
   atualizarPrevia();
 
+  const fundo = escolhaDeFundo(papel, atualizarPrevia);
   const abaFundo = h('div', monitor,
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Papel de parede')),
       h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, h('div.select-caixa', { style: { flex: '1', minWidth: '0' } }, selImagem), btProcurar, btRemover),
       h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' } }, h('span', tr('Ajuste:')), h('div.select-caixa', selModo))),
-    escolhaDeFundo(papel, atualizarPrevia).el);
+    fundo.el);
+
+  // O tema: o PC clássico ou o Mac clássico (tema.js), com a prévia de cada um. O fundo de sempre de
+  // um vira o do outro (um fundo escolhido pelo usuário fica como está).
+  let tema = c.tema === 'mac' ? 'mac' : 'pc';
+  const temaAntes = tema;
+  const opcoesTema = Object.entries(TEMAS).map(([k, nome]) => {
+    const radio = h('input', { type: 'radio', name: 'tema', checked: k === tema });
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      Object.assign(papel, fundoParaTema(papel, tema, k));
+      tema = k;
+      fundo.atualizar();
+      atualizarPrevia();
+    });
+    return h('label.tema-opcao', h('div.previa-tema.' + k, h('div.pt-menus'), h('div.pt-janela', h('div.pt-titulo'), h('div.pt-corpo')), h('div.pt-barra')), h('span', radio, tr(nome)));
+  });
+  const abaTema = h('div',
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tema')), h('div.temas', ...opcoesTema)),
+    h('div', { style: { color: '#808080', lineHeight: '13px' } },
+      tr('O PC clássico tem a barra de tarefas e o Iniciar embaixo. O Mac clássico, inspirado no Mac OS 9, tem a barra de menus no alto da tela (o menu do logotipo no lugar do Iniciar, os menus da janela da frente e, no canto, o menu dos programas abertos), a Faixa de controle com os programas fixados, as janelas que se recolhem com um duplo clique no título e os ícones próprios dele.')));
 
   const chkProt = h('input', { type: 'checkbox', checked: protecao.ligada });
   const minProt = h('input', { type: 'number', min: 1, max: 120, value: protecao.minutos, style: { width: '56px' } });
@@ -489,14 +513,15 @@ function dialogoAparencia() {
   const dlg = dialogoBase({
     titulo: tr('Propriedades de Aparência'),
     icone: 'aparencia',
-    larg: 440,
+    larg: 480,
     altMin: 540,
-    abas: [{ titulo: tr('Plano de fundo'), conteudo: abaFundo }, { titulo: tr('Ícones'), conteudo: abaMesa }, { titulo: tr('Proteção de tela'), conteudo: abaProtecao }, { titulo: tr('Efeitos'), conteudo: abaEfeitos }, { titulo: tr('Configurações'), conteudo: abaConfig }],
+    aba: args.aba === 'tema' ? 0 : 1,
+    abas: [{ titulo: tr('Tema'), conteudo: abaTema }, { titulo: tr('Plano de fundo'), conteudo: abaFundo }, { titulo: tr('Ícones'), conteudo: abaMesa }, { titulo: tr('Proteção de tela'), conteudo: abaProtecao }, { titulo: tr('Efeitos'), conteudo: abaEfeitos }, { titulo: tr('Configurações'), conteudo: abaConfig }],
     aoAplicar: async () => {
       aplicarProt();
       escala = selEscala.value;
       previaLuz = false;
-      await definirConfig({ papel, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
+      await definirConfig({ papel, tema, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
       await definirIconesSistema(caixasMesa.filter((x) => x.c.checked).map((x) => x.k));
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);

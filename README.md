@@ -4,7 +4,7 @@
 
 A retro computer for productivity: the desktop of a 1990s PC, with your work programs, your files and Claude Code, without the distractions of today's computer. It runs on Windows, macOS and Linux (including the Raspberry Pi), and on Linux it can be the computer's whole system, turning an old laptop or a mini PC into a dedicated retro computer. Open source (MIT license).
 
-- **Version:** 1.3.0 · [Download](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Version:** 1.4.0 · [Download](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
 - **Languages:** English, Portuguese and Spanish (Control Panel › Language)
 
 ![The desktop and the Start menu](docs/img/en/start.png)
@@ -12,6 +12,7 @@ A retro computer for productivity: the desktop of a 1990s PC, with your work pro
 ## What it does
 
 - **A 1990s desktop**: Start button, taskbar, windows you can drag and resize, icons, menus, the Trash and the Shut Down dialog, with sharp letters and icons on any monitor.
+- **Or a 1990s Mac**: the Classic Mac theme, inspired by Mac OS 9 (Control Panel › Appearance › Theme), puts the menu bar at the top of the screen, gives the windows the striped title and the collapse box, brings the Control Strip with the pinned programs and has its own icons, all drawn by the project.
 - **Windows that snap, and the shortcuts you know**: drag a window to an edge for half of the screen or to a corner for a quarter; Alt+Tab, Alt+F4 and the logo key with a letter (E, R, D, V, L…) or the arrow keys; Ctrl + mouse wheel to zoom.
 - **A taskbar like today's**: the search box and the pinned programs next to Start; the tray with Wi-Fi, volume, battery and brightness, Bluetooth, notifications and the calendar; and a lock screen with a password.
 - **Drive C: is a folder on your computer** (`Documents/Retro Computer`): what you save is also visible outside the program. To bring files in, drag them onto a window; to take them out, use "Send to". Computer › Main computer shows the main computer's desktop, documents and downloads, and Retro Computer can join the Windows "Send to" menu (on a Mac, drop files on its Dock icon): files go both ways, always as copies. You choose the default program for each file type. The Explorer has a folders bar, a clickable address, thumbnails, Quick access and a preview pane for Word documents, PDFs and spreadsheets; USB drives and memory cards show up in Computer, and `.zip` files open like folders.

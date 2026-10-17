@@ -1,0 +1,353 @@
+/*
+ * O tema Mac clássico (Painel › Aparência › Tema), inspirado no Mac OS 9.2: o cinza-claro com
+ * luz branca e sombra cinza, o título listrado com a caixa de fechar à esquerda e as de aumentar
+ * e recolher à direita, os botões de cantos arredondados, o lavanda da seleção, a barra de menus
+ * no alto da tela (barra-mac.js) e a Faixa de controle com os programas fixados. Tudo é do
+ * projeto: as cores, os desenhos dos controles (ferramentas/controles-mac.js) e os ícones
+ * (icones-mac/). Só vale com a classe "tema-mac" na raiz; sem ela, nada muda.
+ */
+
+/* controles: início (gerado por ferramentas/controles-mac.js) */
+html.tema-mac {
+  --mac-fechar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' shape-rendering='crispEdges'%3E%3Cpath fill='%23999999' d='M0 0h12v1h-12zM0 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM10 3h1v1h-1zM0 4h1v1h-1zM10 4h1v1h-1zM0 5h1v1h-1zM10 5h1v1h-1zM0 6h1v1h-1zM10 6h1v1h-1zM0 7h1v1h-1zM10 7h1v1h-1zM0 8h1v1h-1zM10 8h1v1h-1zM0 9h1v1h-1zM10 9h1v1h-1zM0 10h1v1h-1zM3 10h8v1h-8zM0 11h1v1h-1z'/%3E%3Cpath fill='%23ffffff' d='M12 0h1v1h-1zM12 1h1v1h-1zM2 2h8v1h-8zM12 2h1v1h-1zM2 3h1v1h-1zM12 3h1v1h-1zM2 4h1v1h-1zM12 4h1v1h-1zM2 5h1v1h-1zM12 5h1v1h-1zM2 6h1v1h-1zM12 6h1v1h-1zM2 7h1v1h-1zM12 7h1v1h-1zM2 8h1v1h-1zM12 8h1v1h-1zM2 9h1v1h-1zM12 9h1v1h-1zM12 10h1v1h-1zM12 11h1v1h-1zM0 12h13v1h-13z'/%3E%3Cpath fill='%23000000' d='M1 1h11v1h-11zM1 2h1v1h-1zM11 2h1v1h-1zM1 3h1v1h-1zM11 3h1v1h-1zM1 4h1v1h-1zM11 4h1v1h-1zM1 5h1v1h-1zM11 5h1v1h-1zM1 6h1v1h-1zM11 6h1v1h-1zM1 7h1v1h-1zM11 7h1v1h-1zM1 8h1v1h-1zM11 8h1v1h-1zM1 9h1v1h-1zM11 9h1v1h-1zM1 10h1v1h-1zM11 10h1v1h-1zM1 11h11v1h-11z'/%3E%3Cpath fill='%23dddddd' d='M10 2h1v1h-1zM3 3h7v1h-7zM3 4h7v1h-7zM3 5h7v1h-7zM3 6h7v1h-7zM3 7h7v1h-7zM3 8h7v1h-7zM3 9h7v1h-7zM2 10h1v1h-1z'/%3E%3C/svg%3E");
+  --mac-fechar-apertado: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' shape-rendering='crispEdges'%3E%3Cpath fill='%23999999' d='M0 0h12v1h-12zM0 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM3 3h7v1h-7zM0 4h1v1h-1zM3 4h1v1h-1zM5 4h3v1h-3zM9 4h1v1h-1zM0 5h1v1h-1zM3 5h2v1h-2zM6 5h1v1h-1zM8 5h2v1h-2zM0 6h1v1h-1zM3 6h3v1h-3zM7 6h3v1h-3zM0 7h1v1h-1zM3 7h2v1h-2zM6 7h1v1h-1zM8 7h2v1h-2zM0 8h1v1h-1zM3 8h1v1h-1zM5 8h3v1h-3zM9 8h1v1h-1zM0 9h1v1h-1zM3 9h7v1h-7zM0 10h1v1h-1zM0 11h1v1h-1z'/%3E%3Cpath fill='%23ffffff' d='M12 0h1v1h-1zM12 1h1v1h-1zM12 2h1v1h-1zM12 3h1v1h-1zM12 4h1v1h-1zM12 5h1v1h-1zM12 6h1v1h-1zM12 7h1v1h-1zM12 8h1v1h-1zM12 9h1v1h-1zM12 10h1v1h-1zM12 11h1v1h-1zM0 12h13v1h-13z'/%3E%3Cpath fill='%23000000' d='M1 1h11v1h-11zM1 2h1v1h-1zM11 2h1v1h-1zM1 3h1v1h-1zM11 3h1v1h-1zM1 4h1v1h-1zM4 4h1v1h-1zM8 4h1v1h-1zM11 4h1v1h-1zM1 5h1v1h-1zM5 5h1v1h-1zM7 5h1v1h-1zM11 5h1v1h-1zM1 6h1v1h-1zM6 6h1v1h-1zM11 6h1v1h-1zM1 7h1v1h-1zM5 7h1v1h-1zM7 7h1v1h-1zM11 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM8 8h1v1h-1zM11 8h1v1h-1zM1 9h1v1h-1zM11 9h1v1h-1zM1 10h1v1h-1zM11 10h1v1h-1zM1 11h11v1h-11z'/%3E%3Cpath fill='%23777777' d='M2 2h9v1h-9zM2 3h1v1h-1zM2 4h1v1h-1zM2 5h1v1h-1zM2 6h1v1h-1zM2 7h1v1h-1zM2 8h1v1h-1zM2 9h1v1h-1zM2 10h1v1h-1z'/%3E%3Cpath fill='%23bbbbbb' d='M10 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM10 7h1v1h-1zM10 8h1v1h-1zM10 9h1v1h-1zM3 10h8v1h-8z'/%3E%3C/svg%3E");
+  --mac-aumentar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' shape-rendering='crispEdges'%3E%3Cpath fill='%23999999' d='M0 0h12v1h-12zM0 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM10 3h1v1h-1zM0 4h1v1h-1zM10 4h1v1h-1zM0 5h1v1h-1zM10 5h1v1h-1zM0 6h1v1h-1zM10 6h1v1h-1zM0 7h1v1h-1zM10 7h1v1h-1zM0 8h1v1h-1zM10 8h1v1h-1zM0 9h1v1h-1zM10 9h1v1h-1zM0 10h1v1h-1zM3 10h8v1h-8zM0 11h1v1h-1z'/%3E%3Cpath fill='%23ffffff' d='M12 0h1v1h-1zM12 1h1v1h-1zM2 2h8v1h-8zM12 2h1v1h-1zM2 3h1v1h-1zM12 3h1v1h-1zM2 4h1v1h-1zM12 4h1v1h-1zM2 5h1v1h-1zM12 5h1v1h-1zM2 6h1v1h-1zM12 6h1v1h-1zM2 7h1v1h-1zM12 7h1v1h-1zM2 8h1v1h-1zM12 8h1v1h-1zM2 9h1v1h-1zM12 9h1v1h-1zM12 10h1v1h-1zM12 11h1v1h-1zM0 12h13v1h-13z'/%3E%3Cpath fill='%23000000' d='M1 1h11v1h-11zM1 2h1v1h-1zM11 2h1v1h-1zM1 3h1v1h-1zM11 3h1v1h-1zM1 4h1v1h-1zM11 4h1v1h-1zM1 5h1v1h-1zM11 5h1v1h-1zM1 6h1v1h-1zM11 6h1v1h-1zM1 7h1v1h-1zM11 7h1v1h-1zM1 8h1v1h-1zM11 8h1v1h-1zM1 9h1v1h-1zM11 9h1v1h-1zM1 10h1v1h-1zM11 10h1v1h-1zM1 11h11v1h-11z'/%3E%3Cpath fill='%23dddddd' d='M10 2h1v1h-1zM8 3h2v1h-2zM4 4h3v1h-3zM8 4h2v1h-2zM4 5h3v1h-3zM8 5h2v1h-2zM4 6h3v1h-3zM8 6h2v1h-2zM8 7h2v1h-2zM3 8h7v1h-7zM3 9h7v1h-7zM2 10h1v1h-1z'/%3E%3Cpath fill='%23777777' d='M3 3h5v1h-5zM3 4h1v1h-1zM7 4h1v1h-1zM3 5h1v1h-1zM7 5h1v1h-1zM3 6h1v1h-1zM7 6h1v1h-1zM3 7h5v1h-5z'/%3E%3C/svg%3E");
+  --mac-aumentar-apertado: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' shape-rendering='crispEdges'%3E%3Cpath fill='%23999999' d='M0 0h12v1h-12zM0 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM8 3h2v1h-2zM0 4h1v1h-1zM4 4h3v1h-3zM8 4h2v1h-2zM0 5h1v1h-1zM4 5h3v1h-3zM8 5h2v1h-2zM0 6h1v1h-1zM4 6h3v1h-3zM8 6h2v1h-2zM0 7h1v1h-1zM8 7h2v1h-2zM0 8h1v1h-1zM3 8h7v1h-7zM0 9h1v1h-1zM3 9h7v1h-7zM0 10h1v1h-1zM0 11h1v1h-1z'/%3E%3Cpath fill='%23ffffff' d='M12 0h1v1h-1zM12 1h1v1h-1zM12 2h1v1h-1zM12 3h1v1h-1zM12 4h1v1h-1zM12 5h1v1h-1zM12 6h1v1h-1zM12 7h1v1h-1zM12 8h1v1h-1zM12 9h1v1h-1zM12 10h1v1h-1zM12 11h1v1h-1zM0 12h13v1h-13z'/%3E%3Cpath fill='%23000000' d='M1 1h11v1h-11zM1 2h1v1h-1zM11 2h1v1h-1zM1 3h1v1h-1zM3 3h5v1h-5zM11 3h1v1h-1zM1 4h1v1h-1zM3 4h1v1h-1zM7 4h1v1h-1zM11 4h1v1h-1zM1 5h1v1h-1zM3 5h1v1h-1zM7 5h1v1h-1zM11 5h1v1h-1zM1 6h1v1h-1zM3 6h1v1h-1zM7 6h1v1h-1zM11 6h1v1h-1zM1 7h1v1h-1zM3 7h5v1h-5zM11 7h1v1h-1zM1 8h1v1h-1zM11 8h1v1h-1zM1 9h1v1h-1zM11 9h1v1h-1zM1 10h1v1h-1zM11 10h1v1h-1zM1 11h11v1h-11z'/%3E%3Cpath fill='%23777777' d='M2 2h9v1h-9zM2 3h1v1h-1zM2 4h1v1h-1zM2 5h1v1h-1zM2 6h1v1h-1zM2 7h1v1h-1zM2 8h1v1h-1zM2 9h1v1h-1zM2 10h1v1h-1z'/%3E%3Cpath fill='%23bbbbbb' d='M10 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM10 7h1v1h-1zM10 8h1v1h-1zM10 9h1v1h-1zM3 10h8v1h-8z'/%3E%3C/svg%3E");
+  --mac-recolher: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' shape-rendering='crispEdges'%3E%3Cpath fill='%23999999' d='M0 0h12v1h-12zM0 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM10 3h1v1h-1zM0 4h1v1h-1zM10 4h1v1h-1zM0 5h1v1h-1zM10 5h1v1h-1zM0 6h1v1h-1zM10 6h1v1h-1zM0 7h1v1h-1zM10 7h1v1h-1zM0 8h1v1h-1zM10 8h1v1h-1zM0 9h1v1h-1zM10 9h1v1h-1zM0 10h1v1h-1zM3 10h8v1h-8zM0 11h1v1h-1z'/%3E%3Cpath fill='%23ffffff' d='M12 0h1v1h-1zM12 1h1v1h-1zM2 2h8v1h-8zM12 2h1v1h-1zM2 3h1v1h-1zM12 3h1v1h-1zM2 4h1v1h-1zM12 4h1v1h-1zM2 5h1v1h-1zM12 5h1v1h-1zM2 6h1v1h-1zM12 6h1v1h-1zM2 7h1v1h-1zM12 7h1v1h-1zM2 8h1v1h-1zM12 8h1v1h-1zM2 9h1v1h-1zM12 9h1v1h-1zM12 10h1v1h-1zM12 11h1v1h-1zM0 12h13v1h-13z'/%3E%3Cpath fill='%23000000' d='M1 1h11v1h-11zM1 2h1v1h-1zM11 2h1v1h-1zM1 3h1v1h-1zM11 3h1v1h-1zM1 4h1v1h-1zM11 4h1v1h-1zM1 5h1v1h-1zM11 5h1v1h-1zM1 6h1v1h-1zM11 6h1v1h-1zM1 7h1v1h-1zM11 7h1v1h-1zM1 8h1v1h-1zM11 8h1v1h-1zM1 9h1v1h-1zM11 9h1v1h-1zM1 10h1v1h-1zM11 10h1v1h-1zM1 11h11v1h-11z'/%3E%3Cpath fill='%23dddddd' d='M10 2h1v1h-1zM3 3h7v1h-7zM3 4h7v1h-7zM3 6h7v1h-7zM3 8h7v1h-7zM3 9h7v1h-7zM2 10h1v1h-1z'/%3E%3Cpath fill='%23777777' d='M3 5h7v1h-7zM3 7h7v1h-7z'/%3E%3C/svg%3E");
+  --mac-recolher-apertado: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' shape-rendering='crispEdges'%3E%3Cpath fill='%23999999' d='M0 0h12v1h-12zM0 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM3 3h7v1h-7zM0 4h1v1h-1zM3 4h7v1h-7zM0 5h1v1h-1zM0 6h1v1h-1zM3 6h7v1h-7zM0 7h1v1h-1zM0 8h1v1h-1zM3 8h7v1h-7zM0 9h1v1h-1zM3 9h7v1h-7zM0 10h1v1h-1zM0 11h1v1h-1z'/%3E%3Cpath fill='%23ffffff' d='M12 0h1v1h-1zM12 1h1v1h-1zM12 2h1v1h-1zM12 3h1v1h-1zM12 4h1v1h-1zM12 5h1v1h-1zM12 6h1v1h-1zM12 7h1v1h-1zM12 8h1v1h-1zM12 9h1v1h-1zM12 10h1v1h-1zM12 11h1v1h-1zM0 12h13v1h-13z'/%3E%3Cpath fill='%23000000' d='M1 1h11v1h-11zM1 2h1v1h-1zM11 2h1v1h-1zM1 3h1v1h-1zM11 3h1v1h-1zM1 4h1v1h-1zM11 4h1v1h-1zM1 5h1v1h-1zM3 5h7v1h-7zM11 5h1v1h-1zM1 6h1v1h-1zM11 6h1v1h-1zM1 7h1v1h-1zM3 7h7v1h-7zM11 7h1v1h-1zM1 8h1v1h-1zM11 8h1v1h-1zM1 9h1v1h-1zM11 9h1v1h-1zM1 10h1v1h-1zM11 10h1v1h-1zM1 11h11v1h-11z'/%3E%3Cpath fill='%23777777' d='M2 2h9v1h-9zM2 3h1v1h-1zM2 4h1v1h-1zM2 5h1v1h-1zM2 6h1v1h-1zM2 7h1v1h-1zM2 8h1v1h-1zM2 9h1v1h-1zM2 10h1v1h-1z'/%3E%3Cpath fill='%23bbbbbb' d='M10 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM10 7h1v1h-1zM10 8h1v1h-1zM10 9h1v1h-1zM3 10h8v1h-8z'/%3E%3C/svg%3E");
+  --mac-marcar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M0 0h12v1h-12zM0 1h1v1h-1zM11 1h1v1h-1zM0 2h1v1h-1zM11 2h1v1h-1zM0 3h1v1h-1zM11 3h1v1h-1zM0 4h1v1h-1zM11 4h1v1h-1zM0 5h1v1h-1zM11 5h1v1h-1zM0 6h1v1h-1zM11 6h1v1h-1zM0 7h1v1h-1zM11 7h1v1h-1zM0 8h1v1h-1zM11 8h1v1h-1zM0 9h1v1h-1zM11 9h1v1h-1zM0 10h1v1h-1zM11 10h1v1h-1zM0 11h12v1h-12z'/%3E%3Cpath fill='%23ffffff' d='M1 1h9v1h-9zM1 2h1v1h-1zM1 3h1v1h-1zM1 4h1v1h-1zM1 5h1v1h-1zM1 6h1v1h-1zM1 7h1v1h-1zM1 8h1v1h-1zM1 9h1v1h-1z'/%3E%3Cpath fill='%23dddddd' d='M10 1h1v1h-1zM2 2h8v1h-8zM2 3h8v1h-8zM2 4h8v1h-8zM2 5h8v1h-8zM2 6h8v1h-8zM2 7h8v1h-8zM2 8h8v1h-8zM2 9h8v1h-8zM1 10h1v1h-1z'/%3E%3Cpath fill='%23999999' d='M10 2h1v1h-1zM10 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM10 7h1v1h-1zM10 8h1v1h-1zM10 9h1v1h-1zM2 10h9v1h-9z'/%3E%3C/svg%3E");
+  --mac-marcada: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M0 0h12v1h-12zM0 1h1v1h-1zM11 1h1v1h-1zM0 2h1v1h-1zM11 2h1v1h-1zM0 3h1v1h-1zM8 3h2v1h-2zM11 3h1v1h-1zM0 4h1v1h-1zM7 4h2v1h-2zM11 4h1v1h-1zM0 5h1v1h-1zM2 5h2v1h-2zM6 5h2v1h-2zM11 5h1v1h-1zM0 6h1v1h-1zM3 6h4v1h-4zM11 6h1v1h-1zM0 7h1v1h-1zM4 7h2v1h-2zM11 7h1v1h-1zM0 8h1v1h-1zM11 8h1v1h-1zM0 9h1v1h-1zM11 9h1v1h-1zM0 10h1v1h-1zM11 10h1v1h-1zM0 11h12v1h-12z'/%3E%3Cpath fill='%23ffffff' d='M1 1h9v1h-9zM1 2h1v1h-1zM1 3h1v1h-1zM1 4h1v1h-1zM1 5h1v1h-1zM1 6h1v1h-1zM1 7h1v1h-1zM1 8h1v1h-1zM1 9h1v1h-1z'/%3E%3Cpath fill='%23dddddd' d='M10 1h1v1h-1zM2 2h8v1h-8zM2 3h6v1h-6zM2 4h5v1h-5zM9 4h1v1h-1zM4 5h2v1h-2zM8 5h2v1h-2zM2 6h1v1h-1zM7 6h3v1h-3zM2 7h2v1h-2zM6 7h4v1h-4zM2 8h8v1h-8zM2 9h8v1h-8zM1 10h1v1h-1z'/%3E%3Cpath fill='%23999999' d='M10 2h1v1h-1zM10 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM10 7h1v1h-1zM10 8h1v1h-1zM10 9h1v1h-1zM2 10h9v1h-9z'/%3E%3C/svg%3E");
+  --mac-opcao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M4 0h4v1h-4zM2 1h2v1h-2zM8 1h2v1h-2zM1 2h1v1h-1zM10 2h1v1h-1zM1 3h1v1h-1zM10 3h1v1h-1zM0 4h1v1h-1zM11 4h1v1h-1zM0 5h1v1h-1zM11 5h1v1h-1zM0 6h1v1h-1zM11 6h1v1h-1zM0 7h1v1h-1zM11 7h1v1h-1zM1 8h1v1h-1zM10 8h1v1h-1zM1 9h1v1h-1zM10 9h1v1h-1zM2 10h2v1h-2zM8 10h2v1h-2zM4 11h4v1h-4z'/%3E%3Cpath fill='%23ffffff' d='M4 1h4v1h-4zM2 2h3v1h-3zM2 3h1v1h-1zM1 4h1v1h-1zM1 5h1v1h-1zM1 6h1v1h-1z'/%3E%3Cpath fill='%23dddddd' d='M5 2h4v1h-4zM3 3h6v1h-6zM2 4h8v1h-8zM2 5h8v1h-8zM2 6h8v1h-8zM1 7h9v1h-9zM2 8h7v1h-7zM2 9h1v1h-1z'/%3E%3Cpath fill='%23999999' d='M9 2h1v1h-1zM9 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM10 7h1v1h-1zM9 8h1v1h-1zM3 9h7v1h-7zM4 10h4v1h-4z'/%3E%3C/svg%3E");
+  --mac-opcao-marcada: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23000000' d='M4 0h4v1h-4zM2 1h2v1h-2zM8 1h2v1h-2zM1 2h1v1h-1zM10 2h1v1h-1zM1 3h1v1h-1zM10 3h1v1h-1zM0 4h1v1h-1zM5 4h2v1h-2zM11 4h1v1h-1zM0 5h1v1h-1zM4 5h4v1h-4zM11 5h1v1h-1zM0 6h1v1h-1zM4 6h4v1h-4zM11 6h1v1h-1zM0 7h1v1h-1zM5 7h2v1h-2zM11 7h1v1h-1zM1 8h1v1h-1zM10 8h1v1h-1zM1 9h1v1h-1zM10 9h1v1h-1zM2 10h2v1h-2zM8 10h2v1h-2zM4 11h4v1h-4z'/%3E%3Cpath fill='%23ffffff' d='M4 1h4v1h-4zM2 2h3v1h-3zM2 3h1v1h-1zM1 4h1v1h-1zM1 5h1v1h-1zM1 6h1v1h-1z'/%3E%3Cpath fill='%23dddddd' d='M5 2h4v1h-4zM3 3h6v1h-6zM2 4h3v1h-3zM7 4h3v1h-3zM2 5h2v1h-2zM8 5h2v1h-2zM2 6h2v1h-2zM8 6h2v1h-2zM1 7h4v1h-4zM7 7h3v1h-3zM2 8h7v1h-7zM2 9h1v1h-1z'/%3E%3Cpath fill='%23999999' d='M9 2h1v1h-1zM9 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM10 7h1v1h-1zM9 8h1v1h-1zM3 9h7v1h-7zM4 10h4v1h-4z'/%3E%3C/svg%3E");
+  --mac-puxador-v: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M0 0h6v1h-6zM0 2h6v1h-6zM0 4h6v1h-6zM0 6h6v1h-6z'/%3E%3Cpath fill='%238a8ad6' d='M0 1h6v1h-6zM0 3h6v1h-6zM0 5h6v1h-6zM0 7h6v1h-6z'/%3E%3C/svg%3E");
+  --mac-puxador-h: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M0 0h1v1h-1zM2 0h1v1h-1zM4 0h1v1h-1zM6 0h1v1h-1zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM6 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM0 5h1v1h-1zM2 5h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1z'/%3E%3Cpath fill='%238a8ad6' d='M1 0h1v1h-1zM3 0h1v1h-1zM5 0h1v1h-1zM7 0h1v1h-1zM1 1h1v1h-1zM3 1h1v1h-1zM5 1h1v1h-1zM7 1h1v1h-1zM1 2h1v1h-1zM3 2h1v1h-1zM5 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM3 3h1v1h-1zM5 3h1v1h-1zM7 3h1v1h-1zM1 4h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM7 4h1v1h-1zM1 5h1v1h-1zM3 5h1v1h-1zM5 5h1v1h-1zM7 5h1v1h-1z'/%3E%3C/svg%3E");
+}
+/* controles: fim */
+
+html.tema-mac {
+  --altura-barra: 0px;
+  --altura-menus: 20px;
+  --face: #dddddd;
+  --luz: #ffffff;
+  --luz2: #eeeeee;
+  --sombra: #999999;
+  --escuro: #000000;
+  --titulo: #4747b8;
+  --titulo-texto: #ffffff;
+  --titulo-inativo: #dddddd;
+  --titulo-inativo-texto: #808080;
+  --selecao: #ccccff;
+  --selecao-texto: #000000;
+  --dica: #ffffcc;
+  --mac-destaque: #4747b8; /* o realce dos menus, a barra de progresso e o anel do foco */
+  --mac-lavanda: #ccccff;
+  --mac-contorno: #555555;
+  --relevo-janela: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px var(--luz), inset -2px -2px var(--sombra);
+  --listras: repeating-linear-gradient(to bottom, var(--luz) 0 1px, var(--sombra) 1px 2px);
+  --xadrez-azul: linear-gradient(#0006, #0006);
+}
+
+/* ---------- A tela, a mesa e os ícones ---------- */
+
+html.tema-mac #mesa, html.tema-mac #janelas { inset: var(--altura-menus) 0 0 0; }
+html.tema-mac.varias-telas #mesa, html.tema-mac.varias-telas #janelas {
+  inset: auto; left: var(--tela-x); top: calc(var(--tela-y) + var(--altura-menus)); width: var(--tela-w); height: calc(var(--tela-h) - var(--altura-menus));
+}
+/* Os nomes dos ícones da mesa em preto sobre o branco; o selecionado, em branco sobre o preto. */
+html.tema-mac #mesa .item .rotulo { color: #000; background: #fff; padding: 0 2px; }
+html.tema-mac #mesa .item.sel .rotulo, html.tema-mac .icones .item.sel .rotulo, html.tema-mac .icones .item.sobre .rotulo { background: #000; color: #fff; }
+html.tema-mac .item.foco .rotulo { outline: none; }
+html.tema-mac .lista-arquivos .item.foco .rotulo, html.tema-mac .janela .item.foco .rotulo { outline: none; }
+/* O ícone selecionado fica mais escuro (não azulado). */
+html.tema-mac .item.sel .icone::after, html.tema-mac .item.sobre .icone::after { background: rgba(0, 0, 0, .45); }
+/* Na lista e nos detalhes, a linha inteira em lavanda. */
+html.tema-mac .vista-lista .item.sel .rotulo, html.tema-mac .vista-detalhes .item.sel .rotulo { background: var(--mac-lavanda); color: #000; }
+
+/* ---------- Os botões e os campos ---------- */
+
+/* Os botões comuns: arredondados, em relevo, com o nome em negrito. O :where deixa a regra sem peso,
+   para os botões planos dos programas (o caminho do endereço, as barras de ferramentas) ficarem como são. */
+:where(html.tema-mac) button, :where(html.tema-mac) .botao {
+  border-radius: 4px;
+  background: var(--face);
+  box-shadow: inset 0 0 0 1px var(--escuro), inset 2px 2px var(--luz), inset -2px -2px var(--sombra);
+  font-weight: bold;
+}
+:where(html.tema-mac) button:not(:disabled):active, :where(html.tema-mac) button.apertado, :where(html.tema-mac) .botao.apertado {
+  background: #777;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--escuro), inset 2px 2px #555, inset -2px -2px #999;
+  padding: 0 12px;
+}
+/* O botão padrão: o anel grosso em volta, como na época. */
+:where(html.tema-mac) button.padrao {
+  box-shadow: inset 0 0 0 1px var(--escuro), inset 2px 2px var(--luz), inset -2px -2px var(--sombra), 0 0 0 1px var(--face), 0 0 0 3px #333;
+}
+:where(html.tema-mac) button.padrao:active { box-shadow: inset 0 0 0 1px var(--escuro), inset 2px 2px #555, inset -2px -2px #999, 0 0 0 1px var(--face), 0 0 0 3px #333; }
+:where(html.tema-mac) button:disabled { color: var(--sombra); text-shadow: none; box-shadow: inset 0 0 0 1px var(--sombra), inset 2px 2px var(--luz); }
+:where(html.tema-mac) button:focus-visible::after, :where(html.tema-mac) button.foco::after { inset: -3px; outline: 2px solid var(--mac-destaque); outline-offset: 0; border-radius: 6px; }
+/* Os botões de ferramenta: planos, com o relevo leve ao passar e o afundado claro quando ligados. */
+html.tema-mac button.ferramenta { border-radius: 0; font-weight: normal; }
+html.tema-mac button.ferramenta:hover:not(:disabled) { box-shadow: inset 1px 1px var(--luz), inset -1px -1px var(--sombra); }
+html.tema-mac button.ferramenta:active:not(:disabled), html.tema-mac button.ferramenta.apertado { background: #c4c4c4; color: inherit; box-shadow: inset 1px 1px var(--sombra), inset -1px -1px var(--luz); padding: 1px 3px 0 5px; }
+html.tema-mac button.ferramenta:disabled { box-shadow: none; }
+html.tema-mac button.pequeno, html.tema-mac button.prog { border-radius: 0; font-weight: normal; }
+
+:where(html.tema-mac) :is(input[type=text], input[type=password], input[type=number], input[type=search], textarea, .campo) {
+  box-shadow: inset 0 0 0 1px #777, inset 1px 1px #999, inset 2px 2px #ddd;
+}
+/* O anel do foco em volta do campo, como no Mac da época (na janela da frente, nas caixas e nas barras). */
+:where(html.tema-mac) :is(input[type=text], input[type=password], input[type=number], input[type=search], textarea):focus {
+  box-shadow: inset 0 0 0 1px #777, inset 1px 1px #999, 0 0 0 2px var(--mac-lavanda), 0 0 0 3px var(--mac-destaque);
+}
+:where(html.tema-mac) .janela:not(.ativa):not(.dialogo) :is(input, textarea):focus { box-shadow: inset 0 0 0 1px #777, inset 1px 1px #999, inset 2px 2px #ddd; }
+
+/* Os menus de escolha: o botão arredondado com a seta numa parte à direita. */
+:where(html.tema-mac) select:not([size]) {
+  border-radius: 4px;
+  background: var(--seta-baixo) no-repeat right 6px center, linear-gradient(to right, transparent calc(100% - 19px), var(--sombra) calc(100% - 19px), var(--sombra) calc(100% - 18px), var(--luz) calc(100% - 18px), var(--luz) calc(100% - 17px), transparent calc(100% - 17px)), var(--face);
+  box-shadow: inset 0 0 0 1px var(--escuro), inset 2px 2px var(--luz), inset -2px -2px var(--sombra);
+  font-weight: bold;
+}
+:where(html.tema-mac) select:not([size]):disabled { color: var(--sombra); }
+html.tema-mac .select-caixa::after { display: none; }
+:where(html.tema-mac) select[size] { box-shadow: inset 0 0 0 1px #777, inset 1px 1px #999; }
+
+html.tema-mac input[type=checkbox] { width: 12px; height: 12px; background: var(--mac-marcar); box-shadow: none; }
+html.tema-mac input[type=checkbox]:checked { background: var(--mac-marcada); }
+html.tema-mac input[type=checkbox]:disabled { background-color: transparent; opacity: .55; }
+html.tema-mac input[type=radio] { background: var(--mac-opcao); }
+html.tema-mac input[type=radio]:checked { background: var(--mac-opcao-marcada); }
+html.tema-mac input[type=radio]:disabled { opacity: .55; }
+html.tema-mac label:has(input:focus-visible) span { outline: none; text-decoration: underline; text-decoration-color: var(--mac-destaque); }
+
+html.tema-mac input[type=range]::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: #bbb; box-shadow: inset 0 0 0 1px #555, inset 1px 1px #888; }
+html.tema-mac input[type=range]::-webkit-slider-thumb { width: 11px; height: 17px; margin-top: -6px; border-radius: 2px 2px 6px 6px; background: var(--face); box-shadow: inset 0 0 0 1px var(--escuro), inset 2px 2px var(--luz), inset -2px -2px var(--sombra); }
+
+/* As caixas de grupo: o sulco cinza e branco, com o nome em negrito. */
+html.tema-mac legend { font-weight: bold; }
+
+/* A barra de progresso: o lavanda com o brilho no meio, numa canaleta escura. */
+html.tema-mac .progresso { height: 14px; padding: 1px; background: #bbb; box-shadow: inset 0 0 0 1px #555, inset 1px 1px #888; border-radius: 2px; }
+html.tema-mac .progresso > div { background: linear-gradient(to bottom, #9999ee, #ddddff 35%, #8a8ad6 70%, #6363c0); box-shadow: inset -1px 0 #333; border-radius: 1px; }
+
+/* As barras de rolagem: a canaleta cinza funda, o puxador lavanda com as ranhuras e as setas. */
+html.tema-mac ::-webkit-scrollbar-track { background: #bbbbbb; }
+html.tema-mac ::-webkit-scrollbar-track:vertical { box-shadow: inset 1px 0 var(--mac-contorno), inset 2px 0 #888, inset -1px 0 #ccc; }
+html.tema-mac ::-webkit-scrollbar-track:horizontal { box-shadow: inset 0 1px var(--mac-contorno), inset 0 2px #888, inset 0 -1px #ccc; }
+html.tema-mac ::-webkit-scrollbar-thumb { background-color: var(--mac-lavanda); background-repeat: no-repeat; background-position: center; box-shadow: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px #eeeeff, inset -2px -2px #8a8ad6; }
+html.tema-mac ::-webkit-scrollbar-thumb:vertical { background-image: var(--mac-puxador-v); }
+html.tema-mac ::-webkit-scrollbar-thumb:horizontal { background-image: var(--mac-puxador-h); }
+html.tema-mac ::-webkit-scrollbar-button:single-button { background-color: var(--face); box-shadow: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px var(--luz), inset -2px -2px var(--sombra); }
+html.tema-mac ::-webkit-scrollbar-button:single-button:active { background-color: #888; box-shadow: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px #666, inset -2px -2px #aaa; }
+html.tema-mac ::-webkit-scrollbar-corner { background: var(--face); }
+
+/* ---------- As janelas ---------- */
+
+html.tema-mac .janela {
+  background: var(--face);
+  box-shadow: var(--relevo-janela);
+  padding: 1px 6px 6px;
+}
+html.tema-mac .janela.maximizada { box-shadow: var(--relevo-janela); padding: 1px 6px 6px; }
+/* Atrás das outras, a moldura fica lisa, sem o relevo. */
+html.tema-mac .janela:not(.ativa):not(.dialogo) { box-shadow: inset 0 0 0 1px #777; }
+
+html.tema-mac .titulo {
+  height: 19px;
+  margin: 0 -5px 2px;
+  padding: 0 6px;
+  gap: 0;
+  background: var(--face);
+  color: var(--titulo-inativo-texto);
+  font-weight: bold;
+}
+html.tema-mac .janela.ativa > .titulo, html.tema-mac .dialogo > .titulo { background: var(--face); color: #000; }
+/* As listras dos dois lados do nome, só na janela da frente (e nos diálogos). */
+html.tema-mac .titulo::before, html.tema-mac .titulo::after { content: ''; flex: 1; height: 11px; margin: 0 4px; order: 1; min-width: 6px; }
+html.tema-mac .titulo::after { order: 4; }
+html.tema-mac .janela.ativa > .titulo::before, html.tema-mac .janela.ativa > .titulo::after,
+html.tema-mac .dialogo > .titulo::before, html.tema-mac .dialogo > .titulo::after { background: var(--listras); }
+html.tema-mac .titulo .ico { order: 2; margin-right: 4px; }
+html.tema-mac .titulo .texto { order: 3; flex: 0 1 auto; padding: 0 1px; text-align: center; }
+/* Os botões do título: fechar à esquerda; aumentar e recolher à direita (e a ajuda, nos diálogos). */
+html.tema-mac .titulo .botoes { display: contents; }
+html.tema-mac .titulo .botoes button {
+  width: 13px; height: 13px; flex: none;
+  border-radius: 0; box-shadow: none; padding: 0; margin: 0;
+  background-color: transparent; background-position: 0 0;
+}
+html.tema-mac .titulo .botoes button:active { background-color: transparent; }
+html.tema-mac .titulo .botoes .b-fechar { order: 0; margin: 0; background-image: var(--mac-fechar); }
+html.tema-mac .titulo .botoes .b-fechar:active { background-image: var(--mac-fechar-apertado); background-position: 0 0; }
+html.tema-mac .titulo .botoes .b-ajuda { order: 5; margin: 0 4px 0 0; width: auto; height: 13px; font-weight: bold; background: none; }
+html.tema-mac .titulo .botoes .b-ajuda::before { content: '?'; }
+html.tema-mac .titulo .botoes .b-max, html.tema-mac .titulo .botoes .b-restaurar { order: 6; background-image: var(--mac-aumentar); }
+html.tema-mac .titulo .botoes .b-max:active, html.tema-mac .titulo .botoes .b-restaurar:active { background-image: var(--mac-aumentar-apertado); background-position: 0 0; }
+html.tema-mac .titulo .botoes .b-min { order: 7; margin-left: 3px; background-image: var(--mac-recolher); }
+html.tema-mac .titulo .botoes .b-min:active { background-image: var(--mac-recolher-apertado); background-position: 0 0; }
+/* Atrás das outras, a janela esconde os botões do título (como no Mac da época). */
+html.tema-mac .janela:not(.ativa):not(.dialogo) > .titulo .botoes button { visibility: hidden; }
+
+/* Recolhida (o duplo clique no título ou a caixa da direita): só a barra de título fica à vista. */
+html.tema-mac .janela.recolhida { height: auto !important; min-height: 0; padding-bottom: 0; }
+html.tema-mac .janela.recolhida > :not(.titulo) { display: none !important; }
+html.tema-mac .janela.recolhida > .titulo { margin-bottom: 0; }
+
+/* A barra de menus de cada janela sobe para o alto da tela (barra-mac.js). */
+html.tema-mac .janela > .menubar { display: none; }
+
+html.tema-mac .status > div { box-shadow: inset 1px 1px var(--sombra), inset -1px -1px var(--luz); }
+html.tema-mac .barra-ferramentas { box-shadow: inset 0 -1px var(--sombra), 0 1px var(--luz); }
+html.tema-mac .corpo.campo-branco { box-shadow: inset 0 0 0 1px #777, inset 1px 1px #999; }
+html.tema-mac .lista-arquivos { box-shadow: inset 0 0 0 1px #777, inset 1px 1px #999; }
+
+/* As abas: os cantos de cima arredondados; a escolhida mais clara, ligada ao painel. */
+html.tema-mac .abas > div {
+  border-radius: 5px 5px 0 0;
+  background: #cccccc;
+  box-shadow: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px var(--luz), inset -2px 0 var(--sombra);
+}
+html.tema-mac .abas > div.ativa { background: var(--face); box-shadow: inset 1px 1px var(--mac-contorno), inset -1px 0 var(--mac-contorno), inset 2px 2px var(--luz), inset -2px 0 var(--sombra); }
+html.tema-mac .painel-aba { box-shadow: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px var(--luz), inset -2px -2px var(--sombra); }
+
+/* ---------- Os menus ---------- */
+
+html.tema-mac .menu {
+  background: var(--face);
+  box-shadow: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px var(--luz), inset -2px -2px var(--sombra), 2px 2px 0 rgba(0, 0, 0, .35);
+  padding: 3px 2px;
+  font-weight: bold;
+}
+html.tema-mac .menu .opcao { height: 18px; }
+html.tema-mac .menu .opcao.ativa:not(.desativada) { background: var(--mac-destaque); color: #fff; }
+html.tema-mac .menu .opcao.desativada, html.tema-mac .menu .vazio { color: var(--sombra); text-shadow: none; }
+html.tema-mac .menu .separador { margin: 3px 0; }
+html.tema-mac .menubar > div.aberto { background: var(--mac-destaque); color: #fff; }
+html.tema-mac .menu.com-icones:has(.opcao.marcada) .opcao { padding-left: 20px; }
+
+/* O menu do logotipo (o Iniciar do tema): sem a faixa do lado, com os ícones pequenos. */
+html.tema-mac .menu.iniciar .faixa { display: none; }
+html.tema-mac .menu.iniciar .opcao { height: 20px; padding: 0 22px 0 4px; gap: 6px; }
+html.tema-mac .menu.iniciar .opcao img { width: 16px; height: 16px; }
+
+/* ---------- O resto ---------- */
+
+html.tema-mac #dica { border-radius: 3px; box-shadow: 2px 2px 0 rgba(0, 0, 0, .25); }
+html.tema-mac .alt-icone.sel { box-shadow: inset 0 0 0 2px var(--mac-destaque); border-radius: 3px; }
+html.tema-mac .previa-encaixe { background: repeating-conic-gradient(#000 0 25%, #ddd 0 50%) 0 0 / 2px 2px; }
+html.tema-mac .texto-ajuda h2 { color: #000; }
+
+/* A barra de tarefas não existe no tema: no lugar dela, a barra de menus no alto e a Faixa de controle. */
+html.tema-mac #barra, html.tema-mac .barra-tela { display: none; }
+#barra-mac, #faixa-controle { display: none; }
+
+/* ---------- A barra de menus no alto (barra-mac.js) ---------- */
+
+html.tema-mac #barra-mac {
+  display: flex;
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: var(--altura-menus);
+  z-index: 600000;
+  align-items: center;
+  padding: 0 4px 1px 8px;
+  background: var(--face);
+  box-shadow: inset 0 -1px var(--escuro), inset 0 1px var(--luz);
+  font-weight: bold;
+  white-space: nowrap;
+}
+html.tema-mac.varias-telas #barra-mac { left: var(--tela-x); right: auto; width: var(--tela-w); top: var(--tela-y); }
+/* Os cantos de cima da tela arredondados, como no monitor da época. */
+#barra-mac::before, #barra-mac::after {
+  content: ''; position: absolute; top: 0; width: 5px; height: 5px; pointer-events: none;
+  background: radial-gradient(circle at 5px 5px, transparent 4.5px, #000 5px);
+}
+#barra-mac::before { left: 0; }
+#barra-mac::after { right: 0; transform: scaleX(-1); }
+#barra-mac > button, #barra-mac .menubar > div, #barra-mac .bm-app {
+  height: 19px;
+  min-width: 0; min-height: 0;
+  padding: 0 8px;
+  display: flex; align-items: center; gap: 4px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #000;
+}
+#barra-mac > button:active { padding: 0 8px; }
+#barra-mac .bm-logo { padding: 0 9px; }
+#barra-mac .bm-logo img { width: 16px; height: 16px; }
+#barra-mac > button.aberto, #barra-mac > button.apertado, #barra-mac .menubar > div.aberto, #barra-mac .bm-app.aberto { background: var(--mac-destaque); color: #fff; }
+/* O logotipo fica com as cores dele sobre o destaque, como o do menu do canto no Mac da época. */
+#barra-mac .bm-menus { display: flex; min-width: 0; overflow: hidden; }
+#barra-mac .menubar { height: 19px; padding: 0; }
+#barra-mac .bm-espaco { flex: 1; min-width: 8px; }
+#barra-mac .bm-direita { display: flex; align-items: center; gap: 6px; padding-right: 4px; }
+/* A bandeja e a busca da barra de tarefas, trazidas para cá. */
+#barra-mac #bandeja { box-shadow: none; height: 19px; padding: 0 2px; font-weight: bold; }
+#barra-mac #bandeja .relogio { padding-top: 0; }
+#barra-mac #bandeja .relogio.com-data { flex-direction: row; gap: 6px; line-height: 19px; }
+#barra-mac #busca-barra { height: 16px; width: 140px; font-weight: normal; }
+#barra-mac #busca-barra input { height: 16px; padding: 1px 3px; }
+#barra-mac .bm-app { box-shadow: inset 1px 0 var(--sombra), inset 2px 0 var(--luz); padding: 0 6px 0 9px; }
+#barra-mac .bm-app img { width: 16px; height: 16px; }
+#barra-mac .bm-app span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Com a barra no alto, os balões e o volume aparecem no canto de cima, à direita. */
+html.tema-mac .aviso-balao { top: calc(var(--altura-menus) + 6px); bottom: auto; }
+html.tema-mac.varias-telas .aviso-balao { top: calc(var(--tela-y) + var(--altura-menus) + 6px); bottom: auto; }
+html.tema-mac .indicador-bandeja { top: calc(var(--altura-menus) + 6px); bottom: auto; }
+html.tema-mac.varias-telas .indicador-bandeja { top: calc(var(--tela-y) + var(--altura-menus) + 6px); bottom: auto; }
+
+/* ---------- A Faixa de controle (os programas fixados), no canto de baixo, à esquerda ---------- */
+
+html.tema-mac #faixa-controle {
+  display: flex;
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 22px;
+  z-index: 590000;
+  align-items: stretch;
+  background: var(--face);
+  box-shadow: inset 0 0 0 1px var(--escuro), inset 2px 2px var(--luz), inset -2px -2px var(--sombra);
+  border-radius: 0 4px 0 0;
+}
+html.tema-mac.varias-telas #faixa-controle { left: var(--tela-x); bottom: var(--tela-baixo); }
+#faixa-controle .fc-botoes { display: flex; padding: 3px 2px 3px 4px; gap: 1px; }
+#faixa-controle .fc-botoes[hidden] { display: none; }
+#faixa-controle button {
+  min-width: 0; min-height: 0; width: 22px; height: 16px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; box-shadow: none; border-radius: 0;
+}
+#faixa-controle .fc-botoes button { box-shadow: inset -1px 0 var(--sombra), inset -2px 0 var(--luz); width: 24px; }
+#faixa-controle .fc-botoes button:hover { background: #e8e8e8; }
+#faixa-controle .fc-botoes button:active { background: #bbb; color: inherit; box-shadow: inset 1px 1px var(--sombra); }
+#faixa-controle .fc-botoes img { width: 16px; height: 16px; }
+/* A ponta: puxar recolhe e abre a faixa, como na época. */
+#faixa-controle .fc-ponta { width: 12px; height: 22px; border-radius: 0 4px 0 0; background: repeating-linear-gradient(to right, var(--sombra) 0 1px, var(--luz) 1px 2px) 3px 5px / 6px 12px no-repeat; }
+#faixa-controle .fc-ponta:active { background-color: #bbb; }
+
+/* ---------- A abertura do tema (inicio.js) ---------- */
+
+html.tema-mac #boot { background: #888; }
+html.tema-mac #boot .abertura-mac {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+html.tema-mac #boot .am-caixa {
+  width: 300px; padding: 22px 26px 18px;
+  background: var(--face);
+  box-shadow: inset 0 0 0 1px #000, inset 2px 2px #fff, inset -2px -2px #999, 3px 3px 0 rgba(0, 0, 0, .3);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  color: #000;
+}
+html.tema-mac #boot .am-marca { display: flex; align-items: center; gap: 10px; }
+html.tema-mac #boot .am-marca b { font-size: 20px; line-height: 22px; }
+html.tema-mac #boot .am-texto { font-weight: bold; }
+html.tema-mac #boot .am-caixa .progresso { width: 220px; }
+/* Os ícones dos programas aparecendo um a um embaixo, como as extensões ao ligar o Mac da época. */
+html.tema-mac #boot .am-icones { position: absolute; left: 8px; bottom: 6px; display: flex; gap: 6px; }
+html.tema-mac #boot .am-icones img { width: 32px; height: 32px; }
+html.tema-mac.varias-telas #boot .abertura-mac { padding: var(--tela-y) var(--tela-direita) var(--tela-baixo) var(--tela-x); }

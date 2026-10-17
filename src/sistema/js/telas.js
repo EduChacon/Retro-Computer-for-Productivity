@@ -41,10 +41,14 @@ export const telaDoRet = (r) => telaDoPonto(r.left + r.width / 2, r.top + Math.m
 let barraNasOutras = false;
 export function definirBarraNasOutras(v) { barraNasOutras = !!v; }
 
-/** A área útil de uma tela (sem a barra de tarefas dela), como um getBoundingClientRect. */
+/**
+ * A área útil de uma tela, como um getBoundingClientRect: sem a barra de tarefas dela embaixo e, no
+ * tema Mac, sem a barra de menus no alto da principal (as barras escondidas medem zero).
+ */
 export function areaUtil(t) {
   const barra = t.principal || barraNasOutras ? (document.getElementById('barra') || {}).offsetHeight || 0 : 0;
-  return { left: t.x, top: t.y, right: t.x + t.w, bottom: t.y + t.h - barra, width: t.w, height: t.h - barra };
+  const menus = t.principal ? (document.getElementById('barra-mac') || {}).offsetHeight || 0 : 0;
+  return { left: t.x, top: t.y + menus, right: t.x + t.w, bottom: t.y + t.h - barra, width: t.w, height: t.h - barra - menus };
 }
 
 /** As duas são a mesma tela? (As telas são refeitas a cada mudança: vale o lugar.) */
