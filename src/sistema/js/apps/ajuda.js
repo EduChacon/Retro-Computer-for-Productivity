@@ -154,6 +154,33 @@ const TOPICOS = [
 <p><b>Formatear</b> (clic derecho en la memoria): borra todo lo que hay en ella y la prepara en exFAT (la leen Windows, Mac y Linux) o FAT32 (los aparatos antiguos). Pide la confirmación y, en Linux, la contraseña de administrador; en Windows y en Mac, el propio sistema confirma. El programa <b>Discos</b> hace lo mismo y también graba imágenes (mira el tema Discos).</p>`],
   },
   {
+    id: 'nuvem', icone: 'nuvem',
+    'pt-BR': ['A nuvem (Linux)', `
+<h2>Entrar na conta</h2>
+<p>No Linux, <b>Iniciar › Programas › Acessórios › Nuvem</b> conecta as contas do <b>Google Drive</b>, do <b>OneDrive</b> e do <b>Dropbox</b>. <b>Adicionar uma conta</b> escolhe o serviço e abre o navegador do computador na página dele: entre na sua conta e permita o acesso do rclone; depois, volte para o Retro Computer. A senha fica só com o serviço; neste computador fica guardado só o acesso, na pasta de dados do Retro Computer.</p>
+<p>Na primeira vez, a janela oferece instalar o <b>rclone</b>, o programa livre que fala com os serviços de nuvem, e o <b>FUSE</b>, que mostra a nuvem como uma pasta (com a senha de administrador do Linux).</p>
+<h2>Usar os arquivos</h2>
+<p>Conectada, a conta aparece em <b>Meu computador</b> e na barra de pastas, com as pastas dela. Ela funciona como um pendrive: dois cliques num arquivo o copiam para <b>Meus documentos › Recebidos</b> e o abrem de lá; o botão direito › <b>Copiar para Meus documentos</b> traz uma cópia; arrastar um arquivo do disco C: para uma pasta da nuvem (ou <b>Colar aqui</b>) leva uma cópia. Nada é apagado nem gravado por cima na nuvem por aqui.</p>
+<h2>Desconectar e remover</h2>
+<p>O botão direito na conta › <b>Desconectar</b> (ou o botão da janela Nuvem) tira a conta do Meu computador; <b>Conectar</b> a traz de volta, e <b>Conectar ao ligar o Retro Computer</b> faz isso sozinho. <b>Remover</b> esquece o acesso deste computador; os arquivos continuam na nuvem, como estão. No Windows e no Mac, use o programa do Google Drive, do OneDrive ou do Dropbox do computador principal: as pastas dele aparecem em Meu computador › Computador principal.</p>`],
+    en: ['The cloud (Linux)', `
+<h2>Signing in</h2>
+<p>On Linux, <b>Start › Programs › Accessories › Cloud</b> connects your <b>Google Drive</b>, <b>OneDrive</b> and <b>Dropbox</b> accounts. <b>Add an account</b> chooses the service and opens the computer's browser on its page: sign in to your account and allow rclone access; then come back to Retro Computer. The password stays only with the service; this computer keeps only the access, in the Retro Computer data folder.</p>
+<p>The first time, the window offers to install <b>rclone</b>, the free program that talks to the cloud services, and <b>FUSE</b>, which shows the cloud as a folder (with the Linux administrator password).</p>
+<h2>Using the files</h2>
+<p>Once connected, the account appears in <b>Computer</b> and in the folders bar, with its folders. It works like a USB drive: double-clicking a file copies it to <b>Documents › Received</b> and opens it from there; right-click › <b>Copy to Documents</b> brings a copy; dragging a file from drive C: to a cloud folder (or <b>Paste here</b>) takes a copy. Nothing in the cloud is deleted or overwritten from here.</p>
+<h2>Disconnecting and removing</h2>
+<p>Right-click the account › <b>Disconnect</b> (or the button in the Cloud window) takes the account out of Computer; <b>Connect</b> brings it back, and <b>Connect when Retro Computer starts</b> does it by itself. <b>Remove</b> forgets this computer's access; the files stay in the cloud as they are. On Windows and on the Mac, use the Google Drive, OneDrive or Dropbox program of the main computer: its folders appear in Computer › Main computer.</p>`],
+    es: ['La nube (Linux)', `
+<h2>Entrar en la cuenta</h2>
+<p>En Linux, <b>Inicio › Programas › Accesorios › Nube</b> conecta las cuentas de <b>Google Drive</b>, <b>OneDrive</b> y <b>Dropbox</b>. <b>Agregar una cuenta</b> elige el servicio y abre el navegador de la computadora en su página: entra en tu cuenta y permite el acceso de rclone; después, vuelve a Retro Computer. La contraseña queda solo con el servicio; en esta computadora queda guardado solo el acceso, en la carpeta de datos de Retro Computer.</p>
+<p>La primera vez, la ventana ofrece instalar <b>rclone</b>, el programa libre que habla con los servicios de nube, y <b>FUSE</b>, que muestra la nube como una carpeta (con la contraseña de administrador de Linux).</p>
+<h2>Usar los archivos</h2>
+<p>Conectada, la cuenta aparece en <b>Mi computadora</b> y en la barra de carpetas, con sus carpetas. Funciona como una memoria USB: un doble clic en un archivo lo copia a <b>Mis documentos › Recibidos</b> y lo abre desde allí; el clic derecho › <b>Copiar a Mis documentos</b> trae una copia; arrastrar un archivo del disco C: a una carpeta de la nube (o <b>Pegar aquí</b>) lleva una copia. Nada de la nube se borra ni se sobrescribe desde aquí.</p>
+<h2>Desconectar y quitar</h2>
+<p>El clic derecho en la cuenta › <b>Desconectar</b> (o el botón de la ventana Nube) saca la cuenta de Mi computadora; <b>Conectar</b> la trae de vuelta, y <b>Conectar al iniciar Retro Computer</b> lo hace solo. <b>Quitar</b> olvida el acceso de esta computadora; los archivos siguen en la nube, como están. En Windows y en el Mac, usa el programa de Google Drive, OneDrive o Dropbox de la computadora principal: sus carpetas aparecen en Mi computadora › Computadora principal.</p>`],
+  },
+  {
     id: 'discos', icone: 'discos',
     'pt-BR': ['Discos', `
 <h2>O programa Discos</h2>

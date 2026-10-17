@@ -103,6 +103,8 @@ Os programas da aba "Programas do Linux" vêm do [Flathub](https://flathub.org/)
 
 Os da aba "Programas do Windows" vêm do [winget](https://github.com/microsoft/winget-cli) (o Gerenciador de Pacotes do Windows, que vem no Windows), só da fonte oficial `winget`; as fichas são lidas na hora dos manifestos do repositório [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) (MIT). Os da aba "Programas do Mac" vêm do [Homebrew](https://brew.sh/) (BSD-2-Clause), com a lista e as descrições da interface oficial dele ([formulae.brew.sh](https://formulae.brew.sh/)). Nenhum dos dois faz parte do Retro Computer, e cada programa tem a sua licença e é baixado do site de quem o fez. Os ícones desses programas na loja são os do próprio computador (para os instalados) ou os publicados no site oficial de cada um, lidos na hora e sem fazer parte do Retro Computer; são marcas dos donos de cada programa.
 
+O [rclone](https://rclone.org/) (MIT) e o FUSE do Linux (libfuse, LGPL-2.1, e o fuse3) também não fazem parte do Retro Computer: a janela Nuvem oferece instalá-los pelo gerenciador de programas do próprio Linux (o apt), a pedido do usuário, e roda o rclone sem modificação. "Google Drive", "OneDrive" e "Dropbox" são marcas da Google, da Microsoft e da Dropbox, usadas só para dizer qual serviço a conta usa; o ícone da nuvem é um desenho próprio.
+
 Claude e Claude Code são da Anthropic. O Retro Computer só oferece instalar o Claude Code com o instalador oficial.
 
 ## Inspiração

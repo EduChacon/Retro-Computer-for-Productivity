@@ -100,6 +100,16 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 - Antes de tirar: botão direito no pendrive › "Remover com segurança".
 - **Formatar** (botão direito no pendrive): exFAT (lido pelo Windows, pelo Mac e pelo Linux), FAT32 (os aparelhos antigos) ou, no Windows, NTFS, com o rótulo; "Usar o pendrive inteiro" apaga todas as partições e cria uma só. Pede a confirmação e, no Linux, a senha de administrador; no Windows e no Mac, o próprio sistema confirma. Um pendrive que guarda o disco C: (o modo portátil) ou o próprio sistema não é formatado.
 
+### A nuvem (Linux)
+
+Iniciar › Programas › Acessórios › Nuvem conecta as contas do Google Drive, do OneDrive e do Dropbox pelo [rclone](https://rclone.org/) (1.56 ou mais novo) e pelo FUSE do Linux; sem eles, a janela oferece instalá-los pelo apt, com a senha de administrador.
+
+- **Adicionar uma conta**: o navegador do computador abre na página do serviço, e o rclone recebe a autorização em `127.0.0.1` (a senha fica só com o serviço). As chaves de acesso ficam num `rclone.conf` só do Retro Computer, na pasta de dados do usuário (`nuvem/`, só para ele), separado do rclone do computador; a área de trabalho não as vê. Cancelar o login não deixa nada pela metade.
+- **Conectada**, a conta aparece em Meu computador e na barra de pastas e funciona como um pendrive: dois cliques copiam o arquivo para `Meus documentos/Recebidos` e o abrem de lá; "Copiar para Meus documentos" traz uma cópia; arrastar do disco C: (ou "Colar aqui") leva uma cópia, com "(2)" no nome se já houver um igual. Nada é apagado nem gravado por cima na nuvem por aqui. As cópias vão direto para o serviço, sem fila guardada: desconectar logo depois de levar um arquivo não o perde.
+- **Desconectar** (o botão direito na conta ou a janela Nuvem) tira a conta do Meu computador; "Conectar ao ligar o Retro Computer" a conecta na abertura. Sair, desligar ou trocar de usuário desconecta todas. Se a conexão cair, um aviso diz qual conta saiu.
+- **Remover** esquece o acesso deste computador (a conta sai do `rclone.conf`); os arquivos continuam na nuvem.
+- No Windows e no Mac, a janela só explica: lá, o programa do serviço no computador principal já põe as pastas dele em Meu computador › Computador principal.
+
 ### Discos
 
 Iniciar › Programas › Acessórios › Discos (ou Painel de controle › Disco C: › Limpeza de disco…).

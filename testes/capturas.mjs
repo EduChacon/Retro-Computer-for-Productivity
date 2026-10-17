@@ -1943,7 +1943,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   async ajuda() {
     // Os tópicos da Ajuda, um por captura (o texto rolado até o fim mostra se cabe).
     await fecharTudo();
-    for (const topico of ['inicio', 'pendrives', 'pdf', 'busca', 'agenda', 'celular', 'barra', 'areas', 'tema', 'internet', 'acessorios', 'painel', 'seguranca', 'linux', 'atalhos']) {
+    for (const topico of ['inicio', 'pendrives', 'nuvem', 'pdf', 'busca', 'agenda', 'celular', 'barra', 'areas', 'tema', 'internet', 'acessorios', 'painel', 'seguranca', 'linux', 'atalhos']) {
       await abrir('ajuda', { topico });
       await pagina.waitForTimeout(300);
       await foto('ajuda-' + topico);
