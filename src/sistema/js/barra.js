@@ -640,6 +640,8 @@ async function itensProgramas() {
         prog('caracteres', tr('Mapa de caracteres'), 'caracteres'),
         prog('monitor', tr('Monitor do sistema'), 'monitor'),
         prog('notas', tr('Notas autoadesivas'), 'notas'),
+        // A nuvem pelo rclone é só do Linux.
+        ...(estado.config.plataforma === 'linux' ? [prog('nuvem', tr('Nuvem'), 'nuvem')] : []),
         prog('prompt', tr('Prompt de comando'), 'prompt'),
         prog('receber', tr('Receber do celular'), 'celular'),
         prog('midia', tr('Reprodutor de mídia'), 'reprodutor'),

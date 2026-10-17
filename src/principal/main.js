@@ -71,6 +71,7 @@ const { ehExecutavel } = require('./executaveis');
 const { modoAcentos, gravarCompose } = require('./teclado');
 const ortografia = require('./ortografia');
 const { Calendarios, semEnderecos, buscarNaRede, buscarFalso } = require('./calendarios');
+const { Nuvens } = require('./nuvem');
 // As configurações como a área de trabalho (e o Claude) as veem: sem a senha e sem os endereços dos calendários.
 const semSegredos = (c) => semEnderecos(semSenha(c));
 
@@ -234,6 +235,7 @@ let copia = null; // a cópia de segurança do disco C: (copia.js)
 let firefox = null; // o Firefox com o visual do Retro Computer (firefox.js)
 let historico = null; // o histórico da área de transferência (transferencia.js)
 let calendarios = null; // os calendários da internet da Agenda (calendarios.js)
+let nuvens = null; // as contas na nuvem do Linux, pelo rclone (nuvem.js)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -1056,7 +1058,7 @@ function teclasDoSistema() {
       }
     });
   });
-  app.on('will-quit', () => { globalShortcut.unregisterAll(); if (servidorMcp) servidorMcp.fechar(); });
+  app.on('will-quit', () => { globalShortcut.unregisterAll(); if (servidorMcp) servidorMcp.fechar(); if (nuvens) nuvens.encerrar(); });
 }
 
 /** O cache das miniaturas do Explorador não cresce sem fim: passando de 3000, saem as 1000 mais antigas. */
@@ -1313,6 +1315,8 @@ function registrarPonte() {
       }
       if (Object.keys(novas).length) parte.pastas = novas;
     }
+    // As contas na nuvem só mudam pelas rotas nuvem:*.
+    delete parte.nuvem;
     // Os calendários da internet só mudam pelas rotas calendarios:* (que conferem o endereço).
     if (parte.agenda && typeof parte.agenda === 'object' && !Array.isArray(parte.agenda)) delete parte.agenda.calendarios;
     else if ('agenda' in parte) delete parte.agenda;
@@ -1346,7 +1350,7 @@ function registrarPonte() {
   tratar('unidades:listar', () => unidades.listar());
   tratar('unidades:pasta', (id, rel) => unidadeDe(id).listarPasta(String(id), String(rel || '')));
   tratar('unidades:montar', (id) => unidadeDe(id).montar(String(id)));
-  tratar('unidades:ejetar', (id) => unidades.ejetar(String(id)));
+  tratar('unidades:ejetar', (id) => (String(id).startsWith('nuvem:') ? nuvens.ejetar(String(id)) : unidades.ejetar(String(id))));
   tratar('unidades:trazer', (id, rels, destino) => unidadeDe(id).trazer(String(id), (rels || []).map(String), String(destino || '')));
   tratar('unidades:levar', (id, rels, destino) => unidadeDe(id).levar(String(id), (rels || []).map(String), String(destino || '')));
   registrarComputador();
@@ -1779,6 +1783,46 @@ function registrarPonte() {
   tratar('calendarios:ler', comErro((id) => calendarios.ler(String(id))));
   tratar('calendarios:mudar', comErro((id, parte) => { calendarios.mudar(String(id), parte && typeof parte === 'object' ? parte : {}); return listaCalendarios(); }));
   tratar('calendarios:remover', comErro((id) => { calendarios.remover(String(id)); return listaCalendarios(); }));
+  // As contas na nuvem (Linux, pelo rclone): a tela vê o nome, o serviço e o estado de cada uma.
+  const erroNuvem = (e) => {
+    const c = e && e.codigo;
+    const textos = {
+      semRclone: tr('O rclone não está instalado.'),
+      ocupado: tr('Outra conta está sendo adicionada agora.'),
+      cancelado: tr('A conta não foi adicionada.'),
+      servico: tr('O serviço recusou o acesso: {erro}', { erro: (e && e.detalhe) || '?' }),
+      pergunta: tr('O rclone fez uma pergunta que o Retro Computer não sabe responder ({pergunta}).', { pergunta: (e && e.pergunta) || '?' }),
+      conta: tr('Esta conta não está mais no Retro Computer.'),
+      tipo: tr('Este serviço não está na lista.'),
+      nome: tr('Escreva um nome.'),
+      fuse: tr('O Linux não deixou montar a nuvem (falta o FUSE). Instale o rclone de novo pela janela Nuvem.'),
+      login: tr('O acesso à conta expirou ou foi tirado. Remova a conta e adicione de novo.'),
+      tempo: tr('A nuvem demorou demais para responder. Confira a internet.'),
+      pastaCheia: tr('A pasta da montagem não está vazia.'),
+      unidade: tr('A nuvem não está conectada.'),
+      rclone: tr('O rclone não conseguiu: {erro}', { erro: (e && e.detalhe) || tr('sem detalhes') }),
+    };
+    return new Error(textos[c] || String((e && e.message) || e));
+  };
+  const comErroNuvem = (f) => async (...a) => { try { return await f(...a); } catch (e) { throw erroNuvem(e); } };
+  tratar('nuvem:estado', comErroNuvem(() => nuvens.estado()));
+  tratar('nuvem:instalar', comErroNuvem((senha) => nuvens.instalar(String(senha || ''))));
+  tratar('nuvem:adicionar', comErroNuvem((tipo) => nuvens.adicionar(String(tipo), { aoAutorizar: () => {
+    enviar('nuvem:autorizar', { tipo: String(tipo) });
+  } })));
+  tratar('nuvem:abrirLogin', () => {
+    const u = nuvens.enderecoDoLogin();
+    if (!u) return false;
+    shell.openExternal(u);
+    return true;
+  });
+  tratar('nuvem:cancelar', () => nuvens.cancelar());
+  tratar('nuvem:conectar', comErroNuvem((id) => nuvens.conectar(String(id))));
+  tratar('nuvem:desconectar', comErroNuvem((id) => nuvens.desconectar(String(id))));
+  tratar('nuvem:renomear', comErroNuvem((id, nome) => nuvens.renomear(String(id), nome)));
+  tratar('nuvem:mudar', comErroNuvem((id, parte) => nuvens.mudar(String(id), parte && typeof parte === 'object' ? { aoLigar: parte.aoLigar !== false } : {})));
+  tratar('nuvem:remover', comErroNuvem((id) => nuvens.remover(String(id))));
+  tratar('nuvem:unidades', () => nuvens.listar());
   tratar('ortografia:trocar', (s) => {
     if (!ortografia.trocaValida(s) || !janela) throw new Error(tr('Texto inválido.'));
     janela.webContents.replaceMisspelling(s);
@@ -1915,6 +1959,8 @@ function registrarPonte() {
     if (!MODO_SISTEMA) throw new Error('modo sistema');
     if (acao === 'suspender') return sistemaLinux.energia('suspender');
     terminais.fecharTodos();
+    // As contas na nuvem gravam o que falta e desmontam antes de desligar.
+    if (nuvens) nuvens.encerrar();
     if (acao === 'sair') {
       if (janela) janela.__podeFechar = true;
       setTimeout(() => app.exit(0), 50);
@@ -2150,6 +2196,7 @@ function criarLoja() {
 
 function reabrirApp() {
   if (terminais) terminais.fecharTodos();
+  if (nuvens) nuvens.encerrar();
   if (servidorMcp) servidorMcp.fechar();
   if (janela) janela.__podeFechar = true;
   if (process.env.RETRO_SEM_RELANCAR || (MODO_SISTEMA && process.argv.includes('--sistema'))) {
@@ -2242,8 +2289,9 @@ function foraVisivel() {
   return typeof c === 'boolean' ? c : PERFIL === PRINCIPAL;
 }
 
-/** Os ids 'pc:…' são as pastas do computador principal; os outros, os pendrives. */
+/** Os ids 'pc:…' são as pastas do computador principal, os 'nuvem:…' as contas na nuvem; os outros, os pendrives. */
 function unidadeDe(id) {
+  if (String(id).startsWith('nuvem:')) return nuvens;
   if (!String(id).startsWith('pc:')) return unidades;
   if (!foraVisivel()) throw new Error('unidade');
   return pastasFora;
@@ -2451,6 +2499,13 @@ app.whenReady().then(async () => {
   // As pastas do computador principal (RETRO_COMPUTADOR_FALSO: uma pasta com desktop, documents… dentro).
   const casaFalsa = process.env.RETRO_COMPUTADOR_FALSO;
   pastasFora = new PastasDoComputador({ caminho: (n) => (casaFalsa ? path.join(casaFalsa, n) : app.getPath(n)), disco: () => disco });
+  // As contas na nuvem (Linux): as com "Conectar ao ligar" se conectam um pouco depois da abertura.
+  nuvens = new Nuvens({
+    pasta: path.join(app.getPath('userData'), 'nuvem'), config, disco: () => disco, comoAdmin: sistemaLinux.comoAdmin,
+    falso: process.env.RETRO_NUVEM_FALSA || null, plataforma: process.env.RETRO_NUVEM_FALSA ? 'linux' : process.platform,
+    aoMudar: () => enviar('nuvem:mudou', nuvens.resumo()),
+  });
+  if (nuvens.contas().length) setTimeout(() => nuvens.conectarAoLigar().catch(() => { }), 8000);
   receberDeFora(caminhosDaLinha(process.argv, { proprios: proprios() }));
   vigiarUnidades();
   podarMiniaturas();
@@ -2507,6 +2562,7 @@ app.on('will-quit', (e) => {
 
 app.on('window-all-closed', () => {
   pararObservar();
+  if (nuvens) nuvens.encerrar();
   if (trabalhos) trabalhos.encerrar();
   if (receber) receber.parar('fechado');
   if (terminais) terminais.fecharTodos();

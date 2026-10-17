@@ -4158,6 +4158,76 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('hoje, sem os dois:', JSON.stringify(await pagina.$$eval(`${AG} .ag-item`, (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
   },
 
+  // A Nuvem (com RETRO_NUVEM_FALSA=<pasta>: as contas sem o rclone, a "nuvem" é uma pasta comum):
+  // adicionar o Google Drive (a caixa do login), a conta no Meu computador e na árvore, as pastas dela,
+  // trazer e levar cópias, desconectar, cancelar outro login e remover (os arquivos ficam na nuvem).
+  async nuvem() {
+    const servidor = process.env.RETRO_NUVEM_FALSA;
+    if (!servidor) throw new Error('rode com RETRO_NUVEM_FALSA=<pasta>');
+    await fecharTudo();
+    await abrir('nuvem');
+    await pagina.waitForSelector('.janela.ativa .nv-lista', { timeout: 15000 });
+    await pagina.waitForTimeout(300);
+    await foto('nuvem-vazia');
+    await pagina.click(`.janela.ativa button:has-text("${T('&Adicionar uma conta…')}")`);
+    await pagina.waitForTimeout(300);
+    await foto('nuvem-servicos');
+    await pagina.click('.menu .opcao:has-text("Google Drive")');
+    await pagina.waitForSelector('.janela.dialogo.nv-login, .janela.dialogo .nv-login', { timeout: 5000 });
+    await pagina.waitForTimeout(500);
+    await foto('nuvem-login');
+    await pagina.waitForSelector('.janela:has(.nv-lista) .ag-item:not(.apagado)', { timeout: 15000 });
+    await pagina.waitForTimeout(600);
+    console.log('contas:', JSON.stringify(await pagina.$$eval('.nv-lista .ag-item', (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
+    await foto('nuvem-conectada');
+    const [conta] = await pagina.evaluate(() => retro.nuvem.estado().then((e) => e.contas));
+    const id = `nuvem:${conta.id}`;
+    // O Meu computador, com a conta e a Nuvem.
+    await abrir('explorador', { pasta: '::computador' });
+    await pagina.waitForTimeout(800);
+    console.log('Meu computador:', JSON.stringify(await pagina.$$eval('.janela.ativa .icone .rotulo, .janela.ativa .item .rotulo', (l) => l.map((e) => e.textContent))));
+    await foto('nuvem-computador');
+    await pagina.click(`.janela.ativa .item:has-text("Google Drive")`, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('nuvem-menu-unidade');
+    await pagina.keyboard.press('Escape');
+    await abrir('explorador', { pasta: `::unidade:${encodeURIComponent(id)}` });
+    await pagina.waitForTimeout(800);
+    console.log('na nuvem:', JSON.stringify(await pagina.$$eval('.janela.ativa .rotulo', (l) => l.map((e) => e.textContent))));
+    await foto('nuvem-pasta');
+    // Trazer o Leia-me para Meus documentos e levar uma carta do C: para Documentos da nuvem.
+    const trazidos = await pagina.evaluate((u) => retro.unidades.trazer(u, ['Leia-me.txt'], ''), id);
+    fs.writeFileSync(path.join(disco, 'Carta.txt'), 'Carta para a nuvem.');
+    const levados = await pagina.evaluate((u) => retro.unidades.levar(u, ['Carta.txt'], 'Documentos'), id);
+    console.log('trazido para o C:', JSON.stringify(trazidos.map((f) => f.rel)), fs.existsSync(path.join(disco, 'Leia-me.txt')), '| levado:', levados.length, fs.existsSync(path.join(servidor, conta.id, 'Documentos', 'Carta.txt')));
+    // Desconectar pelo botão direito no fundo da pasta: a janela volta ao Meu computador.
+    const area = await pagina.locator('.janela.ativa .lista-arquivos').boundingBox();
+    await pagina.mouse.click(area.x + area.width - 20, area.y + area.height - 20, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('nuvem-menu-pasta');
+    await pagina.click(`.menu .opcao:has-text("${T('&Desconectar')}")`);
+    await pagina.waitForTimeout(1200);
+    console.log('depois de desconectar, a janela:', JSON.stringify(await pagina.$eval('.janela.ativa .titulo', (e) => e.textContent).catch(() => '?')), '| unidades:', JSON.stringify(await pagina.evaluate(() => retro.nuvem.unidades())));
+    // Outro login, cancelado: nada fica.
+    await abrir('nuvem');
+    await pagina.waitForTimeout(400);
+    await pagina.click(`.janela.ativa button:has-text("${T('&Adicionar uma conta…')}")`);
+    await pagina.click('.menu .opcao:has-text("OneDrive")');
+    await pagina.waitForSelector('.janela.dialogo .nv-login', { timeout: 5000 });
+    await pagina.click(`.janela.dialogo:has(.nv-login) button:has-text("${T('Cancelar')}")`);
+    await pagina.waitForTimeout(2000);
+    console.log('depois de cancelar:', JSON.stringify(await pagina.evaluate(() => retro.nuvem.estado().then((e) => e.contas.map((c) => c.nome)))), '| caixas abertas:', await pagina.locator('.janela.dialogo').count());
+    await foto('nuvem-desconectada');
+    // Remover: a conta sai, e os arquivos continuam na "nuvem".
+    await pagina.click('.janela:has(.nv-lista) .nv-lista .ag-item >> nth=0');
+    await pagina.click(`.janela:has(.nv-lista) button:has-text("${T('&Remover…')}")`);
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await foto('nuvem-remover');
+    await pagina.click(`.janela.dialogo button:has-text("${T('&Sim')}")`);
+    await pagina.waitForTimeout(800);
+    console.log('depois de remover:', JSON.stringify(await pagina.evaluate(() => retro.nuvem.estado().then((e) => e.contas))), '| na nuvem ainda:', JSON.stringify(fs.readdirSync(path.join(servidor, conta.id, 'Documentos'))));
+  },
+
   // Receber do celular (com RETRO_RECEBER_FALSO=1: o servidor no 127.0.0.1, e o roteiro faz o papel
   // do celular): a janela com o código QR, o aparelho aceito, a página do celular, dois arquivos
   // (um com o mesmo nome de outro que já estava lá) e as tentativas com o código errado.

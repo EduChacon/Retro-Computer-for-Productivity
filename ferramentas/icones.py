@@ -1000,6 +1000,47 @@ def celular(tam):
     return [''.join(l) for l in c]
 
 
+def nuvem(tam):
+    """A nuvem (as contas na nuvem do Linux), desenho próprio: quatro bolhas sobre uma base reta, branca
+    e azulada, com o contorno preto, a luz um ponto para dentro em cima e à esquerda e a sombra azul
+    embaixo e à direita."""
+    # Quatro bolhas (o centro e o raio de cada uma) e a base reta entre a primeira e a última.
+    if tam >= 32:
+        bolhas = [(8.0, 20.0, 4.8), (14.0, 15.0, 6.2), (20.5, 13.0, 6.8), (25.5, 19.5, 4.6)]
+        base = (8.0, 19.0, 25.5, 24.8)  # x0, y0, x1, y1
+    else:
+        bolhas = [(4.0, 9.8, 2.8), (7.6, 7.2, 3.4), (11.2, 8.2, 2.9), (13.0, 10.4, 2.0)]
+        base = (4.0, 9.0, 13.0, 12.7)
+
+    def dentro(x, y):
+        if not (0 <= x < tam and 0 <= y < tam):
+            return False
+        px, py = x + 0.5, y + 0.5
+        if any((px - cx) ** 2 + (py - cy) ** 2 <= r * r for cx, cy, r in bolhas):
+            return True
+        return base[0] <= px <= base[2] and base[1] <= py <= base[3]
+
+    pontos = [(x, y) for y in range(tam) for x in range(tam) if dentro(x, y)]
+    y0 = min(y for _, y in pontos)
+    y1 = max(y for _, y in pontos)
+    rampa = [(255, 255, 255), (238, 244, 252), (216, 228, 246), (188, 206, 236), (150, 176, 220)]
+    im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
+    for x, y in pontos:
+        viz = [dentro(x - 1, y), dentro(x + 1, y), dentro(x, y - 1), dentro(x, y + 1)]
+        if not all(viz):
+            im.putpixel((x, y), (0, 0, 0, 255))  # o contorno
+            continue
+        # A luz vem de cima: a rampa desce com a altura; a borda de cima e a da esquerda clareiam,
+        # a de baixo e a da direita escurecem (um ponto para dentro do contorno).
+        i = round((y - y0) / max(1, y1 - y0) * 3)
+        if not dentro(x, y + 2) or not dentro(x + 2, y):
+            i = 4
+        if not dentro(x, y - 2) or not dentro(x - 2, y):
+            i = 0
+        im.putpixel((x, y), rampa[i] + (255,))
+    return im
+
+
 def pessoa(tam):
     """O usuário (os perfis): a cabeça e os ombros, no verde e com a luz do ícone de usuários do SerenityOS."""
     if tam >= 32:
@@ -1665,6 +1706,8 @@ def gerar(serenity):
     feitos[16]['notas'] = grade(NOTAS_16)
     feitos[32]['celular'] = grade(celular(32))
     feitos[16]['celular'] = grade(celular(16))
+    feitos[32]['nuvem'] = nuvem(32)
+    feitos[16]['nuvem'] = nuvem(16)
     feitos[32]['emoji'] = grade(EMOJI_32)
     feitos[16]['emoji'] = grade(EMOJI_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)

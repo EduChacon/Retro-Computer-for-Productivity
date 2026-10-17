@@ -7,6 +7,9 @@
  * As pastas do computador principal (Meu computador › Computador principal: a área de trabalho,
  * os documentos, os downloads…) usam o mesmo caminho, com os ids 'pc:…', e o que ele manda
  * (o "Enviar para" do Windows, o ícone do Dock do Mac) chega em Meus documentos › Recebidos.
+ *
+ * As contas na nuvem conectadas (o Google Drive, o OneDrive e o Dropbox pelo rclone, no Linux) também:
+ * os ids 'nuvem:…', o mesmo ver, trazer e levar; desconectar fica no lugar de remover com segurança.
  */
 import { abrir, abrirArquivo, avisar, pastaDocs, estado } from './sistema.js';
 import { erro } from './dialogos.js';
@@ -22,6 +25,7 @@ const NOMES_FORA = {
 };
 
 export const ehDoComputador = (id) => String(id || '').startsWith('pc:');
+export const ehDaNuvem = (id) => String(id || '').startsWith('nuvem:');
 export const iconeUnidade = (u) => (u && u.icone) || 'removivel';
 
 /** As pastas do computador principal (vazia no modo sistema e para quem as desligou). */
@@ -31,8 +35,16 @@ export async function listarPastasFora() {
   return lista;
 }
 
+/** As contas na nuvem conectadas agora (vazia fora do Linux). */
+export async function listarNuvens() {
+  const lista = await retro.nuvem.unidades().catch(() => []);
+  for (const u of lista) conhecidas.set(u.id, u);
+  return lista;
+}
+
 export function nomeUnidade(u) {
   if (u && u.tipo === 'pc') return NOMES_FORA[u.pasta] ? tr(NOMES_FORA[u.pasta]) : u.pasta;
+  if (u && u.tipo === 'nuvem') return u.rotulo || u.servico;
   if (!u) return tr('Disco removível');
   if (u.rotulo) return u.letra ? `${u.rotulo} (${u.letra})` : u.rotulo;
   return u.letra ? tr('Disco removível ({letra})', { letra: u.letra }) : tr('Disco removível');
@@ -74,7 +86,9 @@ export async function trazerDaUnidade(id, rels, destino = pastaDocs()) {
   } catch (e) {
     erro(ehDoComputador(id)
       ? tr('Não foi possível copiar do computador principal: {erro}', { erro: mensagemDe(e) })
-      : tr('Não foi possível copiar do disco removível: {erro}', { erro: mensagemDe(e) }));
+      : ehDaNuvem(id)
+        ? tr('Não foi possível copiar da nuvem: {erro}', { erro: mensagemDe(e) })
+        : tr('Não foi possível copiar do disco removível: {erro}', { erro: mensagemDe(e) }));
     return [];
   }
 }
@@ -99,12 +113,22 @@ export async function abrirDaUnidade(id, rel) {
   await retro.disco.criarPasta(pastaDocs(), nome).catch(() => { }); // já existe: tudo bem
   const feitos = await trazerDaUnidade(id, [rel], destino);
   if (!feitos.length) return;
-  avisar(ehDoComputador(id) ? tr('Copiado do computador principal') : tr('Copiado do disco removível'), tr('O arquivo foi copiado para {pasta}. Para levar a versão nova de volta, use Enviar para.', { pasta: destino.replace(/\//g, '\\') }), { icone: iconeUnidade(unidadeConhecida(id)), som: null, ms: 8000 });
+  avisar(ehDoComputador(id) ? tr('Copiado do computador principal') : ehDaNuvem(id) ? tr('Copiado da nuvem') : tr('Copiado do disco removível'), tr('O arquivo foi copiado para {pasta}. Para levar a versão nova de volta, use Enviar para.', { pasta: destino.replace(/\//g, '\\') }), { icone: iconeUnidade(unidadeConhecida(id)), som: null, ms: 8000 });
   abrirArquivo(feitos[0].rel);
+}
+
+/** Desconectar uma conta na nuvem (os arquivos ficam lá; ela sai do Meu computador). */
+export async function desconectarNuvem(u) {
+  try {
+    await retro.nuvem.desconectar(String(u.id).replace(/^nuvem:/, ''));
+  } catch (e) {
+    erro(tr('Não foi possível desconectar {unidade}: {erro}', { unidade: nomeUnidade(u), erro: mensagemDe(e) }));
+  }
 }
 
 /** Remover com segurança: depois do "pode tirar", o pendrive sai da lista. */
 export async function ejetarUnidade(u) {
+  if (u && ehDaNuvem(u.id)) return desconectarNuvem(u);
   const r = await retro.unidades.ejetar(u.id).catch((e) => ({ ok: false, erro: e.message }));
   if (r.ok) return avisar(tr('Pode tirar {unidade}', { unidade: nomeUnidade(u) }), tr('O disco removível pode ser retirado com segurança.'), { icone: 'removivel' });
   erro(r.ocupado
@@ -133,6 +157,19 @@ retro.computador.aoReceber(({ pasta, rels = [], doDisco = [], erro: falha }) => 
   }
   // O que já estava no disco C: só é mostrado.
   if (doDisco.length) abrir('explorador', { pasta: paiDe(doDisco[0]), selecionar: doDisco[0] });
+});
+
+/* As contas na nuvem: as janelas do Meu computador se atualizam, e a conexão que cai é avisada. */
+let antesNuvem = new Map();
+retro.nuvem.aoMudar((lista) => {
+  for (const c of lista || []) {
+    const antes = antesNuvem.get(c.id);
+    if (antes === 'conectada' && c.estado === 'desconectada' && c.erro === 'caiu') {
+      avisar(tr('A conexão com {nome} caiu', { nome: c.nome }), tr('Abra a Nuvem para conectar de novo.'), { icone: 'nuvem', aoClicar: () => abrir('nuvem') });
+    }
+  }
+  antesNuvem = new Map((lista || []).map((c) => [c.id, c.estado]));
+  document.dispatchEvent(new CustomEvent('retro-nuvem', { detail: lista || [] }));
 });
 
 /* O aviso de quando um pendrive chega, e a atualização das janelas do Meu computador. */

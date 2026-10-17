@@ -19,7 +19,7 @@ import { erro, confirmar, propriedades, mensagem } from '../dialogos.js';
 import { esvaziarLixeira } from '../mesa.js';
 import { tocar } from '../sons.js';
 import { tr, marcar } from '../idioma.js';
-import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos, listarPastasFora, ehDoComputador, iconeUnidade } from '../unidades.js';
+import { nomeUnidade, pastaDaUnidade, lerPastaUnidade, unidadeConhecida, listarUnidades, levarParaUnidade, trazerDaUnidade, abrirDaUnidade, ejetarUnidade, avisarTrazidos, listarPastasFora, ehDoComputador, iconeUnidade, listarNuvens, ehDaNuvem, desconectarNuvem } from '../unidades.js';
 import { pastaDoZip, lerPastaZip, itensDoZip, extrairEMostrar, abrirDoZip } from '../compactados.js';
 import { Arvore } from '../arvore.js';
 import { PainelVisualizacao } from '../visualizar.js';
@@ -176,10 +176,18 @@ class Explorador {
     const aoMudarUnidades = (e) => {
       const un = lerPastaUnidade(this.pasta);
       if (this.pasta === '::computador') this.carregar();
-      else if (un && !ehDoComputador(un.id) && !e.detail.some((u) => u.id === un.id)) this.navegar('::computador');
+      else if (un && !ehDoComputador(un.id) && !ehDaNuvem(un.id) && !e.detail.some((u) => u.id === un.id)) this.navegar('::computador');
       if (this.comArvore) this.arvore.recarregar('::computador');
     };
     document.addEventListener('retro-unidades', aoMudarUnidades);
+    // Uma conta na nuvem conectada ou desconectada: o mesmo (a janela da desconectada volta ao Meu computador).
+    const aoMudarNuvem = (e) => {
+      const un = lerPastaUnidade(this.pasta);
+      if (this.pasta === '::computador') this.carregar();
+      else if (un && ehDaNuvem(un.id) && !e.detail.some((c) => `nuvem:${c.id}` === un.id && c.estado === 'conectada')) this.navegar('::computador');
+      if (this.comArvore) this.arvore.recarregar('::computador');
+    };
+    document.addEventListener('retro-nuvem', aoMudarNuvem);
     // Uma cópia levada para a unidade (ou a pasta do computador principal) desta janela: a lista se refaz.
     const aoCopiarUnidade = (e) => { const un = lerPastaUnidade(this.pasta); if (un && un.id === e.detail.id) this.carregar(); };
     document.addEventListener('retro-unidade-copiou', aoCopiarUnidade);
@@ -196,6 +204,7 @@ class Explorador {
       document.removeEventListener('retro-fora-mudou', aoMudarFora);
       document.removeEventListener('retro-unidade-copiou', aoCopiarUnidade);
       document.removeEventListener('retro-unidades', aoMudarUnidades);
+      document.removeEventListener('retro-nuvem', aoMudarNuvem);
       document.removeEventListener('retro-acesso', aoMudarAcesso);
       clearTimeout(this.esperaVis);
       this.vis.limpar();
@@ -650,6 +659,17 @@ class Explorador {
         dica: u.total ? tr('Espaço livre: {livre}\nCapacidade: {total}', { livre: tamanho(u.livre), total: tamanho(u.total) }) : tr('Disco removível'),
         colunas: ['', tr('Disco removível'), ''],
       })),
+      // As contas na nuvem conectadas (Linux) e a Nuvem, que as conecta.
+      ...(await listarNuvens()).map((u) => ({
+        chave: 'unidade:' + u.id, rotulo: nomeUnidade(u), icone: 'nuvem', unidadeRaiz: u, arrastavel: false, alvo: pastaDaUnidade(u.id),
+        especial: () => this.navegar(pastaDaUnidade(u.id)),
+        dica: u.total ? tr('{servico}\nEspaço livre: {livre}\nCapacidade: {total}', { servico: u.servico, livre: tamanho(u.livre), total: tamanho(u.total) }) : u.servico,
+        colunas: ['', u.servico, ''],
+      })),
+      ...(estado.config.plataforma === 'linux' ? [{
+        chave: 'nuvem', rotulo: tr('Nuvem'), icone: 'nuvem', arrastavel: false, especial: () => abrir('nuvem'),
+        dica: tr('Conectar o Google Drive, o OneDrive e o Dropbox'), colunas: ['', tr('Programa do sistema'), ''],
+      }] : []),
       // As pastas do computador principal (fora do modo sistema).
       ...((await listarPastasFora()).length ? [{
         chave: 'fora', rotulo: tr('Computador principal'), icone: 'rede', arrastavel: false, especial: () => this.navegar('::fora'),
@@ -799,7 +819,10 @@ class Explorador {
       }
       if (it.chave === 'lixeira') itens.push({ rotulo: tr('&Esvaziar Lixeira'), acao: esvaziarLixeira });
       if (it.chave === 'disco') itens.push({ rotulo: tr('Verificar com o antivír&us'), icone: 'seguranca', acao: () => abrir('antivirus', { alvo: { tipo: 'disco', rel: '' } }) });
-      if (it.unidadeRaiz) {
+      if (it.unidadeRaiz && ehDaNuvem(it.unidadeRaiz.id)) {
+        const u = it.unidadeRaiz;
+        itens.push({ separador: true }, { rotulo: tr('&Desconectar'), acao: () => desconectarNuvem(u) }, { rotulo: tr('&Nuvem…'), icone: 'nuvem', acao: () => abrir('nuvem') });
+      } else if (it.unidadeRaiz) {
         const u = it.unidadeRaiz;
         itens.push({ separador: true },
           { rotulo: tr('Verificar com o antivír&us'), icone: 'seguranca', desativado: !u.montada && !u.raiz, acao: () => abrir('antivirus', { alvo: { tipo: 'unidade', id: u.id, rel: '', nome: nomeUnidade(u) } }) },
@@ -826,7 +849,9 @@ class Explorador {
           { separador: true },
           doComputador
             ? { rotulo: tr('&Mostrar no computador principal'), acao: () => retro.computador.mostrar(un.id, un.rel).catch((e) => erro(e.message)) }
-            : { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(u) },
+            : ehDaNuvem(un.id)
+              ? { rotulo: tr('&Desconectar'), acao: () => desconectarNuvem(u || { id: un.id }) }
+              : { rotulo: tr('Remover com &segurança'), acao: () => ejetarUnidade(u) },
         ], pos);
       }
       const rels = sel.map((s) => s.unidade.rel);

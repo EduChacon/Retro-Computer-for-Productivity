@@ -166,6 +166,22 @@ contextBridge.exposeInMainWorld('retro', {
     mudar: (id, parte) => chamar('calendarios:mudar', id, parte),
     remover: (id) => chamar('calendarios:remover', id),
   },
+  // As contas na nuvem do Linux (nuvem.js): o rclone, as contas, conectar e desconectar.
+  nuvem: {
+    estado: () => chamar('nuvem:estado'),
+    instalar: (senha) => chamar('nuvem:instalar', senha),
+    adicionar: (tipo) => chamar('nuvem:adicionar', tipo),
+    abrirLogin: () => chamar('nuvem:abrirLogin'),
+    cancelar: () => chamar('nuvem:cancelar'),
+    conectar: (id) => chamar('nuvem:conectar', id),
+    desconectar: (id) => chamar('nuvem:desconectar', id),
+    renomear: (id, nome) => chamar('nuvem:renomear', id, nome),
+    mudar: (id, parte) => chamar('nuvem:mudar', id, parte),
+    remover: (id) => chamar('nuvem:remover', id),
+    unidades: () => chamar('nuvem:unidades'),
+    aoMudar: ouvir('nuvem:mudou'),
+    aoAutorizar: ouvir('nuvem:autorizar'),
+  },
   // O histórico da área de transferência (só na memória do processo principal).
   transferencia: {
     listar: () => chamar('transferencia:listar'),

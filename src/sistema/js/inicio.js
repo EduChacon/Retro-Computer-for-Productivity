@@ -56,6 +56,7 @@ registrarPreguicoso({ diario: { nome: 'Diário de trabalho', icone: 'diario' } }
 // A Agenda abre os .ics pelo tipo já antes de carregar (os lembretes ficam em agenda.js, desde o início).
 registrarPreguicoso({ agenda: { nome: 'Agenda', icone: 'calendario', tipos: ['ics'] } }, () => import('./apps/agenda.js'));
 registrarPreguicoso({ discos: { nome: 'Discos', icone: 'discos' } }, () => import('./apps/discos.js'));
+registrarPreguicoso({ nuvem: { nome: 'Nuvem', icone: 'nuvem' } }, () => import('./apps/nuvem.js'));
 registrarPreguicoso({ pdf: { nome: 'Ferramentas de PDF', icone: 'pdf' } }, () => import('./apps/pdf.js'));
 registrarPreguicoso({ ocr: { nome: 'Copiar o texto', icone: 'texto' } }, () => import('./apps/ocr.js'));
 registrarPreguicoso({ scanner: { nome: 'Digitalizar', icone: 'scanner' } }, () => import('./apps/scanner.js'));

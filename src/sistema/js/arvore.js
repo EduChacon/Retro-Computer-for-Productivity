@@ -5,7 +5,7 @@
  */
 import { h, img, paiDe } from './util.js';
 import { pastaDocs, pastaMesa, iconeDaPasta } from './sistema.js';
-import { listarUnidades, nomeUnidade, pastaDaUnidade, lerPastaUnidade, listarPastasFora, ehDoComputador, iconeUnidade } from './unidades.js';
+import { listarUnidades, nomeUnidade, pastaDaUnidade, lerPastaUnidade, listarPastasFora, ehDoComputador, iconeUnidade, listarNuvens } from './unidades.js';
 import { lerPastaZip } from './compactados.js';
 import { tr } from './idioma.js';
 import { fixadas } from './acesso.js';
@@ -70,12 +70,13 @@ export class Arvore {
       return (await listarPastasFora()).map((u) => ({ pasta: pastaDaUnidade(u.id), rotulo: nomeUnidade(u), icone: iconeUnidade(u), temFilhos: true }));
     }
     if (pasta === '::computador') {
-      const [unidades, fora] = await Promise.all([listarUnidades(), listarPastasFora()]);
+      const [unidades, fora, nuvens] = await Promise.all([listarUnidades(), listarPastasFora(), listarNuvens()]);
       return [
         { pasta: '', rotulo: tr('Disco local (C:)'), icone: 'disco', temFilhos: true },
         { pasta: pastaDocs(), rotulo: tr('Meus documentos'), icone: 'documentos', temFilhos: true, atalho: true },
         { pasta: pastaMesa(), rotulo: pastaMesa(), icone: 'pasta-mesa', temFilhos: true, atalho: true },
         ...unidades.filter((u) => u.montada).map((u) => ({ pasta: pastaDaUnidade(u.id), rotulo: nomeUnidade(u), icone: 'removivel', temFilhos: true })),
+        ...nuvens.map((u) => ({ pasta: pastaDaUnidade(u.id), rotulo: nomeUnidade(u), icone: 'nuvem', temFilhos: true })),
         ...(fora.length ? [{ pasta: '::fora', rotulo: tr('Computador principal'), icone: 'rede', temFilhos: true }] : []),
         { pasta: '::lixeira', rotulo: tr('Lixeira'), icone: 'lixeira', temFilhos: false },
       ];

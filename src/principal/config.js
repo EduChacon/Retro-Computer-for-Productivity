@@ -25,6 +25,8 @@ const PADRAO = {
   // A Agenda: os lembretes já descartados e os calendários da internet ({ id, url, nome, lembretes,
   // ligado, ultima, erro }; a lista só muda por calendarios.js, e a área de trabalho não vê o url).
   agenda: { vistos: [], calendarios: [] },
+  // As contas na nuvem do Linux (nuvem.js): { id, tipo, nome, aoLigar }; as chaves ficam no rclone.conf.
+  nuvem: { contas: [] },
   // O corretor ortográfico (ortografia.js): ligado, com os idiomas escolhidos (vazio: o da interface).
   ortografia: { ligada: true, idiomas: [] },
   sons: true,

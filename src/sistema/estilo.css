@@ -1982,3 +1982,13 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 .rec-item { display: flex; align-items: center; gap: 6px; padding: 1px 3px; white-space: nowrap; }
 .rec-item span:first-of-type { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
 .rec-tam { color: var(--texto-meio); }
+
+/* A Nuvem (as contas do Google Drive, do OneDrive e do Dropbox pelo rclone). */
+.nv-corpo { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.nv-topo { display: flex; gap: 10px; align-items: flex-start; line-height: 13px; }
+.nv-topo > img { flex: none; }
+.nv-aviso { line-height: 13px; }
+.nv-lista { flex: 1 1 auto; min-height: 80px; }
+.nv-lista .ag-item { align-items: center; }
+.nv-opcao { display: flex; align-items: center; gap: 4px; }
+.nv-login { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
