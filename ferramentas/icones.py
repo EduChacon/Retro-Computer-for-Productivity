@@ -1245,6 +1245,12 @@ def sem_papeis(im):
                     break
     for x, y in contorno:
         px[x, y] = sombra
+    # 4. Na parte de cima (a que perdeu os papéis), o ponto claro que ficou na borda de fora vira contorno.
+    for y in range(int(fre[1]) + 1):
+        for x in range(w):
+            if px[x, y][3] and sum(px[x, y][:3]) > 500 and any(
+                    not (0 <= x + dx < w and 0 <= y + dy < h) or px[x + dx, y + dy][3] == 0 for dx, dy in ((1, 0), (-1, 0), (0, -1))):
+                px[x, y] = sombra
     return im
 
 
@@ -1290,6 +1296,11 @@ def gerar(serenity):
     folha32 = abrir_serenity(serenity, 16, 'filetype-text')
     feitos[32]['documentos'] = colar(feitos[32]['pasta'], folha32, 13, 9)
     feitos[16]['documentos'] = colar(feitos[16]['pasta'], abrir_serenity(serenity, 16, 'filetype-text').resize((10, 10), Image.NEAREST), 6, 5)
+    # A folha não cobre o contorno preto de baixo da pasta.
+    for x in range(16):
+        c = feitos[16]['pasta'].getpixel((x, 13))
+        if c[3] and sum(c[:3]) < 100:
+            feitos[16]['documentos'].putpixel((x, 13), c)
 
     # A pasta Programas do menu Iniciar: a pasta com uma janelinha.
     janela16 = abrir_serenity(serenity, 16, 'window')
