@@ -1247,6 +1247,71 @@ def removivel(t):
     return s
 
 
+def caixa_programas(t):
+    """A Loja de programas: a caixa de papelão aberta, de três quartos, com as abas para fora e o
+    disquete cinza saindo dela (como os instaladores da época), e a etiqueta na frente. A frente é
+    clara, o lado é médio e o fundo da caixa, por dentro, é escuro."""
+    s = Tela(t)
+    creme = cor('f2d6a8')  # o lado de dentro das abas, com a luz
+
+    def lado(x0, x1, alto, baixo, k):
+        # O lado direito, coluna a coluna, subindo com a profundidade.
+        for x in range(x0, x1 + 1):
+            d = (x - x0) * k
+            s.vlinha(x, round(alto - d), round(baixo - d), MARROM)
+
+    if t == 32:
+        s.poligono([(9, 13), (29, 13), (31, 6), (12, 6)], creme)  # a aba de trás
+        s.poligono([(3, 17), (10, 12), (6, 8), (0, 13)], creme)  # a aba da esquerda
+        s.poligono([(3, 17), (10, 12), (29, 12), (22, 17)], MARROM2)  # o fundo, por dentro
+        s.ret(10, 2, 21, 15, C7)  # o disquete
+        s.ret(3, 16, 22, 29, MARROM3)  # a frente
+        lado(22, 28, 16, 29, 4 / 6)
+        s.contorno()
+        # As arestas de cima, o disquete por cima delas e as da frente.
+        s.linha(3, 16, 9, 12, K)
+        s.hlinha(9, 28, 12, K)
+        s.linha(22, 16, 28, 12, K)
+        s.ret(10, 2, 21, 15, K)
+        s.ret(11, 3, 20, 15, C7)
+        s.ret(13, 3, 18, 7, C3)  # a janela de metal
+        s.relevo(13, 3, 18, 7, BR, C5)
+        s.ret(16, 4, 17, 6, C7)
+        s.ret(12, 10, 19, 15, BR)  # a etiqueta do disquete
+        s.hlinha(13, 18, 12, C4)
+        s.hlinha(13, 18, 14, C4)
+        s.hlinha(3, 22, 16, K)
+        s.vlinha(22, 16, 29, K)
+        s.relevo(4, 17, 21, 28, creme, MARROM)
+        # A fita que fecha a caixa e a etiqueta de papel.
+        s.ret(15, 17, 17, 27, creme)
+        s.ret(6, 20, 12, 25, BR)
+        s.relevo(6, 20, 12, 25, BR, C4)
+        s.hlinha(7, 11, 22, C5)
+        s.hlinha(7, 10, 24, C5)
+    else:
+        # No pequeno, ponto a ponto: sem a aba da esquerda, que viraria pontos soltos.
+        s.grade(0, 0, [
+            '................',
+            '....KKKKKKK.....',
+            '....KABBBAK.....',
+            '....KABBBAKKKK..',
+            '....KAAAAAKcccK.',
+            '....KWWWWWKccK..',
+            '..KKKWWWWWKKKKK.',
+            '.KEEKWWWWWKEEEK.',
+            'KKKKKKKKKKKFFFK.',
+            'KcccccccccKFFFK.',
+            'KcWWWWGGGFKFFFK.',
+            'KcWDDWGGGFKFFFK.',
+            'KcWWWWGGGFKFFK..',
+            'KcGGGGGGGFKFFK..',
+            'KFFFFFFFFFKFK...',
+            'KKKKKKKKKKKK....',
+        ], {'K': K, 'A': C7, 'B': C3, 'W': BR, 'D': C5, 'c': creme, 'G': MARROM3, 'F': MARROM, 'E': MARROM2})
+    return s
+
+
 def relogio(t):
     """O relógio: o mostrador branco com a moldura cinza e os ponteiros."""
     s = Tela(t)
@@ -1323,6 +1388,7 @@ ICONES = {
     'desligar': desligar,
     'claude': assistente,
     'relogio': relogio,
+    'programas-caixa': caixa_programas,
 }
 
 
