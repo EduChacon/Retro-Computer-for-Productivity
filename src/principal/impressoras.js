@@ -141,7 +141,27 @@ class Impressoras {
       w.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
     });
   }
+
+  /**
+   * O PDF de um HTML pronto para o papel (o mesmo da impressão), sem impressora nenhuma: o
+   * "Salvar como PDF" dos programas. As margens são as do @page da página.
+   */
+  pdfDeHtml(html, { pagina = 'A4' } = {}) {
+    return new Promise((resolve, reject) => {
+      const w = new this.BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true, javascript: false } });
+      const fim = () => { if (!w.isDestroyed()) w.destroy(); };
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.printToPDF({ printBackground: true, pageSize: pagina, margins: { top: 0, bottom: 0, left: 0, right: 0 } })
+          .then((dados) => { fim(); resolve(dados); }, (e) => { fim(); reject(e); });
+      });
+      w.webContents.once('did-fail-load', () => { fim(); reject(new Error('carregar')); });
+      w.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+    });
+  }
 }
+
+/** O tamanho do papel do país (o Carta nos Estados Unidos, no Canadá e no México; o A4 nos outros). */
+const papelDoPais = (pais) => (['US', 'CA', 'MX'].includes(String(pais || '').toUpperCase()) ? 'Letter' : 'A4');
 
 /** Para os testes e as capturas (RETRO_IMPRESSORAS_FALSAS=1): duas impressoras e uma fila. */
 class ImpressorasFalsas extends Impressoras {
@@ -170,4 +190,4 @@ class ImpressorasFalsas extends Impressoras {
   async imprimirHtml(html, o = {}) { this.impressos.push({ html, ...o }); return { ok: true, falso: true }; }
 }
 
-module.exports = { Impressoras, ImpressorasFalsas, lerFila, resumo, situacao, nomeValido };
+module.exports = { Impressoras, ImpressorasFalsas, lerFila, resumo, situacao, nomeValido, papelDoPais };

@@ -52,6 +52,7 @@ class Bloco {
           { rotulo: tr('Salvar &como…'), acao: () => this.salvar(true) },
           { separador: true },
           { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', acao: () => this.imprimir() },
+          { rotulo: tr('Salvar como P&DF…'), acao: () => this.salvarPdf() },
           { separador: true },
           { rotulo: tr('Sai&r'), acao: () => this.j.fechar() },
         ],
@@ -102,6 +103,11 @@ class Bloco {
   async imprimir() {
     const { imprimirTexto } = await import('../impressao.js');
     imprimirTexto(this.rel ? nomeDe(this.rel) : tr('Sem título'), this.texto.value, { fixa: this.fixa });
+  }
+
+  async salvarPdf() {
+    const { pdfDoTexto } = await import('../impressao.js');
+    pdfDoTexto(this.rel ? nomeDe(this.rel) : tr('Sem título'), this.texto.value, { fixa: this.fixa, perto: this.rel || '' });
   }
 
   marcarSujo(v) {

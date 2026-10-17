@@ -3551,6 +3551,70 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('impresso:', await app.evaluate(() => 'ok'));
   },
 
+  // O Salvar como PDF, sem impressora: o Bloco de notas (o menu, a caixa e o aviso), o Visualizador de
+  // imagens e uma página do Navegador. Cada PDF é conferido no disco C: (o cabeçalho e as páginas).
+  async pdf() {
+    const pdfs = path.join(disco, DOCS);
+    const conferirPdf = async (nome) => {
+      const arq = path.join(pdfs, nome);
+      for (let i = 0; i < 150 && !fs.existsSync(arq); i++) await pagina.waitForTimeout(200);
+      if (!fs.existsSync(arq)) return console.log('PDF:', nome, '— não foi gravado; na pasta:', fs.readdirSync(pdfs).join(', '));
+      const b = fs.readFileSync(arq);
+      console.log('PDF:', nome, b.length, 'bytes, cabeçalho', JSON.stringify(b.subarray(0, 5).toString('latin1')), 'páginas', (b.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length);
+      try { execFileSync('pdftoppm', ['-png', '-r', '40', '-f', '1', '-l', '1', arq, path.join(SAIDA, 'pdf-' + path.parse(nome).name.replace(/\W+/g, '-'))]); } catch { }
+    };
+    const menuArquivo = async () => {
+      await pagina.click(`.janela.ativa .menubar > div:has-text("${T('&Arquivo')}")`);
+      await pagina.waitForTimeout(300);
+    };
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.type('Relatório do mês\n\nAs vendas cresceram 12% em outubro. Ação, coração, pão e açúcar.');
+    await menuArquivo();
+    await foto('pdf-menu-bloco');
+    await pagina.click(`.menu .opcao:has-text("${T('Salvar como P&DF…')}")`);
+    await pagina.waitForSelector('#camada-modal .janela', { timeout: 10000 });
+    await pagina.waitForTimeout(400);
+    await foto('pdf-salvar-como');
+    await pagina.keyboard.press('Enter');
+    await conferirPdf(T('Sem título') + '.pdf');
+    await pagina.waitForTimeout(800);
+    await foto('pdf-aviso');
+    // O Visualizador de imagens (uma imagem feita pelo ffmpeg, se houver).
+    const foto1 = path.join(pdfs, 'Paisagem.png');
+    try { execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'mandelbrot=size=800x500', '-frames:v', '1', foto1]); } catch { }
+    if (fs.existsSync(foto1)) {
+      await fecharTudo();
+      await abrir('imagens', { arquivo: `${DOCS}/Paisagem.png` });
+      await pagina.waitForTimeout(1000);
+      await menuArquivo();
+      await pagina.click(`.menu .opcao:has-text("${T('Salvar como P&DF…')}")`);
+      await pagina.waitForSelector('#camada-modal .janela', { timeout: 10000 });
+      await pagina.keyboard.press('Enter');
+      await conferirPdf('Paisagem.pdf');
+    }
+    // Uma página do Navegador (de um servidor local), com o título como nome sugerido.
+    const servidor = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<!doctype html><meta charset="utf-8"><title>Orçamento: 2026/27</title><body style="font:16px sans-serif;background:#eef"><h1>Orçamento da casa</h1><p>Uma página da internet salva como PDF.</p></body>');
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    servidor.unref();
+    await fecharTudo();
+    await abrir('navegador', { url: `http://127.0.0.1:${servidor.address().port}/`, interno: true });
+    await pagina.waitForTimeout(3000);
+    await menuArquivo();
+    await pagina.click(`.menu .opcao:has-text("${T('Salvar como P&DF…')}")`);
+    await pagina.waitForSelector('#camada-modal .janela', { timeout: 10000 });
+    await pagina.waitForTimeout(400);
+    console.log('nome sugerido:', await pagina.inputValue('#camada-modal .janela input[type=text]'));
+    await foto('pdf-navegador');
+    await pagina.keyboard.press('Enter');
+    await conferirPdf('Orçamento 2026 27.pdf');
+    servidor.close();
+  },
+
   // O Bluetooth (com RETRO_BLUETOOTH_FALSO=1): a bandeja, o Painel, procurar e parear um teclado.
   async bluetooth() {
     await fecharTudo();

@@ -11,7 +11,7 @@ import { zoomInterface, fundoCss, FUNDO_INICIO } from '../aparencia.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, avisar, eventos, abrir } from '../sistema.js';
-import { entrada, confirmar, mensagem, ajustarAoConteudo } from '../dialogos.js';
+import { entrada, confirmar, mensagem, ajustarAoConteudo, erro } from '../dialogos.js';
 import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
 import { luzPorCima } from '../luz-noturna.js';
@@ -400,6 +400,22 @@ class Navegador {
 
   // O estado da aba da frente (os nomes de antes, usados em todo o resto).
   get wv() { return this.aba ? this.aba.wv : null; }
+
+  /** Salvar como PDF a página aberta, no disco C: (o PDF do próprio Chromium, com o fundo da página). */
+  async salvarPdf() {
+    if (!this.visivel()) return;
+    let id;
+    try { id = this.wv.getWebContentsId(); } catch { return; }
+    const { escolherPdf, avisarPdf } = await import('../impressao.js');
+    const rel = await escolherPdf(this.wv.getTitle() || this.url || tr('Sem título'));
+    if (!rel) return;
+    try {
+      await retro.navegador.pdf(id, rel);
+      avisarPdf(rel);
+    } catch (e) {
+      erro(tr('Não foi possível salvar o PDF: {erro}', { erro: e.message }));
+    }
+  }
   get url() { return this.aba ? this.aba.url : ''; }
   get pronto() { return !!(this.aba && this.aba.pronto); }
   get carregando() { return !!(this.aba && this.aba.carregando); }
@@ -420,6 +436,7 @@ class Navegador {
           ...(firefoxInstalado ? [{ rotulo: tr('Abrir no Fi&refox'), desativado: !this.visivel(), acao: () => abrirNoFirefox(this.url) }] : []),
           { separador: true },
           { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.visivel(), acao: () => this.wv.print().catch(() => { }) },
+          { rotulo: tr('Salvar como P&DF…'), desativado: !this.visivel(), acao: () => this.salvarPdf() },
           { separador: true },
           { rotulo: tr('F&echar a aba'), atalho: 'Ctrl+W', acao: () => this.fecharAba(this.aba) },
           { rotulo: tr('&Fechar'), atalho: 'Alt+F4', acao: () => this.j.fechar() },
@@ -486,6 +503,7 @@ class Navegador {
           { rotulo: tr('A&tualizar'), atalho: 'F5', acao: () => this.atualizar() },
           { separador: true },
           { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.visivel(), acao: () => this.wv.print().catch(() => { }) },
+          { rotulo: tr('Salvar como &PDF…'), desativado: !this.visivel(), acao: () => this.salvarPdf() },
           { rotulo: tr('Locali&zar nesta página…'), atalho: 'Ctrl+F', desativado: !this.visivel(), acao: () => this.localizar(true) },
           { separador: true },
           { rotulo: tr('&Copiar o endereço'), desativado: !this.url, acao: () => navigator.clipboard.writeText(this.url).catch(() => { }) },

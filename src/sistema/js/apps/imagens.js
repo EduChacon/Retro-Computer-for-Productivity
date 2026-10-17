@@ -96,6 +96,7 @@ class Visualizador {
           { rotulo: tr('Abrir c&om'), desativado: !this.rel, sub: () => this.itensAbrirCom() },
           { separador: true },
           { rotulo: tr('&Imprimir…'), atalho: 'Ctrl+P', desativado: !this.natural.w, acao: () => this.imprimir() },
+          { rotulo: tr('Salvar como P&DF…'), desativado: !this.natural.w, acao: () => this.imprimir(true) },
           { rotulo: tr('&Excluir'), atalho: 'Del', desativado: !this.rel, acao: () => this.excluir() },
           { rotulo: tr('&Propriedades'), desativado: !this.rel, acao: () => propriedades(this.rel) },
           { separador: true },
@@ -291,8 +292,8 @@ class Visualizador {
     this.mostrar(resto[Math.min(i, resto.length - 1)]);
   }
 
-  /** Imprime a imagem como está na tela (com o giro). */
-  async imprimir() {
+  /** Imprime a imagem (ou, com pdf, a salva como PDF no disco C:), girada como está na tela. */
+  async imprimir(pdf = false) {
     if (!this.natural.w) return;
     const c = document.createElement('canvas');
     const deitada = this.giro % 180 !== 0;
@@ -302,8 +303,9 @@ class Visualizador {
     g.translate(c.width / 2, c.height / 2);
     g.rotate((this.giro * Math.PI) / 180);
     g.drawImage(this.imagem, -this.natural.w / 2, -this.natural.h / 2, this.natural.w, this.natural.h);
-    const { imprimirImagem } = await import('../impressao.js');
-    imprimirImagem(nomeDe(this.rel), c.toDataURL('image/png'));
+    const { imprimirImagem, pdfDaImagem } = await import('../impressao.js');
+    if (pdf) pdfDaImagem(nomeDe(this.rel), c.toDataURL('image/png'), { perto: this.rel });
+    else imprimirImagem(nomeDe(this.rel), c.toDataURL('image/png'));
   }
 
   async copiar() {

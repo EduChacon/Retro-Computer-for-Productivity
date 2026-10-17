@@ -22,3 +22,13 @@ test('impressoras: só nomes simples vão para os comandos do sistema', async ()
   assert.deepStrictEqual(await i.definirPadrao('a b'), { ok: false, erro: 'nome' });
   assert.deepStrictEqual(await i.cancelar('x; rm'), { ok: false, erro: 'id' });
 });
+
+test('impressoras: o papel do Salvar como PDF segue o país (Carta nas Américas do Norte)', () => {
+  assert.strictEqual(imp.papelDoPais('US'), 'Letter');
+  assert.strictEqual(imp.papelDoPais('ca'), 'Letter');
+  assert.strictEqual(imp.papelDoPais('MX'), 'Letter');
+  assert.strictEqual(imp.papelDoPais('BR'), 'A4');
+  assert.strictEqual(imp.papelDoPais('ES'), 'A4');
+  assert.strictEqual(imp.papelDoPais(''), 'A4');
+  assert.strictEqual(imp.papelDoPais(undefined), 'A4');
+});

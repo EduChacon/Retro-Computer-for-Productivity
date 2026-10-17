@@ -206,6 +206,7 @@ contextBridge.exposeInMainWorld('retro', {
     cancelar: (id) => chamar('impressoras:cancelar', id),
     adicionar: () => chamar('impressoras:adicionar'),
     imprimir: (html, o) => chamar('impressoras:imprimir', html, o),
+    pdf: (html, rel) => chamar('impressoras:pdf', html, rel),
   },
   monitor: {
     amostra: () => chamar('monitor:amostra'),
@@ -394,6 +395,7 @@ contextBridge.exposeInMainWorld('retro', {
   },
   navegador: {
     aoJanela: ouvir('navegador:janela'),
+    pdf: (id, rel) => chamar('navegador:pdf', id, rel),
     limparDados: () => chamar('navegador:limparDados'),
     semSeguranca: (url) => chamar('navegador:semSeguranca', url),
     abrirSemSeguranca: (url) => chamar('navegador:abrirSemSeguranca', url),

@@ -34,7 +34,7 @@ const { Discos, DiscosFalsos } = require('./discos');
 const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
-const { Impressoras, ImpressorasFalsas } = require('./impressoras');
+const { Impressoras, ImpressorasFalsas, papelDoPais } = require('./impressoras');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
@@ -1841,6 +1841,21 @@ function registrarPonte() {
   tratar('impressoras:cancelar', (id) => impressoras.cancelar(String(id)));
   tratar('impressoras:adicionar', () => impressoras.adicionar());
   tratar('impressoras:imprimir', (html, o) => impressoras.imprimirHtml(String(html), o || {}));
+  // Salvar como PDF: a página da impressão (o Bloco de notas, o Visualizador) ou a página do
+  // Navegador vira um PDF no disco C: (com a versão de antes guardada, como sempre).
+  const destinoPdf = (rel) => {
+    const n = disco.normalizar(String(rel || ''));
+    if (!/\.pdf$/i.test(n)) throw new Error(tr('O nome do arquivo precisa terminar em .pdf.'));
+    return n;
+  };
+  const papel = () => papelDoPais(app.getLocaleCountryCode());
+  tratar('impressoras:pdf', async (html, rel) => disco.gravar(destinoPdf(rel), await impressoras.pdfDeHtml(String(html), { pagina: papel() })));
+  tratar('navegador:pdf', async (id, rel) => {
+    // Só uma página do Navegador desta janela (um webview dela), nunca outra coisa do Electron.
+    const wc = webContents.fromId(Number(id));
+    if (!wc || wc.isDestroyed() || wc.getType() !== 'webview' || !janela || wc.hostWebContents !== janela.webContents) throw new Error(tr('A página não está mais aberta.'));
+    return disco.gravar(destinoPdf(rel), await wc.printToPDF({ printBackground: true, pageSize: papel() }));
+  });
   // O Bluetooth (no Linux, pelo bluetoothctl; no Windows e no macOS, as configurações do sistema).
   const bluetooth = new (process.env.RETRO_BLUETOOTH_FALSO ? BluetoothFalso : Bluetooth)({ aoPergunta: (p) => enviar('bluetooth:pergunta', p) });
   tratar('bluetooth:estado', () => bluetooth.estado());

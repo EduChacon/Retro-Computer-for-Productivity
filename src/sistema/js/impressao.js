@@ -1,10 +1,13 @@
 /*
  * Imprimir pelos programas do Retro Computer: o texto (Bloco de notas) e a imagem
  * (Visualizador de imagens) viram uma página HTML pronta para o papel, e o sistema mostra a
- * caixa de impressão (escolher a impressora, as cópias e as páginas).
+ * caixa de impressão (escolher a impressora, as cópias e as páginas). A mesma página também vira um
+ * PDF no disco C: (Salvar como PDF), sem impressora nenhuma, nos três sistemas.
  */
-import { erro } from './dialogos.js';
+import { caixaArquivo, erro } from './dialogos.js';
 import { tr } from './idioma.js';
+import { nomeDe, paiDe, semExtensao } from './util.js';
+import { abrirArquivo, avisar, pastaDocs } from './sistema.js';
 
 const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -25,16 +28,62 @@ async function enviar(html, titulo, dispositivo) {
   return r;
 }
 
+/**
+ * A caixa Salvar como, para um PDF: o nome sugerido é o do documento, na pasta dele (ou em Meus
+ * documentos). Devolve o caminho no disco C:, sempre terminado em .pdf, ou null.
+ */
+export async function escolherPdf(titulo, perto = '') {
+  // O título de uma página da internet pode ter caracteres que não cabem num nome de arquivo.
+  const base = semExtensao(String(titulo || '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100)) || tr('Sem título');
+  const rel = await caixaArquivo({
+    modo: 'salvar', titulo: tr('Salvar como PDF'), pasta: (perto && paiDe(perto)) || pastaDocs(),
+    nome: base + '.pdf', tipos: [{ rotulo: tr('Documento PDF (*.pdf)'), exts: ['pdf'] }],
+  });
+  if (!rel) return null;
+  return /\.pdf$/i.test(rel) ? rel : rel + '.pdf';
+}
+
+/** O aviso do PDF salvo (um clique o abre). */
+export function avisarPdf(rel) {
+  avisar(tr('Salvo como PDF'), nomeDe(rel), { icone: 'pdf', som: null, aoClicar: () => abrirArquivo(rel) });
+}
+
+async function salvarPdf(html, titulo, perto) {
+  const rel = await escolherPdf(titulo, perto);
+  if (!rel) return null;
+  try {
+    await retro.impressoras.pdf(html, rel);
+  } catch (e) {
+    erro(tr('Não foi possível salvar o PDF: {erro}', { erro: e.message }));
+    return null;
+  }
+  avisarPdf(rel);
+  return rel;
+}
+
+const paginaDoTexto = (titulo, texto, fixa) => paginaDeImpressao(titulo, `<pre>${escapar(texto)}</pre>`,
+  { estilo: `pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font: ${fixa ? '10pt/1.3 monospace' : '11pt/1.35 sans-serif'}; }` });
+const paginaDaImagem = (titulo, dataUrl) => paginaDeImpressao(titulo, `<img src="${dataUrl}">`,
+  { estilo: 'img { display: block; max-width: 100%; max-height: 240mm; margin: 0 auto; object-fit: contain; }' });
+
 /** Um texto simples (com a letra de largura fixa, se for o caso). */
 export function imprimirTexto(titulo, texto, { fixa = false } = {}) {
-  const estilo = `pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font: ${fixa ? '10pt/1.3 monospace' : '11pt/1.35 sans-serif'}; }`;
-  return enviar(paginaDeImpressao(titulo, `<pre>${escapar(texto)}</pre>`, { estilo }), titulo);
+  return enviar(paginaDoTexto(titulo, texto, fixa), titulo);
 }
 
 /** Uma imagem, do tamanho da página (sem passar dela). */
 export function imprimirImagem(titulo, dataUrl) {
-  const estilo = 'img { display: block; max-width: 100%; max-height: 240mm; margin: 0 auto; object-fit: contain; }';
-  return enviar(paginaDeImpressao(titulo, `<img src="${dataUrl}">`, { estilo }), titulo);
+  return enviar(paginaDaImagem(titulo, dataUrl), titulo);
+}
+
+/** O mesmo texto da impressão, num PDF do disco C:. */
+export function pdfDoTexto(titulo, texto, { fixa = false, perto = '' } = {}) {
+  return salvarPdf(paginaDoTexto(titulo, texto, fixa), titulo, perto);
+}
+
+/** A mesma imagem da impressão, num PDF do disco C:. */
+export function pdfDaImagem(titulo, dataUrl, { perto = '' } = {}) {
+  return salvarPdf(paginaDaImagem(titulo, dataUrl), titulo, perto);
 }
 
 /** A página de teste de uma impressora (vai direto, sem a caixa). */
