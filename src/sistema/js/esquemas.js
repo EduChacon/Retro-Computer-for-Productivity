@@ -8,6 +8,7 @@
  * página: o tema Mac clássico tem as cores próprias e não muda. O Padrão não põe nada (fica o estilo.css).
  */
 import { marcar } from './idioma.js';
+import { noiteAgora } from './sol.js';
 
 // Cada esquema: as cores (as mesmas variáveis do :root do estilo.css) e o fundo da área de trabalho.
 const CLARO = { escuro: '#0a0a0a', titulo_texto: '#ffffff', selecao_texto: '#ffffff', link: '#0000ee', texto: '#000000', janela: '#ffffff', alerta: '#800000', sucesso: '#008000', dica: '#ffffe1' };
@@ -30,6 +31,17 @@ export const ESQUEMAS = Object.freeze({
 });
 
 export const esquemaValido = (id) => (Object.prototype.hasOwnProperty.call(ESQUEMAS, id) ? id : 'padrao');
+
+/**
+ * O esquema desta hora: o escolhido ou, com a troca à noite ligada (config.esquemaNoite) e já de
+ * noite, o da noite. A noite vai do pôr ao nascer do sol do fuso horário, ou das horas escolhidas (sol.js).
+ */
+export function esquemaDaHora(config, agora = new Date(), fuso = undefined) {
+  const c = config || {};
+  const n = c.esquemaNoite || {};
+  if (n.ligado && noiteAgora(n, agora, fuso)) return esquemaValido(n.esquema || 'noite');
+  return esquemaValido(c.esquema);
+}
 
 // Os desenhos do estilo.css que tinham a cor fixa, com a cor do esquema.
 const svg = (w, h, partes) => {

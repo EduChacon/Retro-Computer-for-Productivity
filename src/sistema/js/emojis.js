@@ -3,7 +3,8 @@
  * busca pelo nome (em português, inglês e espanhol, sem precisar dos acentos), as categorias, os
  * usados há pouco e um clique que põe o emoji no campo que estava com o foco: um campo da área de
  * trabalho, um programa Craft, o Prompt ou a página do Navegador. Sem campo nenhum, ele vai para a
- * área de transferência. Os desenhos são os do SerenityOS (emojis/emojis.png, ferramentas/emojis.py).
+ * área de transferência. Os desenhos são os da fonte Noto Color Emoji (fontes/emoji/, ferramentas/emojis.py),
+ * a mesma dos campos de texto: o emoji do painel é o que aparece no texto.
  */
 import { h } from './util.js';
 import { estado, definirConfig, registrarApp } from './sistema.js';
@@ -25,9 +26,8 @@ const GRUPOS = [
 ];
 const MAX_RECENTES = 32;
 const MAX_ACHADOS = 240;
-const ESCALA = 2;
 
-let dados = null; // { lista, colunas, casa, porCaractere, texto }
+let dados = null; // { lista, porCaractere, texto }
 let painel = null;
 
 const semAcento = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -40,19 +40,12 @@ async function carregar() {
   const porCaractere = new Map(m.EMOJIS.map((e, i) => [e[0], i]));
   // O texto de busca de cada um: os três nomes e as palavras, sem acentos.
   const texto = m.EMOJIS.map((e) => semAcento(`${e[2]} ${e[3]} ${e[4]} ${e[5]}`));
-  dados = { lista: m.EMOJIS, colunas: m.COLUNAS, casa: m.CASA, porCaractere, texto };
+  dados = { lista: m.EMOJIS, porCaractere, texto };
   return dados;
 }
 
-/** O desenho de um emoji (o pedaço dele na folha, em dobro). */
-function desenho(i) {
-  const { colunas, casa } = dados;
-  const lado = casa * ESCALA;
-  return h('span.emoji', { 'aria-hidden': 'true', style: {
-    width: lado + 'px', height: lado + 'px', backgroundSize: `${colunas * lado}px auto`,
-    backgroundPosition: `-${(i % colunas) * lado}px -${Math.floor(i / colunas) * lado}px`,
-  } });
-}
+/** O desenho de um emoji: o próprio caractere, na fonte dos emojis (span.emoji, no estilo.css). */
+const desenho = (c) => h('span.emoji', { 'aria-hidden': 'true' }, c);
 
 function buscar(q) {
   const termos = semAcento(q).split(/\s+/).filter(Boolean);
@@ -84,7 +77,7 @@ function desenharGrade() {
   const k = coluna();
   p.grade.replaceChildren(...itens.map((i) => {
     const e = dados.lista[i];
-    const b = h('button.emo', { type: 'button', title: e[k], 'aria-label': e[k] }, desenho(i));
+    const b = h('button.emo', { type: 'button', title: e[k], 'aria-label': e[k] }, desenho(e[0]));
     // O foco fica onde estava (o campo do texto), para o emoji entrar lá.
     b.addEventListener('mousedown', (ev) => ev.preventDefault());
     b.addEventListener('click', () => escolher(i));
@@ -164,8 +157,7 @@ export async function abrirEmojis() {
     h('div.emo-corpo', busca, abas, titulo, grade, nome));
   painel = { el, alvo, busca, abas, titulo, grade, nome, grupo: recentes().length ? 'recentes' : 0 };
   abas.append(...GRUPOS.map((g) => {
-    const i = dados.porCaractere.get(g.icone);
-    const b = h('button.emo-aba', { type: 'button', title: tr(g.nome), dataset: { grupo: String(g.id || g.g) } }, i != null ? desenho(i) : g.icone);
+    const b = h('button.emo-aba', { type: 'button', title: tr(g.nome), dataset: { grupo: String(g.id || g.g) } }, desenho(g.icone));
     b.addEventListener('mousedown', (ev) => ev.preventDefault());
     b.addEventListener('click', () => { painel.grupo = g.id || g.g; busca.value = ''; desenharGrade(); });
     return b;

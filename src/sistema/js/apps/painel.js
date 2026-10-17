@@ -12,6 +12,7 @@ import { deslizante } from '../controles.js';
 import { CORES, PADROES, FUNDO_INICIO, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS, fundoParaTema } from '../aparencia.js';
 import { TEMAS, temaMac } from '../tema.js';
 import { ESQUEMAS, esquemaValido, variaveisDoEsquema, fundoParaEsquema } from '../esquemas.js';
+import { solDoFuso, fusoDoComputador } from '../sol.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
@@ -357,9 +358,17 @@ function dialogoAparencia(args = {}) {
     });
     return h('label.tema-opcao', h('div.previa-tema.' + k, h('div.pt-menus'), h('div.pt-janela', h('div.pt-titulo'), h('div.pt-corpo')), h('div.pt-barra')), h('span', radio, tr(nome)));
   });
+  // A escolha de uma hora cheia (o esquema da noite e a luz noturna).
+  const selHora = (v, rot) => {
+    const s = h('select', { 'aria-label': rot }, ...Array.from({ length: 24 }, (_, i) => h('option', { value: String(i) },
+      new Date(2000, 0, 1, i).toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' }))));
+    s.value = String(v);
+    return s;
+  };
   // O esquema de cores do PC clássico (esquemas.js), com a prévia: as janelas, o menu, o texto e um botão.
   let esquema = esquemaValido(c.esquema);
-  const selEsquema = h('select', { style: { width: '100%' } }, Object.entries(ESQUEMAS).map(([k, e]) => h('option', { value: k }, tr(e.nome))));
+  const opcoesEsquema = () => Object.entries(ESQUEMAS).map(([k, e]) => h('option', { value: k }, tr(e.nome)));
+  const selEsquema = h('select', { style: { width: '100%' } }, opcoesEsquema());
   selEsquema.value = esquema;
   const previaEsq = h('div.previa-esquema',
     h('div.pe-janela.inativa', h('div.pe-titulo', tr('Janela inativa'))),
@@ -368,9 +377,10 @@ function dialogoAparencia(args = {}) {
       h('div.pe-menus', h('span', tr('Normal')), h('span.des', tr('Desativado')), h('span.sel', tr('Selecionado'))),
       h('div.pe-campo', tr('Texto da janela'), ' ', h('span.pe-sel', tr('selecionado')), h('div.pe-fraco', tr('Uma nota mais apagada')), h('a', tr('Um link')))),
     h('div.pe-janela.pe-msg', h('div.pe-titulo', tr('Mensagem')), h('div.pe-texto', tr('Texto da mensagem')), h('div.pe-botao', tr('OK'))));
-  const mostrarEsquema = () => {
-    previaEsq.style.cssText = variaveisDoEsquema(esquema);
-    previaEsq.style.background = ESQUEMAS[esquema].mesa;
+  // A prévia mostra o esquema que se escolheu por último (o do dia ou o da noite).
+  const mostrarEsquema = (id = esquema) => {
+    previaEsq.style.cssText = variaveisDoEsquema(id);
+    previaEsq.style.background = ESQUEMAS[esquemaValido(id)].mesa;
   };
   selEsquema.addEventListener('change', () => {
     Object.assign(papel, fundoParaEsquema(papel, esquema, selEsquema.value));
@@ -380,9 +390,33 @@ function dialogoAparencia(args = {}) {
     atualizarPrevia();
   });
   mostrarEsquema();
+  // A troca à noite, como o modo escuro dos sistemas de hoje: outro esquema do pôr ao nascer do sol
+  // (pelo fuso horário do computador, sol.js) ou entre duas horas. O fundo acompanha (inicio.js).
+  const en = { ligado: false, esquema: 'noite', quando: 'sol', de: 19, ate: 7, ...(c.esquemaNoite || {}) };
+  const chkNoite = h('input', { type: 'checkbox', checked: !!en.ligado });
+  const selNoite = h('select', { 'aria-label': tr('Esquema da noite') }, opcoesEsquema());
+  selNoite.value = esquemaValido(en.esquema);
+  const sol = solDoFuso();
+  const radioSol = h('input', { type: 'radio', name: 'esquema-quando', checked: en.quando !== 'horas' && !!sol });
+  const radioHoras = h('input', { type: 'radio', name: 'esquema-quando', checked: en.quando === 'horas' || !sol });
+  const selDeEsq = selHora(en.de, tr('Começa às'));
+  const selAteEsq = selHora(en.ate, tr('Termina às'));
+  const horaCurta = (d) => d.toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
+  // As horas de hoje ao lado da opção; o fuso horário (de onde vem a cidade) fica na dica.
+  const notaSol = h('span', { style: { color: 'var(--texto-fraco)', marginLeft: '4px' } },
+    !sol ? tr('(o fuso {fuso} não tem uma cidade de referência)', { fuso: fusoDoComputador() || 'UTC' })
+      : sol.sempre === 'dia' ? tr('(hoje, o sol não se põe)')
+        : sol.sempre === 'noite' ? tr('(hoje, o sol não nasce)')
+          : tr('(hoje, das {por} às {nascer})', { por: horaCurta(sol.por), nascer: horaCurta(sol.nascer) }));
+  const dicaSol = tr('O pôr e o nascer do sol na cidade de referência do fuso horário do computador ({fuso}).', { fuso: sol ? sol.fuso : fusoDoComputador() || 'UTC' });
+  const lerEsqNoite = () => ({ ligado: chkNoite.checked, esquema: esquemaValido(selNoite.value), quando: radioHoras.checked ? 'horas' : 'sol', de: Number(selDeEsq.value), ate: Number(selAteEsq.value) });
+  selNoite.addEventListener('change', () => mostrarEsquema(selNoite.value));
+  chkNoite.addEventListener('change', () => { marcarTemaEsquema(); mostrarEsquema(chkNoite.checked ? selNoite.value : esquema); });
   const notaEsquema = h('div', { style: { color: 'var(--texto-fraco)', lineHeight: '13px', marginTop: '6px' } });
   const marcarTemaEsquema = () => {
-    selEsquema.disabled = tema === 'mac';
+    selEsquema.disabled = chkNoite.disabled = tema === 'mac';
+    selNoite.disabled = radioHoras.disabled = selDeEsq.disabled = selAteEsq.disabled = tema === 'mac' || !chkNoite.checked;
+    radioSol.disabled = selNoite.disabled || !sol;
     previaEsq.classList.toggle('apagada', tema === 'mac');
     notaEsquema.textContent = tema === 'mac'
       ? tr('O Mac clássico tem as cores próprias: o esquema vale para o PC clássico.')
@@ -397,6 +431,9 @@ function dialogoAparencia(args = {}) {
     h('fieldset', { style: { margin: '10px 0 0' } }, h('legend', tr('Esquema de cores')),
       previaEsq,
       h('div.linha', { style: { marginTop: '6px' } }, h('div.select-caixa', { style: { flex: '1' } }, selEsquema)),
+      h('div.linha', { style: { marginTop: '6px', gap: '4px' } }, h('label', chkNoite, h('span', tr('Trocar à noite para:'))), h('div.select-caixa', { style: { flex: '1' } }, selNoite)),
+      h('div', { style: { marginTop: '4px', marginLeft: '18px' }, title: dicaSol }, h('label', radioSol, h('span', tr('Do pôr ao nascer do sol'))), notaSol),
+      h('div.linha', { style: { marginTop: '4px', marginLeft: '18px', gap: '4px' } }, h('label', radioHoras, h('span', tr('Das'))), h('div.select-caixa', selDeEsq), h('span', tr('às')), h('div.select-caixa', selAteEsq)),
       notaEsquema));
 
   const chkProt = h('input', { type: 'checkbox', checked: protecao.ligada });
@@ -517,24 +554,23 @@ function dialogoAparencia(args = {}) {
   const chkEncaixe = h('input', { type: 'checkbox', checked: !c.janelas || c.janelas.encaixe !== false });
   const ln = { ligada: false, quando: 'noite', de: 20, ate: 7, intensidade: 50, ...(c.luzNoturna || {}) };
   const chkLuz = h('input', { type: 'checkbox', checked: !!ln.ligada });
-  const radioNoite = h('input', { type: 'radio', name: 'luz-quando', checked: ln.quando !== 'sempre' });
+  const solLuz = !!solDoFuso();
+  const radioSolLuz = h('input', { type: 'radio', name: 'luz-quando', checked: ln.quando === 'sol' && solLuz });
+  const radioNoite = h('input', { type: 'radio', name: 'luz-quando', checked: ln.quando === 'noite' || (ln.quando === 'sol' && !solLuz) || !['sol', 'sempre'].includes(ln.quando) });
   const radioSempre = h('input', { type: 'radio', name: 'luz-quando', checked: ln.quando === 'sempre' });
-  const selHora = (v, rot) => {
-    const s = h('select', { 'aria-label': rot }, ...Array.from({ length: 24 }, (_, i) => h('option', { value: String(i) },
-      new Date(2000, 0, 1, i).toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' }))));
-    s.value = String(v);
-    return s;
-  };
   const selDe = selHora(ln.de, tr('Começa às'));
   const selAte = selHora(ln.ate, tr('Termina às'));
-  const lerLuz = () => ({ ligada: chkLuz.checked, quando: radioSempre.checked ? 'sempre' : 'noite', de: Number(selDe.value), ate: Number(selAte.value), intensidade: ln.intensidade });
+  const lerLuz = () => ({ ligada: chkLuz.checked, quando: radioSempre.checked ? 'sempre' : radioSolLuz.checked ? 'sol' : 'noite', de: Number(selDe.value), ate: Number(selAte.value), intensidade: ln.intensidade });
   let previaLuz = false;
   // Mexer na intensidade mostra o resultado na hora (e o que não for aplicado volta ao fechar).
   const intensidade = deslizante({
     valor: ln.intensidade, min: 10, max: 100, tamanho: 140, passo: 5, passoGrande: 20, rotulo: tr('Intensidade da luz noturna'),
     aoMudar: (n) => { ln.intensidade = n; previaLuz = true; aplicarLuzNoturna({ ...lerLuz(), ligada: true }); },
   });
-  const marcarLuz = () => { for (const el of [radioNoite, radioSempre, selDe, selAte]) el.disabled = !chkLuz.checked; };
+  const marcarLuz = () => {
+    for (const el of [radioNoite, radioSempre, selDe, selAte]) el.disabled = !chkLuz.checked;
+    radioSolLuz.disabled = !chkLuz.checked || !solLuz;
+  };
   chkLuz.addEventListener('change', marcarLuz);
   marcarLuz();
   const abaEfeitos = h('div',
@@ -544,7 +580,8 @@ function dialogoAparencia(args = {}) {
         tr('À esquerda ou à direita, a janela ocupa metade da tela; num canto, um quarto; no alto, a tela toda. A tecla do logotipo com as setas faz o mesmo.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Luz noturna')),
       h('label', chkLuz, h('span', tr('Deixar as cores mais quentes, com menos azul, para descansar a vista'))),
-      h('div.linha', { style: { marginTop: '6px', marginLeft: '18px', gap: '4px' } }, h('label', radioNoite, h('span', tr('Das'))), h('div.select-caixa', selDe), h('span', tr('às')), h('div.select-caixa', selAte)),
+      h('div', { style: { marginTop: '6px', marginLeft: '18px' } }, h('label', radioSolLuz, h('span', tr('Do pôr ao nascer do sol')))),
+      h('div.linha', { style: { marginTop: '4px', marginLeft: '18px', gap: '4px' } }, h('label', radioNoite, h('span', tr('Das'))), h('div.select-caixa', selDe), h('span', tr('às')), h('div.select-caixa', selAte)),
       h('div', { style: { marginTop: '4px', marginLeft: '18px' } }, h('label', radioSempre, h('span', tr('O dia todo')))),
       h('div', { style: { marginTop: '8px' } }, tr('Intensidade:')),
       h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' } }, h('span', tr('Menos')), intensidade.el, h('span', tr('Mais')))),
@@ -576,10 +613,11 @@ function dialogoAparencia(args = {}) {
       aplicarProt();
       escala = selEscala.value;
       previaLuz = false;
-      await definirConfig({ papel, tema, esquema, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, reabrir: { ligado: chkReabrir.checked }, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
+      await definirConfig({ papel, tema, esquema, esquemaNoite: lerEsqNoite(), escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, reabrir: { ligado: chkReabrir.checked }, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
       await definirIconesSistema(caixasMesa.filter((x) => x.c.checked).map((x) => x.k));
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
-      aplicarFundo(papel);
+      // O fundo gravado (a troca do esquema à noite pode tê-lo acompanhado: inicio.js).
+      aplicarFundo(estado.config.papel || papel);
       await aplicarEscala(escala);
       // As duas telas antes da tela cheia: ao entrar nela, a janela já se espalha (sem passar por um monitor só).
       if (varias.duas != null && varias.duas !== varias.duasAntes) await usarDuasTelas(varias);

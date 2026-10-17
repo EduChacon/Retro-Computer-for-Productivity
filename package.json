@@ -1,7 +1,7 @@
 {
   "name": "retro-computer",
   "productName": "Retro Computer",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "A retro computer for productivity: a 1990s-style desktop with the Craft apps, your files in an ordinary folder and Claude Code in the Command Prompt. In English, Portuguese and Spanish.",
   "main": "src/principal/main.js",
   "license": "MIT",

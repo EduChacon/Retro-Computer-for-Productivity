@@ -134,7 +134,7 @@ P = {
     'v': (20, 100, 20), 'B': (0, 0, 128), 'b': (40, 80, 200), 'c': (110, 150, 240),
     'Y': (250, 220, 40), 'y': (190, 150, 0), 'O': (240, 140, 30), 'M': (200, 160, 110),
     'm': (150, 110, 70), 'n': (110, 75, 40), 'N': (230, 200, 150),
-    'e': (255, 255, 160), 'E': (232, 220, 100),
+    'e': (255, 255, 160), 'E': (232, 220, 100), 'k': (52, 52, 52),
 }
 
 
@@ -391,61 +391,6 @@ NOTAS_16 = [
     ".KWeeeeeeKYK....",
     ".KWEEEEEEKK.....",
     ".KKKKKKKKK......",
-    "................",
-]
-
-# 1.7: o celular (Receber do celular), desenho próprio.
-CELULAR_32 = [
-    "................................",
-    "................................",
-    "................................",
-    "..........KKKKKKKKKKKK..........",
-    "..........KDDDDDDDDDDK..........",
-    "..........KDDDKKKKDDDK..........",
-    "..........KDDDDDDDDDDK..........",
-    "..........KDKKKKKKKKDK..........",
-    "..........KDKuuuuuuKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKuTTTTTKDK..........",
-    "..........KDKKKKKKKKDK..........",
-    "..........KDDDDDDDDDDK..........",
-    "..........KDDDDKKDDDDK..........",
-    "..........KDDDKLLKDDDK..........",
-    "..........KDDDDKKDDDDK..........",
-    "..........KDDDDDDDDDDK..........",
-    "..........KKKKKKKKKKKK..........",
-    "................................",
-    "................................",
-    "................................",
-]
-
-CELULAR_16 = [
-    "................",
-    ".....KKKKKK.....",
-    ".....KDKKDK.....",
-    ".....KuuuuK.....",
-    ".....KuTTTK.....",
-    ".....KuTTTK.....",
-    ".....KuTTTK.....",
-    ".....KuTTTK.....",
-    ".....KuTTTK.....",
-    ".....KuTTTK.....",
-    ".....KuTTTK.....",
-    ".....KDDDDK.....",
-    ".....KDKKDK.....",
-    ".....KDDDDK.....",
-    ".....KKKKKK.....",
     "................",
 ]
 
@@ -970,6 +915,88 @@ def mac_compacto(tam):
         ret(7, 10, 10, 10, 'K')
         ret(4, 14, 11, 15, 'K')
         ret(5, 14, 10, 14, 'M')
+    return [''.join(l) for l in c]
+
+
+def celular(tam):
+    """O celular (Receber do celular), desenho próprio: um aparelho escuro de cantos redondos, com a luz
+    à esquerda e em cima e a sombra à direita e embaixo, os botões do lado, o alto-falante e a câmera,
+    a tela com a barra de cima, os programas e a faixa de baixo, e o botão de baixo."""
+    c = [['.'] * tam for _ in range(tam)]
+
+    def ret(x0, y0, x1, y1, ch):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                c[y][x] = ch
+
+    def app(x, y, claro, escuro):
+        # Um programa da tela: dois pontos claros em cima e dois escuros embaixo.
+        ret(x, y, x + 1, y, claro)
+        ret(x, y + 1, x + 1, y + 1, escuro)
+
+    if tam >= 32:
+        # O corpo, com os cantos arredondados.
+        ret(8, 2, 23, 29, 'K')
+        ret(10, 1, 21, 1, 'K')
+        ret(10, 30, 21, 30, 'K')
+        c[2][8] = c[2][23] = c[29][8] = c[29][23] = '.'
+        c[2][9] = c[2][22] = c[29][9] = c[29][22] = 'K'
+        ret(9, 3, 22, 28, 'D')
+        ret(10, 2, 21, 2, 'G')
+        ret(9, 3, 9, 28, 'G')
+        ret(22, 3, 22, 28, 'k')
+        ret(10, 29, 21, 29, 'k')
+        # Os botões do lado: o volume e o liga/desliga.
+        ret(7, 8, 7, 10, 'K')
+        ret(7, 12, 7, 14, 'K')
+        ret(24, 9, 24, 12, 'K')
+        # O alto-falante e a câmera.
+        ret(13, 4, 18, 4, 'K')
+        ret(13, 5, 18, 5, 'G')
+        c[4][20] = 'K'
+        # A tela, com a moldura preta.
+        ret(10, 6, 21, 25, 'K')
+        ret(11, 7, 20, 24, 'T')
+        ret(11, 7, 20, 7, 'S')  # a barra de cima: a hora e a bateria
+        c[7][12] = c[7][13] = 'u'
+        c[7][18] = c[7][19] = 'u'
+        apps = [(('Y', 'y'), ('R', 'r'), ('g', 'h')),
+                (('c', 'b'), ('O', 'y'), ('W', 'L')),
+                (('p', 'R'), ('V', 'v'), ('e', 'E'))]
+        for i, linha in enumerate(apps):
+            for j, (a, b) in enumerate(linha):
+                app(12 + 3 * j, 9 + 3 * i, a, b)
+        c[19][14] = 'W'  # as páginas
+        c[19][17] = 'S'
+        ret(11, 21, 20, 24, 't')  # a faixa de baixo
+        for j, (a, b) in enumerate((('W', 'L'), ('g', 'h'), ('c', 'b'))):
+            app(12 + 3 * j, 22, a, b)
+        # O botão de baixo.
+        ret(15, 26, 16, 26, 'K')
+        ret(15, 28, 16, 28, 'K')
+        c[27][14] = c[27][17] = 'K'
+        c[27][15] = 'L'
+        c[27][16] = 'G'
+    else:
+        ret(3, 1, 13, 14, 'K')
+        ret(4, 0, 12, 0, 'K')
+        ret(4, 15, 12, 15, 'K')
+        ret(4, 1, 12, 14, 'D')
+        ret(4, 1, 11, 1, 'G')
+        ret(4, 1, 4, 14, 'G')
+        ret(12, 1, 12, 14, 'k')
+        ret(5, 14, 12, 14, 'k')
+        ret(7, 2, 9, 2, 'K')  # o alto-falante
+        ret(5, 3, 11, 11, 'K')
+        ret(6, 4, 10, 10, 'T')
+        ret(6, 4, 10, 4, 'S')
+        for (x, y), cor in (((7, 6), 'Y'), ((9, 6), 'R'), ((7, 8), 'g'), ((9, 8), 'c')):
+            c[y][x] = cor
+        ret(6, 10, 10, 10, 't')
+        c[10][7] = 'W'
+        c[10][9] = 'g'
+        c[12][8] = 'K'  # o botão de baixo
+        c[13][8] = 'G'
     return [''.join(l) for l in c]
 
 
@@ -1636,8 +1663,8 @@ def gerar(serenity):
     feitos[16]['scanner'] = grade(SCANNER_16)
     feitos[32]['notas'] = grade(NOTAS_32)
     feitos[16]['notas'] = grade(NOTAS_16)
-    feitos[32]['celular'] = grade(CELULAR_32)
-    feitos[16]['celular'] = grade(CELULAR_16)
+    feitos[32]['celular'] = grade(celular(32))
+    feitos[16]['celular'] = grade(celular(16))
     feitos[32]['emoji'] = grade(EMOJI_32)
     feitos[16]['emoji'] = grade(EMOJI_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)

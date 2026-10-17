@@ -20,6 +20,8 @@ const PADRAO = {
   tema: 'pc',
   // O esquema de cores do PC clássico (esquemas.js): 'padrao', os claros ('areia', 'oceano'…) e os escuros ('noite'…).
   esquema: 'padrao',
+  // A troca à noite para outro esquema: do pôr ao nascer do sol do fuso horário ('sol') ou das de às ate horas ('horas').
+  esquemaNoite: { ligado: false, esquema: 'noite', quando: 'sol', de: 19, ate: 7 },
   sons: true,
   volume: 0.5,
   inicioRapido: true, // a área de trabalho direto; o BIOS e a marca, em Painel › Aparência › Configurações
@@ -35,7 +37,8 @@ const PADRAO = {
   webapps: [],
   // As janelas: encaixar ao arrastar até as bordas e os cantos (os cantos magnéticos).
   janelas: { encaixe: true },
-  // A luz noturna: as cores mais quentes à noite (das 20h às 7h) ou sempre; a intensidade vai de 0 a 100.
+  // A luz noturna: as cores mais quentes à noite (das 20h às 7h, ou do pôr ao nascer do sol com quando
+  // 'sol') ou sempre; a intensidade vai de 0 a 100.
   luzNoturna: { ligada: false, quando: 'noite', de: 20, ate: 7, intensidade: 50 },
   // O histórico da área de transferência (logotipo + V), só na memória.
   transferencia: { historico: true },

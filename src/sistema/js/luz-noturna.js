@@ -8,20 +8,23 @@
  */
 import { h } from './util.js';
 import { estado, eventos } from './sistema.js';
+import { noiteAgora, entreAsHoras } from './sol.js';
 
 let filtro = null;
 let aplicada = null; // a intensidade de agora (0 a 1), para não repetir o pedido
 let peloSistema = null; // o xrandr cuida (modo sistema)?
 
-/** Ligada agora? "noite" vale das de às ate horas (passando da meia-noite); "sempre", o dia todo. */
+/**
+ * Ligada agora? "noite" vale das de às ate horas (passando da meia-noite); "sol", do pôr ao nascer do
+ * sol pelo fuso horário (sol.js; sem a cidade do fuso, as horas); "sempre", o dia todo.
+ */
 export function ligadaAgora(c, agora = new Date()) {
   if (!c || !c.ligada) return false;
   if (c.quando === 'sempre') return true;
-  const hora = agora.getHours() + agora.getMinutes() / 60;
   const de = Number.isFinite(Number(c.de)) ? Number(c.de) : 20;
   const ate = Number.isFinite(Number(c.ate)) ? Number(c.ate) : 7;
-  if (de === ate) return true;
-  return de < ate ? hora >= de && hora < ate : hora >= de || hora < ate;
+  if (c.quando === 'sol') return noiteAgora({ quando: 'sol', de, ate }, agora);
+  return entreAsHoras(agora, de, ate);
 }
 
 /** A força do filtro, de 0,1 (quase nada) a 1. */
@@ -74,6 +77,6 @@ export function iniciarLuzNoturna() {
   eventos.on('config', () => aplicarLuzNoturna());
   // A tela cheia de um elemento (o webview de um site, o quadro de um programa) o leva para a camada de cima.
   document.addEventListener('fullscreenchange', () => setTimeout(luzPorCima, 0));
-  // A virada da hora (às 20h liga, às 7h desliga): uma olhada por minuto basta.
+  // A virada da hora (às 20h liga, às 7h desliga, ou no pôr e no nascer do sol): uma olhada por minuto basta.
   setInterval(() => aplicarLuzNoturna(), 60 * 1000);
 }

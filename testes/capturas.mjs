@@ -4149,6 +4149,65 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('padrão de volta:', JSON.stringify(await estadoEsq()));
   },
 
+  // A troca do esquema à noite (Painel › Aparência › Tema): ligada pelo Painel com as horas de agora
+  // (já é "noite"), o fundo junto, o pôr do sol do fuso (rode com TZ=America/Sao_Paulo), a volta ao do
+  // dia quando a noite acaba (as horas mudadas, como o Claude as muda) e a luz noturna pelo sol.
+  async esquemaNoite() {
+    await fecharTudo();
+    const estadoEsq = () => pagina.evaluate(() => ({
+      escuro: document.documentElement.classList.contains('esquema-escuro'),
+      face: getComputedStyle(document.documentElement).getPropertyValue('--face').trim(),
+      fundo: window.__retro.estado.config.papel.cor, tela: document.getElementById('tela').style.backgroundColor,
+    }));
+    console.log('antes:', JSON.stringify(await estadoEsq()));
+    await abrir('painel', { secao: 'aparencia', aba: 'tema' });
+    await pagina.waitForTimeout(600);
+    const caixa = pagina.locator('.janela.ativa fieldset', { hasText: T('Esquema de cores') });
+    await caixa.locator('label', { hasText: T('Trocar à noite para:') }).locator('input').check();
+    await caixa.locator(`select[aria-label="${T('Esquema da noite')}"]`).selectOption('meianoite');
+    const agora = new Date().getHours();
+    // Só o rótulo "Das" inteiro (em inglês, "From" também começa o do pôr do sol).
+    await caixa.locator('label').filter({ hasText: new RegExp(`^\\s*${T('Das')}\\s*$`) }).locator('input').check();
+    await caixa.locator(`select[aria-label="${T('Começa às')}"]`).selectOption(String(agora));
+    await caixa.locator(`select[aria-label="${T('Termina às')}"]`).selectOption(String((agora + 2) % 24));
+    await pagina.waitForTimeout(300);
+    console.log('o sol hoje:', await caixa.locator('label', { hasText: T('Do pôr ao nascer do sol') }).locator('xpath=following-sibling::div[1] | ../following-sibling::div[1]').first().textContent().catch(() => '?'));
+    await foto('esquema-noite-painel');
+    await pagina.locator('.janela.ativa button', { hasText: T('OK') }).first().click();
+    await pagina.waitForTimeout(1500);
+    console.log('à noite:', JSON.stringify(await estadoEsq()), JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.esquemaNoite)));
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(700);
+    await foto('esquema-noite-ativo');
+    await fecharTudo();
+    // A noite acabou (as horas de agora ficam de fora): o esquema do dia volta, e o fundo com ele.
+    await pagina.evaluate((h) => window.__retro.definirConfig({ esquemaNoite: { de: (h + 2) % 24, ate: (h + 3) % 24 } }), agora);
+    await pagina.waitForTimeout(1500);
+    console.log('de dia:', JSON.stringify(await estadoEsq()));
+    // Pelo pôr e o nascer do sol do fuso horário.
+    await pagina.evaluate(() => window.__retro.definirConfig({ esquemaNoite: { quando: 'sol' } }));
+    await pagina.waitForTimeout(1500);
+    console.log('pelo sol:', JSON.stringify(await pagina.evaluate(() => import('./js/sol.js').then((m) => {
+      const s = m.solDoFuso();
+      return s ? { fuso: s.fuso, nascer: s.nascer && s.nascer.toLocaleTimeString(), por: s.por && s.por.toLocaleTimeString(), noite: m.noiteAgora({ quando: 'sol' }) } : { fuso: m.fusoDoComputador(), semCidade: true };
+    }))), JSON.stringify(await estadoEsq()));
+    // A luz noturna também do pôr ao nascer do sol.
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Efeitos') }).click();
+    await pagina.waitForTimeout(300);
+    const luz = pagina.locator('.janela.ativa fieldset', { hasText: T('Luz noturna') });
+    await luz.locator('label', { hasText: T('Deixar as cores mais quentes, com menos azul, para descansar a vista') }).locator('input').check();
+    await luz.locator('label', { hasText: T('Do pôr ao nascer do sol') }).locator('input').check();
+    await pagina.waitForTimeout(300);
+    await foto('esquema-noite-luz');
+    await pagina.locator('.janela.ativa button', { hasText: T('Cancelar') }).first().click();
+    await pagina.waitForTimeout(400);
+    await pagina.evaluate(() => window.__retro.definirConfig({ esquemaNoite: { ligado: false } }));
+    await pagina.waitForTimeout(800);
+    console.log('desligada:', JSON.stringify(await estadoEsq()));
+  },
+
   // O painel de emojis (Logotipo+.): a grade, um clique que põe o emoji no Bloco de notas, a busca
   // (também sem os acentos), os usados há pouco, o painel aberto pelo Iniciar (o emoji vai para o
   // último campo usado) e, sem campo nenhum, a área de transferência.
@@ -4208,6 +4267,30 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('sem campo:', await pagina.textContent('#painel-emojis .emo-nome'), '| área de transferência:', JSON.stringify(await app.evaluate(async ({ clipboard }) => clipboard.readText())));
     await foto('emojis-sem-campo');
     await pagina.keyboard.press('Escape');
+    // As fontes que o Chromium usou em cada caso (pelo protocolo de depuração): o emoji na Noto do
+    // Retro Computer ("Retro Emoji"), o texto e o © sozinho na Katica.
+    const casos = ['abc', '😀', '❤️', '❤', '1️⃣', '©', '©️', '▶', '🇧🇷', '👨‍👩‍👧', '👍🏽', '🏳️‍🌈'];
+    await pagina.evaluate((cs) => {
+      const d = document.createElement('div');
+      d.id = 'teste-fontes';
+      d.style.cssText = 'position:absolute;left:8px;top:8px;z-index:900000;background:var(--janela);padding:4px;font-size:20px;line-height:24px';
+      for (const c of cs) { const s = document.createElement('span'); s.textContent = c; s.style.marginRight = '6px'; d.append(s); }
+      document.getElementById('tela').append(d);
+    }, casos);
+    await pagina.waitForTimeout(1500);
+    const cdp = await pagina.context().newCDPSession(pagina);
+    await cdp.send('DOM.enable');
+    await cdp.send('CSS.enable');
+    const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+    const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: '#teste-fontes > span' });
+    const usadas = [];
+    for (let i = 0; i < nodeIds.length; i++) {
+      const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId: nodeIds[i] });
+      usadas.push(`${casos[i]} ${fonts.map((f) => f.familyName + (f.isCustomFont ? '*' : '')).join('+')}`);
+    }
+    console.log('fontes (* = do Retro Computer):', usadas.join(' | '));
+    await foto('emojis-fontes');
+    await pagina.evaluate(() => document.getElementById('teste-fontes').remove());
   },
 
   async notas() {

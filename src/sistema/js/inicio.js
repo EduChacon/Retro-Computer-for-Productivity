@@ -7,7 +7,7 @@ import { aplicarFundo, aplicarEscala, fundoParaTema } from './aparencia.js';
 import { montarBarra } from './barra.js';
 import { montarBarraMac } from './barra-mac.js';
 import { aplicarTema, temaMac, temaAtual } from './tema.js';
-import { aplicarEsquema, esquemaAtual, esquemaValido, fundoParaEsquema } from './esquemas.js';
+import { aplicarEsquema, esquemaAtual, esquemaDaHora, fundoParaEsquema } from './esquemas.js';
 // As áreas de trabalho: o aviso do nome ao trocar (a Visão das tarefas abre por ele).
 import './areas.js';
 import { montarMesa, atualizar as atualizarMesa } from './mesa.js';
@@ -169,7 +169,30 @@ async function iniciar() {
   estado.raizDisco = await retro.disco.raiz();
   await atualizarProgramas().catch(() => { });
   aplicarTema(estado.config.tema);
-  aplicarEsquema(estado.config.esquema);
+  // Ao abrir, o fundo guardado pode ser o de sempre do esquema da noite (o Retro Computer fechou à
+  // noite): a página começa com esse, e o acerto logo abaixo passa ao desta hora com o fundo junto.
+  const noite = estado.config.esquemaNoite || {};
+  const fundoDaNoite = !!noite.ligado && fundoParaEsquema(estado.config.papel, noite.esquema || 'noite', estado.config.esquema) !== estado.config.papel;
+  aplicarEsquema(fundoDaNoite ? noite.esquema || 'noite' : estado.config.esquema);
+  // O esquema de cores desta hora (o escolhido ou o da noite): o fundo de sempre de um vira o do outro
+  // (só no PC clássico; um fundo escolhido pelo usuário fica como está).
+  const acertarEsquema = () => {
+    const esqAntes = esquemaAtual();
+    const esqDepois = esquemaDaHora(estado.config);
+    if (esqAntes === esqDepois) return;
+    const atual = estado.config.papel || {};
+    const papel = temaAtual() === 'pc' ? fundoParaEsquema(atual, esqAntes, esqDepois) : atual;
+    if (papel !== atual) {
+      // O fundo novo vale já no estado: quem mudou a configuração (o Painel, o Claude) e pinta o fundo
+      // logo depois pinta este, sem esperar a gravação.
+      estado.config = { ...estado.config, papel };
+      aplicarFundo(papel);
+      definirConfig({ papel }).catch(() => { });
+    }
+    aplicarEsquema(esqDepois);
+  };
+  // O pôr e o nascer do sol (ou as horas escolhidas): uma olhada por minuto basta, como na luz noturna.
+  setInterval(acertarEsquema, 60 * 1000);
   evSistema.on('config', () => {
     // O fundo de sempre de um tema vira o do outro, mude o tema por onde mudar (o Painel já manda
     // o fundo trocado; o Claude, pelo servidor MCP, só o tema).
@@ -182,17 +205,10 @@ async function iniciar() {
       if (papel.cor !== atual.cor || papel.padrao !== atual.padrao) definirConfig({ papel }).catch(() => { });
     }
     aplicarTema(estado.config.tema);
-    // O esquema de cores, do mesmo jeito: o fundo de sempre de um vira o do outro (só no PC clássico).
-    const esqAntes = esquemaAtual();
-    const esqDepois = esquemaValido(estado.config.esquema);
-    if (esqAntes !== esqDepois) {
-      const atual = estado.config.papel || {};
-      const papel = depois === 'pc' ? fundoParaEsquema(atual, esqAntes, esqDepois) : atual;
-      if (papel !== atual) { aplicarFundo(papel); definirConfig({ papel }).catch(() => { }); }
-      aplicarEsquema(esqDepois);
-    }
+    acertarEsquema();
   });
   aplicarFundo(estado.config.papel);
+  acertarEsquema();
   await aplicarEscala(estado.config.escala);
   // As duas telas em tela cheia: onde está cada monitor dentro da janela (telas.js).
   await iniciarTelas().catch(() => { });
