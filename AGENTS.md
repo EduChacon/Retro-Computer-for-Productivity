@@ -132,7 +132,8 @@ ferramentas/           icones.py, fontes.sh, fonte-serenity.py, textos.js (as tr
                        icones-mac.py e controles-mac.js (os desenhos próprios do tema Mac clássico)
 testes/                *.test.js (npm test: o disco, os idiomas, as atualizações e a leitura das saídas
                        de cada ferramenta do sistema) e capturas.mjs (Playwright + Electron)
-docs/                  uso.md, proposta.md, instalacao.md (o guia de cada computador), pesquisa-distribuicoes.md,
+docs/                  uso.md, proposta.md, instalacao.md (o guia de cada computador), macbook-air.md (o passo a passo
+                       simples do MacBook Air pelo pendrive), pesquisa-distribuicoes.md,
                        img/ (img/en e img/es para os READMEs), lancamentos/ (notas, em inglês)
 .github/workflows/compilar.yml   testes e instaladores (Windows, macOS, Linux PC e ARM64) a cada push
 .github/workflows/publicar.yml   na main, com versão nova no package.json: compila e cria o lançamento vX.Y.Z

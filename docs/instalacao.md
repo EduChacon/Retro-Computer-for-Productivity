@@ -8,7 +8,7 @@ Um guia curto para cada tipo de computador. Os instaladores ficam na página de 
 |---|---|
 | PC com Windows 10 ou 11 | O instalador `.exe` (o Retro Computer como aplicativo) |
 | Mac com macOS 12 Monterey ou mais novo | O `.dmg` (`x64` nos Mac com Intel, `arm64` nos com chip Apple) |
-| Mac antigo, que não passa do macOS 11 (como o MacBook Air de 2014) | O Linux Mint e o `.deb`, com a sessão "Retro Computer" |
+| Mac antigo, que não passa do macOS 11 (como o MacBook Air de 2014) | O Linux Mint e o `.deb`, com a sessão "Retro Computer" (o passo a passo simples está em [macbook-air.md](macbook-air.md)) |
 | Qualquer Mac, para experimentar sem mexer no sistema | Uma máquina virtual no UTM, com o Linux e o `.deb` |
 | Notebook antigo ou mini PC | O Linux Mint e o `.deb`, com a sessão "Retro Computer" |
 | Raspberry Pi 4 ou 5 | O Raspberry Pi OS de 64 bits e o `arm64.deb` |
@@ -39,6 +39,8 @@ A tecla Command funciona como a tecla do logotipo do Windows nos atalhos do Retr
 ## 3. O MacBook Air de 2014 (e outros Mac antigos)
 
 O MacBook Air de 2014 recebe, no máximo, o macOS 11 Big Sur, e o Electron (a base do Retro Computer) pede o macOS 12 desde a versão 38. Mas o computador ainda tem fôlego: com o Linux, ele roda o Retro Computer como o sistema inteiro, bem mais leve que o macOS.
+
+Para o passo a passo mais simples, sem as explicações, veja [macbook-air.md](macbook-air.md).
 
 O Linux recomendado é o **Linux Mint** (a edição Xfce é a mais leve; a Cinnamon, a mais completa): ele é estável, fácil de instalar e já traz o controlador do trackpad, as teclas de brilho e de volume e o instalador do Wi-Fi da Broadcom.
 
