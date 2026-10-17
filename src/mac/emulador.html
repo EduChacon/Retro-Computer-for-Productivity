@@ -1,0 +1,23 @@
+<!doctype html>
+<!--
+  O emulador do Mac Plus (o PCE.js), servido em mac://emulador num quadro isolado da área de
+  trabalho (src/principal/macintosh.js): sem a ponte com o processo principal e sem internet. A
+  janela do Mac (src/sistema/js/apps/mac.js) conversa com ele só por mensagens.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { display: grid; place-items: center; }
+  /* O tamanho vai por variáveis: o emulador apaga o estilo direto do canvas ao mudar a tela. */
+  canvas { display: block; outline: none; border: 0; padding: 0; image-rendering: pixelated; touch-action: none;
+    cursor: none; width: var(--largura, 512px); height: var(--altura, 342px); }
+</style>
+</head>
+<body>
+<canvas id="tela" width="1" height="1" tabindex="0"></canvas>
+<script src="pcejs-macplus.umd.js"></script>
+<script src="emulador.js"></script>
+</body>
+</html>

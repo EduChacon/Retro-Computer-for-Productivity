@@ -683,6 +683,66 @@ def dos(tam):
     return [''.join(l) for l in c]
 
 
+def mac_compacto(tam):
+    """O Mac Plus (o emulador): um computador compacto bege, de desenho próprio, com a tela cinza,
+    a barra de menus, uma janela e a seta, e a fenda do disquete embaixo. Nada da Apple: nem a maçã,
+    nem o rosto sorridente da partida."""
+    c = [['.'] * tam for _ in range(tam)]
+
+    def ret(x0, y0, x1, y1, ch):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                c[y][x] = ch
+
+    if tam >= 32:
+        ret(6, 2, 25, 26, 'K')
+        ret(7, 3, 24, 25, 'N')
+        ret(7, 3, 23, 3, 'W')
+        ret(7, 3, 7, 24, 'W')
+        ret(24, 4, 24, 25, 'M')
+        ret(8, 25, 24, 25, 'M')
+        # A moldura da tela, funda: a sombra em cima e à esquerda, a luz embaixo e à direita.
+        ret(8, 5, 23, 5, 'M')
+        ret(8, 5, 8, 18, 'M')
+        ret(9, 18, 23, 18, 'W')
+        ret(23, 6, 23, 18, 'W')
+        ret(9, 6, 22, 17, 'K')
+        ret(10, 7, 21, 16, 'L')
+        ret(10, 7, 21, 7, 'W')  # a barra de menus
+        ret(10, 8, 21, 8, 'G')
+        ret(11, 10, 15, 15, 'K')  # uma janela
+        ret(12, 11, 14, 14, 'W')
+        ret(12, 11, 14, 11, 'G')
+        seta = ['K...', 'KK..', 'KKK.', 'KKKK', 'KK..', 'K.K.']
+        for j, linha in enumerate(seta):
+            for i, p in enumerate(linha):
+                if p == 'K':
+                    c[10 + j][17 + i] = 'K'
+        # A fenda do disquete e o pé.
+        ret(15, 21, 21, 21, 'K')
+        ret(15, 22, 21, 22, 'W')
+        ret(9, 22, 10, 22, 'M')
+        ret(8, 27, 23, 28, 'K')
+        ret(9, 27, 22, 27, 'M')
+    else:
+        ret(3, 0, 12, 13, 'K')
+        ret(4, 1, 11, 12, 'N')
+        ret(4, 1, 10, 1, 'W')
+        ret(4, 1, 4, 11, 'W')
+        ret(11, 2, 11, 12, 'M')
+        ret(5, 12, 11, 12, 'M')
+        ret(5, 2, 10, 8, 'K')
+        ret(6, 3, 9, 7, 'L')
+        ret(6, 3, 9, 3, 'W')
+        ret(6, 5, 7, 6, 'W')  # uma janela
+        c[5][9] = 'K'  # a seta
+        c[6][9] = 'K'
+        ret(7, 10, 10, 10, 'K')
+        ret(4, 14, 11, 15, 'K')
+        ret(5, 14, 10, 14, 'M')
+    return [''.join(l) for l in c]
+
+
 def pessoa(tam):
     """O usuário (os perfis): a cabeça e os ombros, no verde e com a luz do ícone de usuários do SerenityOS."""
     if tam >= 32:
@@ -1372,6 +1432,10 @@ def gerar(serenity):
     # O DOS (o DOSBox do js-dos): desenho próprio.
     feitos[32]['dos'] = grade(dos(32))
     feitos[16]['dos'] = grade(dos(16))
+
+    # O Mac Plus (o PCE.js): desenho próprio.
+    feitos[32]['mac'] = grade(mac_compacto(32))
+    feitos[16]['mac'] = grade(mac_compacto(16))
 
     # As Damas: duas pedras, desenhadas como as do jogo (src/sistema/js/jogos/pecas.js).
     feitos[32]['damas'] = damas(32)

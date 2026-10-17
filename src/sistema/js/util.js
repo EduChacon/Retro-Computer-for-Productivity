@@ -150,6 +150,8 @@ const TIPOS = {
   sh: ['shell', marcar('Roteiro do shell')], bat: ['shell', marcar('Arquivo de lote')], ps1: ['shell', marcar('Roteiro do PowerShell')],
   ttf: ['fonte', marcar('Fonte TrueType')], otf: ['fonte', marcar('Fonte OpenType')], woff2: ['fonte', marcar('Fonte da web')],
   exe: ['executavel', marcar('Programa')], com: ['executavel', marcar('Programa do DOS')], msi: ['executavel', marcar('Instalador')], dmg: ['executavel', marcar('Imagem de disco')], app: ['executavel', marcar('Programa')],
+  dsk: ['removivel', marcar('Disco do Mac')], image: ['removivel', marcar('Disco do Mac')], dc42: ['removivel', marcar('Disco do Mac')],
+  diskcopy42: ['removivel', marcar('Disco do Mac')], hfv: ['removivel', marcar('Disco do Mac')], rom: ['arquivo', marcar('Imagem da ROM')],
   atalho: ['programa', marcar('Atalho')], ics: ['calendario-arq', marcar('Calendário')], dxf: ['arquivo', marcar('Desenho CAD')], dwg: ['arquivo', marcar('Desenho CAD')],
 };
 

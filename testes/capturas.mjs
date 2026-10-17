@@ -3634,6 +3634,85 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('breakout');
   },
 
+  // O Mac Plus: o que falta (a ROM, depois o disco) e o emulador ligado com uma ROM de teste feita aqui,
+  // que nada tem da Apple: ela só tira a sobreposição da ROM (pela VIA) e pinta a tela com o cinza
+  // pontilhado da época, linha a linha. Com ela, o PCE.js liga, desenha e a janela se ajusta.
+  async mac() {
+    await fecharTudo();
+    await abrir('mac');
+    await pagina.waitForSelector('.janela.mac .mac-falta', { timeout: 20000 });
+    await pagina.waitForTimeout(400);
+    await foto('mac-sem-rom');
+    const codigo = [
+      0x13fc, 0x00ff, 0x00ef, 0xe7fe, // move.b #$FF,$EFE7FE (a VIA: a porta A como saída)
+      0x13fc, 0x0040, 0x00ef, 0xfffe, // move.b #$40,$EFFFFE (sem a sobreposição, com a tela principal)
+      0x41f9, 0x003f, 0xa700, // lea $3FA700,a0 (a tela, no fim dos 4 MB)
+      0x323c, 0x0155, // move.w #341,d1
+      0x243c, 0xaaaa, 0xaaaa, // linha: move.l #$AAAAAAAA,d2
+      0x0801, 0x0000, // btst #0,d1
+      0x6706, // beq.s par
+      0x243c, 0x5555, 0x5555, // move.l #$55555555,d2
+      0x700f, // par: moveq #15,d0
+      0x20c2, // coluna: move.l d2,(a0)+
+      0x51c8, 0xfffc, // dbra d0,coluna
+      0x51c9, 0xffe4, // dbra d1,linha
+      0x60fe, // fim: bra.s fim
+    ];
+    const rom = Buffer.alloc(131072);
+    rom.writeUInt32BE(0x00040000, 0); // a pilha
+    rom.writeUInt32BE(0x00400008, 4); // o começo do programa
+    codigo.forEach((w, i) => rom.writeUInt16BE(w, 8 + 2 * i));
+    await pagina.evaluate((b) => retro.disco.gravar('Mac/Teste.rom', new Uint8Array(b)), [...rom]);
+    await pagina.locator('.janela.mac .mac-falta button').nth(1).click();
+    await pagina.waitForFunction(() => /disquete do Sistema|System floppy|disquete del Sistema/.test((document.querySelector('.janela.mac .mac-falta') || {}).textContent || ''), null, { timeout: 20000 });
+    await pagina.waitForTimeout(300);
+    await foto('mac-sem-disco');
+    await pagina.evaluate(() => retro.disco.gravar('Mac/System de teste.img', new Uint8Array(819200)));
+    await pagina.locator('.janela.mac .mac-falta button').nth(1).click();
+    await pagina.waitForFunction(() => { const a = document.querySelector('.janela.mac .dos-aviso'); return a && a.hidden; }, null, { timeout: 60000 });
+    await pagina.waitForTimeout(2500);
+    const quadro = pagina.frames().find((f) => f.url().startsWith('mac://'));
+    const tela = quadro && await quadro.evaluate(() => {
+      const c = document.getElementById('tela');
+      // O cinza pontilhado: metade dos pontos acesos, lidos do canvas do emulador.
+      const g = c.getContext('2d') || null;
+      return { w: c.width, h: c.height, css: getComputedStyle(c).width + ' × ' + getComputedStyle(c).height, ctx2d: !!g, registro: (window.__registroPce || []).slice(-30) };
+    }).catch((e) => ({ erro: e.message }));
+    console.log('mac:', JSON.stringify({ tela, status: await pagina.evaluate(() => [...document.querySelectorAll('.janela.mac .status span, .janela.mac .status > *')].map((e) => e.textContent).join(' | ')) }));
+    await foto('mac-ligado');
+    // A volta dos discos: o Mac "grava" no disquete (o roteiro muda um byte do arquivo na memória do
+    // emulador, como a gravação do PCE faria) e Arquivo › Guardar no disco o leva ao disco C:.
+    await quadro.evaluate(() => { const d = window.__discosPce[0]; d.no.contents[0] = 0x42; d.no.timestamp = Date.now() + 1000; });
+    await pagina.locator('.janela.mac iframe').click({ position: { x: 100, y: 100 } });
+    await pagina.click('.janela.ativa .menubar >> text=' + T('&Arquivo'));
+    await pagina.click('.menu >> text=' + T('&Guardar no disco'));
+    await pagina.waitForSelector('.janela.ativa.dialogo', { timeout: 10000 }).catch(() => null);
+    await pagina.waitForTimeout(500);
+    await foto('mac-guardado');
+    console.log('mac guardar:', JSON.stringify(await pagina.evaluate(async () => {
+      const b = await retro.disco.ler('Mac/System de teste.img').catch((e) => ({ erro: e.message }));
+      return { primeiro: b && b[0], tamanho: b && b.length, versoes: (await retro.disco.versoes('Mac/System de teste.img').catch(() => [])).length };
+    })));
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(300);
+    await pagina.locator('.janela.mac iframe').click({ position: { x: 100, y: 100 } });
+    await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('mac')).maximizar());
+    await pagina.waitForTimeout(300);
+    await pagina.click('.janela.ativa .menubar >> text=' + T('&Exibir'));
+    await pagina.waitForTimeout(300);
+    await foto('mac-exibir');
+    await pagina.click('.menu >> text=' + T('&Ajustar à janela'));
+    await pagina.waitForTimeout(1500);
+    await foto('mac-ajustado');
+    await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('mac')).fechar());
+    await pagina.waitForTimeout(2500);
+    console.log('mac fechado:', JSON.stringify(await pagina.evaluate(async () => ({
+      janela: window.__retro.janelas.lista.some((j) => j.el.classList.contains('mac')),
+      disco: (await retro.disco.listar('Mac')).map((i) => i.nome),
+    }))));
+    await fecharTudo();
+  },
+
   // O Claude ajusta o Retro Computer: o roteiro faz o papel do Claude Code, roda o servidor MCP com o
   // config que o Retro Computer gravou e pede o fundo azul-marinho, a Calculadora no Iniciar e um aviso.
   async claudeAjusta() {

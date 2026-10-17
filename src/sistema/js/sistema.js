@@ -256,6 +256,11 @@ export async function abrirArquivo(rel, { com } = {}) {
     adicionarRecente(rel);
     return abrir('dos', { arquivo: rel });
   }
+  // As imagens de disco do Mac (o .img fica de fora: é de muitos outros sistemas) abrem no Mac Plus.
+  if (!com && /\.(dsk|image|dc42|diskcopy42|hfv)$/i.test(nome)) {
+    adicionarRecente(rel);
+    return abrir('mac', { arquivo: rel });
+  }
   // No Linux, os programas e os instaladores do Windows abrem pelo WINE.
   if (!com && estado.config.plataforma === 'linux' && /\.(exe|msi)$/i.test(nome)) {
     adicionarRecente(rel);

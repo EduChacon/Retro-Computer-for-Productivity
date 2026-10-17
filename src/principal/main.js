@@ -52,6 +52,7 @@ const { AcessibilidadeLinux } = require('./acessibilidade');
 const { Antivirus } = require('./antivirus');
 const { Wine } = require('./wine');
 const { Dos, servirEmulador } = require('./dos');
+const { Mac, servirEmulador: servirEmuladorMac } = require('./macintosh');
 const { ServidorMcp, filtrarConfig } = require('./mcp');
 const { dentro: dentroDaUnidade } = require('./unidades');
 const { HistoricoTransferencia } = require('./transferencia');
@@ -181,6 +182,8 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'programa', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   // O DOS (dos.js): o emulador numa origem só dele.
   { scheme: 'dos', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  // O Mac Plus (macintosh.js): o emulador também numa origem só dele.
+  { scheme: 'mac', privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
 
 if (!TRAVA) {
@@ -368,6 +371,7 @@ function registrarProtocolos() {
   });
   protocol.handle('programa', (pedido) => programas.servir(pedido));
   protocol.handle('dos', (pedido) => servirEmulador(pedido, RAIZ_APP));
+  protocol.handle('mac', (pedido) => servirEmuladorMac(pedido, RAIZ_APP));
 }
 
 /* ---------- A janela ---------- */
@@ -1237,6 +1241,10 @@ function registrarPonte() {
   tratar('dos:abrir', (rel) => dos.abrir(String(rel || '')));
   tratar('dos:guardar', (pasta, foto, arquivos, pastas) => dos.guardar(String(pasta || ''), foto, arquivos, pastas));
   tratar('dos:tipo', (rel) => dos.tipo(String(rel || '')));
+  // O Mac Plus: a ROM e os discos da pasta C:\Mac vão para o emulador; os discos que mudaram voltam.
+  const mac = new Mac({ disco });
+  tratar('mac:abrir', (rel) => mac.abrir(String(rel || '')));
+  tratar('mac:guardar', (foto, discos) => mac.guardar(foto || {}, discos || []));
   tratar('wine:estado', () => wine.estado());
   tratar('wine:abrir', (rel) => wine.abrir(disco.real(String(rel || ''))));
   tratar('wine:programas', () => wine.programas().map((p) => ({ id: p.id, nome: p.nome })));

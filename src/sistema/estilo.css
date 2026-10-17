@@ -1709,3 +1709,9 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 .av-ameaca { color: #800000; white-space: nowrap; }
 .av-linha.sel .av-ameaca { color: inherit; }
 .av-nada { color: var(--sombra); padding: 2px 4px; }
+
+/* O Mac Plus: o que falta para ligar (a ROM ou um disco), no lugar da tela */
+.mac-falta { align-self: stretch; justify-self: stretch; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; padding: 16px 24px; background: var(--face); color: #000; text-align: center; width: 500px; min-height: 240px; }
+.mac-falta p { margin: 0; max-width: 440px; line-height: 1.35; }
+.mac-falta-botoes { display: flex; gap: 8px; }

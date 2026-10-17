@@ -327,6 +327,10 @@ contextBridge.exposeInMainWorld('retro', {
     guardar: (pasta, foto, arquivos, pastas) => chamar('dos:guardar', pasta, foto, arquivos, pastas),
     tipo: (rel) => chamar('dos:tipo', rel),
   },
+  mac: {
+    abrir: (rel) => chamar('mac:abrir', rel),
+    guardar: (foto, discos) => chamar('mac:guardar', foto, discos),
+  },
   wine: {
     estado: () => chamar('wine:estado'),
     abrir: (rel) => chamar('wine:abrir', rel),
