@@ -79,10 +79,12 @@ async function textoPdf(bytes) {
     pdfjs.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs';
   }
   // Os mapas de caracteres e as fontes padrão vêm do próprio pdfjs-dist (os PDFs com fontes CID).
+  // O pdf.js pede que a pasta termine com "/" (e lê com o fs, que no Windows também aceita a barra normal).
   const raiz = path.dirname(require.resolve('pdfjs-dist/package.json'));
+  const pasta = (nome) => path.join(raiz, nome).split(path.sep).join('/') + '/';
   const tarefa = pdfjs.getDocument({
     data: new Uint8Array(bytes), isEvalSupported: false, disableFontFace: true, useSystemFonts: false, verbosity: 0,
-    cMapUrl: path.join(raiz, 'cmaps') + path.sep, cMapPacked: true, standardFontDataUrl: path.join(raiz, 'standard_fonts') + path.sep,
+    cMapUrl: pasta('cmaps'), cMapPacked: true, standardFontDataUrl: pasta('standard_fonts'),
   });
   try {
     const doc = await tarefa.promise;
