@@ -92,7 +92,7 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 
 ### Discos
 
-Iniciar › Programas › Acessórios › Discos (ou Painel de controle › Disco › Limpeza de disco…).
+Iniciar › Programas › Acessórios › Discos (ou Painel de controle › Disco C: › Limpeza de disco…).
 
 - **Pendrives e cartões**: os pendrives, os cartões e os HDs ligados pela USB, inteiros, com as partições (também as sem letra, como as de um pendrive com o Linux gravado). Formatar, remover com segurança e **Gravar imagem…**: uma `.iso` ou `.img` do disco C: (como a do Linux Mint) vai para o pendrive inteiro e é conferida pedaço a pedaço, com o andamento e o tempo que falta; Parar interrompe. Depois de gravado, o pendrive liga outro computador.
 - **Espaço em disco**: quanto o disco C: ocupa, as pastas que mais ocupam e o espaço livre do computador. A **Limpeza de disco** apaga de vez, depois da confirmação, só o que for marcado: a Lixeira, as versões anteriores com mais de 30 dias, os arquivos temporários da Internet e as miniaturas do Explorador.

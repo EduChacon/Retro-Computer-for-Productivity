@@ -24,6 +24,8 @@ No Mac, abra o menu da maçã › **Sobre Este Mac** e veja a linha do processad
 
 Nada é copiado à mão para o pendrive: o balenaEtcher grava nele o Linux Mint inteiro (o arquivo `.iso`), e o pendrive passa a ser o instalador. O Retro Computer (o `.deb`) só é baixado no fim, já no MacBook (Parte 5).
 
+> **Pelo próprio Retro Computer (1.5.0 ou mais novo), sem o balenaEtcher:** ponha o `.iso` no disco C: (o Navegador do Retro Computer guarda o que baixa em Meus documentos › Recebidos) e abra Iniciar › Programas › Acessórios › **Discos**. Escolha o pendrive, clique em **Gravar imagem…**, escolha o `.iso` e confirme (o Windows pede a confirmação dele). No fim, a cópia é conferida, e o pendrive está pronto para a Parte 2.
+
 1. Baixe o **Linux Mint 22.3 Xfce**: o arquivo `linuxmint-22.3-xfce-64bit.iso` (2,8 GB), na página <https://linuxmint.com/edition.php?id=327> (o espelho do Brasil, da UFPR, é o mais rápido daqui). Para conferir o arquivo, o SHA-256 publicado é `45a835b5dddaf40e84d776549e0b19b3fbd49673b6cc6434ebddbfcd217df776` (no PowerShell, `Get-FileHash .\linuxmint-22.3-xfce-64bit.iso`).
 2. Baixe e abra o **balenaEtcher** em <https://etcher.balena.io/>.
 3. No Etcher: **Flash from file** (escolha o `.iso`), **Select target** (escolha o pendrive) e **Flash!**. Espere terminar e tire o pendrive. Se o Windows perguntar se quer formatar o pendrive, clique em **Cancelar**: ele não lê o formato do Linux, e isso é normal.
