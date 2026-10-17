@@ -15,6 +15,7 @@ import { entrada, confirmar, mensagem, ajustarAoConteudo } from '../dialogos.js'
 import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
 import { luzPorCima } from '../luz-noturna.js';
+import { variasTelas, telaDoRet } from '../telas.js';
 import { reorganizavel, arrastando } from '../reorganizar.js';
 import { ehPasta, itensDe, todosFavoritos, favoritoEm, lugarDe, semFavorito, comFavorito, moverFavorito, comPasta, semPasta, reordenada, reordenadaNaPasta, comIcone } from '../favoritos.js';
 
@@ -683,6 +684,11 @@ class Navegador {
       if (!wv.isConnected || document.fullscreenElement === wv || this.cheia === wv) return;
       this.cheia = wv;
       wv.classList.add('nav-tela-cheia');
+      // Com as duas telas, o vídeo fica na tela da janela do Navegador (e não partido entre os monitores).
+      if (variasTelas()) {
+        const s = telaDoRet(this.j.el.getBoundingClientRect());
+        Object.assign(wv.style, { inset: 'auto', left: s.x + 'px', top: s.y + 'px', width: s.w + 'px', height: s.h + 'px' });
+      }
       try { wv.popover = 'manual'; wv.showPopover(); } catch { }
       luzPorCima();
       retro.navegador.telaCheia(true).catch(() => { });
@@ -695,6 +701,7 @@ class Navegador {
     try { wv.hidePopover(); } catch { }
     wv.removeAttribute('popover');
     wv.classList.remove('nav-tela-cheia');
+    for (const p of ['inset', 'left', 'top', 'width', 'height']) wv.style.removeProperty(p);
     retro.navegador.telaCheia(false).catch(() => { });
   }
 

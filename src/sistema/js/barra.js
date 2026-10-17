@@ -18,6 +18,8 @@ import { variosPerfis, perfilAtual, nomeDoPerfil } from './perfis.js';
 import { usaFirefox as firefoxPadrao } from './apps/navegador.js';
 import { naMesa, adicionarAtalho, removerAtalho } from './mesa.js';
 import { reorganizavel as reorganizavelFaixa, arrastando } from './reorganizar.js';
+import { variasTelas, listaTelas, mesmaTela, aoMudarTelas, definirBarraNasOutras } from './telas.js';
+import { reajustarJanelas } from './janelas.js';
 
 let btIniciar;
 let tarefas;
@@ -29,14 +31,20 @@ let busca;
 const mostrarBusca = () => !(estado.config.barra && estado.config.barra.busca === false);
 const mostrarData = () => !!(estado.config.barra && estado.config.barra.data);
 
+/** O botão Iniciar: o da barra principal (#iniciar) e o de cada outra tela (.bt-iniciar). */
+function botaoIniciar(principal) {
+  const b = h(principal ? 'button#iniciar' : 'button.bt-iniciar', { dataset: { abreMenu: '1' }, title: tr('Clique aqui para começar.') }, img('logo', 16), h('span', tr('Iniciar')));
+  b.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    if (b.classList.contains('apertado')) fecharMenus();
+    else abrirIniciar(b);
+  });
+  return b;
+}
+
 export function montarBarra() {
   const barra = document.getElementById('barra');
-  btIniciar = h('button#iniciar', { dataset: { abreMenu: '1' }, title: tr('Clique aqui para começar.') }, img('logo', 16), h('span', tr('Iniciar')));
-  btIniciar.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    if (btIniciar.classList.contains('apertado')) fecharMenus();
-    else abrirIniciar();
-  });
+  btIniciar = botaoIniciar(true);
   tarefas = h('div#tarefas');
   fixadosEl = h('div#fixados');
   sepFixados = h('div.sep-barra');
@@ -55,49 +63,22 @@ export function montarBarra() {
   busca.hidden = !mostrarBusca();
   // Como no Windows de hoje: o Iniciar, a busca e os programas fixados à esquerda.
   barra.append(btIniciar, h('div.sep-barra'), busca, fixadosEl, sepFixados, tarefas, bandeja);
-
-  barra.addEventListener('contextmenu', (e) => {
-    if (e.target.closest('#tarefas button')) return;
-    e.preventDefault();
-    // O botão direito no Iniciar, como no Windows 95: abrir o menu, explorar e as propriedades.
-    if (e.target.closest('#iniciar')) {
-      return abrirMenu([
-        { rotulo: tr('&Abrir'), negrito: true, acao: () => abrirIniciar() },
-        { rotulo: tr('&Explorar'), acao: () => abrir('explorador', { pasta: pastaDocs() }) },
-        { rotulo: tr('&Localizar'), acao: () => abrir('localizar') },
-        { separador: true },
-        { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'barra', aba: 1 }) },
-      ], { x: e.clientX, y: e.clientY, acima: true });
-    }
-    if (e.target.closest('.relogio')) {
-      return abrirMenu([
-        { rotulo: tr('&Ajustar data e hora…'), negrito: true, acao: () => abrir('painel', { secao: 'data' }) },
-        { rotulo: tr('Mostrar a &data'), marcado: mostrarData(), acao: () => alternarData() },
-      ], { x: e.clientX, y: e.clientY, acima: true });
-    }
-    abrirMenu([
-      { rotulo: tr('&Em cascata'), acao: emCascata },
-      { rotulo: tr('Lado a lado &horizontal'), acao: () => lado(false) },
-      { rotulo: tr('Lado a lado &vertical'), acao: () => lado(true) },
-      { separador: true },
-      { rotulo: tr('&Minimizar todas as janelas'), acao: minimizarTodas },
-      { separador: true },
-      { rotulo: tr('Mostrar a caixa de &busca'), marcado: mostrarBusca(), acao: () => definirConfig({ barra: { busca: !mostrarBusca() } }).then(() => { busca.hidden = !mostrarBusca(); }) },
-      {
-        rotulo: tr('Botões das &janelas'), sub: () => [
-          { rotulo: tr('Com o &nome'), radio: true, marcado: modoBotoes() === 'nomes', acao: () => definirConfig({ barra: { botoes: 'nomes' } }) },
-          { rotulo: tr('Só os &ícones, agrupados por programa'), radio: true, marcado: modoBotoes() === 'icones', acao: () => definirConfig({ barra: { botoes: 'icones' } }) },
-        ],
-      },
-      { separador: true },
-      { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'barra' }) },
-    ], { x: e.clientX, y: e.clientY, acima: true });
-  });
+  barra.addEventListener('contextmenu', menuDaBarra);
 
   evJanelas.on('mudou', desenharTarefas);
+  // Uma janela mudou de lugar (arrastada, maximizada, encaixada): o botão dela vai para a barra da tela em que ficou.
+  evJanelas.on('lugar', () => { if (outras.length) desenharTarefas(); });
   eventosNativas.on('mudou', desenharTarefas);
-  evSistema.on('config', () => { tique(); desenharTarefas(); busca.hidden = !mostrarBusca(); });
+  evSistema.on('config', () => {
+    tique();
+    busca.hidden = !mostrarBusca();
+    if (barraEmTodas() !== ligadaNasOutras) { montarOutras(); reajustarJanelas(); }
+    desenharTarefas();
+  });
   evSistema.on('programas', desenharTarefas);
+  // As duas telas: uma barra em cada outra tela (e nenhuma, com uma tela só).
+  aoMudarTelas(() => { montarOutras(); desenharTarefas(); });
+  montarOutras();
   desenharTarefas();
   evSistema.on('foco', (f) => {
     focoIco.hidden = !f.ativo;
@@ -109,19 +90,64 @@ export function montarBarra() {
   setInterval(tique, 1000);
 }
 
+/** O botão direito na barra de tarefas (a principal e a de cada outra tela). */
+function menuDaBarra(e) {
+  if (e.target.closest('#tarefas button, .barra-tela .tarefas button')) return;
+  e.preventDefault();
+  // O botão direito no Iniciar, como no Windows 95: abrir o menu, explorar e as propriedades.
+  const bt = e.target.closest('#iniciar, .bt-iniciar');
+  if (bt) {
+    return abrirMenu([
+      { rotulo: tr('&Abrir'), negrito: true, acao: () => abrirIniciar(bt) },
+      { rotulo: tr('&Explorar'), acao: () => abrir('explorador', { pasta: pastaDocs() }) },
+      { rotulo: tr('&Localizar'), acao: () => abrir('localizar') },
+      { separador: true },
+      { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'barra', aba: 1 }) },
+    ], { x: e.clientX, y: e.clientY, acima: true });
+  }
+  if (e.target.closest('.relogio')) {
+    return abrirMenu([
+      { rotulo: tr('&Ajustar data e hora…'), negrito: true, acao: () => abrir('painel', { secao: 'data' }) },
+      { rotulo: tr('Mostrar a &data'), marcado: mostrarData(), acao: () => alternarData() },
+    ], { x: e.clientX, y: e.clientY, acima: true });
+  }
+  abrirMenu([
+    { rotulo: tr('&Em cascata'), acao: emCascata },
+    { rotulo: tr('Lado a lado &horizontal'), acao: () => lado(false) },
+    { rotulo: tr('Lado a lado &vertical'), acao: () => lado(true) },
+    { separador: true },
+    { rotulo: tr('&Minimizar todas as janelas'), acao: minimizarTodas },
+    { separador: true },
+    { rotulo: tr('Mostrar a caixa de &busca'), marcado: mostrarBusca(), acao: () => definirConfig({ barra: { busca: !mostrarBusca() } }).then(() => { busca.hidden = !mostrarBusca(); }) },
+    ...(variasTelas() ? [{ rotulo: tr('Mostrar a barra em todas as &telas'), marcado: barraEmTodas(), acao: () => definirConfig({ barra: { todasTelas: !barraEmTodas() } }) }] : []),
+    {
+      rotulo: tr('Botões das &janelas'), sub: () => [
+        { rotulo: tr('Com o &nome'), radio: true, marcado: modoBotoes() === 'nomes', acao: () => definirConfig({ barra: { botoes: 'nomes' } }) },
+        { rotulo: tr('Só os &ícones, agrupados por programa'), radio: true, marcado: modoBotoes() === 'icones', acao: () => definirConfig({ barra: { botoes: 'icones' } }) },
+      ],
+    },
+    { separador: true },
+    { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'barra' }) },
+  ], { x: e.clientX, y: e.clientY, acima: true });
+}
+
 function tique() {
   const d = new Date();
   const hora = d.toLocaleTimeString(localidade(), { hour: '2-digit', minute: '2-digit' });
   // Com a data, o relógio fica em duas linhas: a hora em cima e a data embaixo.
   const data = mostrarData() ? d.toLocaleDateString(localidade(), { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
   const chave = hora + '|' + data;
-  if (relogio.dataset.chave !== chave) {
-    relogio.dataset.chave = chave;
-    relogio.classList.toggle('com-data', !!data);
-    document.body.classList.toggle('barra-alta', !!data);
-    relogio.replaceChildren(...(data ? [h('span', hora), h('span', data)] : [hora]));
+  document.body.classList.toggle('barra-alta', !!data);
+  const dica = d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  // O relógio da barra principal e o de cada outra tela.
+  for (const r of [relogio, ...outras.map((o) => o.relogio)]) {
+    if (r.dataset.chave !== chave) {
+      r.dataset.chave = chave;
+      r.classList.toggle('com-data', !!data);
+      r.replaceChildren(...(data ? [h('span', hora), h('span', data)] : [hora]));
+    }
+    r.dataset.dica = dica;
   }
-  relogio.dataset.dica = d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export function alternarData() {
@@ -302,44 +328,48 @@ function desenharTarefas() {
   fixadosEl.hidden = !rapidos.length;
   sepFixados.hidden = !rapidos.length;
   tarefas.classList.toggle('so-icones', icones);
-  if (icones) return desenharGrupos(visiveis, ativa);
-  tarefas.replaceChildren(...visiveis.map((j) => {
-    const pj = j.nativa && j.programa ? programaDe(j.programa) : null;
-    const b = h('button', { title: j.titulo }, pj ? iconeDe(pj) : j.icone ? img(j.icone, 16) : null, h('span', j.titulo));
-    b.janela = j;
-    reorganizavel(b, tarefas, (bs) => bs.forEach((x, i) => posicaoJanela.set(chaveJanela(x.janela), i)));
-    if (naFrente(j, ativa)) b.classList.add('apertado');
-    b.addEventListener('mousedown', (e) => e.preventDefault());
-    b.addEventListener('click', () => {
-      if (naFrente(j, ativa)) j.minimizar();
-      else j.focar();
-    });
-    // O clique da roda abre outra janela do mesmo programa (como no Windows).
-    b.addEventListener('auxclick', (e) => { const p = e.button === 1 && programaDe(j.programa); if (p) p.abrir(); });
-    b.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      const p = programaDe(j.programa);
-      abrirMenu([
-        // As janelas do Linux: trazer para a frente e minimizar (o tamanho é com o próprio programa).
-        { rotulo: tr('&Restaurar'), desativado: !j.nativa && !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
-        { rotulo: tr('Mi&nimizar'), desativado: j.minimizada, acao: () => j.minimizar() },
-        ...(j.nativa ? [] : [{ rotulo: tr('Ma&ximizar'), desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } }]),
-        ...(p ? [{ separador: true }, fixarOuDesafixar(p.chave)] : []),
-        { separador: true },
-        { rotulo: tr('&Fechar'), negrito: true, atalho: 'Alt+F4', acao: () => j.fechar() },
-      ], { x: e.clientX, y: e.clientY, acima: true });
-    });
-    return b;
-  }));
+  if (icones) desenharGrupos(visiveis, ativa);
+  else tarefas.replaceChildren(...visiveis.map((j) => botaoJanela(j, ativa, tarefas, (bs) => bs.forEach((x, i) => posicaoJanela.set(chaveJanela(x.janela), i)))));
+  desenharOutras(visiveis, ativa, icones);
+}
+
+/** O botão de uma janela na barra (faixa: a lista de botões; aoSoltar: a ordem nova, depois de arrastar). */
+function botaoJanela(j, ativa, faixa, aoSoltar) {
+  const pj = j.nativa && j.programa ? programaDe(j.programa) : null;
+  const b = h('button', { title: j.titulo }, pj ? iconeDe(pj) : j.icone ? img(j.icone, 16) : null, h('span', j.titulo));
+  b.janela = j;
+  reorganizavel(b, faixa, aoSoltar);
+  if (naFrente(j, ativa)) b.classList.add('apertado');
+  b.addEventListener('mousedown', (e) => e.preventDefault());
+  b.addEventListener('click', () => {
+    if (naFrente(j, ativa)) j.minimizar();
+    else j.focar();
+  });
+  // O clique da roda abre outra janela do mesmo programa (como no Windows).
+  b.addEventListener('auxclick', (e) => { const p = e.button === 1 && programaDe(j.programa); if (p) p.abrir(); });
+  b.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const p = programaDe(j.programa);
+    abrirMenu([
+      // As janelas do Linux: trazer para a frente e minimizar (o tamanho é com o próprio programa).
+      { rotulo: tr('&Restaurar'), desativado: !j.nativa && !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
+      { rotulo: tr('Mi&nimizar'), desativado: j.minimizada, acao: () => j.minimizar() },
+      ...(j.nativa ? [] : [{ rotulo: tr('Ma&ximizar'), desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } }]),
+      ...(p ? [{ separador: true }, fixarOuDesafixar(p.chave)] : []),
+      { separador: true },
+      { rotulo: tr('&Fechar'), negrito: true, atalho: 'Alt+F4', acao: () => j.fechar() },
+    ], { x: e.clientX, y: e.clientY, acima: true });
+  });
+  return b;
 }
 
 /**
  * Só os ícones, como no Windows de hoje: um botão por programa (os fixados primeiro, na ordem
  * deles), com uma marca embaixo quando há janela aberta. Com várias janelas, o clique mostra a lista.
  */
-function desenharGrupos(visiveis, ativa) {
+function desenharGrupos(visiveis, ativa, { alvo = tarefas, comFixados = true, ordem = null } = {}) {
   const grupos = new Map();
-  for (const k of fixados()) {
+  for (const k of comFixados ? fixados() : []) {
     const p = programaDe(k);
     if (p) grupos.set(k, { p, janelas: [] });
   }
@@ -355,14 +385,17 @@ function desenharGrupos(visiveis, ativa) {
   }
   // A ordem arrastada (até fechar o Retro Computer); os grupos novos vão para o fim.
   const naturais = [...grupos.keys()];
-  const pos = (k) => (ordemGrupos.has(k) ? ordemGrupos.get(k) : 1e6 + naturais.indexOf(k));
+  const mapa = ordem || ordemGrupos;
+  const pos = (k) => (mapa.has(k) ? mapa.get(k) : 1e6 + naturais.indexOf(k));
   const chaves = naturais.slice().sort((a, b) => pos(a) - pos(b));
-  tarefas.replaceChildren(...chaves.map((k) => {
+  alvo.replaceChildren(...chaves.map((k) => {
     const g = grupos.get(k);
     const js = g.janelas;
     const b = h('button.prog', { title: js.length === 1 ? js[0].titulo : g.p.nome }, iconeDe(g.p));
     b.grupo = k;
-    reorganizavel(b, tarefas, (bs) => {
+    // Na barra de outra tela, a ordem é só dela (os fixados ficam na principal).
+    reorganizavel(b, alvo, (bs) => {
+      if (ordem) { bs.forEach((x, i) => ordem.set(x.grupo, i)); return desenharTarefas(); }
       ordemGrupos = new Map(bs.map((x, i) => [x.grupo, i]));
       gravarFixados(bs.map((x) => x.grupo).filter((x) => typeof x === 'string'));
     });
@@ -394,6 +427,70 @@ function desenharGrupos(visiveis, ativa) {
     });
     return b;
   }));
+}
+
+/* ---------- A barra nas outras telas ---------- */
+
+/*
+ * Com as duas telas (e a opção de Painel › Barra de tarefas, ligada por padrão), cada outra tela tem
+ * a sua barra, como a "barra de tarefas em todas as telas" do Windows: o Iniciar, os botões das
+ * janelas que estão nela e o relógio. A principal continua com todas as janelas, os fixados, a busca
+ * e a bandeja (como a escolha do Windows "a barra principal e a barra em que a janela está aberta").
+ */
+export const barraEmTodas = () => !(estado.config.barra && estado.config.barra.todasTelas === false);
+let outras = []; // { tela, el, tarefas, relogio }
+let ligadaNasOutras = null;
+const ordemOutras = new Map(); // só com os ícones: a ordem arrastada dos grupos de cada tela (pelo lugar dela)
+
+/** Monta (ou desmonta) a barra de cada tela que não é a principal. */
+function montarOutras() {
+  for (const o of outras) o.el.remove();
+  outras = [];
+  ligadaNasOutras = barraEmTodas();
+  definirBarraNasOutras(ligadaNasOutras);
+  if (!variasTelas() || !ligadaNasOutras) return;
+  const antesDe = document.getElementById('camada-menus');
+  for (const t of listaTelas()) {
+    if (t.principal) continue;
+    const faixa = h('div.tarefas');
+    const rel = h('span.relogio', { style: { cursor: 'pointer' } });
+    rel.addEventListener('mousedown', (e) => { if (e.button === 0) { e.preventDefault(); alternarCalendario(rel); } });
+    const el = h('div.barra-tela', { style: { left: t.x + 'px', width: t.w + 'px', top: `calc(${t.y + t.h}px - var(--altura-barra))` } },
+      botaoIniciar(false), h('div.sep-barra'), faixa, h('div.bandeja', rel));
+    el.addEventListener('contextmenu', menuDaBarra);
+    antesDe.before(el);
+    outras.push({ tela: t, el, tarefas: faixa, relogio: rel });
+  }
+  tique();
+}
+
+/** Os botões das janelas de cada outra tela (visiveis: todas, na ordem da barra). */
+function desenharOutras(visiveis, ativa, icones) {
+  for (const o of outras) {
+    const js = visiveis.filter((j) => !j.nativa && j.tela && mesmaTela(j.tela(), o.tela));
+    o.tarefas.classList.toggle('so-icones', icones);
+    if (icones) {
+      const k = `${o.tela.x},${o.tela.y}`;
+      if (!ordemOutras.has(k)) ordemOutras.set(k, new Map());
+      desenharGrupos(js, ativa, { alvo: o.tarefas, comFixados: false, ordem: ordemOutras.get(k) });
+    } else {
+      o.tarefas.replaceChildren(...js.map((j) => botaoJanela(j, ativa, o.tarefas, (bs) => reordenarParte(bs.map((x) => x.janela)))));
+    }
+  }
+}
+
+/** A ordem nova de uma parte das janelas (a barra de outra tela): elas trocam de lugar entre si na ordem de todas. */
+function reordenarParte(js) {
+  const pos = js.map((j) => posicaoJanela.get(chaveJanela(j))).sort((a, b) => a - b);
+  js.forEach((j, i) => posicaoJanela.set(chaveJanela(j), pos[i]));
+}
+
+/** O Iniciar da tela da janela da frente (a tecla do logotipo e o Ctrl+Esc abrem o menu lá). */
+function iniciarDaFrente() {
+  const j = janelaAtiva();
+  const t = j && !j.minimizada && j.tela ? j.tela() : null;
+  const o = t && outras.find((x) => mesmaTela(x.tela, t));
+  return o ? o.el.querySelector('.bt-iniciar') : btIniciar;
 }
 
 /* ---------- O menu Iniciar ---------- */
@@ -498,19 +595,20 @@ function itensDocumentos() {
 
 /** A tecla do logotipo: abre o Iniciar, ou fecha se já estiver aberto. */
 export function alternarIniciar() {
-  if (btIniciar.classList.contains('apertado')) fecharMenus();
-  else abrirIniciar();
+  if (document.querySelector('#iniciar.apertado, .bt-iniciar.apertado')) fecharMenus();
+  else abrirIniciar(iniciarDaFrente());
 }
 
-export async function abrirIniciar() {
-  const r = btIniciar.getBoundingClientRect();
+/** Abre o menu Iniciar sobre o botão bt (o da barra principal, ou o de outra tela). */
+export async function abrirIniciar(bt = btIniciar) {
+  const r = bt.getBoundingClientRect();
   const pequenos = !!cfgIniciar().pequenos;
   // Com os ícones pequenos, como no Windows 95, o menu fica mais baixo e sem a faixa do lado.
   const el = h('div.menu.iniciar.com-icones' + (pequenos ? '.pequenos' : ''));
   const itens = h('div.itens');
   if (!pequenos) el.append(h('div.faixa', h('span', h('b', 'Retro'), ' Computer')));
   el.append(itens);
-  btIniciar.classList.add('apertado');
+  bt.classList.add('apertado');
   const se = (id, item) => (ocultoNoIniciar(id) ? [] : [{ ...item, contexto: contextoItem(id) }]);
   // Os programas fixados pelo usuário ficam no alto, como no Windows de depois.
   const fixos = fixadosIniciar().map(programaDe).filter(Boolean)
@@ -549,7 +647,7 @@ export async function abrirIniciar() {
     elemento: el,
     corpo: itens,
     tamIcone: pequenos ? 16 : 32,
-    aoFechar: () => btIniciar.classList.remove('apertado'),
+    aoFechar: () => bt.classList.remove('apertado'),
   });
 }
 
@@ -557,7 +655,7 @@ export async function abrirIniciar() {
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'Escape') {
     e.preventDefault();
-    abrirIniciar();
+    abrirIniciar(iniciarDaFrente());
   }
 });
 

@@ -156,7 +156,7 @@ No Linux, Painel de controle › **Firewall** liga o firewall do sistema (o `ufw
 - **Luz noturna** (Painel de controle › Aparência › Efeitos): as cores mais quentes, com menos azul, das 20h às 7h (as horas se escolhem) ou o dia todo, na intensidade escolhida. No Retro Computer como sistema, ela vale também para os programas do Linux.
 - **Cantos magnéticos** (Aparência › Efeitos, ligados): arrastar a janela até a borda a encaixa; a tecla do logotipo com as setas faz o mesmo.
 - **Área da tela** (Aparência › Configurações, no Retro Computer como sistema): a resolução do monitor; se a tela nova não aparecer bem, ela volta à anterior em 15 segundos.
-- **Várias telas** (Aparência › Configurações, com dois monitores): no Retro Computer como sistema, duplicar, estender ou mostrar só numa delas (pelo `xrandr`, com a mesma pergunta de manter). Estendidas, o Retro Computer fica na tela principal, a outra mostra a cor da área de trabalho, e os programas do Linux podem ir para ela. Fora do modo sistema, a lista escolhe em qual monitor o Retro Computer abre.
+- **Várias telas** (Aparência › Configurações, com dois monitores): no Retro Computer como sistema, duplicar, estender ou mostrar só numa delas (pelo `xrandr`, com a mesma pergunta de manter). Estendidas, o Retro Computer fica na tela principal, a outra mostra a cor da área de trabalho, e os programas do Linux podem ir para ela. Fora do modo sistema (Windows e Mac), a lista escolhe em qual monitor o Retro Computer abre, ou "Usar as duas telas na tela cheia" faz a área de trabalho cobrir todos os monitores: os ícones ficam na tela principal; cada tela tem o papel de parede inteiro e a sua barra de tarefas (Painel › Barra de tarefas › "Mostrar a barra de tarefas em todas as telas", ligada por padrão: a da principal mostra todas as janelas, os fixados, a busca e a bandeja; a de cada outra tela, o Iniciar, as janelas que estão nela e o relógio); as janelas vão de uma tela para a outra arrastadas e maximizam e encaixam na tela em que estão; e o vídeo em tela cheia fica no monitor do ponteiro. No Windows, com monitores de escalas diferentes (o notebook a 150% e o monitor a 100%), o Retro Computer abre de novo e mede as duas telas em pixels de verdade. No Mac, a janela só cobre os dois monitores com "Monitores têm Spaces separados" desligado em Ajustes do Sistema › Mesa e Dock.
 - **Modo de energia** (a caixa da bateria, no Linux com o `power-profiles-daemon`): economia de energia, equilibrado ou desempenho.
 
 ### Acessibilidade
@@ -312,7 +312,7 @@ As ideias abaixo ainda não foram feitas; ficam registradas para decisão:
 
 a) **Tema Mac clássico**, inspirado no Mac OS 9.2 (o visual "Platinum": as janelas cinza-claro com a barra de título listrada, a barra de menus no alto, a Lixeira no canto), escolhido no Painel de controle. Como em todo o projeto, nada da Apple: os ícones, as letras e as molduras são desenhados aqui (o tema "Cupertino" do SerenityOS, BSD-2-Clause, serve de ponto de partida para as cores).
 
-b) **Papel de parede, esquemas de cores e cursores**: imagens de fundo, esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS.
+b) **Esquemas de cores e cursores**: esquemas de cores das janelas (como os da época) e conjuntos de cursores, todos próprios ou do SerenityOS (as imagens próprias como papel de parede entraram na 1.2).
 
 c) **Instaladores assinados** (o caminho e os custos estão em [instalacao.md](instalacao.md), seção "Os avisos de segurança").
 
@@ -320,6 +320,6 @@ d) **Áreas de trabalho virtuais** (como no Pop!_OS, no GNOME e no Windows 10): 
 
 e) **Enviar arquivos a outro computador da casa** (como o Warpinator do Linux Mint) e o celular ligado ao computador (como o KDE Connect).
 
-f) **A barra de tarefas em cada monitor**: com as várias telas estendidas, uma barra em cada tela (hoje ela fica na principal).
+f) **As várias telas no Retro Computer como sistema**: com as telas estendidas, a área de trabalho e a barra de tarefas nas duas, como as duas telas na tela cheia do Windows e do Mac (hoje o Retro Computer fica na principal, e a outra é dos programas do Linux).
 
 A pesquisa das distribuições do Linux que deu origem a algumas destas ideias (e aos recursos da 1.0) está em [pesquisa-distribuicoes.md](pesquisa-distribuicoes.md).

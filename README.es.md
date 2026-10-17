@@ -4,7 +4,7 @@
 
 Una computadora retro para la productividad: el escritorio de una PC de los años 90, con tus programas de trabajo, tus archivos y Claude Code, sin las distracciones de la computadora de hoy. Funciona en Windows, macOS y Linux (incluida la Raspberry Pi), y en Linux puede ser el sistema completo de la computadora, convirtiendo una laptop vieja o una mini PC en una computadora retro dedicada. Código abierto (licencia MIT).
 
-- **Versión:** 1.2.0 · [Descargar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Versión:** 1.3.0 · [Descargar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
 - **Idiomas:** español, inglés y portugués (Panel de control › Idioma)
 
 ![El escritorio y el menú Inicio](docs/img/es/inicio.png)

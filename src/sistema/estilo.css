@@ -87,6 +87,12 @@ u.atalho { text-decoration: underline; text-decoration-skip-ink: none; text-unde
 }
 #janelas { position: absolute; inset: 0 0 var(--altura-barra) 0; pointer-events: none; }
 #janelas > * { pointer-events: auto; }
+/* As duas telas em tela cheia (telas.js): os ícones, as janelas novas e a barra de tarefas na tela
+   principal (--tela-*), e o papel de parede inteiro em cada tela (.fundo-tela). As janelas andam
+   pelas duas; o vão entre monitores de tamanhos diferentes fica preto (ninguém o vê). */
+.fundo-tela { position: absolute; }
+html.varias-telas #tela { background: #000 !important; }
+html.varias-telas #mesa, html.varias-telas #janelas { inset: auto; left: var(--tela-x); top: var(--tela-y); width: var(--tela-w); height: calc(var(--tela-h) - var(--altura-barra)); }
 #camada-menus { position: absolute; inset: 0; pointer-events: none; z-index: 900000; }
 #camada-menus > * { pointer-events: auto; }
 #camada-modal { position: absolute; inset: 0; pointer-events: none; z-index: 800000; }
@@ -620,7 +626,7 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
 
 /* ---------- Barra de tarefas ---------- */
 
-#barra {
+#barra, .barra-tela {
   position: absolute;
   left: 0; right: 0; bottom: 0;
   height: var(--altura-barra);
@@ -632,7 +638,7 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   gap: 4px;
   z-index: 600000;
 }
-#iniciar {
+#iniciar, .barra-tela .bt-iniciar {
   min-width: 0;
   height: 22px;
   min-height: 22px;
@@ -643,16 +649,16 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   font-weight: bold;
   flex: none;
 }
-#iniciar.apertado, #iniciar:active { padding: 2px 4px 0 4px; }
-#iniciar img { width: 16px; height: 16px; }
-#tarefas {
+#iniciar.apertado, #iniciar:active, .barra-tela .bt-iniciar.apertado, .barra-tela .bt-iniciar:active { padding: 2px 4px 0 4px; }
+#iniciar img, .barra-tela .bt-iniciar img { width: 16px; height: 16px; }
+#tarefas, .barra-tela .tarefas {
   flex: 1;
   display: flex;
   gap: 3px;
   min-width: 0;
   overflow: hidden;
 }
-#tarefas button {
+#tarefas button, .barra-tela .tarefas button {
   flex: 0 1 160px;
   min-width: 40px;
   height: 22px;
@@ -663,16 +669,16 @@ select.diario-lista { width: 100%; height: 132px; margin-top: 4px; }
   gap: 3px;
   text-align: left;
 }
-#tarefas button.apertado {
+#tarefas button.apertado, .barra-tela .tarefas button.apertado {
   font-weight: bold;
   background: var(--face) var(--xadrez);
   padding: 2px 5px 0 4px;
 }
-#tarefas button img { width: 16px; height: 16px; flex: none; }
+#tarefas button img, .barra-tela .tarefas button img { width: 16px; height: 16px; flex: none; }
 /* Os programas fixados (a Inicialização rápida) e, só com ícones, um botão por programa. */
 #fixados { flex: none; display: flex; gap: 1px; }
 #fixados[hidden], .sep-barra[hidden] { display: none; }
-button.prog, #tarefas button.prog {
+button.prog, #tarefas button.prog, .barra-tela .tarefas button.prog {
   flex: none; min-width: 0; width: 24px; height: 22px; min-height: 22px; padding: 0;
   display: flex; align-items: center; justify-content: center; position: relative;
 }
@@ -680,20 +686,20 @@ button.prog img { width: 16px; height: 16px; flex: none; }
 button.prog.rapido { box-shadow: none; background: transparent; }
 button.prog.rapido:hover { box-shadow: var(--raso-alto); }
 button.prog.rapido:not(:disabled):active { box-shadow: var(--raso); padding: 1px 0 0 1px; }
-#tarefas.so-icones { gap: 2px; }
-#tarefas.so-icones button.prog { width: 32px; }
+#tarefas.so-icones, .barra-tela .tarefas.so-icones { gap: 2px; }
+#tarefas.so-icones button.prog, .barra-tela .tarefas.so-icones button.prog { width: 32px; }
 /* Fixado e fechado: plano, como na Inicialização rápida; aberto: botão. */
-#tarefas.so-icones button.prog:not(.aberto) { box-shadow: none; background: transparent; }
-#tarefas.so-icones button.prog:not(.aberto):hover { box-shadow: var(--raso-alto); }
-#tarefas.so-icones button.prog:not(.aberto):not(:disabled):active { box-shadow: var(--raso); }
-#tarefas button.prog.apertado { padding: 1px 0 0 1px; font-weight: normal; }
+#tarefas.so-icones button.prog:not(.aberto), .barra-tela .tarefas.so-icones button.prog:not(.aberto) { box-shadow: none; background: transparent; }
+#tarefas.so-icones button.prog:not(.aberto):hover, .barra-tela .tarefas.so-icones button.prog:not(.aberto):hover { box-shadow: var(--raso-alto); }
+#tarefas.so-icones button.prog:not(.aberto):not(:disabled):active, .barra-tela .tarefas.so-icones button.prog:not(.aberto):not(:disabled):active { box-shadow: var(--raso); }
+#tarefas button.prog.apertado, .barra-tela .tarefas button.prog.apertado { padding: 1px 0 0 1px; font-weight: normal; }
 /* A marca do programa aberto (duas, com mais de uma janela), embaixo do ícone. */
 button.prog.aberto::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: 2px; height: 2px; background: var(--titulo); }
 button.prog.varias::after { left: 8px; right: 8px; background: linear-gradient(90deg, var(--titulo) 0 6px, transparent 6px 10px, var(--titulo) 10px); }
-#tarefas button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tarefas button span, .barra-tela .tarefas button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* O botão arrastado para outro lugar da barra de tarefas ou da de favoritos (reorganizar.js): o
    contorno pontilhado da época, por cima dos outros. No toque, o dedo arrasta o botão (a barra não rola). */
-#barra button, .nav-links button.nav-link, .nav-abas-lista .nav-aba, .nav-favoritos button.nav-fav { touch-action: none; }
+#barra button, .barra-tela button, .nav-links button.nav-link, .nav-abas-lista .nav-aba, .nav-favoritos button.nav-fav { touch-action: none; }
 button.arrastado { outline: 1px dotted var(--escuro); outline-offset: -4px; z-index: 1; }
 body.arrastando-faixa, body.arrastando-faixa button, body.arrastando-faixa .nav-aba { cursor: var(--cur-default, default); }
 .nav-aba.arrastado { outline: 1px dotted var(--escuro); outline-offset: -4px; }
@@ -701,7 +707,9 @@ body.arrastando-faixa, body.arrastando-faixa button, body.arrastando-faixa .nav-
 .alvo-soltar { background: var(--selecao) !important; color: var(--selecao-texto) !important; }
 /* Com a data no relógio, a barra cresce um pouco (como a barra dupla da época). */
 body.barra-alta { --altura-barra: 34px; }
-#bandeja {
+.barra-tela { right: auto; bottom: auto; }
+html.varias-telas #barra { left: var(--tela-x); right: auto; width: var(--tela-w); bottom: var(--tela-baixo); }
+#bandeja, .barra-tela .bandeja {
   flex: none;
   height: calc(var(--altura-barra) - 6px);
   box-shadow: var(--raso);
@@ -710,19 +718,19 @@ body.barra-alta { --altura-barra: 34px; }
   gap: 3px;
   padding: 0 6px 0 4px;
 }
-#bandeja img { width: 16px; height: 16px; }
-#bandeja .relogio { min-width: 38px; text-align: right; padding-top: 1px; }
+#bandeja img, .barra-tela .bandeja img { width: 16px; height: 16px; }
+#bandeja .relogio, .barra-tela .bandeja .relogio { min-width: 38px; text-align: right; padding-top: 1px; }
 /* Com a data: duas linhas apertadas na altura da bandeja. */
-#bandeja .relogio.com-data { display: flex; flex-direction: column; align-items: flex-end; line-height: 12px; padding-top: 0; }
-#bandeja .bandeja-ico { flex: none; }
-#bandeja .sino { position: relative; display: flex; width: 16px; height: 16px; }
-#bandeja .sino.nao-perturbe img { opacity: 0.45; }
-#bandeja .sino-num {
+#bandeja .relogio.com-data, .barra-tela .bandeja .relogio.com-data { display: flex; flex-direction: column; align-items: flex-end; line-height: 12px; padding-top: 0; }
+#bandeja .bandeja-ico, .barra-tela .bandeja .bandeja-ico { flex: none; }
+#bandeja .sino, .barra-tela .bandeja .sino { position: relative; display: flex; width: 16px; height: 16px; }
+#bandeja .sino.nao-perturbe img, .barra-tela .bandeja .sino.nao-perturbe img { opacity: 0.45; }
+#bandeja .sino-num, .barra-tela .bandeja .sino-num {
   position: absolute; right: -4px; top: -3px; min-width: 9px; height: 9px; padding: 0 1px;
   background: #c00000; color: #fff; font-size: 8px; line-height: 9px; text-align: center; font-weight: bold;
   box-shadow: 0 0 0 1px var(--face);
 }
-#bandeja .foco-tempo { font-weight: bold; color: #800000; min-width: 32px; }
+#bandeja .foco-tempo, .barra-tela .bandeja .foco-tempo { font-weight: bold; color: #800000; min-width: 32px; }
 .sep-barra { width: 2px; height: 22px; box-shadow: inset 1px 0 var(--sombra), inset -1px 0 var(--luz); flex: none; }
 
 /* ---------- Menus ---------- */
@@ -985,6 +993,7 @@ body.barra-alta { --altura-barra: 34px; }
   align-items: flex-start;
 }
 .aviso-balao b { display: block; margin-bottom: 2px; }
+html.varias-telas .aviso-balao { right: calc(var(--tela-direita) + 6px); bottom: calc(var(--tela-baixo) + 34px); }
 
 /* Proteção de tela */
 #protecao { position: fixed; inset: 0; z-index: 990000; background: #000; cursor: none; }
@@ -1398,6 +1407,11 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
   background: var(--face); box-shadow: var(--relevo-janela); padding: 6px 8px; min-width: 190px;
 }
 .indicador-bandeja[hidden] { display: none; }
+html.varias-telas .indicador-bandeja { right: calc(var(--tela-direita) + 8px); bottom: calc(var(--tela-baixo) + var(--altura-barra) + 6px); }
+/* As telas da época (a entrada, o bloqueio, a abertura, o desligar) e o Alt+Tab no meio da tela principal. */
+html.varias-telas #entrada, html.varias-telas #bloqueio, html.varias-telas #apresentacao, html.varias-telas #boot .abertura { box-sizing: border-box; padding: var(--tela-y) var(--tela-direita) var(--tela-baixo) var(--tela-x); }
+html.varias-telas #boot .bios { margin: var(--tela-y) 0 0 var(--tela-x); }
+html.varias-telas .alternador { left: calc(var(--tela-x) + var(--tela-w) / 2); top: calc(var(--tela-y) + var(--tela-h) * 0.42); }
 .indicador-bandeja span { min-width: 74px; }
 .ind-barra { flex: 1; height: 12px; box-shadow: var(--afundado); background: #fff; padding: 2px; }
 .ind-barra > div { height: 100%; background: repeating-linear-gradient(90deg, var(--titulo) 0 6px, transparent 6px 8px); }

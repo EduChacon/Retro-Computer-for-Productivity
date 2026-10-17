@@ -191,6 +191,11 @@ function dialogoBarra(args = {}) {
   // A aba Barra de tarefas: as opções que também estão no botão direito da barra, e os fixados.
   const chkBusca = h('input', { type: 'checkbox', checked: b.busca !== false });
   const chkData = h('input', { type: 'checkbox', checked: !!b.data });
+  // Com mais de um monitor (fora do modo sistema): a barra também nas outras telas, ligada por padrão.
+  const chkTodas = h('input', { type: 'checkbox', checked: b.todasTelas !== false });
+  const linhaTodas = h('label', chkTodas, h('span', tr('Mostrar a barra de tarefas em todas as telas')));
+  linhaTodas.hidden = true;
+  retro.tela.duasTelas().then((d) => { if (d && d.possivel) linhaTodas.hidden = false; }).catch(() => { });
   const radNomes = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes !== 'icones' });
   const radIcones = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes === 'icones' });
   const fixBarra = listaDeProgramas(b.fixados || [], tr('Nenhum programa fixado. Clique com o botão direito num programa do Iniciar para fixá-lo.'));
@@ -198,6 +203,7 @@ function dialogoBarra(args = {}) {
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Opções da barra')),
       h('label', chkBusca, h('span', tr('Mostrar a caixa de busca ao lado do Iniciar'))),
       h('label', chkData, h('span', tr('Mostrar a data embaixo da hora'))),
+      linhaTodas,
       h('div', { style: { margin: '6px 0 2px' } }, tr('Os botões das janelas:')),
       h('div', { style: { marginLeft: '12px' } }, h('label', radNomes, h('span', tr('Com o nome')))),
       h('div', { style: { marginLeft: '12px' } }, h('label', radIcones, h('span', tr('Só os ícones, agrupados por programa'))))),
@@ -222,7 +228,7 @@ function dialogoBarra(args = {}) {
     titulo: tr('Propriedades da Barra de tarefas e do menu Iniciar'), icone: 'barra-tarefas', larg: 400, aba: args.aba || 0,
     abas: [{ titulo: tr('Barra de tarefas'), conteudo: abaBarra }, { titulo: tr('Menu Iniciar'), conteudo: abaIniciar }],
     aoAplicar: () => definirConfig({
-      barra: { busca: chkBusca.checked, data: chkData.checked, botoes: radIcones.checked ? 'icones' : 'nomes', fixados: fixBarra.valor() },
+      barra: { busca: chkBusca.checked, data: chkData.checked, todasTelas: chkTodas.checked, botoes: radIcones.checked ? 'icones' : 'nomes', fixados: fixBarra.valor() },
       iniciar: { fixados: fixIni.valor(), ocultos: chks.filter((x) => !x.el.checked).map((x) => x.id), pequenos: chkPequenos.checked, recentes: chkRecentes.checked },
     }),
   });
@@ -345,7 +351,7 @@ function dialogoAparencia() {
   retro.sistema.telaFisica().then((tela) => {
     if (!tela) return;
     for (const o of selEscala.options) {
-      if (o.value === 'auto') o.textContent = tr('Automático ({n} ×)', { n: numero(pixelsAutomaticos(tela)) });
+      if (o.value === 'auto') o.textContent = tr('Automático ({n} ×)', { n: numero(pixelsAutomaticos({ ...tela, escala: tela.escalaSistema || tela.escala })) });
       else o.textContent = rotuloEscala(Number(o.value), tela);
     }
   }).catch(() => { });
@@ -368,7 +374,7 @@ function dialogoAparencia() {
     areaTela.hidden = false;
   }).catch(() => { });
   // As várias telas: no modo sistema, o arranjo (duplicar, estender, uma só); fora dele, o monitor.
-  const varias = { el: h('div', { hidden: true, style: { marginTop: '8px' } }), antes: null, escolhido: null, monitor: null, monitorAntes: null };
+  const varias = { el: h('div', { hidden: true, style: { marginTop: '8px' } }), antes: null, escolhido: null, monitor: null, monitorAntes: null, duas: null, duasAntes: null };
   const notaVarias = (texto) => h('div', { style: { color: '#808080', lineHeight: '13px', marginTop: '4px' } }, texto);
   if (c.modoSistema) {
     retro.tela.telas().then((e) => {
@@ -393,7 +399,22 @@ function dialogoAparencia() {
       const sel = h('select', { style: { width: '100%' } }, ...ms.map((m, i) => h('option', { value: m.id, selected: m === atual },
         m.principal ? tr('Tela {n}: {l} por {a} (a principal)', { n: i + 1, l: m.w, a: m.h }) : tr('Tela {n}: {l} por {a}', { n: i + 1, l: m.w, a: m.h }))));
       sel.addEventListener('change', () => { varias.monitor = sel.value; });
-      varias.el.replaceChildren(h('div', tr('Mostrar o Retro Computer na tela:')), h('div.select-caixa', { style: { width: '100%', marginTop: '4px' } }, sel));
+      // As duas telas em tela cheia: a área de trabalho cobre os monitores (e a escolha de um deixa de valer).
+      const chkDuas = h('input', { type: 'checkbox' });
+      const notaDuas = notaVarias(tr('Com a tela cheia, a área de trabalho cobre todos os monitores: os ícones ficam na tela principal, cada tela tem a sua barra de tarefas, e as janelas podem ir de uma para a outra (arraste-as até lá).'));
+      const notaMac = notaVarias(tr('No Mac, para a janela aparecer nos dois monitores, desligue “Monitores têm Spaces separados” em Ajustes do Sistema › Mesa e Dock, e saia da sessão e entre de novo.'));
+      notaMac.hidden = true;
+      const marcarDuas = () => { sel.disabled = chkDuas.checked; varias.duas = chkDuas.checked; };
+      chkDuas.addEventListener('change', () => { if (chkDuas.checked) radioCheia.checked = true; marcarDuas(); });
+      retro.tela.duasTelas().then((d) => {
+        if (!d || !d.possivel) return;
+        chkDuas.checked = !!d.ligada;
+        varias.duasAntes = !!d.ligada;
+        notaMac.hidden = !d.spacesSeparados;
+        marcarDuas();
+      }).catch(() => { });
+      varias.el.replaceChildren(h('div', tr('Mostrar o Retro Computer na tela:')), h('div.select-caixa', { style: { width: '100%', marginTop: '4px' } }, sel),
+        h('div', { style: { marginTop: '6px' } }, h('label', chkDuas, h('span', tr('Usar as duas telas na tela cheia')))), notaDuas, notaMac);
       varias.el.hidden = false;
     }).catch(() => { });
   }
@@ -480,13 +501,15 @@ function dialogoAparencia() {
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);
       await aplicarEscala(escala);
+      // As duas telas antes da tela cheia: ao entrar nela, a janela já se espalha (sem passar por um monitor só).
+      if (varias.duas != null && varias.duas !== varias.duasAntes) await usarDuasTelas(varias);
       if (radioCheia.checked !== telaCheia) {
         telaCheia = radioCheia.checked;
         await retro.sistema.telaCheia(telaCheia);
       }
       if (res.escolhido && res.escolhido !== res.antes) await trocarResolucao(res);
       if (varias.escolhido && varias.escolhido !== varias.antes) await trocarArranjo(varias);
-      if (varias.monitor && varias.monitor !== varias.monitorAntes) {
+      if (varias.monitor && varias.monitor !== varias.monitorAntes && !varias.duas) {
         await retro.tela.usarMonitor(Number(varias.monitor)).catch(() => { });
         varias.monitorAntes = varias.monitor;
       }
@@ -494,6 +517,22 @@ function dialogoAparencia() {
   });
   // A prévia da luz noturna que não foi aplicada volta ao que estava.
   if (dlg) dlg.ev.on('fechada', () => { if (previaLuz) aplicarLuzNoturna(); });
+}
+
+/**
+ * Liga ou desliga as duas telas. No Windows, com monitores de escalas diferentes (o notebook a 150% e
+ * o monitor a 100%), a janela que cobre os dois só fica no lugar medida em pixels de verdade, e o
+ * Retro Computer abre de novo para isso.
+ */
+async function usarDuasTelas(varias) {
+  let r = await retro.tela.usarDuasTelas(varias.duas).catch(() => null);
+  if (r && r.precisaReabrir) {
+    const sim = await confirmar(tr('Os monitores têm escalas diferentes no Windows. Para a área de trabalho cobrir os dois sem sair do lugar, o Retro Computer mede as duas telas em pixels de verdade e precisa abrir de novo. Os programas abertos são fechados. Abrir de novo agora?'), { titulo: tr('Duas telas') });
+    if (!sim) return;
+    r = await retro.tela.usarDuasTelas(true, { reabrir: true }).catch(() => null);
+  }
+  if (r && r.ok !== false) varias.duasAntes = varias.duas;
+  if (r && r.escalaVoltaAoAbrir) info(tr('As telas voltam à escala do Windows na próxima vez que o Retro Computer abrir.'), tr('Duas telas'));
 }
 
 /** Troca a resolução e pergunta se fica; sem resposta em 15 segundos, volta à anterior. */

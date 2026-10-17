@@ -87,6 +87,11 @@ contextBridge.exposeInMainWorld('retro', {
     arranjo: (modo) => chamar('tela:arranjo', modo),
     monitores: () => chamar('tela:monitores'),
     usarMonitor: (id) => chamar('tela:usarMonitor', id),
+    // As duas telas em tela cheia: onde está cada monitor dentro da janela, e a opção do Painel.
+    naJanela: () => chamar('tela:naJanela'),
+    aoMudarTelas: ouvir('sistema:telas'),
+    duasTelas: () => chamar('tela:duasTelas'),
+    usarDuasTelas: (v, o) => chamar('tela:usarDuasTelas', v, o),
   },
   // O Firefox com o visual do Retro Computer.
   firefox: {

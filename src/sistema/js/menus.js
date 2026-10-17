@@ -8,6 +8,7 @@
  */
 import { h, img, rotulo, letraAtalho, limitar } from './util.js';
 import { tr } from './idioma.js';
+import { variasTelas, telaDoPonto, areaUtil } from './telas.js';
 
 const camada = () => document.getElementById('camada-menus');
 let cadeia = [];          // menus abertos, do primeiro ao último submenu
@@ -37,18 +38,22 @@ async function resolverItens(itens) {
 }
 
 function posicionar(el, x, y, { abaixo = true, larguraPai = 0 } = {}) {
+  // A tela de onde o menu abriu (com as duas telas, ele não passa para a outra); a barra de tarefas fica na principal.
   const tela = document.getElementById('tela').getBoundingClientRect();
+  const s = variasTelas() ? telaDoPonto(x, y) : { x: 0, y: 0, w: tela.width, h: tela.height, principal: true };
+  const fundo = variasTelas() ? areaUtil(s).bottom : s.y + s.h - 28;
+  const direita = s.x + s.w;
   const r = el.getBoundingClientRect();
   let px = x;
   let py = y;
-  if (px + r.width > tela.width) px = larguraPai ? x - larguraPai - r.width + 3 : tela.width - r.width;
+  if (px + r.width > direita) px = larguraPai ? x - larguraPai - r.width + 3 : direita - r.width;
   if (abaixo) {
-    if (py + r.height > tela.height - 28) py = Math.max(0, tela.height - 28 - r.height);
+    if (py + r.height > fundo) py = Math.max(s.y, fundo - r.height);
   } else {
     py = y - r.height;
   }
-  el.style.left = limitar(px, 0, Math.max(0, tela.width - r.width)) + 'px';
-  el.style.top = Math.max(0, py) + 'px';
+  el.style.left = limitar(px, s.x, Math.max(s.x, direita - r.width)) + 'px';
+  el.style.top = Math.max(s.y, py) + 'px';
 }
 
 /**

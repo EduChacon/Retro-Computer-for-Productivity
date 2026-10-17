@@ -26,6 +26,7 @@ const { Loja, LojaFalsa } = require('./loja');
 const loginGoogle = require('./login-google');
 const { LojaWinget, LojaBrew, LojaWingetFalsa, LojaBrewFalsa } = require('./lojas');
 const { PapeisDeParede } = require('./papel');
+const monitoresMod = require('./monitores');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
 const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
@@ -152,6 +153,17 @@ const idiomaEscolhido = (() => {
   }
 })();
 if (idioma.CODIGOS.includes(idiomaEscolhido)) app.commandLine.appendSwitch('lang', idiomaEscolhido);
+// As duas telas com escalas diferentes no Windows (o notebook a 150% e o monitor a 100%): a janela que
+// cobre as duas só fica no lugar medida em pixels de verdade, com a mesma escala nas duas. O Tamanho
+// dos pixels do Painel já é contado em pixels de verdade, e o automático usa a escala guardada.
+const ESCALA_UNICA = (() => {
+  if (process.platform !== 'win32' && !process.env.RETRO_ESCALA_UNICA) return false;
+  try {
+    const t = JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'config.json'), 'utf8')).tela || {};
+    return !!(t.duas && t.escalaUnica);
+  } catch { return false; }
+})();
+if (ESCALA_UNICA) app.commandLine.appendSwitch('force-device-scale-factor', '1');
 // Sem placa de vídeo utilizável (máquinas virtuais, computadores antigos), os Craft
 // ainda desenham com o WebGL2 por software. Só roda conteúdo local e confiável aqui.
 app.commandLine.appendSwitch('enable-unsafe-swiftshader');
@@ -362,6 +374,9 @@ function registrarProtocolos() {
 
 function criarJanela() {
   const c = config.obter();
+  // No Mac, as duas telas usam a tela cheia "simples" (a nativa fica num monitor só): a janela abre
+  // sem a nativa e se espalha logo depois de aparecer.
+  const espalharAoAbrir = !MODO_SISTEMA && !!c.telaCheia && !process.env.RETRO_JANELA && querDuasTelas();
   // O monitor escolhido em Painel › Aparência (fora do modo sistema), se ainda estiver ligado.
   const monitor = (!MODO_SISTEMA && c.tela && c.tela.monitor != null && screen.getAllDisplays().find((d) => d.id === c.tela.monitor)) || screen.getPrimaryDisplay();
   const area = monitor.workArea;
@@ -374,7 +389,8 @@ function criarJanela() {
     height: altura,
     minWidth: 640,
     minHeight: 480,
-    fullscreen: MODO_SISTEMA || (!!c.telaCheia && !process.env.RETRO_JANELA),
+    fullscreen: MODO_SISTEMA || (!!c.telaCheia && !process.env.RETRO_JANELA && !(espalharAoAbrir && process.platform === 'darwin')),
+    enableLargerThanScreen: process.platform === 'darwin', // no Mac, para a janela poder cobrir dois monitores
     backgroundColor: '#000000',
     title: 'Retro Computer',
     autoHideMenuBar: true,
@@ -389,8 +405,20 @@ function criarJanela() {
       webviewTag: true, // o Navegador (ver "O Navegador" abaixo)
     },
   });
-  janela.once('ready-to-show', () => janela.show());
+  janela.once('ready-to-show', () => { janela.show(); if (espalharAoAbrir) setTimeout(() => espalhar().catch(() => { }), 300); });
   if (MODO_SISTEMA) for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(ajustarNaPrincipal, 300));
+  else for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(monitoresMudaram, 400));
+  // A área de trabalho fica sabendo onde está cada tela dentro da janela.
+  let esperaTelas = null;
+  const telasDepois = () => { clearTimeout(esperaTelas); esperaTelas = setTimeout(() => avisarTelas(), 150); };
+  janela.on('resize', telasDepois);
+  janela.on('move', telasDepois);
+  // No Windows, a janela espalhada fica por cima das barras de tarefas do sistema só enquanto está em
+  // foco (o Windows só esconde a barra do monitor em que a janela "está"); ao trocar de programa, solta.
+  if (process.platform === 'win32') {
+    janela.on('focus', () => { if (espalhada && !cheiaDoVideo) janela.setAlwaysOnTop(true, 'screen-saver'); });
+    janela.on('blur', () => { if (janela.isAlwaysOnTop()) janela.setAlwaysOnTop(false); });
+  }
   // No modo sistema, o Retro Computer é a tela inteira: não há para onde sair.
   if (MODO_SISTEMA) janela.on('leave-full-screen', () => setImmediate(() => janela && !janela.isDestroyed() && janela.setFullScreen(true)));
   janela.loadURL('sistema://retro/index.html' + (process.env.RETRO_RAPIDO ? '?rapido' : ''));
@@ -433,6 +461,18 @@ function criarJanela() {
   });
   janela.on('enter-full-screen', () => enviar('sistema:telaCheia', true));
   janela.on('leave-full-screen', () => enviar('sistema:telaCheia', false));
+  // Um vídeo em tela cheia, com as duas telas: ele fica no monitor do ponteiro (e não partido entre
+  // os dois); ao sair, a janela volta a cobrir os monitores.
+  wc.on('enter-html-full-screen', () => {
+    if (!espalhada) return;
+    cheiaDoVideo = true;
+    janela.setBounds(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).bounds);
+  });
+  wc.on('leave-html-full-screen', () => {
+    if (!cheiaDoVideo) return;
+    cheiaDoVideo = false;
+    setTimeout(() => { if (espalhada) espalhar().catch(() => { }); }, 300);
+  });
   janela.on('close', (e) => {
     if (!janela.__podeFechar) {
       // Fechar pela janela do sistema passa pelo "Desligar" da área de trabalho.
@@ -456,6 +496,119 @@ function levarParaMonitor(d) {
   if (cheia) { janela.once('leave-full-screen', () => setTimeout(ir, 50)); janela.setFullScreen(false); } else ir();
 }
 
+/* ---------- As duas telas em tela cheia (fora do modo sistema) ---------- */
+
+// Os monitores ligados (ou os de mentira dos testes, RETRO_MONITORES_FALSOS), nos pontos do sistema.
+function monitoresLigados() {
+  const falsos = monitoresMod.monitoresFalsos(process.env.RETRO_MONITORES_FALSOS);
+  if (falsos) return falsos;
+  const p = screen.getPrimaryDisplay();
+  return screen.getAllDisplays().map((d) => ({ id: d.id, ...d.bounds, principal: d.id === p.id, escala: d.scaleFactor }));
+}
+
+let espalhada = false; // a janela cobre todos os monitores agora
+let cheiaDoVideo = false; // um vídeo em tela cheia levou a janela para um monitor só
+
+/** A opção de Painel › Aparência está ligada, e há mais de um monitor? */
+function querDuasTelas() {
+  return !MODO_SISTEMA && !!(config.obter().tela || {}).duas && monitoresLigados().length > 1;
+}
+
+/** A janela está em tela cheia (no Mac, também a "simples", a das duas telas)? */
+function emTelaCheia() {
+  if (!janela || janela.isDestroyed()) return false;
+  return janela.isFullScreen() || (process.platform === 'darwin' && janela.isSimpleFullScreen());
+}
+
+/** No Mac, a janela só aparece nos dois monitores sem os Spaces separados por monitor. */
+function spacesJuntosNoMac() {
+  if (process.platform !== 'darwin') return Promise.resolve(true);
+  return new Promise((ok) => execFile('defaults', ['read', 'com.apple.spaces', 'spans-displays'], (e, saida) => ok(!e && monitoresMod.spacesJuntos(saida))));
+}
+
+/**
+ * A janela cobre todos os monitores. No Windows (e no Linux fora do modo sistema), ela entra na tela
+ * cheia de sempre e cresce para a união deles; no Mac, a tela cheia nativa fica num monitor só, e a
+ * "simples" (sem Space próprio) é a que cresce. Devolve se conseguiu.
+ */
+async function espalhar() {
+  if (!janela || janela.isDestroyed() || !querDuasTelas() || !(await spacesJuntosNoMac())) return false;
+  const u = monitoresMod.uniao(monitoresLigados());
+  if (process.platform === 'darwin') {
+    if (janela.isFullScreen()) await new Promise((ok) => { janela.once('leave-full-screen', () => setTimeout(ok, 300)); janela.setFullScreen(false); setTimeout(ok, 2000); });
+    if (!janela.isSimpleFullScreen()) janela.setSimpleFullScreen(true);
+  } else if (!janela.isFullScreen()) {
+    await new Promise((ok) => { janela.once('enter-full-screen', ok); janela.setFullScreen(true); setTimeout(ok, 1500); });
+  }
+  espalhada = true;
+  janela.setBounds(u);
+  if (process.platform === 'win32' && janela.isFocused()) janela.setAlwaysOnTop(true, 'screen-saver');
+  avisarTelas();
+  conferirEspalhada(u);
+  return true;
+}
+
+/**
+ * A janela ficou onde foi pedida? A tela cheia que termina depois (o Windows, o X sem gerenciador de
+ * janelas) pode devolvê-la a um monitor só ou à posição de antes: ela volta ao lugar, até duas vezes.
+ */
+function conferirEspalhada(u, vezes = 2) {
+  setTimeout(() => {
+    if (!espalhada || cheiaDoVideo || !janela || janela.isDestroyed()) return;
+    const b = janela.getBounds();
+    const longe = Math.abs(b.x - u.x) > 2 || Math.abs(b.y - u.y) > 2 || Math.abs(b.width - u.width) > 2 || Math.abs(b.height - u.height) > 2;
+    if (!longe) return;
+    janela.setBounds(u);
+    avisarTelas();
+    if (vezes > 1) conferirEspalhada(u, vezes - 1);
+  }, 500);
+}
+
+/** Volta para um monitor só: a tela cheia de sempre no principal ou, com sairDaCheia, a janela. */
+function juntar({ sairDaCheia = false } = {}) {
+  if (!janela || janela.isDestroyed()) return;
+  const estava = espalhada;
+  espalhada = false;
+  if (janela.isAlwaysOnTop()) janela.setAlwaysOnTop(false);
+  if (process.platform === 'darwin') {
+    if (janela.isSimpleFullScreen()) janela.setSimpleFullScreen(false);
+    if (!sairDaCheia) janela.setFullScreen(true);
+  } else if (sairDaCheia) {
+    janela.setFullScreen(false);
+  } else if (estava) {
+    janela.setBounds(screen.getPrimaryDisplay().bounds);
+  }
+  avisarTelas();
+}
+
+/** Entra ou sai da tela cheia (F11, Painel › Aparência): com as duas telas, espalhada. */
+async function definirTelaCheia(v) {
+  if (!janela || janela.isDestroyed()) return;
+  if (!v) { if (espalhada) juntar({ sairDaCheia: true }); else janela.setFullScreen(false); return; }
+  if (!(await espalhar())) janela.setFullScreen(true);
+}
+
+/** Um monitor entrou, saiu ou mudou: a janela se espalha de novo, ou volta para um só. */
+function monitoresMudaram() {
+  if (!janela || janela.isDestroyed() || cheiaDoVideo) return;
+  if (espalhada && !querDuasTelas()) juntar();
+  else if (querDuasTelas() && emTelaCheia()) espalhar().catch(() => { });
+  avisarTelas('monitores');
+}
+
+/** As telas vistas de dentro da janela, para a área de trabalho (os pontos da janela, sem o zoom da página). */
+function telasDaJanela() {
+  if (!janela || janela.isDestroyed()) return { telas: [], largura: 0, altura: 0 };
+  const b = janela.getContentBounds();
+  const telas = espalhada ? monitoresMod.telasNaJanela(b, monitoresLigados()) : [];
+  return { telas: telas.length > 1 ? telas : [], largura: b.width, altura: b.height };
+}
+
+function avisarTelas(motivo = '') {
+  if (cheiaDoVideo) return;
+  enviar('sistema:telas', { ...telasDaJanela(), motivo });
+}
+
 /** No modo sistema, a janela fica sempre na tela principal, inteira (também depois de uma troca de telas). */
 function ajustarNaPrincipal() {
   if (!janela || janela.isDestroyed()) return;
@@ -476,9 +629,9 @@ function fundoDaRaiz() {
 
 function alternarTelaCheia() {
   if (!janela || MODO_SISTEMA) return;
-  const nova = !janela.isFullScreen();
-  janela.setFullScreen(nova);
+  const nova = !emTelaCheia();
   config.definir({ telaCheia: nova });
+  definirTelaCheia(nova).catch(() => { });
 }
 
 function menuDoSistema() {
@@ -1028,7 +1181,7 @@ function registrarPonte() {
     versaoApp: app.getVersion(),
     temChave: config.temChave(),
     cofre: config.cofreDisponivel(),
-    telaCheiaAgora: janela ? janela.isFullScreen() : false,
+    telaCheiaAgora: emTelaCheia(),
     idiomaEfetivo: idioma.idioma(),
     idiomaSistema: app.getLocale(),
     // O arrastar do sistema (para soltar fora do Retro Computer). No Linux sem um idioma UTF-8, o
@@ -1344,9 +1497,34 @@ function registrarPonte() {
   tratar('tela:telas', () => tela.telas());
   tratar('tela:arranjo', (modo) => tela.definirArranjo(String(modo || '')));
   tratar('tela:monitores', () => {
+    // Os de mentira das capturas (a janela fica na principal).
+    const falsos = monitoresMod.monitoresFalsos(process.env.RETRO_MONITORES_FALSOS);
+    if (falsos) return falsos.map((m) => ({ id: m.id, w: m.width, h: m.height, principal: m.principal, atual: m.principal }));
     const p = screen.getPrimaryDisplay();
     const atual = janela ? screen.getDisplayMatching(janela.getBounds()) : p;
     return screen.getAllDisplays().map((d) => ({ id: d.id, w: Math.round(d.size.width * d.scaleFactor), h: Math.round(d.size.height * d.scaleFactor), principal: d.id === p.id, atual: d.id === atual.id }));
+  });
+  // As duas telas em tela cheia (Painel › Aparência › Configurações).
+  tratar('tela:naJanela', () => telasDaJanela());
+  tratar('tela:duasTelas', async () => ({
+    possivel: !MODO_SISTEMA && monitoresLigados().length > 1,
+    ligada: !!(config.obter().tela || {}).duas,
+    espalhada,
+    spacesSeparados: process.platform === 'darwin' ? !(await spacesJuntosNoMac()) : false,
+  }));
+  // Ligar com monitores de escalas diferentes, no Windows, pede para abrir de novo (o.reabrir confirma).
+  tratar('tela:usarDuasTelas', async (v, o = {}) => {
+    if (MODO_SISTEMA) return { ok: false };
+    if (v && process.platform === 'win32' && !ESCALA_UNICA && new Set(screen.getAllDisplays().map((d) => d.scaleFactor)).size > 1) {
+      if (!o || !o.reabrir) return { ok: false, precisaReabrir: true };
+      config.definir({ telaCheia: true, tela: { duas: true, escalaUnica: true, escalaReal: screen.getPrimaryDisplay().scaleFactor } });
+      reabrirApp();
+      return { ok: true, reabrindo: true };
+    }
+    config.definir({ tela: { duas: !!v, ...(v ? {} : { escalaUnica: false }) } });
+    if (v && emTelaCheia()) return { ok: await espalhar() };
+    if (!v && espalhada) juntar();
+    return { ok: true, escalaVoltaAoAbrir: !v && ESCALA_UNICA };
   });
   tratar('tela:usarMonitor', (id) => {
     const d = screen.getAllDisplays().find((x) => x.id === Number(id));
@@ -1484,11 +1662,11 @@ function registrarPonte() {
     // No Linux, sem um chaveiro (o GNOME Keyring ou a carteira do KDE), o "cofre" é só um texto embaralhado.
     chaveiro: process.platform === 'linux' ? (() => { try { return safeStorage.getSelectedStorageBackend(); } catch { return 'unknown'; } })() : null,
   }));
-  tratar('sistema:telaCheia', (v) => {
+  tratar('sistema:telaCheia', async (v) => {
     if (MODO_SISTEMA) return true;
     if (v == null) alternarTelaCheia();
-    else if (janela) { janela.setFullScreen(!!v); config.definir({ telaCheia: !!v }); }
-    return janela ? janela.isFullScreen() : false;
+    else if (janela) { config.definir({ telaCheia: !!v }); await definirTelaCheia(!!v); }
+    return emTelaCheia();
   });
   tratar('sistema:abrirLink', (url) => {
     if (!/^https?:\/\//i.test(String(url))) throw new Error(tr('Endereço inválido.'));
@@ -1575,8 +1753,11 @@ function registrarPonte() {
   // O monitor da janela em pixels de verdade (para o tamanho automático dos pixels da interface).
   tratar('sistema:telaFisica', () => {
     if (!janela) return null;
-    const d = screen.getDisplayMatching(janela.getBounds());
-    return { escala: d.scaleFactor, w: Math.round(d.size.width * d.scaleFactor), h: Math.round(d.size.height * d.scaleFactor) };
+    // Com as duas telas, vale a principal (a da barra de tarefas e das caixas).
+    const d = espalhada ? screen.getPrimaryDisplay() : screen.getDisplayMatching(janela.getBounds());
+    // escala: a da página; escalaSistema: a do Windows, para o Tamanho dos pixels automático.
+    const escalaSistema = ESCALA_UNICA ? Number((config.obter().tela || {}).escalaReal) || 1 : d.scaleFactor;
+    return { escala: d.scaleFactor, escalaSistema, w: Math.round(d.size.width * d.scaleFactor), h: Math.round(d.size.height * d.scaleFactor) };
   });
   // As impressoras (RETRO_IMPRESSORAS_FALSAS: duas de mentira, para os testes).
   const impressoras = new (process.env.RETRO_IMPRESSORAS_FALSAS ? ImpressorasFalsas : Impressoras)({ webContents: () => janela && janela.webContents, BrowserWindow, shell });

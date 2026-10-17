@@ -1269,6 +1269,123 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('telas:', JSON.stringify(await pagina.evaluate(() => Promise.all([retro.tela.telas().then((e) => e.arranjo), window.__retro.estado.config.tela]))));
   },
 
+  // As duas telas em tela cheia (Windows e Mac), com dois monitores de mentira de tamanhos diferentes:
+  // RETRO_MONITORES_FALSOS="1024x768+0+0,1280x800+1024+0" e o Xvfb com "-screen 0 2304x800x24".
+  // A opção do Painel, a barra e os ícones na principal, o papel de parede em cada tela, maximizar e
+  // encaixar em cada uma, arrastar a janela para a outra, os menus na borda, o bloqueio na principal
+  // e a volta para uma tela só.
+  async duasTelas() {
+    await fecharTudo();
+    const telas = () => pagina.evaluate(() => ({ classe: document.documentElement.classList.contains('varias-telas'), fundos: document.querySelectorAll('#tela > .fundo-tela').length, area: `${innerWidth} x ${innerHeight}`, barra: (({ x, y, width: w, height: h }) => ({ x, y, w, h }))(document.getElementById('barra').getBoundingClientRect()) }));
+    const ret = () => pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); const r = j.el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), max: j.maximizada, enc: j.encaixe }; });
+    // Os botões de cada barra: a principal (todas as janelas) e a de cada outra tela (só as que estão nela).
+    const barras = () => pagina.evaluate(() => ({ principal: [...document.querySelectorAll('#tarefas button')].map((b) => b.textContent), outras: [...document.querySelectorAll('.barra-tela')].map((el) => ({ x: Math.round(el.getBoundingClientRect().x), y: Math.round(el.getBoundingClientRect().y), w: Math.round(el.getBoundingClientRect().width), botoes: [...el.querySelectorAll('.tarefas button')].map((b) => b.textContent) })) }));
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(500);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Configurações') }).click();
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.janela.ativa label', { hasText: T('Usar as duas telas na tela cheia') }).click();
+    await pagina.waitForTimeout(200);
+    await foto('duas-telas-opcao');
+    await pagina.locator('.janela.ativa button', { hasText: T('OK') }).first().click();
+    await pagina.waitForTimeout(3000);
+    console.log('guardado:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.tela)), '| no principal:', JSON.stringify(await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; return { cheia: w.isFullScreen(), ret: w.getBounds() }; })));
+    console.log('telas:', JSON.stringify(await telas()));
+    await foto('duas-telas-mesa');
+    // A opção da barra em todas as telas, no Painel › Barra de tarefas (só aparece com mais de um monitor).
+    await abrir('painel', { secao: 'barra' });
+    await pagina.waitForTimeout(600);
+    await foto('duas-telas-painel-barra');
+    await fecharTudo();
+    // O Bloco de notas maximizado na principal; o Explorador arrastado para a outra e maximizado lá.
+    await abrir('bloco');
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.type('Na tela principal.');
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().maximizar());
+    await pagina.waitForTimeout(300);
+    console.log('Bloco maximizado:', JSON.stringify(await ret()));
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(600);
+    let b = await pagina.locator('.janela.ativa .titulo .texto').boundingBox();
+    await pagina.mouse.move(b.x + 20, b.y + 6);
+    await pagina.mouse.down();
+    await pagina.mouse.move(1300, 200, { steps: 8 });
+    await pagina.mouse.move(1500, 260, { steps: 4 });
+    await pagina.mouse.up();
+    await pagina.waitForTimeout(300);
+    console.log('Explorador na outra tela:', JSON.stringify(await ret()), '| barras:', JSON.stringify(await barras()));
+    await foto('duas-telas-arrastada');
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().maximizar());
+    await pagina.waitForTimeout(300);
+    console.log('Explorador maximizado na outra:', JSON.stringify(await ret()));
+    await foto('duas-telas-maximizadas');
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().restaurar());
+    await pagina.waitForTimeout(300);
+    // Os cantos magnéticos na borda da outra tela (a da direita) e na borda entre as duas.
+    b = await pagina.locator('.janela.ativa .titulo .texto').boundingBox();
+    await pagina.mouse.move(b.x + 20, b.y + 6);
+    await pagina.mouse.down();
+    await pagina.mouse.move(2000, 300, { steps: 6 });
+    await pagina.mouse.move(2303, 300, { steps: 6 });
+    await pagina.waitForTimeout(200);
+    await foto('duas-telas-previa-direita');
+    await pagina.mouse.up();
+    await pagina.waitForTimeout(300);
+    console.log('encaixada à direita da outra:', JSON.stringify(await ret()));
+    // Logotipo+seta para a esquerda: a metade esquerda da mesma tela.
+    await tecla('encaixe:ArrowLeft');
+    await pagina.waitForTimeout(300);
+    console.log('logotipo+esquerda:', JSON.stringify(await ret()));
+    await foto('duas-telas-metades');
+    // O botão direito no fundo da outra tela (o menu da área de trabalho), perto do canto: não passa da borda dela.
+    const menuAberto = () => pagina.evaluate(() => { const m = [...document.querySelectorAll('.menu')].pop(); if (!m) return null; const r = m.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), direita: Math.round(r.right), baixo: Math.round(r.bottom), itens: m.querySelectorAll('.item, [role=menuitem]').length }; });
+    await pagina.mouse.click(2280, 700, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    console.log('menu no fundo da outra tela:', JSON.stringify(await menuAberto()));
+    await foto('duas-telas-menu-fundo');
+    await pagina.keyboard.press('Escape');
+    await pagina.mouse.click(1700, 600);
+    // O botão direito na barra da outra tela.
+    await pagina.mouse.click(1700, 786, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    console.log('menu da barra da outra tela:', JSON.stringify(await menuAberto()));
+    await foto('duas-telas-menu-barra');
+    await pagina.keyboard.press('Escape');
+    // O Iniciar da outra tela abre o menu lá; o da principal, na principal.
+    await pagina.locator('.barra-tela .bt-iniciar').click();
+    await pagina.waitForTimeout(300);
+    console.log('Iniciar da outra tela:', JSON.stringify(await menuAberto()));
+    await foto('duas-telas-iniciar-outra');
+    await pagina.keyboard.press('Escape');
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(300);
+    console.log('Iniciar da principal:', JSON.stringify(await menuAberto()));
+    await foto('duas-telas-iniciar');
+    await pagina.keyboard.press('Escape');
+    // Desligada a barra das outras telas: a maximizada lá ocupa a tela inteira.
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().maximizar());
+    await pagina.waitForTimeout(200);
+    console.log('maximizada com a barra:', JSON.stringify(await ret()));
+    await pagina.evaluate(() => window.__retro.definirConfig({ barra: { todasTelas: false } }));
+    await pagina.waitForTimeout(400);
+    console.log('maximizada sem a barra:', JSON.stringify(await ret()), '| barras:', JSON.stringify(await barras()));
+    await foto('duas-telas-sem-barra');
+    await pagina.evaluate(() => window.__retro.definirConfig({ barra: { todasTelas: true } }));
+    await pagina.waitForTimeout(400);
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().restaurar());
+    // O bloqueio no meio da principal (uma senha fingida só na página; a tela sai sem conferir).
+    await pagina.evaluate(() => { window.__retro.estado.config.bloqueio = { ...(window.__retro.estado.config.bloqueio || {}), temSenha: true }; return import('./js/bloqueio.js').then((m) => m.bloquear()); });
+    await pagina.waitForTimeout(800);
+    console.log('caixa do bloqueio:', JSON.stringify(await pagina.evaluate(() => { const r = document.querySelector('#bloqueio .bloq-caixa').getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width) }; })));
+    await foto('duas-telas-bloqueio');
+    await pagina.evaluate(() => document.getElementById('bloqueio').remove());
+    // Desligar a opção: uma tela só de novo, e as janelas da outra voltam para a principal.
+    await pagina.evaluate(() => retro.tela.usarDuasTelas(false));
+    await pagina.waitForTimeout(2000);
+    console.log('de volta:', JSON.stringify(await telas()), '| Explorador:', JSON.stringify(await ret()));
+    await foto('duas-telas-uma');
+  },
+
   async resolucao() {
     // A área da tela (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e RETRO_TELA_FALSA=1) e a aba Efeitos.
     await fecharTudo();

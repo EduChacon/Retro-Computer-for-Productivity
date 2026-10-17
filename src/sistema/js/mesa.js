@@ -100,6 +100,12 @@ export async function montarMesa() {
   });
   eventos.on('programas', () => atualizar());
   window.addEventListener('resize', () => vista.posicionarMesa());
+  // Com as duas telas, o fundo da outra tela também é a área de trabalho (o botão direito).
+  document.getElementById('tela').addEventListener('contextmenu', (e) => {
+    if (!e.target.classList || !e.target.classList.contains('fundo-tela')) return;
+    e.preventDefault();
+    menu([], e);
+  });
   atualizarLixeira();
   raiz.focus();
 }

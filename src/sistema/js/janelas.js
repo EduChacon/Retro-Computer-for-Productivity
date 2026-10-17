@@ -5,8 +5,43 @@
 import { h, img, Eventos, limitar } from './util.js';
 import { barraDeMenus, fecharMenus } from './menus.js';
 import { tr } from './idioma.js';
+import { variasTelas, telaDoPonto, telaPrincipal, areaUtil, aoMudarTelas, listaTelas } from './telas.js';
 
 const area = () => document.getElementById('janelas');
+
+/*
+ * As duas telas em tela cheia (telas.js): o lugar de uma janela é a tela em que ela está, sem a
+ * barra de tarefas na principal. As contas são feitas na página (como o getBoundingClientRect); as
+ * janelas ficam na área das janelas, que fica na tela principal. Com uma tela só, a área de cada
+ * tela é a própria área das janelas, como sempre.
+ */
+function areaDaTela(px, py) {
+  if (!variasTelas()) return area().getBoundingClientRect();
+  return areaUtil(telaDoPonto(px, py));
+}
+
+/** Um retângulo da página nas coordenadas da área das janelas. */
+function naArea(r) {
+  const a = area().getBoundingClientRect();
+  return { x: Math.round(r.x - a.left), y: Math.round(r.y - a.top), w: Math.round(r.w), h: Math.round(r.h) };
+}
+
+/** O retângulo de um encaixe na tela t (da página), nas coordenadas da área das janelas. */
+function encaixeNaTela(nome, t) {
+  const r = retDoEncaixe(nome, t);
+  return naArea({ x: r.x + t.left, y: r.y + t.top, w: r.w, h: r.h });
+}
+
+/** Até onde uma janela pode ir ao ser arrastada: as telas todas, nas coordenadas da área. */
+function limitesDoArrasto() {
+  const a = area().getBoundingClientRect();
+  if (!variasTelas()) return { x0: 0, y0: 0, x1: a.width, y1: a.height };
+  const ts = listaTelas().map(areaUtil);
+  return {
+    x0: Math.min(...ts.map((r) => r.left)) - a.left, y0: Math.min(...ts.map((r) => r.top)) - a.top,
+    x1: Math.max(...ts.map((r) => r.right)) - a.left, y1: Math.max(...ts.map((r) => r.bottom)) - a.top,
+  };
+}
 export const eventos = new Eventos();
 export const lista = [];
 let zTopo = 10;
@@ -152,6 +187,35 @@ export class Janela {
     Object.assign(this.el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: a + 'px' });
   }
 
+  /** A área da tela em que a janela está (pelo alto do meio dela, onde fica a barra de título). */
+  areaAtual() {
+    const a = area().getBoundingClientRect();
+    return areaDaTela(a.left + this.ret.x + this.ret.w / 2, a.top + this.ret.y + 10);
+  }
+
+  /** A tela em que a janela está (telas.js): a da maximizada, a do encaixe ou a do alto da janela. */
+  tela() {
+    if (!variasTelas()) return telaPrincipal();
+    const p = this.maximizada && this.pontoMax ? this.pontoMax : this.encaixe && this.pontoEncaixe ? this.pontoEncaixe : null;
+    if (p) return telaDoPonto(p.x, p.y);
+    const a = area().getBoundingClientRect();
+    return telaDoPonto(a.left + this.ret.x + this.ret.w / 2, a.top + this.ret.y + 10);
+  }
+
+  /** A área da tela do encaixe (guardada pelo meio dela, que vale também depois de os monitores mudarem). */
+  areaDoEncaixe() {
+    return this.pontoEncaixe ? areaDaTela(this.pontoEncaixe.x, this.pontoEncaixe.y) : this.areaAtual();
+  }
+
+  /** Maximizada, com as duas telas: a tela inteira em que ela está. */
+  aplicarMaximizada() {
+    if (!variasTelas()) { Object.assign(this.el.style, { left: '0px', top: '0px', width: '100%', height: '100%' }); return; }
+    const t = this.pontoMax ? areaDaTela(this.pontoMax.x, this.pontoMax.y) : this.areaAtual();
+    this.pontoMax = { x: t.left + t.width / 2, y: t.top + t.height / 2 };
+    const r = naArea({ x: t.left, y: t.top, w: t.width, h: t.height });
+    Object.assign(this.el.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+  }
+
   definirTitulo(t) {
     this.titulo = t;
     this.textoEl.textContent = t;
@@ -228,10 +292,12 @@ export class Janela {
     if (this.maximizada) return;
     this.maximizada = true;
     this.retAntes = { ...this.ret };
+    this.pontoMax = null;
     this.el.classList.add('maximizada');
-    Object.assign(this.el.style, { left: '0px', top: '0px', width: '100%', height: '100%' });
+    this.aplicarMaximizada();
     if (this.bMax) { this.bMax.className = 'b-restaurar'; this.bMax.dataset.dica = tr('Restaurar'); }
     this.ev.emit('tamanho');
+    eventos.emit('lugar', this);
   }
 
   restaurar() {
@@ -240,23 +306,30 @@ export class Janela {
     this.el.classList.remove('maximizada');
     this.ret = this.retAntes || this.ret;
     // Maximizada a partir de um encaixe, volta ao encaixe (a tela pode ter mudado de tamanho).
-    if (this.encaixe) this.ret = retDoEncaixe(this.encaixe, area().getBoundingClientRect());
+    if (this.encaixe) this.ret = encaixeNaTela(this.encaixe, this.areaDoEncaixe());
     this.aplicarRet();
     if (this.bMax) { this.bMax.className = 'b-max'; this.bMax.dataset.dica = tr('Maximizar'); }
     this.ev.emit('tamanho');
+    eventos.emit('lugar', this);
   }
 
-  /** Encaixa numa metade ('esq', 'dir') ou num quarto da tela ('no', 'ne', 'so', 'se'); 'max' maximiza. */
-  encaixar(nome) {
+  /**
+   * Encaixa numa metade ('esq', 'dir') ou num quarto da tela ('no', 'ne', 'so', 'se'); 'max' maximiza.
+   * t é a área da tela (com as duas telas, a de onde o ponteiro soltou; sem ela, a da janela).
+   */
+  encaixar(nome, t = null) {
     if (!this.redim || !nome) return;
     if (nome === 'max') { this.maximizar(); return; }
+    const tela = t || (this.maximizada && this.pontoMax ? areaDaTela(this.pontoMax.x, this.pontoMax.y) : this.areaAtual());
     if (this.maximizada) this.restaurar();
     if (!this.encaixe) this.retLivre = { ...this.ret };
     this.encaixe = nome;
-    this.ret = retDoEncaixe(nome, area().getBoundingClientRect());
+    this.pontoEncaixe = { x: tela.left + tela.width / 2, y: tela.top + tela.height / 2 };
+    this.ret = encaixeNaTela(nome, tela);
     this.el.classList.add('encaixada');
     this.aplicarRet();
     this.ev.emit('tamanho');
+    eventos.emit('lugar', this);
   }
 
   /** Sai do encaixe e volta ao tamanho e ao lugar de antes. */
@@ -333,27 +406,31 @@ export class Janela {
     e.preventDefault();
     const ini = { px: e.clientX, py: e.clientY, x: this.ret.x, y: this.ret.y };
     const t = area().getBoundingClientRect();
+    // Até onde a janela vai: a área das janelas (com as duas telas, as duas).
+    const lim = limitesDoArrasto();
     // Maximizada ou encaixada, a janela só sai do lugar depois de o ponteiro andar um pouco.
     let preso = this.maximizada || !!this.encaixe;
     let zona = null;
+    let telaZona = null;
     document.body.classList.add('arrastando');
     const mover = (ev) => {
       if (preso) {
         if (Math.abs(ev.clientX - ini.px) + Math.abs(ev.clientY - ini.py) < 6) return;
         // Volta ao tamanho livre com a barra de título embaixo do ponteiro, na mesma proporção.
-        const larg = this.maximizada ? t.width : this.ret.w;
-        const prop = limitar((ini.px - t.left - (this.maximizada ? 0 : this.ret.x)) / larg, 0.05, 0.95);
+        const re = this.el.getBoundingClientRect();
+        const prop = limitar((ini.px - re.left) / re.width, 0.05, 0.95);
         if (this.maximizada) this.restaurar();
         this.desencaixar();
         ini.x = Math.round(ini.px - t.left - prop * this.ret.w);
-        ini.y = Math.max(0, Math.round(ini.py - t.top - 9));
+        ini.y = Math.max(lim.y0, Math.round(ini.py - t.top - 9));
         preso = false;
       }
-      this.ret.x = Math.round(limitar(ini.x + ev.clientX - ini.px, 40 - this.ret.w, t.width - 40));
-      this.ret.y = Math.round(limitar(ini.y + ev.clientY - ini.py, 0, t.height - 20));
+      this.ret.x = Math.round(limitar(ini.x + ev.clientX - ini.px, lim.x0 + 40 - this.ret.w, lim.x1 - 40));
+      this.ret.y = Math.round(limitar(ini.y + ev.clientY - ini.py, lim.y0, lim.y1 - 20));
       this.aplicarRet();
-      zona = opcoes.encaixe && this.redim ? zonaDoPonteiro(ev.clientX, ev.clientY, t) : null;
-      mostrarPrevia(zona, t);
+      telaZona = areaDaTela(ev.clientX, ev.clientY);
+      zona = opcoes.encaixe && this.redim ? zonaDoPonteiro(ev.clientX, ev.clientY, telaZona) : null;
+      mostrarPrevia(zona, telaZona);
     };
     const soltar = () => {
       document.body.classList.remove('arrastando');
@@ -361,8 +438,10 @@ export class Janela {
       window.removeEventListener('pointerup', soltar);
       window.removeEventListener('pointercancel', soltar);
       mostrarPrevia(null);
-      if (zona) this.encaixar(zona);
+      if (zona) this.encaixar(zona, telaZona);
       this.ev.emit('movida');
+      // A barra de tarefas da outra tela fica sabendo (barra.js).
+      eventos.emit('lugar', this);
     };
     window.addEventListener('pointermove', mover);
     window.addEventListener('pointerup', soltar);
@@ -376,6 +455,10 @@ export class Janela {
     this.focar();
     const ini = { px: e.clientX, py: e.clientY, ...this.ret };
     const t = area().getBoundingClientRect();
+    // O alto e o pé da tela em que a janela está (com uma tela só, os da área das janelas).
+    const tela = this.areaAtual();
+    const topo = Math.round(tela.top - t.top);
+    const pe = Math.round(tela.bottom - t.top);
     document.body.classList.add('arrastando');
     document.body.style.cursor = getComputedStyle(e.target).cursor;
     // Redimensionar à mão tira do encaixe (o tamanho novo passa a ser o livre).
@@ -388,8 +471,8 @@ export class Janela {
       if (dir.includes('s')) a = Math.max(this.minA, ini.h + dy);
       if (dir.includes('o')) { w = Math.max(this.minL, ini.w - dx); x = ini.x + ini.w - w; }
       if (dir.includes('n')) { a = Math.max(this.minA, ini.h - dy); y = ini.y + ini.h - a; }
-      if (y < 0) { a += y; y = 0; }
-      a = Math.min(a, t.height - y);
+      if (y < topo) { a += y - topo; y = topo; }
+      a = Math.min(a, pe - y);
       this.ret = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(a) };
       this.aplicarRet();
       this.ev.emit('tamanho');
@@ -480,7 +563,7 @@ function mostrarPrevia(zona, t) {
     previa = h('div.previa-encaixe', { hidden: true });
     area().append(previa);
   }
-  const r = retDoEncaixe(zona, t);
+  const r = encaixeNaTela(zona, t);
   Object.assign(previa.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
   previa.hidden = false;
 }
@@ -489,17 +572,44 @@ function mostrarPrevia(zona, t) {
 let observador = null;
 function acompanharArea() {
   if (observador || !area() || typeof ResizeObserver === 'undefined') return;
-  observador = new ResizeObserver(() => {
-    const t = area().getBoundingClientRect();
-    for (const j of lista) {
-      if (!j.encaixe || j.maximizada) continue;
-      j.ret = retDoEncaixe(j.encaixe, t);
-      j.aplicarRet();
-      j.ev.emit('tamanho');
-    }
-  });
+  observador = new ResizeObserver(() => ajustarAsTelas());
   observador.observe(area());
 }
+
+/** As telas mudaram (o tamanho, um monitor a mais ou a menos): os encaixes, as maximizadas e as perdidas. */
+function ajustarAsTelas() {
+  if (document.fullscreenElement) return; // um vídeo em tela cheia: a janela volta a ser como era
+  for (const j of lista) {
+    if (j.fechada) continue;
+    if (j.maximizada) { j.aplicarMaximizada(); j.ev.emit('tamanho'); continue; }
+    if (j.encaixe) { j.ret = encaixeNaTela(j.encaixe, j.areaDoEncaixe()); j.aplicarRet(); j.ev.emit('tamanho'); continue; }
+    trazerParaAVista(j);
+  }
+}
+
+/**
+ * A janela cuja barra de título ficou fora de todas as telas (um monitor desligado) volta para a
+ * principal. Basta um pedaço de 40 pontos dela à vista para ficar onde está (o mesmo que o arrastar deixa).
+ */
+function trazerParaAVista(j) {
+  const a = area().getBoundingClientRect();
+  const x0 = a.left + j.ret.x;
+  const x1 = x0 + j.ret.w;
+  const y = a.top + j.ret.y + 10;
+  const telas = variasTelas() ? listaTelas().map(areaUtil) : [a];
+  if (telas.some((r) => Math.min(x1, r.right) - Math.max(x0, r.left) >= 40 && y >= r.top - 10 && y < r.bottom)) return;
+  j.ret.w = Math.min(j.ret.w, Math.max(j.minL, a.width - 8));
+  j.ret.h = Math.min(j.ret.h, Math.max(j.minA, a.height - 8));
+  j.ret.x = Math.max(0, Math.min(Math.round((a.width - j.ret.w) / 2), a.width - j.ret.w));
+  j.ret.y = Math.max(0, Math.min(Math.round((a.height - j.ret.h) / 3), a.height - j.ret.h));
+  j.aplicarRet();
+  j.ev.emit('tamanho');
+}
+
+aoMudarTelas(() => { if (area()) { ajustarAsTelas(); eventos.emit('lugar'); } });
+
+/** Refaz as maximizadas e os encaixes (a barra de tarefas apareceu ou sumiu na outra tela). */
+export function reajustarJanelas() { if (area()) ajustarAsTelas(); }
 
 const soltarEncaixe = (j) => { j.encaixe = null; j.el.classList.remove('encaixada'); };
 

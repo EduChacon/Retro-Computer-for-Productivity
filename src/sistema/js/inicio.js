@@ -16,6 +16,7 @@ import { procurarAtualizacao } from './atualizacao.js';
 import { bloquearAoAbrir } from './bloqueio.js';
 import { carregarPerfis, telaDeEntrada } from './perfis.js';
 import { iniciarLuzNoturna } from './luz-noturna.js';
+import { iniciarTelas, telaDoPonto } from './telas.js';
 import { iniciarAcessibilidade } from './acessibilidade.js';
 
 import './apps/explorador.js';
@@ -110,11 +111,12 @@ function dicas() {
       dica.textContent = texto;
       dica.hidden = false;
       const r = dica.getBoundingClientRect();
-      const t = document.getElementById('tela').getBoundingClientRect();
+      // A tela do ponteiro (com as duas telas, a dica não passa para a outra).
+      const s = telaDoPonto(e.clientX, e.clientY);
       let x = e.clientX + 2;
       let y = e.clientY + 20;
-      if (x + r.width > t.width) x = t.width - r.width - 2;
-      if (y + r.height > t.height) y = e.clientY - r.height - 4;
+      if (x + r.width > s.x + s.w) x = s.x + s.w - r.width - 2;
+      if (y + r.height > s.y + s.h) y = e.clientY - r.height - 4;
       dica.style.left = x + 'px';
       dica.style.top = y + 'px';
     }, 650);
@@ -130,6 +132,8 @@ async function iniciar() {
   await atualizarProgramas().catch(() => { });
   aplicarFundo(estado.config.papel);
   await aplicarEscala(estado.config.escala);
+  // As duas telas em tela cheia: onde está cada monitor dentro da janela (telas.js).
+  await iniciarTelas().catch(() => { });
   iniciarLuzNoturna();
   iniciarAcessibilidade();
   // O Claude do Prompt pede pelo processo principal o que só a área de trabalho faz (mcp.js).

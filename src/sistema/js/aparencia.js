@@ -95,7 +95,11 @@ function pixelsDe(arquivo) {
  */
 export function aplicarFundo(papel, el = document.getElementById('tela'), { escala = 1 } = {}) {
   const vez = (el._vezFundo = (el._vezFundo || 0) + 1);
-  if (el.id === 'tela') ultimoFundo = papel;
+  if (el.id === 'tela') {
+    ultimoFundo = papel;
+    // Com as duas telas (telas.js), cada uma tem o papel de parede inteiro.
+    for (const f of el.querySelectorAll(':scope > .fundo-tela')) aplicarFundo(papel, f, { escala });
+  }
   Object.assign(el.style, fundoCss(papel));
   if (!papel || !papel.imagem || !MODOS_PAPEL[papel.modo] || papel.modo === 'preencher') return;
   pixelsDe(papel.imagem).then((px) => {
@@ -107,6 +111,12 @@ export function aplicarFundo(papel, el = document.getElementById('tela'), { esca
 
 // Mudar o tamanho dos pixels muda o devicePixelRatio: a imagem centralizada volta ao tamanho certo.
 let ultimoFundo = null;
+
+/** Pinta de novo o fundo da área de trabalho (as telas mudaram: telas.js). */
+export function repintarFundo() {
+  const el = typeof document !== 'undefined' && document.getElementById('tela');
+  if (el && ultimoFundo) aplicarFundo(ultimoFundo, el);
+}
 if (typeof window !== 'undefined') window.addEventListener('resize', () => { if (ultimoFundo && ultimoFundo.imagem && ultimoFundo.modo !== 'preencher') aplicarFundo(ultimoFundo); });
 
 /**
@@ -135,7 +145,8 @@ export function pixelsAutomaticos({ escala = 1, w = 0, h = 0 } = {}) {
 export async function aplicarEscala(escala) {
   const tela = await retro.sistema.telaFisica().catch(() => null);
   const dpr = (tela && tela.escala) || window.devicePixelRatio || 1;
-  const n = escala === 'auto' || !escala ? pixelsAutomaticos(tela || { escala: dpr }) : Number(escala);
+  // O automático segue a escala do sistema (que, com as duas telas em escalas diferentes, não é a da página).
+  const n = escala === 'auto' || !escala ? pixelsAutomaticos(tela ? { ...tela, escala: tela.escalaSistema || tela.escala } : { escala: dpr }) : Number(escala);
   zoomAtual = n / dpr;
   await retro.sistema.zoom(zoomAtual);
   return n;
