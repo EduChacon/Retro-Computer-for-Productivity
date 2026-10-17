@@ -1,10 +1,12 @@
 /*
  * A barra de menus no alto da tela, no tema Mac clássico (tema.js), inspirada na do Mac OS 9: à
  * esquerda, o menu do logotipo (o Iniciar) e os menus da janela da frente (a barra de menus dela sobe
- * para cá) ou, sem janela na frente, os da área de trabalho; à direita, a busca e a bandeja da barra
- * de tarefas, com o relógio, e o menu dos programas abertos, que mostra o da frente e troca de um para
- * outro (o "Ocultar" é o minimizar). Embaixo, à esquerda, a Faixa de controle: os programas fixados na
- * barra de tarefas, com a ponta que a recolhe. Com o tema do PC, tudo volta para a barra de tarefas.
+ * para cá) ou, sem janela na frente, os da área de trabalho; à direita, como no Mac da época, só o
+ * relógio (e o tempo do Foco, quando ligado) e o menu dos programas abertos, que mostra o da frente e
+ * troca de um para outro (o "Ocultar" é o minimizar). Embaixo, à esquerda, a Faixa de controle: os
+ * programas fixados na barra de tarefas, a busca (a lupa abre o campo) e os ícones da bandeja (a rede,
+ * o volume, a bateria, as notificações), com a ponta que a recolhe. Com o tema do PC, tudo volta para
+ * a barra de tarefas.
  */
 import { h, img } from './util.js';
 import { abrirMenu, barraDeMenus, fecharMenus } from './menus.js';
@@ -27,6 +29,7 @@ let direita = null;
 let btApp = null;
 let menusMesa = null;
 let faixa = null;
+let modulos = null; // a busca e a bandeja, na Faixa de controle
 
 export const logoDaBarra = () => btLogo;
 
@@ -47,6 +50,8 @@ export function montarBarraMac() {
   btApp.addEventListener('mousedown', (e) => { e.preventDefault(); if (!btApp.classList.contains('aberto')) menuDosProgramas(); });
   barra.append(btLogo, menus, h('div.bm-espaco'), direita, btApp);
   menusMesa = barraDeMenus(definicaoMesa());
+  modulos = h('div.fc-modulos');
+  prepararBusca();
 
   // No tema Mac, o clique na mesa (ou no fundo da outra tela) leva a área de trabalho para a frente.
   document.getElementById('mesa').addEventListener('pointerdown', (e) => { if (temaMac() && !e.target.closest('.item')) desativarJanelas(); });
@@ -64,8 +69,9 @@ export function montarBarraMac() {
 function aplicar() {
   if (!barra) return;
   if (temaMac()) {
-    const { busca, bandeja } = pecasDaBarra();
-    direita.replaceChildren(...[busca, bandeja].filter(Boolean));
+    const { busca, bandeja, relogio, foco } = pecasDaBarra();
+    direita.replaceChildren(...foco, relogio);
+    modulos.replaceChildren(...[busca, bandeja].filter(Boolean));
   } else {
     devolverPecas();
     // Cada barra de menus volta para a janela dela, logo abaixo do título.
@@ -74,6 +80,22 @@ function aplicar() {
   }
   atualizar();
   desenharFaixa();
+}
+
+/** Na Faixa de controle, a busca é só a lupa: o clique abre o campo, que fecha vazio ao sair dele. */
+function prepararBusca() {
+  const { busca } = pecasDaBarra();
+  if (!busca) return;
+  const campo = busca.querySelector('input');
+  busca.addEventListener('mousedown', (e) => {
+    if (!temaMac() || busca.classList.contains('aberta')) return;
+    e.preventDefault();
+    busca.classList.add('aberta');
+    campo.focus();
+  });
+  busca.addEventListener('focusout', () => setTimeout(() => {
+    if (!busca.contains(document.activeElement) && !campo.value) busca.classList.remove('aberta');
+  }, 0));
 }
 
 /** O nome e o ícone de uma janela no menu dos programas (o do programa, ou o título dela). */
@@ -189,7 +211,7 @@ async function menuDosProgramas() {
   ], { x: r.left, y: r.bottom, aoFechar: () => btApp.classList.remove('aberto') });
 }
 
-/* ---------- A Faixa de controle (os programas fixados) ---------- */
+/* ---------- A Faixa de controle (os programas fixados, a busca e a bandeja) ---------- */
 
 const faixaAberta = () => !(estado.config.barra && estado.config.barra.faixaAberta === false);
 
@@ -213,8 +235,9 @@ function desenharFaixa() {
     return b;
   }));
   botoes.hidden = !faixaAberta() || !progs.length;
+  modulos.hidden = !faixaAberta();
   const ponta = h('button.fc-ponta', { title: faixaAberta() ? tr('Recolher a Faixa de controle') : tr('Abrir a Faixa de controle') });
   ponta.addEventListener('mousedown', (e) => e.preventDefault());
   ponta.addEventListener('click', () => definirConfig({ barra: { faixaAberta: !faixaAberta() } }));
-  faixa.replaceChildren(botoes, ponta);
+  faixa.replaceChildren(botoes, modulos, ponta);
 }

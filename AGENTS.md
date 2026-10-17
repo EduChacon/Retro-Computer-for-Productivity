@@ -90,7 +90,8 @@ src/sistema/           a área de trabalho (página servida em sistema://retro/)
   js/tema.js           os temas (o PC clássico e o Mac clássico): a classe da página e o caminho dos ícones de cada um
   js/icones-mac.js     GERADO por ferramentas/icones-mac.py: a lista dos ícones que o tema Mac tem
   js/barra-mac.js      a barra de menus no alto do tema Mac (o logotipo, os menus da janela da frente ou os da mesa,
-                       a bandeja, o menu dos programas abertos) e a Faixa de controle com os programas fixados
+                       o relógio, o menu dos programas abertos) e a Faixa de controle (os programas fixados, a lupa
+                       da busca e os ícones da bandeja)
   js/luz-noturna.js    a luz noturna (o xrandr no modo sistema; fora dele, um filtro)
   js/conta.js          as contas da caixa de busca (um leitor próprio, sem eval)
   js/menus.js          menus suspensos e barra de menus

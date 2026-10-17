@@ -162,10 +162,8 @@ async function iniciar() {
     if (antes !== depois) {
       const atual = estado.config.papel || {};
       const papel = fundoParaTema(atual, antes, depois);
-      if (papel.cor !== atual.cor || papel.padrao !== atual.padrao) {
-        aplicarFundo(papel);
-        definirConfig({ papel }).catch(() => { });
-      }
+      aplicarFundo(papel);
+      if (papel.cor !== atual.cor || papel.padrao !== atual.padrao) definirConfig({ papel }).catch(() => { });
     }
     aplicarTema(estado.config.tema);
   });

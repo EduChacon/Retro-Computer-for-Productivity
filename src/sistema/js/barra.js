@@ -27,6 +27,7 @@ let tarefas;
 let fixadosEl;
 let sepFixados;
 let relogio;
+let pecasBandeja = null; // o que vai na bandeja, na ordem (para o tema Mac separar o relógio e devolver)
 let focoEl;
 let busca;
 const mostrarBusca = () => !(estado.config.barra && estado.config.barra.busca === false);
@@ -59,6 +60,7 @@ export function montarBarra() {
   relogio.addEventListener('mousedown', (e) => { if (e.button === 0) { e.preventDefault(); alternarCalendario(relogio); } });
   relogio.style.cursor = 'pointer';
   const itens = montarBandeja();
+  pecasBandeja = { foco: [focoIco, focoEl], antes: itens.antes, depois: itens.depois };
   const bandeja = h('div#bandeja', focoIco, focoEl, ...itens.antes, relogio, ...itens.depois);
   busca = montarBusca();
   busca.hidden = !mostrarBusca();
@@ -92,9 +94,9 @@ export function montarBarra() {
   setInterval(tique, 1000);
 }
 
-/** A busca e a bandeja (o relógio, a rede, o volume…): o tema Mac as leva para a barra de menus do alto. */
+/** A busca, a bandeja (a rede, o volume…), o relógio e o tempo do Foco: o tema Mac os tira daqui (barra-mac.js). */
 export function pecasDaBarra() {
-  return { busca, bandeja: document.getElementById('bandeja') };
+  return { busca, bandeja: document.getElementById('bandeja'), relogio, foco: pecasBandeja ? pecasBandeja.foco : [] };
 }
 
 /** Devolve a busca e a bandeja para a barra de tarefas, nos lugares de sempre. */
@@ -104,6 +106,8 @@ export function devolverPecas() {
   if (!barra || !busca) return;
   if (busca.parentNode !== barra) fixadosEl.before(busca);
   if (bandeja && bandeja.parentNode !== barra) barra.append(bandeja);
+  // O relógio e o Foco voltam para a bandeja, na ordem de sempre.
+  if (bandeja && pecasBandeja && relogio.parentNode !== bandeja) bandeja.replaceChildren(...pecasBandeja.foco, ...pecasBandeja.antes, relogio, ...pecasBandeja.depois);
 }
 
 /** O botão direito na barra de tarefas (a principal e a de cada outra tela). */

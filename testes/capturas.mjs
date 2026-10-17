@@ -119,9 +119,10 @@ const erros = [];
 let app = null;
 let pagina = null;
 // RETRO_TEMA=mac: o botão Iniciar e a barra de menus da janela da frente viram o logotipo e os menus
-// no alto da tela, para os roteiros do PC rodarem no tema Mac sem mudar cada seletor.
+// no alto da tela, o relógio fica na barra de menus e a busca é a lupa da Faixa de controle (o clique
+// abre o campo), para os roteiros do PC rodarem no tema Mac sem mudar cada seletor.
 let temaMacLigado = false;
-const SELETORES_MAC = [['#iniciar', '#barra-mac .bm-logo'], ['.janela.ativa .menubar', '#barra-mac .bm-menus .menubar']];
+const SELETORES_MAC = [['#iniciar', '#barra-mac .bm-logo'], ['.janela.ativa .menubar', '#barra-mac .bm-menus .menubar'], ['#bandeja .relogio', '#barra-mac .relogio'], ['#busca-barra input', '#busca-barra']];
 function seletoresDoTema(p) {
   if (process.env.RETRO_TEMA !== 'mac') return;
   const trocar = (s) => (temaMacLigado && typeof s === 'string' ? SELETORES_MAC.reduce((x, [de, para]) => x.split(de).join(para), s) : s);
@@ -1368,8 +1369,18 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('tema-mac-dialogo');
     await pagina.keyboard.press('Escape');
     await pagina.waitForTimeout(200);
+    // A Faixa de controle: os fixados, a lupa da busca e os ícones da bandeja; a lupa abre o campo.
+    console.log('faixa:', JSON.stringify(await pagina.evaluate(() => ({ direita: [...document.querySelectorAll('#barra-mac .bm-direita > :not([hidden])')].map((e) => e.className || e.tagName), modulos: [...document.querySelectorAll('#faixa-controle .fc-modulos #bandeja > :not([hidden])')].length, busca: !!document.querySelector('#faixa-controle #busca-barra'), alturas: ['#faixa-controle', '#faixa-controle .fc-botoes', '#faixa-controle .fc-modulos', '#faixa-controle #busca-barra', '#faixa-controle #bandeja'].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); return `${s.split(' ').pop()} ${Math.round(r.top)}+${Math.round(r.height)}`; }) }))));
+    await pagina.click('#faixa-controle #busca-barra');
+    await pagina.keyboard.type('calc');
+    await pagina.waitForTimeout(900);
+    await foto('tema-mac-busca');
+    await pagina.keyboard.press('Escape');
+    await pagina.mouse.click(600, 400);
+    await pagina.waitForTimeout(300);
+    console.log('busca fechada:', await pagina.evaluate(() => !document.querySelector('#busca-barra').classList.contains('aberta')));
     // O calendário do relógio e um aviso: os dois descem da barra de menus, no canto de cima.
-    await pagina.click('#bandeja .relogio');
+    await pagina.click('#barra-mac .relogio');
     await pagina.waitForTimeout(400);
     const lugar = (sel) => pagina.evaluate((s) => { const el = document.querySelector(s); return el ? (({ x, y, right: d }) => ({ x: Math.round(x), y: Math.round(y), direita: Math.round(d) }))(el.getBoundingClientRect()) : null; }, sel);
     console.log('calendário:', JSON.stringify(await lugar('.calendario')));
@@ -2521,7 +2532,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.click(ico(3));
     await pagina.waitForTimeout(300);
     await foto('bandeja-notificacoes');
-    console.log('relógio:', await pagina.evaluate(() => document.querySelector('#bandeja .relogio').innerText.replace(/\n/g, ' | ')));
+    console.log('relógio:', await pagina.evaluate(() => document.querySelector('#bandeja .relogio, #barra-mac .relogio').innerText.replace(/\n/g, ' | ')));
   },
 
   // A loja de programas. Com RETRO_LOJA_FALSA=1, a do Linux (o Flathub de verdade, o flatpak de mentira);

@@ -198,33 +198,33 @@ const TOPICOS = [
 <h2>Como ligar</h2>
 <p>Em Painel de controle › Aparência › <b>Tema</b>, escolha <b>Mac clássico</b> e clique em OK; para voltar, escolha <b>PC clássico</b>. O tema é inspirado no Mac OS 9: o cinza-claro, o título listrado e a barra de menus no alto. O fundo de sempre de um tema vira o do outro (um fundo escolhido por você fica como está), e cada usuário tem o seu tema.</p>
 <h2>A barra de menus, no alto</h2>
-<p>À esquerda, o <b>logotipo</b> abre o menu Iniciar (os programas, os documentos, as configurações, o Localizar e o Desligar); a tecla do logotipo faz o mesmo. Depois vêm os <b>menus da janela da frente</b> (Arquivo, Editar, Exibir…). Com a área de trabalho na frente (um clique na mesa), aparecem os dela, com o <b>Especial</b> › <b>Esvaziar a Lixeira</b>. À direita ficam a busca, a bandeja com o relógio e o <b>menu dos programas abertos</b>, que mostra o da frente, troca de um para outro, oculta (minimiza) e mostra de novo.</p>
+<p>À esquerda, o <b>logotipo</b> abre o menu Iniciar (os programas, os documentos, as configurações, o Localizar e o Desligar); a tecla do logotipo faz o mesmo. Depois vêm os <b>menus da janela da frente</b> (Arquivo, Editar, Exibir…). Com a área de trabalho na frente (um clique na mesa), aparecem os dela, com o <b>Especial</b> › <b>Esvaziar a Lixeira</b>. À direita, como no Mac da época, ficam só o relógio (que abre o calendário) e o <b>menu dos programas abertos</b>, que mostra o da frente, troca de um para outro, oculta (minimiza) e mostra de novo.</p>
 <h2>As janelas</h2>
 <p>A caixa da esquerda do título fecha a janela; as da direita aumentam a janela e a <b>recolhem</b>, deixando só a barra de título à vista. O duplo clique no título também recolhe e abre de novo.</p>
 <h2>A Faixa de controle</h2>
-<p>No canto de baixo, à esquerda, ficam os programas fixados na barra de tarefas (Painel de controle › Barra de tarefas e menu Iniciar). A ponta da faixa a recolhe e a abre de novo.</p>
+<p>No canto de baixo, à esquerda, ficam os programas fixados na barra de tarefas (Painel de controle › Barra de tarefas e menu Iniciar), a <b>lupa da busca</b> (um clique abre o campo) e os ícones da bandeja: a rede, o volume, a bateria e as notificações. A ponta da faixa a recolhe e a abre de novo.</p>
 <h2>A área de trabalho</h2>
 <p>Os ícones começam do canto de cima, à direita, e a Lixeira fica no canto de baixo; as posições de cada tema ficam guardadas à parte. Os ícones do tema são desenhos próprios do Retro Computer, no estilo da época.</p>`],
     en: ['The Classic Mac theme', `
 <h2>Turning it on</h2>
 <p>In Control Panel › Appearance › <b>Theme</b>, choose <b>Classic Mac</b> and click OK; to go back, choose <b>Classic PC</b>. The theme is inspired by Mac OS 9: the light gray, the striped title and the menu bar at the top. One theme's usual background becomes the other's (a background you chose stays as it is), and each user has their own theme.</p>
 <h2>The menu bar, at the top</h2>
-<p>On the left, the <b>logo</b> opens the Start menu (the programs, the documents, the settings, Find and Shut Down); the logo key does the same. Then come the <b>menus of the front window</b> (File, Edit, View…). With the desktop in front (a click on it), its own menus appear, with <b>Special</b> › <b>Empty Trash</b>. On the right are the search, the tray with the clock and the <b>menu of the open programs</b>, which shows the front one, switches from one to another, hides (minimizes) and shows again.</p>
+<p>On the left, the <b>logo</b> opens the Start menu (the programs, the documents, the settings, Find and Shut Down); the logo key does the same. Then come the <b>menus of the front window</b> (File, Edit, View…). With the desktop in front (a click on it), its own menus appear, with <b>Special</b> › <b>Empty Trash</b>. On the right, as on the Mac of the time, there are only the clock (which opens the calendar) and the <b>menu of the open programs</b>, which shows the front one, switches from one to another, hides (minimizes) and shows again.</p>
 <h2>The windows</h2>
 <p>The box on the left of the title closes the window; the ones on the right enlarge the window and <b>collapse</b> it, leaving only the title bar in view. A double-click on the title also collapses it and opens it again.</p>
 <h2>The Control Strip</h2>
-<p>In the bottom left corner are the programs pinned to the taskbar (Control Panel › Taskbar and Start Menu). The end of the strip collapses it and opens it again.</p>
+<p>In the bottom left corner are the programs pinned to the taskbar (Control Panel › Taskbar and Start Menu), the <b>search magnifier</b> (a click opens the box) and the tray icons: the network, the volume, the battery and the notifications. The end of the strip collapses it and opens it again.</p>
 <h2>The desktop</h2>
 <p>The icons start from the top right corner, and the Trash stays in the bottom corner; each theme's positions are kept separately. The theme's icons are Retro Computer's own drawings, in the style of the time.</p>`],
     es: ['El tema Mac clásico', `
 <h2>Cómo activarlo</h2>
 <p>En Panel de control › Apariencia › <b>Tema</b>, elige <b>Mac clásico</b> y haz clic en Aceptar; para volver, elige <b>PC clásico</b>. El tema está inspirado en Mac OS 9: el gris claro, el título con rayas y la barra de menús arriba. El fondo de siempre de un tema pasa a ser el del otro (un fondo que elegiste queda como está), y cada usuario tiene su tema.</p>
 <h2>La barra de menús, arriba</h2>
-<p>A la izquierda, el <b>logotipo</b> abre el menú Inicio (los programas, los documentos, la configuración, Buscar y Apagar); la tecla del logotipo hace lo mismo. Después vienen los <b>menús de la ventana del frente</b> (Archivo, Edición, Ver…). Con el escritorio al frente (un clic en él), aparecen los suyos, con <b>Especial</b> › <b>Vaciar la Papelera</b>. A la derecha están la búsqueda, la bandeja con el reloj y el <b>menú de los programas abiertos</b>, que muestra el del frente, cambia de uno a otro, oculta (minimiza) y muestra de nuevo.</p>
+<p>A la izquierda, el <b>logotipo</b> abre el menú Inicio (los programas, los documentos, la configuración, Buscar y Apagar); la tecla del logotipo hace lo mismo. Después vienen los <b>menús de la ventana del frente</b> (Archivo, Edición, Ver…). Con el escritorio al frente (un clic en él), aparecen los suyos, con <b>Especial</b> › <b>Vaciar la Papelera</b>. A la derecha, como en la Mac de la época, solo están el reloj (que abre el calendario) y el <b>menú de los programas abiertos</b>, que muestra el del frente, cambia de uno a otro, oculta (minimiza) y muestra de nuevo.</p>
 <h2>Las ventanas</h2>
 <p>La casilla de la izquierda del título cierra la ventana; las de la derecha agrandan la ventana y la <b>contraen</b>, dejando solo la barra de título a la vista. El doble clic en el título también la contrae y la abre de nuevo.</p>
 <h2>La Tira de control</h2>
-<p>En la esquina de abajo a la izquierda están los programas anclados a la barra de tareas (Panel de control › Barra de tareas y menú Inicio). El extremo de la tira la contrae y la abre de nuevo.</p>
+<p>En la esquina de abajo a la izquierda están los programas anclados a la barra de tareas (Panel de control › Barra de tareas y menú Inicio), la <b>lupa de la búsqueda</b> (un clic abre el campo) y los iconos de la bandeja: la red, el volumen, la batería y las notificaciones. El extremo de la tira la contrae y la abre de nuevo.</p>
 <h2>El escritorio</h2>
 <p>Los iconos empiezan desde la esquina de arriba a la derecha, y la Papelera queda en la esquina de abajo; las posiciones de cada tema se guardan por separado. Los iconos del tema son dibujos propios de Retro Computer, al estilo de la época.</p>`],
   },
