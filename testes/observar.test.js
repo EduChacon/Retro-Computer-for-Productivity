@@ -57,3 +57,25 @@ test('observar: a gravação de fora depois de gravações seguras, a pasta nova
     fs.rmSync(raiz, { recursive: true, force: true });
   }
 });
+
+test('observar: no Windows e no Mac (o recursivo do sistema), o que muda dentro de uma pasta ignorada também não avisa', async () => {
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-observar-'));
+  fs.mkdirSync(path.join(raiz, 'Docs'));
+  fs.mkdirSync(path.join(raiz, '.lixeira', 'velho'), { recursive: true });
+  const ev = [];
+  // Fora do Linux, o caminho é o do fs.watch recursivo (no Linux, o do Node serve para arquivos novos).
+  const parar = observarArvore(raiz, (rel) => ev.push(rel), { ignorar: (rel) => rel.startsWith('.lixeira/'), plataforma: 'outro' });
+  try {
+    await esperar(300);
+    fs.writeFileSync(path.join(raiz, '.lixeira', 'velho', 'x.txt'), 'x');
+    fs.writeFileSync(path.join(raiz, '.lixeira', 'y.txt'), 'y');
+    fs.writeFileSync(path.join(raiz, 'Docs', 'a.txt'), 'a');
+    assert.ok(await ate(ev, (r) => r === 'Docs/a.txt'), JSON.stringify(ev));
+    assert.ok(await ate(ev, (r) => r === '.lixeira/y.txt'), JSON.stringify(ev));
+    await esperar(200);
+    assert.ok(!ev.includes('.lixeira/velho/x.txt'), JSON.stringify(ev));
+  } finally {
+    parar();
+    fs.rmSync(raiz, { recursive: true, force: true });
+  }
+});

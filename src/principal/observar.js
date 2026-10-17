@@ -25,7 +25,17 @@ const MAX_PASTAS = 20000;
  */
 function observarArvore(raiz, aoEvento, { ignorar = () => false, plataforma = process.platform, max = MAX_PASTAS } = {}) {
   if (plataforma !== 'linux') {
-    const w = fs.watch(raiz, { recursive: true }, (_ev, arquivo) => { if (arquivo) aoEvento(String(arquivo).split(path.sep).join('/')); });
+    // O mesmo que no Linux: o que muda dentro de uma pasta ignorada não avisa (a própria pasta, sim).
+    const dentroDeIgnorada = (rel) => {
+      const partes = rel.split('/');
+      for (let i = 1; i < partes.length; i++) if (ignorar(partes.slice(0, i).join('/'))) return true;
+      return false;
+    };
+    const w = fs.watch(raiz, { recursive: true }, (_ev, arquivo) => {
+      if (!arquivo) return;
+      const rel = String(arquivo).split(path.sep).join('/');
+      if (!dentroDeIgnorada(rel)) aoEvento(rel);
+    });
     w.on('error', () => { });
     return () => w.close();
   }
