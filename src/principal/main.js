@@ -15,7 +15,7 @@ const { spawn, execFile, execFileSync } = require('node:child_process');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 
-const { Disco } = require('./disco');
+const { Disco, nomeValido } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
 const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
@@ -1251,8 +1251,20 @@ function registrarPonte() {
     arrastoSistema: process.platform !== 'linux' || /utf-?8/i.test(process.env.LC_ALL || process.env.LC_CTYPE || process.env.LANG || ''),
   }));
   tratar('config:definir', (parte) => {
+    // Os nomes da Agenda e da pasta das notas são guardados na primeira vez (trocar de idioma não
+    // cria outros); só esses dois, só uma vez e só com um nome válido. O resto das pastas, nunca.
+    const pastas = parte && parte.pastas && typeof parte.pastas === 'object' ? parte.pastas : null;
     const proibidas = ['disco', 'versao', 'pastas'];
     for (const k of proibidas) delete parte[k];
+    if (pastas) {
+      const atuais = config.obter().pastas || {};
+      const novas = {};
+      for (const k of ['agenda', 'notas']) {
+        const v = pastas[k];
+        if (typeof v === 'string' && !atuais[k] && v.length <= 120 && nomeValido(v)) novas[k] = v;
+      }
+      if (Object.keys(novas).length) parte.pastas = novas;
+    }
     // A senha da tela de bloqueio só muda por bloqueio:definir (conferindo a atual).
     if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
     else if ('bloqueio' in parte) delete parte.bloqueio;

@@ -35,6 +35,7 @@ import './apps/atualizacoes.js';
 import './atalhos.js';
 import { iniciarMcp } from './mcp.js';
 import { iniciarAgenda } from './agenda.js';
+import { iniciarNotas } from './notas.js';
 
 // Estes carregam só quando abrem (ou com o computador parado, logo depois da abertura). Os de
 // cima ficam prontos desde o início: abrem arquivos pelo tipo, recebem avisos do processo
@@ -185,6 +186,8 @@ async function iniciar() {
   iniciarMcp();
   // Os lembretes da Agenda, mesmo com a janela dela fechada (agenda.js).
   iniciarAgenda();
+  // As notas autoadesivas da área de trabalho (notas.js).
+  iniciarNotas();
   // O fim da cópia de segurança (a automática e a feita na hora): um aviso, e o erro quando houver.
   retro.copia.aoFim(async (r) => {
     await carregarConfig();

@@ -134,6 +134,7 @@ P = {
     'v': (20, 100, 20), 'B': (0, 0, 128), 'b': (40, 80, 200), 'c': (110, 150, 240),
     'Y': (250, 220, 40), 'y': (190, 150, 0), 'O': (240, 140, 30), 'M': (200, 160, 110),
     'm': (150, 110, 70), 'n': (110, 75, 40), 'N': (230, 200, 150),
+    'e': (255, 255, 160), 'E': (232, 220, 100),
 }
 
 
@@ -336,6 +337,61 @@ SCANNER_16 = [
     "KlLLLLLLLLLgLDGK",
     "KGGGGGGGGGGGGGGK",
     "KKKKKKKKKKKKKKKK",
+]
+
+# 1.7: a nota autoadesiva (o papel amarelo com a faixa de cima, as linhas e o canto dobrado), desenho próprio.
+NOTAS_32 = [
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "....KKKKKKKKKKKKKKKKKKKKKK......",
+    "....KYYYYYYYYYYYYYYYYYYYYK......",
+    "....KYYYYYYYYYYYYYYYYYYYYK......",
+    "....KyyyyyyyyyyyyyyyyyyyyK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeGGGGGGGGGGGGGGGGeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeGGGGGGGGGGGGGGGGeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeGGGGGGGGGGGGGGGGeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeGGGGGGGGGGGeeeeeeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeeeeeeeeeeeeeeeeeeEK......",
+    "....KWeeeeeeeeeeeeeeeKKKKK......",
+    "....KWeeeeeeeeeeeeeeeKYYK.......",
+    "....KWeeeeeeeeeeeeeeeKYK........",
+    "....KWEEEEEEEEEEEEEEEKK.........",
+    "....KKKKKKKKKKKKKKKKKK..........",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+    "................................",
+]
+
+NOTAS_16 = [
+    "................",
+    ".KKKKKKKKKKKKK..",
+    ".KYYYYYYYYYYYK..",
+    ".KyyyyyyyyyyyK..",
+    ".KWeeeeeeeeeEK..",
+    ".KWeGGGGGGGeEK..",
+    ".KWeeeeeeeeeEK..",
+    ".KWeGGGGGGGeEK..",
+    ".KWeeeeeeeeeEK..",
+    ".KWeGGGGeeeeEK..",
+    ".KWeeeeeeKKKKK..",
+    ".KWeeeeeeKYYK...",
+    ".KWeeeeeeKYK....",
+    ".KWEEEEEEKK.....",
+    ".KKKKKKKKK......",
+    "................",
 ]
 
 BLUETOOTH_16 = [
@@ -1468,6 +1524,8 @@ def gerar(serenity):
     feitos[16]['impressora'] = grade(IMPRESSORA_16)
     feitos[32]['scanner'] = grade(SCANNER_32)
     feitos[16]['scanner'] = grade(SCANNER_16)
+    feitos[32]['notas'] = grade(NOTAS_32)
+    feitos[16]['notas'] = grade(NOTAS_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)
     feitos[32]['bluetooth'] = grade(BLUETOOTH_16).resize((32, 32), Image.NEAREST)
 

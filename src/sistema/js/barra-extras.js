@@ -143,6 +143,7 @@ const DO_SISTEMA = [
   { nome: marcar('Agenda'), icone: 'calendario', abrir: () => abrir('agenda') },
   { nome: marcar('Bloco de notas'), icone: 'bloco', abrir: () => abrir('bloco') },
   { nome: marcar('Calculadora'), icone: 'calculadora', abrir: () => abrir('calculadora') },
+  { nome: marcar('Notas autoadesivas'), icone: 'notas', abrir: () => abrir('notas') },
   { nome: marcar('Área de transferência'), icone: 'transferencia', abrir: () => abrir('transferencia') },
   { nome: marcar('Navegador'), icone: 'navegador', abrir: () => abrir('navegador') },
   { nome: marcar('E-mail'), icone: 'correio', abrir: () => abrir('correio') },

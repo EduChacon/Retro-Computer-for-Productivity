@@ -16,6 +16,7 @@ const fsp = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { tr } = require('./idioma');
+const { observarArvore } = require('./observar');
 
 const LIXEIRA = '.lixeira';
 const VERSOES = '.versoes';
@@ -537,11 +538,11 @@ class Disco {
   observar(aoMudar, aoArquivo = null) {
     const pendentes = new Set();
     let timer = null;
-    let w;
+    let parar;
     try {
-      w = fs.watch(this.raiz, { recursive: true }, (_ev, arquivo) => {
-        if (!arquivo) return;
-        const rel = String(arquivo).split(path.sep).join('/');
+      // As versões guardadas não avisam nada; da Lixeira, basta a pasta dela (o que entra e o que sai).
+      const ignorar = (rel) => rel === VERSOES || rel.startsWith(VERSOES + '/') || rel.startsWith(LIXEIRA + '/');
+      parar = observarArvore(this.raiz, (rel) => {
         if (rel.startsWith(LIXEIRA)) pendentes.add('::lixeira');
         else if (rel.startsWith(VERSOES) || path.posix.basename(rel).startsWith('.~')) return;
         else {
@@ -554,11 +555,11 @@ class Disco {
           pendentes.clear();
           aoMudar(lista);
         }, 250);
-      });
+      }, { ignorar });
     } catch {
       return () => { };
     }
-    return () => { clearTimeout(timer); w.close(); };
+    return () => { clearTimeout(timer); parar(); };
   }
 }
 

@@ -589,6 +589,7 @@ async function itensProgramas() {
         prog('mac', tr('Mac Plus'), 'mac'),
         prog('caracteres', tr('Mapa de caracteres'), 'caracteres'),
         prog('monitor', tr('Monitor do sistema'), 'monitor'),
+        prog('notas', tr('Notas autoadesivas'), 'notas'),
         prog('prompt', tr('Prompt de comando'), 'prompt'),
         prog('midia', tr('Reprodutor de mídia'), 'reprodutor'),
         prog('imagens', tr('Visualizador de imagens'), 'imagens'),

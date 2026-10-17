@@ -49,8 +49,8 @@ html.tema-mac {
 
 /* ---------- A tela, a mesa e os ícones ---------- */
 
-html.tema-mac #mesa, html.tema-mac #janelas { inset: var(--altura-menus) 0 0 0; }
-html.tema-mac.varias-telas #mesa, html.tema-mac.varias-telas #janelas {
+html.tema-mac #mesa, html.tema-mac #janelas, html.tema-mac #notas { inset: var(--altura-menus) 0 0 0; }
+html.tema-mac.varias-telas #mesa, html.tema-mac.varias-telas #janelas, html.tema-mac.varias-telas #notas {
   inset: auto; left: var(--tela-x); top: calc(var(--tela-y) + var(--altura-menus)); width: var(--tela-w); height: calc(var(--tela-h) - var(--altura-menus));
 }
 /* Os nomes dos ícones da mesa em preto sobre o branco; o selecionado, em branco sobre o preto. */

@@ -14,6 +14,7 @@ import { tocar } from './sons.js';
 import { tr, marcar } from './idioma.js';
 import { nomeNativo, iconeNativo, iconeNativoJa, abrirNativo } from './nativos.js';
 import { estaFixado, fixar, desafixar, programaDe, itemDeAtalho } from './barra.js';
+import { novaNota } from './notas.js';
 
 let vista;
 let lixeiraCheia = false;
@@ -191,6 +192,7 @@ function menu(sel, e) {
           if (it) renomearItem(it);
         },
       }).slice(1),
+      { rotulo: tr('Nova nota a&utoadesiva'), icone: 'notas', acao: () => novaNota() },
       { separador: true },
       { rotulo: tr('P&ropriedades'), acao: () => abrir('painel', { secao: 'aparencia' }) },
     ], pos);

@@ -3920,6 +3920,54 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('versões guardadas:', fs.existsSync(path.join(disco, '.versoes')) ? execFileSync('find', [path.join(disco, '.versoes'), '-type', 'f']).toString().split('\n').filter((l) => /Agenda|Calendar/.test(l)).length : 0);
   },
 
+  // As notas autoadesivas: a primeira pelo Iniciar (na frente das janelas), outra pelo +, a cor, o
+  // arrastar, o Esc (de volta para trás), a nota mudada por fora (o .txt) e a exclusão (para a Lixeira).
+  async notas() {
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(800);
+    await abrir('notas');
+    await pagina.waitForSelector('#notas .nota textarea', { timeout: 10000 });
+    await pagina.keyboard.type('Ligar para o cartório até as 17h.\nLevar a certidão.');
+    await pagina.waitForTimeout(1200);
+    await foto('notas-nova');
+    await pagina.click('#notas .nota >> nth=0 >> .nota-mais');
+    await pagina.waitForFunction(() => document.querySelectorAll('#notas .nota').length === 2, null, { timeout: 5000 });
+    await pagina.keyboard.type('Comprar papel A4');
+    await pagina.click('#notas .nota >> nth=1 >> .nota-menu');
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.menu .opcao:has-text("${T('&Verde')}")`);
+    await pagina.waitForTimeout(300);
+    // Arrastar a verde pela faixa de cima.
+    const faixa = await pagina.locator('#notas .nota >> nth=1 >> .nota-arrasto').boundingBox();
+    await pagina.mouse.move(faixa.x + 10, faixa.y + 6);
+    await pagina.mouse.down();
+    await pagina.mouse.move(faixa.x - 160, faixa.y + 180, { steps: 8 });
+    await pagina.mouse.up();
+    await pagina.waitForTimeout(1200);
+    await foto('notas-duas');
+    const pasta = path.join(disco, DOCS, T('Notas autoadesivas'));
+    console.log('arquivos:', JSON.stringify(fs.readdirSync(pasta).sort()), '| textos:', JSON.stringify(fs.readdirSync(pasta).sort().map((n) => fs.readFileSync(path.join(pasta, n), 'utf8'))));
+    // O Esc devolve as notas para trás do Explorador.
+    await pagina.keyboard.press('Escape');
+    await pagina.click('.janela .titulo');
+    await pagina.waitForTimeout(400);
+    await foto('notas-atras');
+    // Um programa de fora muda a nota (o .txt): ela muda na tela.
+    const primeira = fs.readdirSync(pasta).sort()[0];
+    fs.writeFileSync(path.join(pasta, primeira), 'Ligar para o cartório até as 17h.\nLevar a certidão e a procuração.');
+    await pagina.waitForFunction((t) => [...document.querySelectorAll('#notas .nota textarea')].some((a) => a.value.includes(t)), 'procuração', { timeout: 10000 });
+    console.log('mudada por fora: ok');
+    // Excluir a verde: a pergunta e a Lixeira.
+    await fecharTudo();
+    await pagina.click('#notas .nota[data-cor=verde] .nota-fechar');
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await foto('notas-excluir');
+    await pagina.click('.janela.dialogo button.padrao');
+    await pagina.waitForTimeout(800);
+    console.log('notas na tela:', await pagina.locator('#notas .nota').count(), '| na pasta:', fs.readdirSync(pasta).length, '| na Lixeira:', fs.existsSync(path.join(disco, '.lixeira')) ? fs.readdirSync(path.join(disco, '.lixeira'), { recursive: true }).filter((n) => /\.txt$/.test(n)).length : 0);
+  },
+
   // O Digitalizar (com RETRO_SCANNER_FALSO=1): dois scanners de mentira, duas páginas, o PDF salvo e o
   // texto dele pelo OCR (a página de mentira é um ofício desenhado na hora).
   async scanner() {
