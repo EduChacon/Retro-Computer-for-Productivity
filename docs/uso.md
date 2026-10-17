@@ -9,7 +9,8 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 - Fala português, inglês e espanhol (Painel de controle › Idioma).
 - O disco C: é uma pasta do computador principal (por padrão, `Documentos/Retro Computer`). Tudo o que se salva fica nela, visível também fora do programa.
 - Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pela Loja de programas (no alto do menu Iniciar; no Painel de controle, "Adicionar ou remover programas") e rodam em janelas da área de trabalho. A mesma janela tem a loja do computador: o Flathub no Linux, o winget no Windows e o Homebrew no Mac.
-- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Prompt de comando, DOS, Mac Plus e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
+- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Ferramentas de PDF, Digitalizar (o scanner), o Copiar o texto (OCR), Prompt de comando, DOS, Mac Plus e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
+- A busca da barra de tarefas e o Localizar acham também pelo texto de dentro dos documentos (seção 2, "O Explorador").
 - As janelas se encaixam nas bordas e nos cantos da tela, e os atalhos do Windows (Alt+Tab, a tecla do logotipo com uma letra) funcionam no Retro Computer como sistema.
 - Painel de controle › Segurança mostra num lugar só a senha, o firewall, as atualizações e a privacidade.
 - Várias pessoas podem dividir o mesmo Retro Computer, cada uma com a área de trabalho, a senha e o disco C: próprios (Painel de controle › Usuários).
@@ -98,6 +99,14 @@ Iniciar › Programas › Acessórios › Discos (ou Painel de controle › Disc
 - **Espaço em disco**: quanto o disco C: ocupa, as pastas que mais ocupam e o espaço livre do computador. A **Limpeza de disco** apaga de vez, depois da confirmação, só o que for marcado: a Lixeira, as versões anteriores com mais de 30 dias, os arquivos temporários da Internet e as miniaturas do Explorador.
 - Arquivo › Ferramenta de discos do sistema abre a do próprio sistema (o Gerenciamento de disco do Windows, o Utilitário de Disco do Mac, o Discos do GNOME), para o que o programa não faz.
 
+### PDF, digitalização e OCR
+
+- **Salvar como PDF**: no Bloco de notas, no Visualizador de imagens e no Navegador, Arquivo › Salvar como PDF… grava a página (a mesma da impressão) num PDF do disco C:, sem impressora. O papel segue o país (o Carta nos Estados Unidos, no Canadá e no México; o A4 nos outros).
+- **Ferramentas de PDF**: o botão direito num PDF › Ferramentas de PDF separa as páginas (um PDF por página, numa pasta nova ao lado), extrai algumas (como `1-3, 5`) num PDF novo e gira todas; numa imagem, converte em PDF; em vários arquivos escolhidos, combina num PDF só. A janela Ferramentas de PDF (Acessórios) põe os PDFs e as imagens na ordem antes de combinar. O original não muda; o Girar grava por cima e guarda a versão anterior. Os PDFs com senha ou protegidos são recusados com aviso.
+- **Copiar o texto (OCR)**: o botão direito numa foto, numa digitalização ou num PDF (no Visualizador de imagens, Editar) mostra o texto numa janela, para copiar ou salvar como `.txt`, em português, inglês ou espanhol. Nos PDFs, as páginas com texto dão o texto delas; as digitalizadas passam pelo OCR (o Tesseract), sem internet.
+- **Digitalizar** (Acessórios): o scanner, a cor (colorido, tons de cinza, preto e branco) e a resolução; uma página por vez, e as páginas vão juntas para um PDF ou como imagens, com o OCR em seguida, se marcado. No Linux, pelo SANE (os scanners de rede pelo eSCL: os pacotes `sane-utils` e `sane-airscan`); no Windows, pelo WIA; no Mac, o botão abre a Captura de Imagem do sistema.
+- O que lê arquivos de fora (o pdf-lib, o Tesseract, o pdf.js da busca) roda num processo separado, com tempo e memória limitados: um arquivo malfeito não trava a área de trabalho.
+
 ### O Explorador e as pastas compactadas
 
 As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a Área de trabalho, o DOS e, em Meus documentos, Recebidos, o Diário de trabalho e as Capturas de tela; e as pastas de imagens, músicas, vídeos e downloads (pelo nome, nos três idiomas: "Imagens", "Músicas", "Vídeos", "Downloads"…), em Meus documentos ou no C:.
@@ -107,6 +116,9 @@ As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a 
 - **Exibir › Painel de visualização** (Alt+P, ou o botão Visualizar) mostra à direita o arquivo escolhido, sem abrir o programa: o Word (`.docx`, convertido pelo mammoth), o texto do OpenDocument (`.odt`), o PDF (as páginas, pelo pdf.js, até 40), a primeira folha das planilhas (`.xlsx`, `.ods`, `.csv`, até 200 linhas), os textos, as fotos, os vídeos, as músicas e as páginas da internet salvas (numa moldura sem scripts e sem a internet). Numa janela estreita, o painel a alarga.
 - **O endereço** fica em pedaços: cada nome leva àquela pasta. Um clique no espaço vazio ao lado (ou Alt+D, F4) vira o campo de texto.
 - **Exibir › Miniaturas** mostra as fotos encolhidas.
+- **As abas**: Ctrl+T abre uma aba nova, Ctrl+W fecha a aba, Ctrl+Tab (ou Ctrl+Page Down) passa para a próxima, e o botão direito numa pasta tem "Abrir em nova aba". Cada aba guarda a pasta e o histórico dela; a faixa das abas só aparece com duas ou mais.
+- **A visualização rápida**: a barra de espaço num arquivo abre o painel de visualização grande; as setas passam para o arquivo do lado (a seleção vai junto), Enter abre no programa, e a barra de espaço ou o Esc fecham.
+- **A busca pelo conteúdo**: a caixa de busca da barra de tarefas ("Dentro dos arquivos", com o trecho achado) e o Localizar (o campo "Contendo") procuram dentro dos textos, do Word, do OpenDocument, das planilhas, das apresentações e dos PDFs, sem acento e sem diferença de maiúsculas, com todas as palavras (ou a frase entre aspas). O texto de cada documento fica num índice na pasta de dados do usuário, refeito aos poucos quando o disco muda; Painel de controle › Disco C: › Busca o desliga, e desligar apaga o índice.
 - **O programa de cada tipo de arquivo**: botão direito num arquivo › Abrir com › "Escolher o programa…", com "Sempre usar este programa para abrir os arquivos .docx" marcado (também o programa do computador principal). A lista dos escolhidos fica em Painel de controle › Programas padrão (Mudar, Voltar ao normal e Novo tipo). Um Craft escolhido que sair do computador deixa o tipo com o programa de sempre.
 - **Um `.zip` abre como pasta** (só para ver). Botão direito › "Extrair tudo…" cria uma pasta nova ao lado, sem gravar por cima de nada; os `.tar` (`.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`) também se extraem. Para compactar: Enviar para › Pasta compactada (zip).
 
@@ -130,6 +142,8 @@ As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a 
 | Diário de trabalho | Um `.txt` por dia em `Meus documentos/Diário de trabalho`: com "Anotar sozinho", a hora de cada foco concluído e de cada arquivo alterado (a primeira vez no dia, também os gravados por outros programas e pelo Claude); as notas escritas na hora. Só acrescenta linhas: o que o usuário escrever nele fica |
 | Mapa de caracteres | Os acentos, os símbolos e as letras de outros alfabetos, em grupos: segurar o botão amplia, dois cliques juntam à caixa de baixo, Copiar leva à área de transferência |
 | Área de transferência (logotipo + V) | Os últimos 25 textos copiados em qualquer programa: Enter cola o escolhido na posição do cursor; o "…" fixa ou exclui. Fica só na memória (nada vai para o disco), sem o que os gerenciadores de senhas marcam como secreto |
+| Ferramentas de PDF | Combinar PDFs e imagens na ordem escolhida; com um PDF escolhido, separar, extrair páginas e girar (mais na seção "PDF, digitalização e OCR") |
+| Digitalizar | O scanner de mesa ou o multifuncional: as páginas, uma por vez, num PDF ou como imagens, com o OCR em seguida |
 | Calculadora, Bloco de notas, Prompt de comando | Os de sempre |
 | DOS | O DOSBox (do js-dos), sem internet: a unidade C: é a pasta C:\DOS do disco; dois cliques num .com, .bat ou .exe do DOS o abrem; o que mudar volta ao disco ao fechar (com a versão anterior guardada e os apagados na Lixeira) |
 | Mac Plus | O PCE.js, um emulador do Macintosh da época, em preto e branco e sem internet, para jogos como o SimAnt. Nada da Apple vem junto: a pasta C:\Mac recebe a ROM do Mac do usuário (o arquivo .rom de 128 KB do Mac Plus, de 256 KB do Mac SE ou de 512 KB do Mac Classic), o disquete do Sistema (o System 6 ou o 7) e os dos jogos (.dsk, .img ou .image, do Disk Copy 4.2). O disco com System, Sistema ou Boot no nome vai na primeira unidade; dois cliques num .dsk ou .image abrem o Mac com ele. A tecla Alt é a Command, e a Ctrl, a Option. O que o Mac gravar volta ao disco ao fechar (a versão de antes de ligar o Mac fica guardada) |
@@ -257,6 +271,8 @@ As pastas do disco C: ficam com os nomes de quando foram criadas: quem começou 
 | Enter, F2, Delete, Backspace | Abrir, renomear, excluir, subir uma pasta |
 | Ctrl+C, Ctrl+X, Ctrl+V | Copiar, recortar e colar arquivos nas pastas |
 | Alt+D | Digitar um endereço no Explorador |
+| Ctrl+T, Ctrl+W, Ctrl+Tab | Abrir, fechar e trocar as abas do Explorador (e do Navegador) |
+| Barra de espaço | A visualização rápida do arquivo escolhido no Explorador (as setas passam para o do lado) |
 | Ctrl+P | Imprimir (Bloco de notas, Visualizador de imagens, Navegador) |
 | F5 | Apresentação de slides no Visualizador de imagens |
 | Espaço, Alt+Enter | Tocar e pausar, tela cheia no Reprodutor de mídia |

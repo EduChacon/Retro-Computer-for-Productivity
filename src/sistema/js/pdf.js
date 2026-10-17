@@ -11,6 +11,7 @@ import { abrir, abrirArquivo, avisar } from './sistema.js';
 /** Os PDFs e as imagens que entram num PDF (as de outros tipos são desenhadas em PNG pela tela). */
 export const EXTS_DIRETAS = ['pdf', 'jpg', 'jpeg', 'png'];
 export const EXTS_DESENHADAS = ['gif', 'webp', 'bmp', 'avif'];
+const MAX_PONTOS = 60 * 1000 * 1000; // 60 megapixels
 export const entraNoPdf = (nome) => EXTS_DIRETAS.includes(extensao(nome)) || EXTS_DESENHADAS.includes(extensao(nome));
 export const ehPdf = (nome) => extensao(nome) === 'pdf';
 /** O que o Copiar o texto (OCR) lê: as fotos, as digitalizações e os PDFs. */
@@ -31,10 +32,19 @@ export async function escolherDestino(titulo, pasta, nome) {
 
 /** Os bytes em PNG de uma imagem que o PDF não aceita direto (GIF, WebP, BMP, AVIF): o primeiro quadro. */
 export async function pngDe(rel) {
+  const ruim = () => new Error(tr('A imagem "{nome}" não pôde ser lida.', { nome: nomeDe(rel) }));
+  // O tamanho vem antes de decodificar: uma imagem enorme (de propósito) não estoura a memória da tela.
+  const medida = await new Promise((ok) => {
+    const im = new Image();
+    im.onload = () => ok({ w: im.naturalWidth, h: im.naturalHeight });
+    im.onerror = () => ok(null);
+    im.src = urlDoDisco(rel);
+  });
+  if (!medida || !medida.w || medida.w * medida.h > MAX_PONTOS) throw ruim();
   const r = await fetch(urlDoDisco(rel));
-  if (!r.ok) throw new Error(tr('A imagem "{nome}" não pôde ser lida.', { nome: nomeDe(rel) }));
+  if (!r.ok) throw ruim();
   let bmp;
-  try { bmp = await createImageBitmap(await r.blob()); } catch { throw new Error(tr('A imagem "{nome}" não pôde ser lida.', { nome: nomeDe(rel) })); }
+  try { bmp = await createImageBitmap(await r.blob()); } catch { throw ruim(); }
   const c = document.createElement('canvas');
   c.width = bmp.width;
   c.height = bmp.height;

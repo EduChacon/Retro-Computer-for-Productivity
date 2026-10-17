@@ -103,9 +103,9 @@ class Indice {
     this.mudouManifesto = false;
     const itens = {};
     for (const [rel, x] of this.itens) itens[rel] = [x.m, x.t, x.id];
-    await fsp.mkdir(this.pasta, { recursive: true });
+    await fsp.mkdir(this.pasta, { recursive: true, mode: 0o700 });
     const tmp = this.arquivoManifesto() + '.tmp';
-    await fsp.writeFile(tmp, JSON.stringify({ v: VERSAO, itens }));
+    await fsp.writeFile(tmp, JSON.stringify({ v: VERSAO, itens }), { mode: 0o600 });
     await fsp.rename(tmp, this.arquivoManifesto());
   }
 
@@ -206,8 +206,9 @@ class Indice {
     let id = null;
     if (texto) {
       id = crypto.createHash('sha1').update(rel + '\0' + m).digest('hex').slice(0, 20);
-      await fsp.mkdir(path.dirname(this.arquivoTexto(id)), { recursive: true });
-      await fsp.writeFile(this.arquivoTexto(id), texto);
+      // O texto dos documentos é tão particular quanto eles: só o próprio usuário lê (no Linux e no Mac).
+      await fsp.mkdir(path.dirname(this.arquivoTexto(id)), { recursive: true, mode: 0o700 });
+      await fsp.writeFile(this.arquivoTexto(id), texto, { mode: 0o600 });
     }
     this.itens.set(rel, { m, t, id });
     this.mudouManifesto = true;

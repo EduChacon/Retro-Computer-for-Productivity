@@ -86,6 +86,12 @@ test('índice: acha pelo conteúdo, sem acentos, com todas as palavras, e segue 
   await disco.gravar('Docs/foto.png', Buffer.from('não é texto'));
   await indice.olhar();
   assert.deepEqual(await indice.estado(), { ligado: true, arquivos: 3, comTexto: 3, faltam: 0 });
+  // O texto guardado é só do usuário (fora do Windows, que não tem esses bits).
+  if (process.platform !== 'win32') {
+    const t = path.join(raiz, 'indice', 't');
+    assert.equal(fs.statSync(t).mode & 0o077, 0);
+    for (const f of fs.readdirSync(t)) assert.equal(fs.statSync(path.join(t, f)).mode & 0o077, 0);
+  }
 
   const nomes = async (t, o) => (await indice.buscar(t, o)).map((r) => r.nome).sort();
   assert.deepEqual(await nomes('aluguel'), ['Ata.txt', 'Contrato.docx', 'Nota.md']);

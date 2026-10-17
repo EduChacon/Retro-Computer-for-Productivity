@@ -150,6 +150,9 @@ class Impressoras {
     return new Promise((resolve, reject) => {
       const w = new this.BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true, javascript: false } });
       const fim = () => { if (!w.isDestroyed()) w.destroy(); };
+      // A página fica onde está: nada de navegar nem de abrir janelas (um "meta refresh", por exemplo).
+      w.webContents.on('will-navigate', (e) => e.preventDefault());
+      w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       w.webContents.once('did-finish-load', () => {
         w.webContents.printToPDF({ printBackground: true, pageSize: pagina, margins: { top: 0, bottom: 0, left: 0, right: 0 } })
           .then((dados) => { fim(); resolve(dados); }, (e) => { fim(); reject(e); });

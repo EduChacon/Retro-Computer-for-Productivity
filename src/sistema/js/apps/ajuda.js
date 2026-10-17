@@ -187,6 +187,63 @@ const TOPICOS = [
 <p>Para lo que el programa no hace (modificar las particiones a mano, por ejemplo), <b>Archivo › Herramienta de discos del sistema</b> abre la del propio sistema.</p>`],
   },
   {
+    id: 'pdf', icone: 'pdf',
+    'pt-BR': ['PDF, digitalização e OCR', `
+<h2>Salvar como PDF</h2>
+<p>No Bloco de notas, no Visualizador de imagens e no Navegador, <b>Arquivo › Salvar como PDF…</b> grava a página (a mesma da impressão) num PDF do disco C:, sem impressora nenhuma. O papel segue o país: o Carta nos Estados Unidos, no Canadá e no México; o A4 nos outros.</p>
+<h2>As ferramentas de PDF</h2>
+<p>O botão direito num PDF › <b>Ferramentas de PDF</b>: <b>Separar as páginas</b> (um PDF por página, numa pasta nova ao lado), <b>Extrair páginas…</b> (as páginas escolhidas, como 1-3, 5, num PDF novo) e <b>Girar</b>. Numa imagem, <b>Converter em PDF</b>; em vários arquivos escolhidos, <b>Combinar em um PDF…</b>. A janela <b>Ferramentas de PDF</b> (Iniciar › Programas › Acessórios) põe os PDFs e as imagens na ordem que você quiser antes de combinar. O original não muda; só o Girar grava por cima, e o arquivo de antes fica em <b>Versões anteriores</b>. Os PDFs com senha ou protegidos contra mudanças não podem ser mudados aqui.</p>
+<h2>Copiar o texto (OCR)</h2>
+<p>O botão direito numa foto, numa digitalização ou num PDF › <b>Copiar o texto (OCR)…</b> (no Visualizador de imagens, em <b>Editar</b>): o texto aparece numa janela, de onde se copia ou se salva como .txt. Escolha o idioma do texto (português, inglês ou espanhol) para os acentos saírem certos. Nos PDFs, as páginas que já têm texto dão o texto delas; as digitalizadas são lidas pelo OCR. Tudo acontece neste computador, sem internet; confira o texto reconhecido antes de usar.</p>
+<h2>Digitalizar</h2>
+<p>Em <b>Iniciar › Programas › Acessórios › Digitalizar</b>: escolha o scanner, a cor e a resolução e clique em <b>Digitalizar</b>, uma página por vez. As páginas se juntam na lista; depois, <b>Salvar…</b> grava tudo num PDF ou como imagens, e <b>Depois, copiar o texto (OCR)</b> abre o texto do PDF em seguida. No Linux, os scanners de rede (Wi-Fi) e os da USB funcionam pelo SANE (os pacotes "sane-utils" e "sane-airscan"); no Windows, pelo próprio Windows. No Mac, que não deixa outro programa usar o scanner, o botão abre a <b>Captura de Imagem</b> do sistema.</p>`],
+    en: ['PDF, scanning and OCR', `
+<h2>Save as PDF</h2>
+<p>In Notepad, the Image Viewer and the Browser, <b>File › Save as PDF…</b> saves the page (the same as the printout) to a PDF on drive C:, with no printer at all. The paper follows the country: Letter in the United States, Canada and Mexico; A4 elsewhere.</p>
+<h2>The PDF tools</h2>
+<p>Right-click a PDF › <b>PDF tools</b>: <b>Split into pages</b> (one PDF per page, in a new folder next to it), <b>Extract pages…</b> (the chosen pages, such as 1-3, 5, in a new PDF) and <b>Rotate</b>. On an image, <b>Convert to PDF</b>; on several chosen files, <b>Combine into one PDF…</b>. The <b>PDF Tools</b> window (Start › Programs › Accessories) puts the PDFs and images in the order you want before combining. The original does not change; only Rotate saves over it, and the previous file stays in <b>Previous versions</b>. PDFs with a password or protected against changes cannot be changed here.</p>
+<h2>Copy the text (OCR)</h2>
+<p>Right-click a photo, a scan or a PDF › <b>Copy the text (OCR)…</b> (in the Image Viewer, under <b>Edit</b>): the text appears in a window, where you can copy it or save it as .txt. Choose the language of the text (Portuguese, English or Spanish) so the accents come out right. In PDFs, the pages that already have text give their text; the scanned ones are read by OCR. Everything happens on this computer, without the internet; check the recognized text before using it.</p>
+<h2>Scan</h2>
+<p>In <b>Start › Programs › Accessories › Scan</b>: choose the scanner, the color and the resolution and click <b>Scan</b>, one page at a time. The pages gather in the list; then <b>Save…</b> saves them all in a PDF or as images, and <b>Then copy the text (OCR)</b> opens the PDF's text right after. On Linux, network (Wi-Fi) and USB scanners work through SANE (the "sane-utils" and "sane-airscan" packages); on Windows, through Windows itself. On the Mac, which does not let other programs use the scanner, the button opens the system's <b>Image Capture</b>.</p>`],
+    es: ['PDF, escaneo y OCR', `
+<h2>Guardar como PDF</h2>
+<p>En el Bloc de notas, el Visor de imágenes y el Navegador, <b>Archivo › Guardar como PDF…</b> guarda la página (la misma de la impresión) en un PDF del disco C:, sin ninguna impresora. El papel sigue el país: Carta en Estados Unidos, Canadá y México; A4 en los demás.</p>
+<h2>Las herramientas de PDF</h2>
+<p>Clic derecho en un PDF › <b>Herramientas de PDF</b>: <b>Separar las páginas</b> (un PDF por página, en una carpeta nueva al lado), <b>Extraer páginas…</b> (las páginas elegidas, como 1-3, 5, en un PDF nuevo) y <b>Girar</b>. En una imagen, <b>Convertir en PDF</b>; en varios archivos elegidos, <b>Combinar en un PDF…</b>. La ventana <b>Herramientas de PDF</b> (Inicio › Programas › Accesorios) pone los PDF y las imágenes en el orden que quieras antes de combinar. El original no cambia; solo Girar guarda encima, y el archivo anterior queda en <b>Versiones anteriores</b>. Los PDF con contraseña o protegidos contra cambios no se pueden cambiar aquí.</p>
+<h2>Copiar el texto (OCR)</h2>
+<p>Clic derecho en una foto, un escaneo o un PDF › <b>Copiar el texto (OCR)…</b> (en el Visor de imágenes, en <b>Edición</b>): el texto aparece en una ventana, desde donde se copia o se guarda como .txt. Elige el idioma del texto (portugués, inglés o español) para que los acentos salgan bien. En los PDF, las páginas que ya tienen texto dan su texto; las escaneadas las lee el OCR. Todo ocurre en esta computadora, sin internet; revisa el texto reconocido antes de usarlo.</p>
+<h2>Escanear</h2>
+<p>En <b>Inicio › Programas › Accesorios › Escanear</b>: elige el escáner, el color y la resolución y haz clic en <b>Escanear</b>, una página a la vez. Las páginas se juntan en la lista; después, <b>Guardar…</b> guarda todo en un PDF o como imágenes, y <b>Después, copiar el texto (OCR)</b> abre el texto del PDF a continuación. En Linux, los escáneres de red (Wi-Fi) y los USB funcionan con SANE (los paquetes "sane-utils" y "sane-airscan"); en Windows, con el propio Windows. En el Mac, que no deja que otro programa use el escáner, el botón abre <b>Captura de Imagen</b> del sistema.</p>`],
+  },
+  {
+    id: 'busca', icone: 'localizar',
+    'pt-BR': ['Procurar e visualizar', `
+<h2>Procurar dentro dos arquivos</h2>
+<p>A caixa de busca da barra de tarefas e o <b>Localizar</b> (campo <b>Contendo</b>) também procuram dentro dos documentos: textos, Word, OpenDocument, planilhas, apresentações e PDFs. A busca acha sem acento e sem diferença de maiúsculas, com todas as palavras; para uma frase exata, use aspas ("prazo de quinze dias"). O trecho achado aparece embaixo do nome.</p>
+<p>O texto de cada documento fica guardado só neste computador, na pasta de dados do Retro Computer, e se refaz aos poucos quando um arquivo muda. Em <b>Painel de controle › Disco C: › Busca</b>, você desliga a busca pelo conteúdo, e o texto guardado é apagado.</p>
+<h2>As abas do Explorador</h2>
+<p><b>Ctrl+T</b> abre uma aba nova, <b>Ctrl+W</b> fecha a aba, e <b>Ctrl+Tab</b> passa para a próxima. O botão direito numa pasta tem <b>Abrir em nova aba</b>. Cada aba guarda a pasta e o caminho dela (Voltar e Avançar).</p>
+<h2>A visualização rápida</h2>
+<p>A <b>barra de espaço</b> num arquivo do Explorador abre a visualização rápida, grande: fotos, PDFs, textos, Word, planilhas, músicas e vídeos. As setas passam para o arquivo do lado, <b>Enter</b> abre no programa, e a barra de espaço ou o <b>Esc</b> fecham.</p>`],
+    en: ['Search and preview', `
+<h2>Searching inside files</h2>
+<p>The taskbar search box and <b>Find</b> (the <b>Containing</b> field) also look inside documents: text files, Word, OpenDocument, spreadsheets, presentations and PDFs. The search finds words without accents and regardless of capitals, with all the words; for an exact phrase, use quotation marks ("within fifteen days"). The excerpt found appears under the name.</p>
+<p>The text of each document is stored only on this computer, in the Retro Computer data folder, and is updated bit by bit when a file changes. In <b>Control Panel › Drive C: › Search</b>, you can turn off content search, and the stored text is deleted.</p>
+<h2>Explorer tabs</h2>
+<p><b>Ctrl+T</b> opens a new tab, <b>Ctrl+W</b> closes the tab, and <b>Ctrl+Tab</b> moves to the next one. Right-clicking a folder offers <b>Open in new tab</b>. Each tab keeps its own folder and path (Back and Forward).</p>
+<h2>Quick look</h2>
+<p>The <b>space bar</b> on a file in Explorer opens the quick look, in a big window: photos, PDFs, text files, Word, spreadsheets, music and videos. The arrows move to the file next to it, <b>Enter</b> opens it in its program, and the space bar or <b>Esc</b> close it.</p>`],
+    es: ['Buscar y visualizar', `
+<h2>Buscar dentro de los archivos</h2>
+<p>El cuadro de búsqueda de la barra de tareas y <b>Buscar</b> (el campo <b>Con el texto</b>) también buscan dentro de los documentos: textos, Word, OpenDocument, hojas de cálculo, presentaciones y PDF. La búsqueda encuentra sin acentos y sin diferencia de mayúsculas, con todas las palabras; para una frase exacta, usa comillas ("plazo de quince días"). El fragmento encontrado aparece debajo del nombre.</p>
+<p>El texto de cada documento se guarda solo en esta computadora, en la carpeta de datos de Retro Computer, y se rehace poco a poco cuando un archivo cambia. En <b>Panel de control › Disco C: › Búsqueda</b>, desactivas la búsqueda por contenido, y el texto guardado se borra.</p>
+<h2>Las pestañas del Explorador</h2>
+<p><b>Ctrl+T</b> abre una pestaña nueva, <b>Ctrl+W</b> cierra la pestaña, y <b>Ctrl+Tab</b> pasa a la siguiente. El clic derecho en una carpeta tiene <b>Abrir en una nueva pestaña</b>. Cada pestaña guarda su carpeta y su camino (Atrás y Adelante).</p>
+<h2>La vista rápida</h2>
+<p>La <b>barra espaciadora</b> en un archivo del Explorador abre la vista rápida, grande: fotos, PDF, textos, Word, hojas de cálculo, música y videos. Las flechas pasan al archivo de al lado, <b>Enter</b> lo abre en su programa, y la barra espaciadora o <b>Esc</b> la cierran.</p>`],
+  },
+  {
     id: 'barra', icone: 'relogio',
     'pt-BR': ['A barra de tarefas', `
 <h2>À esquerda</h2>
