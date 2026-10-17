@@ -1783,3 +1783,57 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
   justify-content: center; gap: 10px; padding: 16px 24px; background: var(--face); color: #000; text-align: center; width: 500px; min-height: 240px; }
 .mac-falta p { margin: 0; max-width: 440px; line-height: 1.35; }
 .mac-falta-botoes { display: flex; gap: 8px; }
+
+/* O calendário do relógio: os dias com eventos da Agenda e os próximos de hoje. */
+.cal-dia { cursor: var(--cur-pointer, pointer); }
+.cal-dia.com-evento { font-weight: bold; text-decoration: underline; }
+.cal-eventos { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; padding: 3px 4px; background: #fff; box-shadow: var(--campo); }
+.cal-eventos[hidden] { display: none; }
+.cal-evento { display: flex; gap: 6px; white-space: nowrap; overflow: hidden; }
+.cal-evento span { flex: 0 0 auto; color: #000080; }
+.cal-evento b { overflow: hidden; text-overflow: ellipsis; }
+/* A Agenda: o mês à esquerda, os eventos à direita. */
+.ag-corpo { padding: 8px; display: flex; flex-direction: row; gap: 8px; }
+.ag-esq { flex: 0 0 214px; display: flex; flex-direction: column; gap: 6px; }
+.calendario.ag-mes { position: static; width: auto; box-shadow: none; padding: 0; background: transparent; }
+.ag-grade .cal-dia.escolhido { box-shadow: inset 0 0 0 1px #000; }
+.ag-grade .cal-dia.hoje.escolhido { box-shadow: inset 0 0 0 1px #fff, inset 0 0 0 2px #000; }
+.ag-esq-botoes { display: flex; flex-direction: column; gap: 4px; }
+.ag-dir { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ag-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ag-cab b::first-letter { text-transform: uppercase; }
+.ag-cab span { color: #404040; white-space: nowrap; }
+.ag-lista { flex: 1 1 auto; min-height: 0; overflow: auto; background: #fff; box-shadow: var(--campo); padding: 2px; outline: none; }
+.ag-lista:focus .ag-item.escolhido { outline: 1px dotted #fff; outline-offset: -2px; }
+.ag-dia { padding: 4px 4px 2px; font-weight: bold; color: #000080; border-bottom: 1px solid var(--sombra); margin-bottom: 1px; }
+.ag-dia::first-letter { text-transform: uppercase; }
+.ag-item { display: flex; gap: 8px; padding: 3px 4px; align-items: flex-start; }
+.ag-item.escolhido { background: var(--selecao); color: var(--selecao-texto); }
+.ag-hora { flex: 0 0 auto; min-width: 92px; white-space: nowrap; }
+.ag-texto { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ag-texto b, .ag-texto span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ag-texto span { color: #404040; }
+.ag-item.escolhido .ag-texto span { color: inherit; }
+.ag-vazio { padding: 24px 12px; color: #606060; text-align: center; line-height: 13px; }
+/* A caixa do evento. */
+.ag-form { padding: 10px 10px 8px; display: flex; flex-direction: column; gap: 6px; }
+.ag-linha { display: grid; grid-template-columns: 74px 1fr; gap: 6px; align-items: center; }
+.ag-linha.alto { align-items: start; }
+.ag-linha textarea { resize: vertical; min-height: 52px; }
+.ag-campos { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ag-campos > input[type=text] { flex: 1 1 auto; min-width: 0; }
+.ag-diatodo { display: flex; align-items: center; gap: 4px; margin-left: auto; white-space: nowrap; }
+.ag-nota { color: #404040; min-height: 0; }
+.ag-nota:empty { display: none; }
+.ag-form .acoes { margin-top: 4px; }
+/* Os lembretes da Agenda. */
+.lembretes-corpo { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.lembretes-lista { flex: 1 1 auto; min-height: 60px; overflow: auto; background: #fff; box-shadow: var(--campo); padding: 2px; }
+.lembrete { display: flex; gap: 6px; align-items: flex-start; padding: 3px 4px; outline: none; }
+.lembrete > img { margin-top: 1px; }
+.lembrete > div { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.lembrete > div > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lembrete.escolhido { background: var(--selecao); color: var(--selecao-texto); }
+.lembretes-acoes { display: flex; align-items: center; gap: 6px; }
+.lembretes-acoes label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.lembretes-rodape a { color: var(--link); }

@@ -3822,6 +3822,104 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('fechou?', await pagina.locator('.janela:has-text("' + T('Visualização rápida').replace(/"/g, '') + '")').count(), '| escolhido no Explorador:', await pagina.textContent('.janela.ativa .item.sel .rotulo').catch(() => '?'));
   },
 
+  // A Agenda: o .ics de Meus documentos (feito aqui, com um lembrete que vence logo), a janela, o
+  // evento novo, a repetição (só esta ocorrência), os próximos 30 dias, a importação de outro .ics,
+  // os lembretes e o calendário do relógio. No fim, o arquivo é conferido.
+  async agenda() {
+    const docs = path.join(disco, DOCS);
+    const d2 = (n) => String(n).padStart(2, '0');
+    const ics = (d, dia) => `${d.getFullYear()}${d2(d.getMonth() + 1)}${d2(d.getDate())}` + (dia ? '' : `T${d2(d.getHours())}${d2(d.getMinutes())}00`);
+    const agora = new Date();
+    const hoje = (h, m = 0) => new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), h, m);
+    const daqui = (min) => new Date(Math.ceil((agora.getTime() + min * 60000) / 60000) * 60000);
+    const amanha = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1);
+    const evento = (uid, titulo, ini, fim, extra = []) => ['BEGIN:VEVENT', `UID:${uid}`, `DTSTART${ini.length === 8 ? ';VALUE=DATE' : ''}:${ini}`, `DTEND${fim.length === 8 ? ';VALUE=DATE' : ''}:${fim}`, `SUMMARY:${titulo}`, ...extra, 'END:VEVENT'];
+    const calendario = (eventos) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Teste//PT', ...eventos.flat(), 'END:VCALENDAR', ''].join('\r\n');
+    const proxSegunda = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - ((agora.getDay() + 6) % 7));
+    fs.writeFileSync(path.join(docs, 'Feriados.ics'), calendario([
+      evento('finados@teste', 'Finados', `${agora.getFullYear()}1102`, `${agora.getFullYear()}1103`),
+      evento('republica@teste', 'Proclamação da República', `${agora.getFullYear()}1115`, `${agora.getFullYear()}1116`),
+      evento('natal@teste', 'Natal', `${agora.getFullYear()}1225`, `${agora.getFullYear()}1226`, ['RRULE:FREQ=YEARLY']),
+    ]));
+    await fecharTudo();
+    // O arquivo da Agenda aparece com a janela fechada: o lembrete que vence agora abre sozinho.
+    fs.writeFileSync(path.join(docs, T('Agenda') + '.ics'), calendario([
+      evento('audiencia@teste', 'Audiência de conciliação', ics(daqui(10)), ics(daqui(70)), ['LOCATION:Sala 3 do Fórum', 'DESCRIPTION:Levar a procuração', 'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:-PT15M', 'END:VALARM']),
+      evento('equipe@teste', 'Reunião da equipe', ics(new Date(proxSegunda.getFullYear(), proxSegunda.getMonth(), proxSegunda.getDate(), 9)), ics(new Date(proxSegunda.getFullYear(), proxSegunda.getMonth(), proxSegunda.getDate(), 9, 30)), ['RRULE:FREQ=WEEKLY;BYDAY=MO,TH']),
+      evento('relatorio@teste', 'Entregar o relatório', ics(amanha, true), ics(new Date(amanha.getFullYear(), amanha.getMonth(), amanha.getDate() + 1), true)),
+      evento('almoco@teste', 'Almoço com a Ana', ics(hoje(12, 30)), ics(hoje(13, 30)), ['LOCATION:Restaurante da esquina']),
+    ]));
+    await pagina.waitForSelector(`.janela:has-text("${T('1 lembrete')}")`, { timeout: 30000 });
+    await pagina.waitForTimeout(500);
+    await foto('agenda-lembrete');
+    await pagina.click(`.janela.ativa button:has-text("${T('Adia&r')}")`);
+    await pagina.waitForTimeout(400);
+    console.log('lembrete adiado; janelas:', await pagina.locator(`.janela:has-text("${T('Lembretes')}")`).count());
+    // A janela: hoje, com a audiência e o almoço.
+    await abrir('agenda');
+    await pagina.waitForSelector('.janela.ativa .ag-item', { timeout: 15000 });
+    await pagina.waitForTimeout(500);
+    console.log('hoje:', JSON.stringify(await pagina.$$eval('.janela.ativa .ag-item', (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
+    await foto('agenda-dia');
+    // Um evento novo amanhã (a seta para a direita passa o dia), com o lembrete de 30 minutos.
+    await pagina.keyboard.press('ArrowRight');
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.janela.ativa button:has-text("${T('&Novo evento…')}")`);
+    await pagina.waitForSelector('.janela.dialogo .ag-form', { timeout: 5000 });
+    await pagina.fill('.janela.dialogo .ag-form input[type=text] >> nth=0', 'Despachar os processos da semana');
+    await pagina.fill('.janela.dialogo .ag-form input[type=text] >> nth=1', 'Gabinete');
+    await pagina.fill('.janela.dialogo .ag-form input[type=time] >> nth=0', '16:00');
+    await pagina.dispatchEvent('.janela.dialogo .ag-form input[type=time] >> nth=0', 'change');
+    await pagina.selectOption('.janela.dialogo .ag-form select >> nth=0', 'semanal');
+    await pagina.selectOption('.janela.dialogo .ag-form select >> nth=1', '30');
+    await pagina.fill('.janela.dialogo .ag-form textarea', 'Conferir os prazos antes.');
+    await pagina.waitForTimeout(300);
+    await foto('agenda-novo');
+    await pagina.click('.janela.dialogo .ag-form button.padrao');
+    await pagina.waitForTimeout(800);
+    console.log('depois do novo:', JSON.stringify(await pagina.$$eval('.janela.ativa .ag-item', (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
+    // A reunião da segunda (repete): mudar só esta ocorrência.
+    const seg = new Date(proxSegunda.getFullYear(), proxSegunda.getMonth(), proxSegunda.getDate() + 7);
+    await abrir('agenda', { dia: `${seg.getFullYear()}-${d2(seg.getMonth() + 1)}-${d2(seg.getDate())}` });
+    await pagina.waitForTimeout(600);
+    await foto('agenda-segunda');
+    await pagina.click(`.janela.ativa .ag-item:has-text("Reunião da equipe")`);
+    await pagina.click(`.janela.ativa button:has-text("${T('E&ditar…')}")`);
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    await foto('agenda-repete');
+    await pagina.click(`.janela.dialogo button:has-text("${T('Só &esta ocorrência')}")`);
+    await pagina.waitForSelector('.janela.dialogo .ag-form', { timeout: 5000 });
+    await pagina.fill('.janela.dialogo .ag-form input[type=time] >> nth=0', '10:00');
+    await pagina.dispatchEvent('.janela.dialogo .ag-form input[type=time] >> nth=0', 'change');
+    await pagina.fill('.janela.dialogo .ag-form input[type=text] >> nth=0', 'Reunião da equipe (com a diretoria)');
+    await pagina.click('.janela.dialogo .ag-form button.padrao');
+    await pagina.waitForTimeout(800);
+    console.log('segunda:', JSON.stringify(await pagina.$$eval('.janela.ativa .ag-item', (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
+    // Importar os feriados (abrir o .ics no Explorador faz o mesmo).
+    await abrir('agenda', { arquivo: `${DOCS}/Feriados.ics` });
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    await foto('agenda-importar');
+    await pagina.click(`.janela.dialogo button:has-text("${T('&Importar')}")`);
+    await pagina.waitForTimeout(1000);
+    await pagina.click('.janela.dialogo button.padrao').catch(() => { });
+    await pagina.waitForTimeout(400);
+    await pagina.click(`.janela.ativa button:has-text("${T('Próximos &30 dias')}")`);
+    await pagina.waitForTimeout(600);
+    await foto('agenda-proximos');
+    // O calendário do relógio: os dias com eventos e os de hoje.
+    await pagina.click('#bandeja .relogio');
+    await pagina.waitForTimeout(500);
+    await foto('agenda-relogio');
+    console.log('relógio, dias marcados:', await pagina.$$eval('.calendario:not(.ag-mes) .cal-dia.com-evento', (l) => l.length), '| hoje:', JSON.stringify(await pagina.$$eval('.cal-evento', (l) => l.map((e) => e.innerText.replace(/\n/g, ' ')))));
+    await pagina.keyboard.press('Escape');
+    // O arquivo no disco.
+    const texto = fs.readFileSync(path.join(docs, T('Agenda') + '.ics'), 'utf8');
+    console.log('arquivo:', (texto.match(/BEGIN:VEVENT/g) || []).length, 'eventos;', (texto.match(/RECURRENCE-ID/g) || []).length, 'alterada;', /RRULE:FREQ=WEEKLY;BYDAY=MO,TH/.test(texto) ? 'regra semanal ok' : 'regra semanal PERDIDA', '; linhas até 75 bytes:', texto.split('\r\n').every((l) => Buffer.byteLength(l) <= 75));
+    console.log('versões guardadas:', fs.existsSync(path.join(disco, '.versoes')) ? execFileSync('find', [path.join(disco, '.versoes'), '-type', 'f']).toString().split('\n').filter((l) => /Agenda|Calendar/.test(l)).length : 0);
+  },
+
   // O Digitalizar (com RETRO_SCANNER_FALSO=1): dois scanners de mentira, duas páginas, o PDF salvo e o
   // texto dele pelo OCR (a página de mentira é um ofício desenhado na hora).
   async scanner() {

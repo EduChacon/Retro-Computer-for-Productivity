@@ -87,6 +87,31 @@ const FERRAMENTAS = [
     description: 'Mostra um aviso (o balão perto do relógio) na área de trabalho do Retro Computer.',
     inputSchema: { type: 'object', properties: { titulo: texto('O título do aviso.'), texto: texto('O texto do aviso.') }, required: ['texto'] },
   },
+  {
+    name: 'agenda_ver',
+    description: 'Os eventos da Agenda do Retro Computer (o .ics de Meus documentos) num intervalo de dias, com as repetições já abertas, em ordem. As horas são as do relógio do computador.',
+    inputSchema: {
+      type: 'object',
+      properties: { de: texto('Opcional: o primeiro dia, "AAAA-MM-DD" (padrão: hoje).'), dias: { type: 'number', description: 'Opcional: quantos dias, de 1 a 90 (padrão: 7).' } },
+    },
+  },
+  {
+    name: 'agenda_marcar',
+    description: 'Marca um evento novo na Agenda do Retro Computer (o usuário vê um aviso e pode abri-lo). Confira com o usuário a data e a hora antes de marcar.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        titulo: texto('O título do evento.'),
+        inicio: texto('O começo: "AAAA-MM-DDTHH:MM" (na hora do computador) ou "AAAA-MM-DD" (o dia todo).'),
+        fim: texto('Opcional: o fim, no mesmo formato (padrão: uma hora depois, ou o mesmo dia).'),
+        local: texto('Opcional: o local.'),
+        descricao: texto('Opcional: as anotações do evento.'),
+        lembrete: { type: 'number', description: 'Opcional: o lembrete, em minutos antes (0 = na hora).' },
+        repetir: texto('Opcional: "diaria", "semanal", "mensal" ou "anual".', { enum: ['diaria', 'semanal', 'mensal', 'anual'] }),
+      },
+      required: ['titulo', 'inicio'],
+    },
+  },
 ];
 
 /** O texto que o Claude recebe ao abrir: onde ele está e as regras da casa. */
@@ -95,6 +120,7 @@ function textoSistema({ raiz }) {
     'Você está dentro do Retro Computer, um computador retrô para produtividade (uma área de trabalho no estilo dos anos 90, com janelas, barra de tarefas e menu Iniciar), aberto pelo Prompt de comando dele.',
     `O disco C: do Retro Computer é a pasta "${raiz}" do computador (a pasta em que este terminal começou). Os documentos do usuário ficam nela.`,
     'Para ajustar o Retro Computer às necessidades do usuário (o fundo, a barra de tarefas, o menu Iniciar, os sons, o idioma, os atalhos, os programas), use as ferramentas do servidor MCP "retro-computer"; não edite o config.json à mão.',
+    'Os compromissos do usuário ficam na Agenda do Retro Computer: para ver ou marcar um, use agenda_ver e agenda_marcar.',
     'Regras da casa: nada se perde. Para apagar um arquivo ou uma pasta do disco C:, use a ferramenta mover_para_lixeira, nunca rm, del ou Remove-Item. Antes de regravar um documento do usuário, confira com ele.',
     'A senha, a chave de API, a pasta do disco e as atualizações ficam só com o usuário (Painel de controle): não tente mudá-las nem ler a chave.',
     'Fale com o usuário no idioma dele, de forma simples.',

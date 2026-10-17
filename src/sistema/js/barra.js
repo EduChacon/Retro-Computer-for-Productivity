@@ -575,6 +575,7 @@ async function itensProgramas() {
   return [
     {
       rotulo: tr('Acessórios'), icone: 'pasta-programas', sub: () => [
+        prog('agenda', tr('Agenda'), 'calendario'),
         prog('transferencia', tr('Área de transferência'), 'transferencia'),
         prog('bloco', tr('Bloco de notas'), 'bloco'),
         prog('calculadora', tr('Calculadora'), 'calculadora'),

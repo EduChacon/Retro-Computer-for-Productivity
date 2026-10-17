@@ -145,6 +145,16 @@ const SONS = {
       nota(hz(93), t + dt + 0.08, 0.4, { tipo: 'sine', vol: 0.1, soltura: 0.35, destino: s });
     });
   },
+  /** O lembrete da Agenda: duas batidas de sino (a nota e as harmônicas que somem devagar). */
+  lembrete() {
+    const t = contexto().currentTime + 0.01;
+    const s = saida();
+    [0, 0.32].forEach((dt) => {
+      nota(hz(79), t + dt, 0.9, { tipo: 'sine', vol: 0.16, ataque: 0.004, soltura: 0.85, destino: s });
+      nota(hz(91), t + dt, 0.5, { tipo: 'sine', vol: 0.06, ataque: 0.004, soltura: 0.45, destino: s });
+      nota(hz(98.02), t + dt, 0.3, { tipo: 'sine', vol: 0.03, ataque: 0.004, soltura: 0.28, destino: s });
+    });
+  },
   // Os sons dos jogos: curtos, sem eco (são frequentes).
   raquete() {
     const t = contexto().currentTime + 0.005;

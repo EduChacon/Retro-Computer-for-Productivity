@@ -34,6 +34,7 @@ import './apps/midia.js';
 import './apps/atualizacoes.js';
 import './atalhos.js';
 import { iniciarMcp } from './mcp.js';
+import { iniciarAgenda } from './agenda.js';
 
 // Estes carregam só quando abrem (ou com o computador parado, logo depois da abertura). Os de
 // cima ficam prontos desde o início: abrem arquivos pelo tipo, recebem avisos do processo
@@ -46,6 +47,8 @@ registrarPreguicoso({ calculadora: { nome: 'Calculadora', icone: 'calculadora' }
 registrarPreguicoso({ antivirus: { nome: 'Antivírus', icone: 'seguranca' } }, () => import('./apps/antivirus.js'));
 registrarPreguicoso({ caracteres: { nome: 'Mapa de caracteres', icone: 'caracteres' } }, () => import('./apps/caracteres.js'));
 registrarPreguicoso({ diario: { nome: 'Diário de trabalho', icone: 'diario' } }, () => import('./apps/diario.js'));
+// A Agenda abre os .ics pelo tipo já antes de carregar (os lembretes ficam em agenda.js, desde o início).
+registrarPreguicoso({ agenda: { nome: 'Agenda', icone: 'calendario', tipos: ['ics'] } }, () => import('./apps/agenda.js'));
 registrarPreguicoso({ discos: { nome: 'Discos', icone: 'discos' } }, () => import('./apps/discos.js'));
 registrarPreguicoso({ pdf: { nome: 'Ferramentas de PDF', icone: 'pdf' } }, () => import('./apps/pdf.js'));
 registrarPreguicoso({ ocr: { nome: 'Copiar o texto', icone: 'texto' } }, () => import('./apps/ocr.js'));
@@ -180,6 +183,8 @@ async function iniciar() {
   iniciarAcessibilidade();
   // O Claude do Prompt pede pelo processo principal o que só a área de trabalho faz (mcp.js).
   iniciarMcp();
+  // Os lembretes da Agenda, mesmo com a janela dela fechada (agenda.js).
+  iniciarAgenda();
   // O fim da cópia de segurança (a automática e a feita na hora): um aviso, e o erro quando houver.
   retro.copia.aoFim(async (r) => {
     await carregarConfig();

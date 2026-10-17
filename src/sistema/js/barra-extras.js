@@ -10,6 +10,7 @@ import { fecharMenus } from './menus.js';
 import { abrirNativo, iconeNativo } from './nativos.js';
 import { tr, marcar, localidade } from './idioma.js';
 import { calcular, arredondar } from './conta.js';
+import { agendaAgora, ocorrenciasEntre, diasComEvento, horarioDe, carregarAgenda } from './agenda.js';
 
 /* ---------- A caixinha que abre acima da barra (o calendário, o volume, a rede…) ---------- */
 
@@ -80,13 +81,17 @@ export function alternarCalendario(ancora) {
   alternarFlutuante(ancora, () => {
     const titulo = h('div.cal-titulo');
     const grade = h('div.cal-grade');
+    // Os eventos de hoje que ainda não acabaram (os da Agenda), até três.
+    const deHoje = h('div.cal-eventos');
     const el = h('div.calendario',
       h('div.cal-topo',
         h('button.cal-seta', { title: tr('Mês anterior'), on: { click: () => { mes.setMonth(mes.getMonth() - 1); desenhar(); } } }, '◀'),
         titulo,
         h('button.cal-seta', { title: tr('Próximo mês'), on: { click: () => { mes.setMonth(mes.getMonth() + 1); desenhar(); } } }, '▶')),
       grade,
+      deHoje,
       h('div.cal-rodape',
+        h('a', { href: '#', on: { click: (e) => { e.preventDefault(); fecharFlutuante(); abrir('agenda'); } } }, tr('Abrir a Agenda…')),
         h('a', { href: '#', on: { click: (e) => { e.preventDefault(); mes.setFullYear(hoje.getFullYear(), hoje.getMonth(), 1); desenhar(); } } },
           tr('Hoje: {data}', { data: hoje.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) })),
         h('a', { href: '#', on: { click: (e) => { e.preventDefault(); fecharFlutuante(); abrir('painel', { secao: 'data' }); } } }, tr('Data e hora…'))));
@@ -101,15 +106,26 @@ export function alternarCalendario(ancora) {
       }
       const inicio = new Date(mes);
       inicio.setDate(1 - ((mes.getDay() - p0 + 7) % 7));
+      const marcados = diasComEvento(inicio, new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + 42));
       for (let i = 0; i < 42; i++) {
         const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
         const cls = ['cal-dia'];
         if (d.getMonth() !== mes.getMonth()) cls.push('fora');
         if (d.toDateString() === hoje.toDateString()) cls.push('hoje');
-        dias.push(h('div.' + cls.join('.'), { title: d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }, String(d.getDate())));
+        if (marcados.has(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)) cls.push('com-evento');
+        // Um clique no dia abre a Agenda nele.
+        const dia = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        dias.push(h('div.' + cls.join('.'), { title: d.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), on: { click: () => { fecharFlutuante(); abrir('agenda', { dia }); } } }, String(d.getDate())));
       }
       grade.replaceChildren(...dias);
+      const agora = new Date();
+      const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
+      const lista = ocorrenciasEntre(agora, fimDoDia).slice(0, 3);
+      deHoje.replaceChildren(...lista.map((o) => h('div.cal-evento', h('span', horarioDe(o, hoje)), h('b', o.evento.titulo || tr('(Sem título)')))));
+      deHoje.hidden = !lista.length;
     };
+    // A Agenda ainda não lida (logo depois de abrir): desenha de novo quando chegar.
+    if (!agendaAgora().rel) carregarAgenda().then(() => desenhar()).catch(() => { });
     desenhar();
     return el;
   }, {
@@ -124,6 +140,7 @@ export function alternarCalendario(ancora) {
 
 // Os programas e lugares do próprio Retro Computer que a busca acha pelo nome.
 const DO_SISTEMA = [
+  { nome: marcar('Agenda'), icone: 'calendario', abrir: () => abrir('agenda') },
   { nome: marcar('Bloco de notas'), icone: 'bloco', abrir: () => abrir('bloco') },
   { nome: marcar('Calculadora'), icone: 'calculadora', abrir: () => abrir('calculadora') },
   { nome: marcar('Área de transferência'), icone: 'transferencia', abrir: () => abrir('transferencia') },

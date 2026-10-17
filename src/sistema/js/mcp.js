@@ -9,7 +9,9 @@ import { lista as janelas } from './janelas.js';
 import { aplicarFundo, aplicarEscala } from './aparencia.js';
 import { programaDe, programasFixaveis, fixar, desafixar, estaFixado, fixarNoIniciar, desafixarDoIniciar } from './barra.js';
 import { naMesa, adicionarAtalho, removerAtalho, atualizar as atualizarMesa } from './mesa.js';
-import { tr } from './idioma.js';
+import { tr, localidade } from './idioma.js';
+import { carregarAgenda, alterarAgenda, ocorrenciasEntre, arquivoAgenda } from './agenda.js';
+import { paraData, dataTexto, dataHoraTexto, novoUid } from './ics.js';
 
 /** O programa pelo identificador (embutido, Craft, site ou do computador principal), ou um erro claro. */
 function programa(chave) {
@@ -53,6 +55,44 @@ const FERRAMENTAS = {
   avisar: ({ titulo, texto }) => {
     avisar(String(titulo || tr('Claude')), String(texto || ''), { icone: 'claude' });
     return { avisado: true };
+  },
+
+  agenda_ver: async ({ de, dias }) => {
+    await carregarAgenda();
+    const ini = paraData(de) || new Date();
+    const inicio = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate());
+    const n = Math.max(1, Math.min(90, Math.round(Number(dias) || 7)));
+    const lista = ocorrenciasEntre(inicio, new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + n)).slice(0, 500);
+    return {
+      arquivo: 'C:\\' + arquivoAgenda().replace(/\//g, '\\'),
+      eventos: lista.map((o) => ({
+        titulo: o.evento.titulo, inicio: o.evento.diaTodo ? dataTexto(o.inicio) : dataHoraTexto(o.inicio), fim: o.evento.diaTodo ? dataTexto(o.fim) : dataHoraTexto(o.fim),
+        diaTodo: o.evento.diaTodo, local: o.evento.local || undefined, repete: o.evento.repetir ? o.evento.repetir.freq : undefined, lembrete: o.evento.lembrete ?? undefined,
+      })),
+    };
+  },
+
+  agenda_marcar: async ({ titulo, inicio, fim, local, descricao, lembrete, repetir }) => {
+    const ini = paraData(inicio);
+    if (!ini) throw new Error(tr('O começo precisa ser "AAAA-MM-DDTHH:MM" ou "AAAA-MM-DD".'));
+    const diaTodo = String(inicio).length === 10;
+    let f = fim ? paraData(fim) : null;
+    if (fim && !f) throw new Error(tr('O fim precisa estar no mesmo formato do começo.'));
+    if (!f) f = diaTodo ? new Date(ini.getFullYear(), ini.getMonth(), ini.getDate() + 1) : new Date(ini.getTime() + 3600000);
+    else if (diaTodo) f = new Date(f.getFullYear(), f.getMonth(), f.getDate() + 1); // o fim do dia todo é o dia seguinte, no .ics
+    if (f < ini) throw new Error(tr('O fim vem antes do começo.'));
+    const min = lembrete == null || lembrete === '' ? null : Math.round(Number(lembrete));
+    if (min != null && !(min >= 0 && min <= 40320)) throw new Error(tr('O lembrete vai de 0 a 40320 minutos (28 dias) antes.'));
+    if (repetir && !['diaria', 'semanal', 'mensal', 'anual'].includes(repetir)) throw new Error(tr('A repetição é "diaria", "semanal", "mensal" ou "anual".'));
+    const ev = {
+      uid: novoUid(), titulo: String(titulo || '').trim().slice(0, 500) || tr('(Sem título)'), local: String(local || '').slice(0, 500), descricao: String(descricao || '').slice(0, 10000),
+      inicio: diaTodo ? dataTexto(ini) : dataHoraTexto(ini), fim: diaTodo ? dataTexto(f) : dataHoraTexto(f), diaTodo, lembrete: min,
+      repetir: repetir ? { freq: repetir, intervalo: 1 } : null, excecoes: [], recorrencia: null, extra: [],
+    };
+    await alterarAgenda((lista) => [...lista, ev]);
+    const quando = diaTodo ? ini.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long' }) : ini.toLocaleString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+    avisar(tr('O Claude marcou na Agenda'), `${ev.titulo} · ${quando}`, { icone: 'calendario', aoClicar: () => abrir('agenda', { dia: dataTexto(ini), evento: ev.uid }) });
+    return { marcado: { titulo: ev.titulo, inicio: ev.inicio, fim: ev.fim, lembrete: min } };
   },
 
   programasMudaram: () => atualizarProgramas().then(() => true),
