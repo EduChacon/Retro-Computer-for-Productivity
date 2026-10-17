@@ -3779,6 +3779,49 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('busca-painel');
   },
 
+  // As abas do Explorador (Ctrl+T, o botão direito numa pasta, Ctrl+Tab, Ctrl+W) e a visualização
+  // rápida pela barra de espaço (as setas passam para o arquivo do lado).
+  async abasExplorador() {
+    const docs = path.join(disco, DOCS);
+    fs.mkdirSync(path.join(docs, 'Projetos'), { recursive: true });
+    fs.writeFileSync(path.join(docs, 'Ata da reunião.txt'), 'Ata da reunião de 17 de outubro.\n\nPresentes: Ana, Bruno e Carla.\nPauta: o orçamento de 2027.');
+    pdfSimples(path.join(docs, 'Relatório.pdf'), [['Relatorio anual', 'Resumo das atividades de 2026.']]);
+    try { execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'mandelbrot=size=640x400', '-frames:v', '1', path.join(docs, 'Paisagem.png')]); } catch { }
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(1200);
+    const item = (nome) => `.janela.ativa .item:has(.rotulo:text-is("${nome}"))`;
+    await pagina.click(item('Projetos'), { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.menu .opcao:has-text("${T('Abrir em nova a&ba')}")`);
+    await pagina.waitForTimeout(800);
+    await pagina.keyboard.press('Control+t');
+    await pagina.waitForTimeout(800);
+    console.log('abas:', JSON.stringify(await pagina.$$eval('.janela.ativa .exp-abas .nav-aba', (l) => l.map((e) => e.textContent + (e.classList.contains('ativa') ? ' *' : '')))));
+    await foto('explorador-abas');
+    await pagina.keyboard.press('Control+Tab');
+    await pagina.waitForTimeout(600);
+    console.log('depois do Ctrl+Tab:', await pagina.textContent('.janela.ativa .exp-abas .nav-aba.ativa'), '|', await pagina.textContent('.janela.ativa .titulo'));
+    await pagina.keyboard.press('Control+w');
+    await pagina.waitForTimeout(600);
+    console.log('depois do Ctrl+W:', JSON.stringify(await pagina.$$eval('.janela.ativa .exp-abas .nav-aba', (l) => l.map((e) => e.textContent))));
+    // A visualização rápida: um texto, depois a seta para a direita (o próximo arquivo).
+    await pagina.click(`.janela.ativa button.ferramenta:has-text("${T('Acima')}")`);
+    await pagina.waitForTimeout(800);
+    await pagina.click(item('Ata da reunião.txt'));
+    await pagina.keyboard.press(' ');
+    await pagina.waitForTimeout(1200);
+    console.log('rápida:', await pagina.textContent('.janela.ativa .titulo'));
+    await foto('rapida-texto');
+    await pagina.keyboard.press('ArrowRight');
+    await pagina.waitForTimeout(1500);
+    console.log('rápida, depois da seta:', await pagina.textContent('.janela.ativa .titulo'));
+    await foto('rapida-seguinte');
+    await pagina.keyboard.press(' ');
+    await pagina.waitForTimeout(500);
+    console.log('fechou?', await pagina.locator('.janela:has-text("' + T('Visualização rápida').replace(/"/g, '') + '")').count(), '| escolhido no Explorador:', await pagina.textContent('.janela.ativa .item.sel .rotulo').catch(() => '?'));
+  },
+
   // O Digitalizar (com RETRO_SCANNER_FALSO=1): dois scanners de mentira, duas páginas, o PDF salvo e o
   // texto dele pelo OCR (a página de mentira é um ofício desenhado na hora).
   async scanner() {

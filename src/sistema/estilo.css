@@ -1728,6 +1728,12 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 .av-lista { flex: 1 1 auto; min-height: 70px; height: auto; overflow: auto; padding: 2px; background: #fff; }
 /* Ferramentas de PDF: a lista na ordem, os botões do lado e os do PDF escolhido. */
 .pdf-corpo { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+/* As abas do Explorador (as mesmas do Navegador), em cima da barra de ferramentas. */
+.exp-abas { margin-bottom: -1px; }
+/* A visualização rápida: o painel de visualização grande e os botões embaixo. */
+.rapida-corpo { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+.rapida-vis { flex: 1 1 auto; min-height: 0; display: flex; background: #fff; box-shadow: var(--campo); }
+.rapida-vis .vis { min-height: 0; }
 .pdf-meio { flex: 1 1 auto; min-height: 0; display: flex; gap: 6px; }
 .pdf-lista { flex: 1 1 auto; height: auto; min-height: 80px; overflow: auto; padding: 2px; background: #fff; }
 .pdf-lado { display: flex; flex-direction: column; gap: 4px; }

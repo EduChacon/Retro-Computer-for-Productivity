@@ -364,6 +364,7 @@ export function menuDeItens(sel, o = {}) {
   if (um && um.pasta) {
     itens.push({ rotulo: tr('&Abrir'), negrito: true, acao: () => (o.abrirPasta ? o.abrirPasta(um.rel) : abrir('explorador', { pasta: um.rel })) });
     itens.push({ rotulo: tr('Expl&orar'), acao: () => abrir('explorador', { pasta: um.rel }) });
+    if (o.novaAba) itens.push({ rotulo: tr('Abrir em nova a&ba'), acao: () => o.novaAba(um.rel) });
     itens.push({ rotulo: tr('Abrir o &Prompt de comando aqui'), acao: () => abrir('prompt', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Abrir o C&laude aqui'), icone: 'claude', acao: () => abrir('claude', { pasta: um.rel }) });
     itens.push({ rotulo: tr('Pe&dir ao Claude'), sub: () => pedidosAoClaude(um) });

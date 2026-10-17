@@ -25,6 +25,7 @@ import { Arvore } from '../arvore.js';
 import { PainelVisualizacao } from '../visualizar.js';
 import { fixadas } from '../acesso.js';
 import { itemDeAtalho } from '../barra.js';
+import { visualizacaoRapida, fecharVisualizacaoRapida } from '../rapida.js';
 
 // As fotos com miniatura (as que o Electron ou o sistema sabem encolher).
 const COM_MINIATURA = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif', 'tif', 'tiff', 'heic']);
@@ -62,6 +63,9 @@ class Explorador {
     this.pasta = pasta;
     this.historico = [];
     this.adiante = [];
+    // As abas (Ctrl+T): cada uma com a pasta e o histórico dela; a faixa só aparece com duas ou mais.
+    this.abas = [{ pasta, historico: this.historico, adiante: this.adiante }];
+    this.abaAtual = 0;
     this.ordem = 'nome';
     const c = estado.config || {};
     this.modo = (c.explorador && c.explorador.modo) || 'icones';
@@ -116,7 +120,11 @@ class Explorador {
     divisoriaVis.addEventListener('pointerdown', (e) => this.arrastarDivisoriaVis(e));
     this.comVis = !!(c.explorador && c.explorador.visualizar);
     this.corpo = h('div.exp-corpo', this.painelArvore, divisoria, this.area, divisoriaVis, this.painelVis);
-    this.j.corpo.append(ferramentas, this.corpo);
+    this.listaAbas = h('div.nav-abas-lista');
+    const btNovaAba = h('button.nav-aba-nova', { type: 'button', title: tr('Nova aba (Ctrl+T)'), on: { click: () => this.novaAba() } }, '+');
+    this.faixaAbas = h('div.nav-abas.exp-abas', { hidden: true }, this.listaAbas, btNovaAba);
+    this.faixaAbas.addEventListener('dblclick', (e) => { if (e.target === this.faixaAbas || e.target === this.listaAbas) this.novaAba(); });
+    this.j.corpo.append(this.faixaAbas, ferramentas, this.corpo);
     this.aplicarArvore();
     this.aplicarVis();
     this.vista = new VistaIcones(this.area, {
@@ -129,9 +137,19 @@ class Explorador {
       aoSelecionar: () => { this.atualizarStatus(); this.atualizarVis(); },
     });
     this.area.addEventListener('keydown', (e) => this.atalhos(e));
-    // Alt+P, como no Windows: de qualquer lugar da janela (a lista, a árvore, o endereço).
+    // Alt+P, como no Windows: de qualquer lugar da janela (a lista, a árvore, o endereço). E as abas:
+    // Ctrl+T abre, Ctrl+W fecha, Ctrl+Tab e Ctrl+Page Down passam para a próxima.
     this.j.corpo.addEventListener('keydown', (e) => {
-      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'p') { e.preventDefault(); e.stopPropagation(); this.alternarVis(); }
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'p') { e.preventDefault(); e.stopPropagation(); this.alternarVis(); return; }
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === 't') { e.preventDefault(); this.novaAba(); }
+      else if (k === 'w') { e.preventDefault(); this.fecharAba(); }
+      else if ((e.key === 'Tab' || e.key === 'PageDown' || e.key === 'PageUp') && this.abas.length > 1) {
+        e.preventDefault();
+        const n = this.abas.length;
+        this.escolherAba((this.abaAtual + ((e.key === 'PageUp' || (e.key === 'Tab' && e.shiftKey)) ? n - 1 : 1)) % n);
+      }
     });
     // Ctrl+roda do mouse: os ícones maiores ou menores, de modo em modo (como no Windows).
     this.area.addEventListener('wheel', (e) => {
@@ -213,6 +231,8 @@ class Explorador {
             itens.push({ rotulo: tr('&Trazer do computador principal…'), acao: () => retro.disco.importarEscolhendo(this.pasta).catch((e) => erro(e.message)) });
             itens.push({ separador: true });
           }
+          // Sem letra sublinhada: as do menu dos itens escolhidos já usam quase todas.
+          itens.push({ rotulo: tr('Nova aba'), atalho: 'Ctrl+T', acao: () => this.novaAba() });
           itens.push({ rotulo: tr('&Fechar'), acao: () => this.j.fechar() });
           return itens;
         },
@@ -422,6 +442,61 @@ class Explorador {
     this.migalhas.hidden = false;
   }
 
+  /* ---------- As abas ---------- */
+
+  desenharAbas() {
+    if (!this.faixaAbas) return;
+    this.faixaAbas.hidden = this.abas.length < 2;
+    if (this.faixaAbas.hidden) return this.listaAbas.replaceChildren();
+    this.listaAbas.replaceChildren(...this.abas.map((a, i) => {
+      const fechar = h('button.nav-aba-fechar', { type: 'button', title: tr('Fechar a aba (Ctrl+W)') });
+      fechar.addEventListener('click', (e) => { e.stopPropagation(); this.fecharAba(i); });
+      const el = h('div.nav-aba' + (i === this.abaAtual ? '.ativa' : ''), { title: tituloDe(a.pasta) },
+        h('span.nav-aba-icone', img(iconeDe(a.pasta), 16)), h('span.nav-aba-nome', tituloDe(a.pasta)), fechar);
+      el.addEventListener('mousedown', (e) => { if (e.button === 0 && e.target !== fechar) this.escolherAba(i); });
+      el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.fecharAba(i); } });
+      return el;
+    }));
+  }
+
+  /** Guarda o estado da aba da frente (a pasta, o histórico e o item escolhido). */
+  guardarAba() {
+    const a = this.abas[this.abaAtual];
+    if (!a) return;
+    const sel = this.vista ? this.vista.selecionados() : [];
+    Object.assign(a, { pasta: this.pasta, historico: this.historico, adiante: this.adiante, sel: sel.length === 1 ? sel[0].chave : undefined });
+  }
+
+  escolherAba(i) {
+    if (i === this.abaAtual || !this.abas[i]) return;
+    this.guardarAba();
+    this.abaAtual = i;
+    const a = this.abas[i];
+    this.pasta = a.pasta;
+    this.historico = a.historico;
+    this.adiante = a.adiante;
+    this.carregar(a.sel);
+  }
+
+  /** Uma aba nova logo depois da da frente (na mesma pasta, ou na pedida), já na frente. */
+  novaAba(pasta = this.pasta, frente = true) {
+    this.guardarAba();
+    this.abas.splice(this.abaAtual + 1, 0, { pasta, historico: [], adiante: [] });
+    if (frente) this.escolherAba(this.abaAtual + 1);
+    else this.desenharAbas();
+  }
+
+  /** Fecha a aba (a da frente, sem dizer qual); a última fecha a janela. */
+  fecharAba(i = this.abaAtual) {
+    if (this.abas.length <= 1) return this.j.fechar();
+    this.guardarAba();
+    this.abas.splice(i, 1);
+    if (i < this.abaAtual) { this.abaAtual--; return this.desenharAbas(); }
+    if (i > this.abaAtual) return this.desenharAbas();
+    this.abaAtual = -1;
+    this.escolherAba(Math.min(i, this.abas.length - 1));
+  }
+
   /* ---------- Navegação ---------- */
 
   navegar(pasta, selecionar) {
@@ -477,6 +552,8 @@ class Explorador {
   async carregar(selecionar) {
     const pasta = this.pasta;
     this.j.definirTitulo(tituloDe(pasta));
+    if (this.abas[this.abaAtual]) this.abas[this.abaAtual].pasta = pasta;
+    this.desenharAbas();
     const un = lerPastaUnidade(pasta);
     const zip = lerPastaZip(pasta);
     this.endereco.value = ESPECIAIS[pasta] ? tr(ESPECIAIS[pasta].titulo)
@@ -769,7 +846,20 @@ class Explorador {
         aoNovo: (rel) => this.depoisDeCriar(rel),
       }), pos);
     }
-    return abrirMenu(menuDeItens(sel, { aoRenomear: (it) => this.renomearItem(it), abrirPasta: (rel) => this.navegar(rel) }), pos);
+    return abrirMenu(menuDeItens(sel, { aoRenomear: (it) => this.renomearItem(it), abrirPasta: (rel) => this.navegar(rel), novaAba: (rel) => this.novaAba(rel) }), pos);
+  }
+
+  /** A barra de espaço: a visualização rápida do arquivo escolhido (e dos outros da pasta, pelas setas). */
+  rapida() {
+    if (fecharVisualizacaoRapida()) return;
+    const arquivos = this.vista.itens.filter((x) => !x.pasta && x.rel != null && !x.lixo && !x.unidade && !x.zip && !x.especial);
+    const sel = this.vista.selecionados()[0];
+    const i = sel ? arquivos.indexOf(sel) : -1;
+    if (i < 0) return;
+    visualizacaoRapida(arquivos, i, {
+      aoMudar: (it) => this.vista.selecionarChave(it.chave),
+      aoAbrir: (it) => this.abrirItem(it),
+    });
   }
 
   atalhos(e) {
@@ -778,6 +868,7 @@ class Explorador {
     if (e.key === 'Backspace') { e.preventDefault(); this.subir(); return; }
     if ((e.altKey && e.key.toLowerCase() === 'd') || e.key === 'F4') { e.preventDefault(); this.editarEndereco(); return; }
     if (e.key === 'F5') { e.preventDefault(); this.carregar(); return; }
+    if (e.key === ' ' && !e.ctrlKey && !e.altKey && !e.metaKey && !(e.target.closest && e.target.closest('.rotulo-editor'))) { e.preventDefault(); this.rapida(); return; }
     if (!(e.ctrlKey || e.metaKey) || !doDisco) return;
     const k = e.key.toLowerCase();
     if (k === 'c') { e.preventDefault(); copiarItens(sel(), false); }
