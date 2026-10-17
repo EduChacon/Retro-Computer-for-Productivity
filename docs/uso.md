@@ -9,9 +9,10 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 - Fala português, inglês e espanhol (Painel de controle › Idioma).
 - O disco C: é uma pasta do computador principal (por padrão, `Documentos/Retro Computer`). Tudo o que se salva fica nela, visível também fora do programa.
 - Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pela Loja de programas (no alto do menu Iniciar; no Painel de controle, "Adicionar ou remover programas") e rodam em janelas da área de trabalho. A mesma janela tem a loja do computador: o Flathub no Linux, o winget no Windows e o Homebrew no Mac.
-- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Ferramentas de PDF, Digitalizar (o scanner), o Copiar o texto (OCR), Agenda, Notas autoadesivas, Receber do celular, Prompt de comando, DOS, Mac Plus e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
+- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Ferramentas de PDF, Digitalizar (o scanner), o Copiar o texto (OCR), Agenda, Notas autoadesivas, Receber do celular, Emojis, Prompt de comando, DOS, Mac Plus e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
 - A busca da barra de tarefas e o Localizar acham também pelo texto de dentro dos documentos (seção 2, "O Explorador").
 - A Agenda guarda os compromissos num `.ics` do disco C:, com lembretes; as notas autoadesivas ficam na área de trabalho; as fotos do celular chegam pela rede local; e as janelas abertas voltam ao ligar de novo (seção 2, "Agenda, notas e celular").
+- As janelas podem ficar em várias áreas de trabalho (Logotipo+Ctrl+D), com a Visão das tarefas (Logotipo+Tab); o painel de emojis abre com Logotipo+.; e o PC clássico tem esquemas de cores, também escuros (seção 2, "A barra de tarefas" e "A área de trabalho").
 - As janelas se encaixam nas bordas e nos cantos da tela, e os atalhos do Windows (Alt+Tab, a tecla do logotipo com uma letra) funcionam no Retro Computer como sistema.
 - Painel de controle › Segurança mostra num lugar só a senha, o firewall, as atualizações e a privacidade.
 - Várias pessoas podem dividir o mesmo Retro Computer, cada uma com a área de trabalho, a senha e o disco C: próprios (Painel de controle › Usuários).
@@ -63,12 +64,15 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 - **Outro programa**: botão direito nele, no menu Iniciar › "Adicionar à área de trabalho" (ou "Remover da área de trabalho"); o mesmo menu fixa o programa na barra de tarefas. Botão direito num ícone da área de trabalho › "Remover da área de trabalho".
 - **Atalhos nas pastas**: o ícone de um programa arrastado da área de trabalho para uma pasta (o ícone dela ou a janela aberta) vira um arquivo de atalho dentro dela e sai da área de trabalho (com Ctrl, fica nos dois lugares; solto na Lixeira, só sai da área de trabalho). O arquivo é um texto pequeno, `Calculadora.atalho`, com a chave do programa (`Programa=calculadora`), e aparece com o ícone do programa, a setinha e o nome sem o `.atalho` (que volta sozinho ao renomear). Dois cliques abrem o programa; ele só aponta para os programas que o Retro Computer conhece, nunca para um caminho, e o de um programa removido avisa.
 - **Os arquivos e as pastas** da área de trabalho ficam na pasta `Área de trabalho` do disco C:.
+- **As cores**: Painel de controle › Aparência › Tema › **Esquema de cores**, com a prévia. Além do de sempre (Retro Computer), há sete claros (Areia, Ardósia, Berinjela, Musgo, Oceano, Tijolo e Rosa antigo) e quatro escuros (Noite, Meia-noite, Fósforo verde e Âmbar), que deixam as janelas, os campos e as listas escuros, com o texto claro. O fundo de sempre acompanha o esquema (um fundo escolhido pelo usuário fica). Os esquemas valem para o PC clássico; o Mac clássico tem as cores dele.
 
 ### A barra de tarefas
 
 - **À esquerda**: o Iniciar, a caixa de busca (programas, opções do Painel de controle e arquivos do disco C:; com Enter, pesquisa na internet) e os programas fixados (de início, o Explorador de arquivos, o Navegador, o E-mail e o Bloco de notas). Botão direito num programa › "Fixar na barra de tarefas" ou "Desafixar".
 - **Os botões das janelas** mostram o nome, como na época, ou só os ícones, agrupados por programa (botão direito na barra › Botões das janelas). O clique com a roda num botão abre outra janela do programa.
 - **Arrastar para reorganizar**: os fixados e os botões das janelas mudam de lugar arrastando (o botão troca com o vizinho quando o ponteiro passa do meio dele, com o contorno pontilhado). A ordem dos fixados fica guardada; a das janelas e a dos programas abertos que não estão fixados vale até fechar o Retro Computer, e as janelas novas entram no fim.
+- **As áreas de trabalho**: Logotipo+Ctrl+D (ou o botão direito na barra › Nova área de trabalho) cria uma área nova, Logotipo+Ctrl+← e → trocam de área, e Logotipo+Ctrl+F4 fecha a de agora (as janelas dela vão para a área do lado). A barra e o Alt+Tab mostram só as janelas da área à vista; com mais de uma, os botões 1, 2… ficam ao lado da bandeja (no tema Mac, ao lado do relógio). O botão direito no botão de uma janela › Mover para leva a janela para outra área. Até oito áreas; o Reabrir ao ligar devolve as áreas e cada janela para a sua. As janelas dos programas do Linux (no modo sistema) ficam em todas.
+- **A Visão das tarefas** (Logotipo+Tab, ou o botão direito na barra): uma coluna por área, com as janelas dela; o clique leva à janela, e arrastar uma janela para outra coluna a leva para aquela área.
 - **As propriedades** (botão direito na barra › Propriedades, ou Iniciar › Configurações › "Barra de tarefas e menu Iniciar"): a caixa de busca, a data, os botões das janelas e a ordem dos fixados.
 - **A bandeja, à direita**: a rede (as redes Wi-Fi, no Linux), o volume (com a escolha da saída de som, quando há mais de uma), a bateria com o brilho da tela e a bateria do mouse e do teclado sem fio, o Bluetooth (no Linux), o sino das notificações com o "Não perturbe" e o relógio, que abre o calendário (botão direito › Mostrar a data). Em Painel de controle › Barra de tarefas e menu Iniciar › Ícones da bandeja, cada ícone pode ficar à vista ou escondido.
 
@@ -160,6 +164,7 @@ As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a 
 | Agenda | Os compromissos, com a repetição e os lembretes, num `.ics` do disco C: (mais na seção "Agenda, notas e celular") |
 | Notas autoadesivas | Os papeizinhos da área de trabalho, cada um num `.txt` |
 | Receber do celular | As fotos e os arquivos do celular pela rede local, com o código QR |
+| Emojis (Logotipo+. ou Logotipo+;) | O painel de emojis: a busca pelo nome em português, inglês e espanhol (sem precisar dos acentos), as categorias e os usados há pouco; um clique põe o emoji no campo com o foco (um campo, um programa, o Prompt ou o Navegador) e, sem campo, na área de transferência. Os desenhos são os do SerenityOS |
 | Calculadora, Bloco de notas, Prompt de comando | Os de sempre |
 | DOS | O DOSBox (do js-dos), sem internet: a unidade C: é a pasta C:\DOS do disco; dois cliques num .com, .bat ou .exe do DOS o abrem; o que mudar volta ao disco ao fechar (com a versão anterior guardada e os apagados na Lixeira) |
 | Mac Plus | O PCE.js, um emulador do Macintosh da época, em preto e branco e sem internet, para jogos como o SimAnt. Nada da Apple vem junto: a pasta C:\Mac recebe a ROM do Mac do usuário (o arquivo .rom de 128 KB do Mac Plus, de 256 KB do Mac SE ou de 512 KB do Mac Classic), o disquete do Sistema (o System 6 ou o 7) e os dos jogos (.dsk, .img ou .image, do Disk Copy 4.2). O disco com System, Sistema ou Boot no nome vai na primeira unidade; dois cliques num .dsk ou .image abrem o Mac com ele. A tecla Alt é a Command, e a Ctrl, a Option. O que o Mac gravar volta ao disco ao fechar (a versão de antes de ligar o Mac fica guardada) |
@@ -309,6 +314,9 @@ No Retro Computer como sistema do Linux, valem também (com o Retro Computer com
 | Logotipo+1 a 9 | Os programas fixados na barra de tarefas, na ordem |
 | Logotipo+Shift+S | Capturar um pedaço da tela |
 | Logotipo+L | Bloqueia o computador |
+| Logotipo+Tab | A Visão das tarefas (as áreas de trabalho e as janelas de cada uma) |
+| Logotipo+Ctrl+D, Logotipo+Ctrl+← e →, Logotipo+Ctrl+F4 | Criar uma área de trabalho, trocar de área e fechar a de agora |
+| Logotipo+. ou Logotipo+; | O painel de emojis |
 | Print Screen, Alt+Print Screen, Shift+Print Screen | Captura da tela, da janela ou de um pedaço (também com um programa do Linux na frente) |
 | Volume, brilho, calculadora | Mudam o som e a tela (com o indicador acima da bandeja) e abrem a Calculadora |
 

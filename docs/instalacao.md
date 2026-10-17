@@ -10,6 +10,7 @@ Um guia curto para cada tipo de computador. Os instaladores ficam na página de 
 | Mac com macOS 12 Monterey ou mais novo | O `.dmg` (`x64` nos Mac com Intel, `arm64` nos com chip Apple) |
 | Mac antigo, que não passa do macOS 11 (como o MacBook Air de 2014) | O Linux Mint e o `.deb`, com a sessão "Retro Computer" (o passo a passo simples está em [macbook-air.md](macbook-air.md)) |
 | Qualquer Mac, para experimentar sem mexer no sistema | Uma máquina virtual no UTM, com o Linux e o `.deb` |
+| iPhone ou iPad (só para experimentar) | O UTM SE da App Store, com o Debian para ARM64 e o `arm64.deb` (bem lento; seção 4) |
 | Notebook antigo ou mini PC | O Linux Mint e o `.deb`, com a sessão "Retro Computer" |
 | Raspberry Pi 4 ou 5 | O Raspberry Pi OS de 64 bits e o `arm64.deb` |
 | Levar no bolso, de um computador para outro | O modo portátil num pendrive, ou o Linux Mint inteiro num pendrive ou SSD externo (seção 8) |
@@ -74,6 +75,18 @@ O [UTM](https://mac.getutm.app/) roda outros sistemas numa janela do Mac. É a f
 4. Instale o `.deb` do Retro Computer (`arm64` no chip Apple, `amd64` no Intel), como no passo 6 da seção 3, e entre na sessão **Retro Computer**.
 
 Dicas: em **Entrada**, ligue a captura do teclado para os atalhos (Alt+Tab, a tecla do logotipo) irem para a máquina, e não para o Mac; uma pasta compartilhada do UTM pode servir de disco C: (Painel de controle › Disco C:), para os arquivos ficarem visíveis também no Mac.
+
+### No iPhone e no iPad (o UTM SE)
+
+O [UTM SE](https://docs.getutm.app/installation/ios/), da App Store, também roda o Linux no iPhone e no iPad, mas só emulado: sem o "JIT" (a App Store não o permite), ele usa um interpretador, e a própria documentação do UTM o indica para sistemas pequenos. O Retro Computer roda sobre o Chromium, dentro de um Linux com área de trabalho: funciona, mas devagar (a instalação leva horas, e cada clique pode levar alguns segundos). Serve para experimentar; para o dia a dia, um computador rende muito mais. A virtualização ("hypervisor") no iPad só existe a partir do chip M1; os iPad Pro de 2018 e 2020 (A12X e A12Z) e os iPhone só emulam.
+
+1. No Safari do aparelho, baixe do [debian.org](https://www.debian.org/distrib/netinst) a imagem do Debian estável para **ARM64** (`debian-…-arm64-netinst.iso`) e guarde-a no app Arquivos. Prefira o ARM64: é o que o UTM recomenda nos aparelhos da Apple, e o x86_64 seria ainda mais lento (por isso o Linux Mint, que só existe para x86_64, não serve aqui).
+2. No UTM SE, **+** › **Emular** › **Linux**, escolha a imagem e ajuste: arquitetura **ARM64 (aarch64)**, memória de 2.048 a 3.072 MB num iPhone com 8 GB (de 1.536 a 2.048 MB num iPad com 4 GB), 2 a 4 núcleos e um disco de 16 a 20 GB.
+3. Instale o Debian. Na escolha dos programas, marque só o **LXDE** (a área de trabalho mais leve da lista) e os utilitários padrão; deixe a senha do "root" em branco, para o seu usuário poder usar o `sudo`.
+4. No Debian, abra o terminal e instale o `.deb`: `wget https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest/download/Retro-Computer-…-linux-arm64.deb` (com o número da versão no lugar dos três pontos; o nome certo está na página de lançamentos) e `sudo apt install ./Retro-Computer-…-linux-arm64.deb`.
+5. Saia da sessão e escolha **Retro Computer** na tela de entrada. No iPad, um teclado e um mouse Bluetooth ajudam muito.
+
+O UTM completo, com o "JIT", é bem mais rápido, mas só se instala fora da App Store ("sideload"), com um ativador do "JIT" como o StikDebug, e o caminho muda com cada versão do iOS: confira a [documentação do UTM](https://docs.getutm.app/installation/ios/) antes.
 
 ## 5. Notebook antigo ou mini PC
 

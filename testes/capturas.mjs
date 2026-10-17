@@ -1839,7 +1839,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   async ajuda() {
     // Os tópicos da Ajuda, um por captura (o texto rolado até o fim mostra se cabe).
     await fecharTudo();
-    for (const topico of ['inicio', 'pendrives', 'pdf', 'busca', 'agenda', 'celular', 'barra', 'internet', 'acessorios', 'painel', 'seguranca', 'linux', 'atalhos']) {
+    for (const topico of ['inicio', 'pendrives', 'pdf', 'busca', 'agenda', 'celular', 'barra', 'areas', 'tema', 'internet', 'acessorios', 'painel', 'seguranca', 'linux', 'atalhos']) {
       await abrir('ajuda', { topico });
       await pagina.waitForTimeout(300);
       await foto('ajuda-' + topico);
@@ -4092,6 +4092,12 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     }));
     await abrir('painel', { secao: 'aparencia', aba: 'tema' });
     await pagina.waitForTimeout(600);
+    // No tema Mac, os esquemas ficam desativados (o Mac clássico tem as cores dele).
+    if (temaMacLigado) {
+      console.log('no tema Mac, a escolha desativada:', await pagina.isDisabled('.janela.ativa .previa-esquema ~ .linha select'));
+      await foto('esquemas-mac');
+      return;
+    }
     await pagina.selectOption('.janela.ativa .previa-esquema ~ .linha select', 'noite');
     await pagina.waitForTimeout(300);
     await foto('esquemas-escolha');
