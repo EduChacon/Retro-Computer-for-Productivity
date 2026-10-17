@@ -36,6 +36,7 @@ import './atalhos.js';
 import { iniciarMcp } from './mcp.js';
 import { iniciarAgenda } from './agenda.js';
 import { iniciarNotas } from './notas.js';
+import { iniciarReabrir } from './reabrir.js';
 
 // Estes carregam só quando abrem (ou com o computador parado, logo depois da abertura). Os de
 // cima ficam prontos desde o início: abrem arquivos pelo tipo, recebem avisos do processo
@@ -245,11 +246,14 @@ async function iniciar() {
   // O tamanho dos pixels acompanha o monitor (ao mudar de tela).
   matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', () => aplicarEscala(estado.config.escala));
 
-  if (estado.config.primeiraVez) {
+  // Na primeira vez, a Ajuda; nas outras, as janelas que estavam abertas da última vez (reabrir.js).
+  const primeira = !!estado.config.primeiraVez;
+  if (primeira) {
     await definirConfig({ primeiraVez: false });
     abrir('ajuda', { topico: 'inicio' });
     setTimeout(() => avisar(tr('Bem-vindo!'), tr('Clique em Iniciar para começar. O disco C: é uma pasta do seu computador.'), { icone: 'logo', som: null, ms: 9000 }), 1200);
   }
+  iniciarReabrir({ reabrir: !primeira });
 
   // As atualizações: os programas (sem mexer nos que estão abertos) e o próprio Retro Computer.
   setTimeout(() => {

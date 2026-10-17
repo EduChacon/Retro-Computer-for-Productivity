@@ -205,6 +205,11 @@ class Navegador {
     });
     abertos.add(this);
     this.j.navegador = this; // para os roteiros de capturas (testes/capturas.mjs)
+    // Reabrir ao ligar: o endereço da aba de agora (com "apagar os dados ao fechar", só a página inicial).
+    this.j.reabrir = () => {
+      const limpar = estado.config.navegador && estado.config.navegador.limparAoFechar;
+      return !limpar && !this.app && /^https?:\/\//i.test(this.url) ? { url: this.url } : {};
+    };
     this.j.ev.on('fechada', () => { abertos.delete(this); if (this.cheia) this.sairTelaCheia(this.cheia); });
     // Os botões laterais do mouse sobre a moldura (sobre a página, quem avisa é o navegador-preload.js).
     this.j.el.addEventListener('mouseup', (e) => {

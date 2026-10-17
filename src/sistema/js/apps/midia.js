@@ -57,6 +57,8 @@ class Reprodutor {
       menus: this.menus(),
       status: [{ texto: tr('Parado'), largura: 110, fixo: true }, { texto: '', largura: 70, fixo: true }, ''],
     });
+    // Reabrir ao ligar: o arquivo de agora (sem tocar sozinho).
+    this.j.reabrir = () => (this.rel ? { arquivo: this.rel } : {});
     this.montarControles();
     this.j.corpo.append(this.tela, this.controles);
     this.ligarEventos();

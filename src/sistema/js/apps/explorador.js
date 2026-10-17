@@ -78,6 +78,9 @@ class Explorador {
       status: [{ texto: '', largura: 160, fixo: true }, ''],
       menus: this.menus(),
     });
+    // Reabrir ao ligar: a pasta da aba de agora (as dos pendrives e as do computador principal
+    // podem não estar lá na próxima vez: volta o Meu computador).
+    this.j.reabrir = () => ({ pasta: /^::(computador|lixeira)$/.test(this.pasta) || !/^[a-z]+:/i.test(this.pasta) ? this.pasta : '::computador' });
     // Os botões laterais do mouse: voltar e avançar.
     this.j.el.addEventListener('mouseup', (e) => {
       if (e.button === 3) { e.preventDefault(); this.voltar(); }

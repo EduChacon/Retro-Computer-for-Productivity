@@ -51,6 +51,8 @@ const PADRAO = {
   // As opções de energia do modo sistema (minutos; 0 = nunca): a tela e a suspensão, na tomada e na bateria.
   energia: { telaTomada: 15, telaBateria: 5, suspenderTomada: 0, suspenderBateria: 30 },
   recentes: [],
+  // Reabrir ao ligar: as janelas abertas (o programa, o que ele mostrava e o lugar), guardadas pela área de trabalho.
+  reabrir: { ligado: true, janelas: [] },
   foco: { minutos: 25, pausa: 5 },
   // O Claude do Prompt ajusta o Retro Computer pelo servidor MCP (mcp.js).
   claude: { ajustes: true },

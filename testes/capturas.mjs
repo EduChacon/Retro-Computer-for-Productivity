@@ -135,7 +135,7 @@ async function lancar(extra = {}) {
   app = await electron.launch({
     executablePath: empacotado || require('electron'),
     args: empacotado ? ['--no-sandbox'] : ['--no-sandbox', RAIZ],
-    env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: process.env.RETRO_BOOT ? '' : '1', ...extra },
+    env: { ...process.env, RETRO_IDIOMA: IDIOMA, RETRO_DADOS: dados, RETRO_DISCO: disco, RETRO_JANELA: '1', RETRO_RAPIDO: process.env.RETRO_BOOT ? '' : '1', RETRO_SEM_REABRIR: ROTEIRO === 'reabrir' ? '' : '1', ...extra },
   });
   pagina = await app.firstWindow();
   seletoresDoTema(pagina);
@@ -3922,6 +3922,33 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
 
   // As notas autoadesivas: a primeira pelo Iniciar (na frente das janelas), outra pelo +, a cor, o
   // arrastar, o Esc (de volta para trás), a nota mudada por fora (o .txt) e a exclusão (para a Lixeira).
+  // Reabrir ao ligar: três janelas (o Explorador numa pasta, o Bloco de notas com um arquivo e a
+  // Calculadora num lugar), Iniciar › Desligar e a abertura seguinte com as mesmas janelas.
+  async reabrir() {
+    await fecharTudo();
+    fs.writeFileSync(path.join(disco, DOCS, 'Lista.txt'), 'Comprar pão e café.');
+    await abrir('explorador', { pasta: DOCS });
+    await abrir('bloco', { arquivo: `${DOCS}/Lista.txt` });
+    await abrir('calculadora');
+    await pagina.waitForTimeout(1500);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.lista.find((x) => x.programa === 'calculadora'); j.ret.x = 640; j.ret.y = 300; j.aplicarRet(); });
+    const janelas = () => pagina.evaluate(() => window.__retro.janelas.lista.filter((j) => !j.fechada && !j.dialogo).map((j) => [j.programa, j.titulo, j.ret.x, j.ret.y, j.ret.w, j.ret.h]));
+    const antes = await janelas();
+    console.log('antes:', JSON.stringify(antes));
+    await foto('reabrir-antes');
+    await abrir('desligar');
+    await pagina.waitForSelector('.janela.dialogo button.padrao', { timeout: 5000 });
+    await pagina.click('.janela.dialogo button.padrao');
+    await abrirDeNovo();
+    await pagina.waitForSelector('#iniciar', { timeout: 30000 });
+    await pagina.waitForFunction((n) => window.__retro.janelas.lista.filter((j) => !j.fechada && !j.dialogo).length >= n, antes.length, { timeout: 20000 }).catch(() => { });
+    await pagina.waitForTimeout(1500);
+    const depois = await janelas();
+    console.log('depois:', JSON.stringify(depois));
+    console.log('iguais?', JSON.stringify(antes) === JSON.stringify(depois));
+    await foto('reabrir-depois');
+  },
+
   async notas() {
     await fecharTudo();
     await abrir('explorador', { pasta: DOCS });

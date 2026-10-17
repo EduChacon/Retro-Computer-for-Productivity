@@ -9,6 +9,7 @@ import { menuDeItens } from '../arquivos.js';
 import { tocar } from '../sons.js';
 import { tr } from '../idioma.js';
 import { variosPerfis } from '../perfis.js';
+import { prepararParaSair, desistirDeSair } from '../reabrir.js';
 
 /* ---------- Executar ---------- */
 
@@ -183,7 +184,9 @@ async function abrirDesligar(args = {}) {
     escuro.remove();
     if (escolha === 'janela') return retro.sistema.telaCheia(false);
     if (escolha === 'suspender') return suspender();
-    if (!(await fecharTudo())) return;
+    // As janelas abertas voltam na próxima vez (reabrir.js): guardadas antes de cada uma fechar.
+    await prepararParaSair();
+    if (!(await fecharTudo())) { desistirDeSair(); return; }
     if (escolha === 'logoff') return sairDoUsuario();
     if (sistema) return energia(escolha);
     if (escolha === 'reiniciar') return reiniciar();
@@ -208,7 +211,8 @@ async function fecharTudo() {
 async function fazerLogoff() {
   if (document.querySelector('.escurecer')) return;
   if (!(await confirmar(tr('Deseja realmente fazer logoff?'), { titulo: tr('Fazer logoff') }))) return;
-  if (!(await fecharTudo())) return;
+  await prepararParaSair();
+  if (!(await fecharTudo())) { desistirDeSair(); return; }
   sairDoUsuario();
 }
 

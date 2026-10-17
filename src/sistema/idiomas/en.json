@@ -1206,6 +1206,7 @@
   "Nos tamanhos inteiros (1, 2, 3 e 4), cada pixel da interface usa um número inteiro de pixels da tela, e as letras e os ícones ficam mais nítidos; os do meio dão um tamanho entre eles.": "With whole sizes (1, 2, 3 and 4), each pixel of the interface uses a whole number of screen pixels, and the letters and icons are sharper; the ones in between give a size between them.",
   "Inicialização": "Startup",
   "Pular a tela de abertura": "Skip the startup screen",
+  "Reabrir as janelas que estavam abertas": "Reopen the windows that were open",
   "Começa às": "Starts at",
   "Termina às": "Ends at",
   "Intensidade da luz noturna": "Night light strength",

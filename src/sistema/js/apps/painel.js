@@ -395,6 +395,7 @@ function dialogoAparencia(args = {}) {
     }
   }).catch(() => { });
   const chkRapido = h('input', { type: 'checkbox', checked: !!c.inicioRapido });
+  const chkReabrir = h('input', { type: 'checkbox', checked: !c.reabrir || c.reabrir.ligado !== false });
   // A área da tela (a resolução), como no Windows 95: só no Retro Computer como sistema do Linux.
   const res = { saida: null, antes: null, modos: [], escolhido: null };
   const areaTela = h('div', { hidden: true, style: { marginTop: '8px' } });
@@ -468,6 +469,7 @@ function dialogoAparencia(args = {}) {
       h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Nos tamanhos inteiros (1, 2, 3 e 4), cada pixel da interface usa um número inteiro de pixels da tela, e as letras e os ícones ficam mais nítidos; os do meio dão um tamanho entre eles.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Inicialização')),
       h('label', chkRapido, h('span', tr('Pular a tela de abertura'))),
+      h('div', { style: { marginTop: '4px' } }, h('label', chkReabrir, h('span', tr('Reabrir as janelas que estavam abertas')))),
       inicioComComputador()),
   );
   // No modo sistema, o Retro Computer é a tela inteira.
@@ -536,7 +538,7 @@ function dialogoAparencia(args = {}) {
       aplicarProt();
       escala = selEscala.value;
       previaLuz = false;
-      await definirConfig({ papel, tema, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
+      await definirConfig({ papel, tema, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, reabrir: { ligado: chkReabrir.checked }, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
       await definirIconesSistema(caixasMesa.filter((x) => x.c.checked).map((x) => x.k));
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);

@@ -1237,6 +1237,8 @@ function registrarPonte() {
   // Configurações
   tratar('config:obter', () => ({
     ...semSegredos(config.obter()),
+    // Os roteiros de capturas abrem sempre do mesmo jeito (sem as janelas da última vez).
+    semReabrir: !!process.env.RETRO_SEM_REABRIR,
     plataforma: process.platform,
     modoSistema: MODO_SISTEMA,
     portatil: PORTATIL,

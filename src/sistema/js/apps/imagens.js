@@ -56,6 +56,8 @@ class Visualizador {
       menus: this.menus(),
       status: [{ texto: '', largura: 90, fixo: true }, { texto: '', largura: 140, fixo: true }, { texto: '', largura: 60, fixo: true }, ''],
     });
+    // Reabrir ao ligar: a imagem de agora.
+    this.j.reabrir = () => (this.rel ? { arquivo: this.rel } : {});
     this.bt = {};
     const bt = (id, icone, dica, acao) => (this.bt[id] = h('button.ferramenta', { title: dica, on: { click: acao } }, img(icone, 16)));
     const sep = () => h('span.sep');

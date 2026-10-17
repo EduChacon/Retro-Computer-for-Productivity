@@ -29,6 +29,8 @@ class Bloco {
       aoFechar: () => this.podeFechar(),
     });
     this.j.corpo.append(this.texto);
+    // Reabrir ao ligar: o arquivo aberto (sem um, o Bloco de notas vazio).
+    this.j.reabrir = () => (this.rel ? { arquivo: this.rel } : {});
     this.texto.addEventListener('input', () => this.marcarSujo(true));
     this.texto.addEventListener('keydown', (e) => this.teclas(e));
     // Ctrl+roda do mouse: o zoom do texto.
