@@ -30,6 +30,7 @@ const monitoresMod = require('./monitores');
 const sistemaLinux = require('./sistema-linux');
 const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
 const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
+const { Discos, DiscosFalsos } = require('./discos');
 const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
@@ -205,6 +206,7 @@ let energiaOpcoes = null; // as opções de energia do modo sistema (energia.js)
 let acessLinux = null; // as teclas de aderência e as do mouse do modo sistema (acessibilidade.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
 let pastasFora = null; // as pastas do computador principal no Meu computador (unidades.js)
+let discos = null; // os discos externos inteiros: formatar e gravar imagens (discos.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
@@ -1018,6 +1020,54 @@ function podarMiniaturas() {
   }, 30000).unref();
 }
 
+/* ---------- O espaço do disco C: e a limpeza (o programa Discos) ---------- */
+
+const pastaMiniaturas = () => path.join(app.getPath('userData'), 'miniaturas');
+
+/** O tamanho dos arquivos de uma pasta (sem seguir os links). */
+async function tamanhoPasta(pasta) {
+  let total = 0;
+  const pilha = [pasta];
+  while (pilha.length) {
+    const atual = pilha.pop();
+    let itens = [];
+    try { itens = await fsp.readdir(atual, { withFileTypes: true }); } catch { continue; }
+    for (const d of itens) {
+      const c = path.join(atual, d.name);
+      if (d.isDirectory()) pilha.push(c);
+      else { try { total += (await fsp.lstat(c)).size; } catch { } }
+    }
+  }
+  return total;
+}
+
+/** O cache do Navegador e o da área de trabalho: as páginas guardadas para abrir mais rápido. */
+const sessoesCache = () => [session.fromPartition(SESSAO_NAVEGADOR), session.defaultSession];
+
+async function usoDoDisco() {
+  let cache = 0;
+  for (const s of sessoesCache()) { try { cache += await s.getCacheSize(); } catch { } }
+  return { ...(await disco.uso()), espaco: await disco.espaco(), cache, miniaturas: await tamanhoPasta(pastaMiniaturas()) };
+}
+
+/**
+ * Apaga o que o usuário marcou na limpeza: a Lixeira, as versões anteriores com mais de 30 dias, o
+ * cache do Navegador e as miniaturas do Explorador (que voltam a ser feitas quando precisar).
+ */
+async function limparDisco(itens) {
+  const antes = await usoDoDisco();
+  if (itens.includes('lixeira')) await disco.esvaziarLixeira();
+  if (itens.includes('versoes')) await disco.apagarVersoesAntigas(30);
+  if (itens.includes('cache')) for (const s of sessoesCache()) { try { await s.clearCache(); } catch { } }
+  if (itens.includes('miniaturas')) {
+    const pasta = pastaMiniaturas();
+    for (const n of await fsp.readdir(pasta).catch(() => [])) await fsp.rm(path.join(pasta, n), { recursive: true, force: true }).catch(() => { });
+  }
+  const depois = await usoDoDisco();
+  const soma = (u) => u.lixeira + u.antigas + u.cache + u.miniaturas;
+  return { liberado: Math.max(0, soma(antes) - soma(depois)), uso: depois };
+}
+
 /**
  * Avisa a área de trabalho quando um pendrive chega ou sai (e, no modo sistema, monta o que
  * chega). No Windows, a consulta é mais cara (o PowerShell): mais espaçada.
@@ -1026,7 +1076,8 @@ function vigiarUnidades() {
   let antes = null;
   const olhar = async () => {
     try {
-      if (MODO_SISTEMA) await unidades.montarNovas();
+      // Gravando uma imagem, as partições que aparecem no pendrive não são montadas no meio.
+      if (MODO_SISTEMA && !(discos && discos.ocupado)) await unidades.montarNovas();
       const lista = await unidades.listar();
       const assinatura = lista.map((u) => u.id + (u.montada ? '+' : '-')).sort().join('|');
       if (antes !== null && assinatura !== antes) enviar('unidades:mudou', lista);
@@ -1221,17 +1272,32 @@ function registrarPonte() {
   tratar('unidades:trazer', (id, rels, destino) => unidadeDe(id).trazer(String(id), (rels || []).map(String), String(destino || '')));
   tratar('unidades:levar', (id, rels, destino) => unidadeDe(id).levar(String(id), (rels || []).map(String), String(destino || '')));
   registrarComputador();
-  // Formatar o pendrive (Linux, com a senha de administrador). Nunca o que guarda o disco C: (o modo
-  // portátil) nem o que está em uso pelo sistema.
-  tratar('unidades:formatar', async (id, opcoes, senha) => {
-    const u = await unidades.unidade(String(id));
-    if (u.raiz && (u.raiz === '/' || disco.raiz === u.raiz || disco.raiz.startsWith(u.raiz + path.sep))) return { ok: false, emUso: true };
-    return unidades.formatar(String(id), opcoes || {}, String(senha || ''), sistemaLinux.comoAdmin);
+  // Formatar o pendrive (no Linux, com a senha de administrador; no Windows e no Mac, com a
+  // confirmação do próprio sistema) e gravar uma imagem nele, pelo programa Discos. Nunca o disco
+  // que guarda o disco C:, os dados ou o próprio programa (o modo portátil), nem o do sistema.
+  const opcoesFormatar = (o) => ({ sistema: String((o && o.sistema) || 'exfat'), rotulo: String((o && o.rotulo) || ''), inteiro: !!(o && o.inteiro) });
+  const alvoDisco = (a) => (a && a.disco ? { disco: String(a.disco) } : { volume: String((a && a.volume) || '') });
+  tratar('unidades:formatar', (id, opcoes, senha) => {
+    if (String(id).startsWith('pc:')) return { ok: false, naoExterno: true };
+    return discos.formatar({ volume: String(id) }, opcoesFormatar(opcoes), String(senha || ''));
   });
-  tratar('unidades:formatarNoSistema', () => {
-    if (process.platform === 'darwin') return shell.openPath('/System/Applications/Utilities/Disk Utility.app').then(() => true);
-    if (process.platform === 'win32') { spawn('explorer.exe', ['shell:MyComputerFolder'], { detached: true, stdio: 'ignore' }).unref(); return true; }
-    return false;
+  tratar('discos:listar', async () => ({ discos: await discos.listar(), erro: discos.erro }));
+  tratar('discos:formatar', (alvo, opcoes, senha) => discos.formatar(alvoDisco(alvo), opcoesFormatar(opcoes), String(senha || '')));
+  tratar('discos:gravar', (id, rel, senha) => discos.gravar(String(id), disco.real(String(rel || '')), String(senha || ''), (a) => enviar('discos:andamento', a)));
+  tratar('discos:parar', () => discos.parar());
+  // O que ocupa o disco C: e a limpeza (só o que o usuário marcou, depois da confirmação na tela).
+  tratar('discos:uso', () => usoDoDisco());
+  tratar('discos:limpar', (itens) => limparDisco((Array.isArray(itens) ? itens : []).map(String)));
+  // A ferramenta de discos do próprio sistema (o Gerenciamento de disco do Windows, o Utilitário de
+  // Disco do Mac, o Discos do GNOME), para o que o programa Discos não faz (partições, RAID…).
+  tratar('unidades:formatarNoSistema', async () => {
+    if (process.platform === 'darwin') return (await shell.openPath('/System/Applications/Utilities/Disk Utility.app')) === '';
+    if (process.platform === 'win32') return (await shell.openPath(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'diskmgmt.msc'))) === '';
+    return new Promise((resolve) => {
+      const p = spawn('gnome-disks', [], { detached: true, stdio: 'ignore' });
+      p.on('error', () => resolve(false));
+      p.on('spawn', () => { p.unref(); resolve(true); });
+    });
   });
   // Os programas do Windows no Linux, pelo WINE (o do sistema ou o do Flathub).
   // Os programas do Windows, como os outros, são de todos os perfis.
@@ -2165,6 +2231,10 @@ app.whenReady().then(async () => {
   unidades = process.env.RETRO_UNIDADES_FALSAS
     ? new UnidadesFalsas({ disco: () => disco }, process.env.RETRO_UNIDADES_FALSAS)
     : new Unidades({ disco: () => disco, sistema: MODO_SISTEMA });
+  // Os discos inteiros: os mesmos de mentira, ou os de verdade, sem o que não pode ser apagado.
+  discos = process.env.RETRO_UNIDADES_FALSAS
+    ? new DiscosFalsos({ comoAdmin: sistemaLinux.comoAdmin }, process.env.RETRO_UNIDADES_FALSAS)
+    : new Discos({ comoAdmin: sistemaLinux.comoAdmin, protegidos: () => [disco && disco.raiz, app.getPath('userData'), BASE_DADOS, path.dirname(process.execPath), app.getAppPath()] });
   // As pastas do computador principal (RETRO_COMPUTADOR_FALSO: uma pasta com desktop, documents… dentro).
   const casaFalsa = process.env.RETRO_COMPUTADOR_FALSO;
   pastasFora = new PastasDoComputador({ caminho: (n) => (casaFalsa ? path.join(casaFalsa, n) : app.getPath(n)), disco: () => disco });

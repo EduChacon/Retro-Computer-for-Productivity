@@ -434,7 +434,92 @@ class Disco {
     try { await fsp.rename(a, b); } catch { }
   }
 
+  /**
+   * As versões anteriores guardadas há mais de "dias" dias (pela data do nome, que é a da versão;
+   * sem ela, pela do arquivo).
+   */
+  async versoesAntigas(dias = 30) {
+    const limite = Date.now() - dias * 86400000;
+    const r = [];
+    const pilha = [path.join(this.raiz, VERSOES)];
+    while (pilha.length) {
+      const atual = pilha.pop();
+      let itens = [];
+      try { itens = await fsp.readdir(atual, { withFileTypes: true }); } catch { continue; }
+      for (const d of itens) {
+        const c = path.join(atual, d.name);
+        if (d.isDirectory()) { pilha.push(c); continue; }
+        if (!d.isFile()) continue;
+        try {
+          const st = await fsp.lstat(c);
+          const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z/.exec(d.name);
+          const quando = m ? Date.parse(`${m[1]}T${m[2]}:${m[3]}:${m[4]}.${m[5]}Z`) : st.mtimeMs;
+          if (quando < limite) r.push({ arquivo: c, tamanho: st.size });
+        } catch { }
+      }
+    }
+    return r;
+  }
+
+  /** Apaga as versões anteriores com mais de "dias" dias (só a pedido do usuário, na limpeza do disco). */
+  async apagarVersoesAntigas(dias = 30) {
+    let liberado = 0;
+    const lista = await this.versoesAntigas(dias);
+    for (const v of lista) {
+      await fsp.rm(v.arquivo, { force: true });
+      liberado += v.tamanho;
+    }
+    // As pastas que ficaram vazias saem também (das mais fundas para cima).
+    const vazias = async (p) => {
+      let itens = [];
+      try { itens = await fsp.readdir(p, { withFileTypes: true }); } catch { return; }
+      for (const d of itens) if (d.isDirectory()) await vazias(path.join(p, d.name));
+      if (p !== path.join(this.raiz, VERSOES)) await fsp.rmdir(p).catch(() => { });
+    };
+    await vazias(path.join(this.raiz, VERSOES));
+    return { n: lista.length, liberado };
+  }
+
   /* ---------- Diversos ---------- */
+
+  /**
+   * O que ocupa o disco C: (o programa Discos): cada pasta de cima, os arquivos soltos na raiz, a
+   * Lixeira e as versões anteriores (as de mais de "dias" dias à parte, as que a limpeza apaga).
+   */
+  async uso({ dias = 30, max = 500000 } = {}) {
+    let vistos = 0;
+    const medir = async (p) => {
+      let total = 0;
+      const pilha = [p];
+      while (pilha.length && vistos < max) {
+        const atual = pilha.pop();
+        let itens = [];
+        try { itens = await fsp.readdir(atual, { withFileTypes: true }); } catch { continue; }
+        vistos += itens.length;
+        const tamanhos = await Promise.all(itens.map(async (d) => {
+          const c = path.join(atual, d.name);
+          if (d.isDirectory()) { pilha.push(c); return 0; }
+          try { return (await fsp.lstat(c)).size; } catch { return 0; }
+        }));
+        for (const t of tamanhos) total += t;
+      }
+      return total;
+    };
+    const pastas = [];
+    let soltos = 0;
+    for (const d of await fsp.readdir(this.raiz, { withFileTypes: true }).catch(() => [])) {
+      if (d.name === LIXEIRA || d.name === VERSOES) continue;
+      const c = path.join(this.raiz, d.name);
+      if (d.isDirectory()) pastas.push({ nome: d.name, tamanho: await medir(c), oculta: d.name.startsWith('.') });
+      else { try { soltos += (await fsp.lstat(c)).size; } catch { } }
+    }
+    pastas.sort((a, b) => b.tamanho - a.tamanho);
+    const lixeira = await medir(path.join(this.raiz, LIXEIRA));
+    const versoes = await medir(path.join(this.raiz, VERSOES));
+    const velhas = await this.versoesAntigas(dias);
+    const total = pastas.reduce((s, p) => s + p.tamanho, 0) + soltos + lixeira + versoes;
+    return { total, pastas, soltos, lixeira, versoes, antigas: velhas.reduce((s, v) => s + v.tamanho, 0), nAntigas: velhas.length, incompleto: vistos >= max };
+  }
 
   async espaco() {
     try {

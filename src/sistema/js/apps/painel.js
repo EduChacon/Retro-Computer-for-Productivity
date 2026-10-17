@@ -1298,6 +1298,9 @@ async function dialogoDisco() {
     h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, img(lixo.length ? 'lixeira-cheia' : 'lixeira', 32),
       h('div', { style: { flex: '1' } }, tr('A Lixeira tem {n} item(ns). Os itens só são apagados de verdade quando você a esvazia.', { n: lixo.length })),
       h('button', { disabled: !lixo.length, on: { click: () => esvaziarLixeira() } }, tr('Esvaziar'))),
+    // O que ocupa o disco e a limpeza ficam no programa Discos.
+    h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '8px' } },
+      h('button', { on: { click: () => abrir('discos', { aba: 1 }) } }, tr('Limpeza de disco…'))),
   );
   async function trocar() {
     const ok = await confirmar(tr('O Retro Computer vai passar a usar outra pasta como disco C:.\n\nOs arquivos da pasta atual continuam onde estão; nada é apagado.\n\nDeseja escolher a nova pasta?'), { titulo: tr('Trocar a pasta do disco') });

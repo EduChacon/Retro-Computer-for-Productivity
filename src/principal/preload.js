@@ -315,6 +315,16 @@ contextBridge.exposeInMainWorld('retro', {
     formatarNoSistema: () => chamar('unidades:formatarNoSistema'),
     aoMudar: ouvir('unidades:mudou'),
   },
+  // Os discos externos inteiros (o programa Discos): formatar, gravar uma imagem e o espaço do C:.
+  discos: {
+    listar: () => chamar('discos:listar'),
+    formatar: (alvo, opcoes, senha) => chamar('discos:formatar', alvo, opcoes, senha),
+    gravar: (id, rel, senha) => chamar('discos:gravar', id, rel, senha),
+    parar: () => chamar('discos:parar'),
+    uso: () => chamar('discos:uso'),
+    limpar: (itens) => chamar('discos:limpar', itens),
+    aoAndar: ouvir('discos:andamento'),
+  },
   // Os programas do Windows no Linux, pelo WINE.
   // O Claude ajusta o Retro Computer (o servidor MCP): os pedidos que a área de trabalho resolve.
   mcp: {

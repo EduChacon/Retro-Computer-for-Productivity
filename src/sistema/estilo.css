@@ -1490,6 +1490,24 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .janela.reprodutor.rep-cheia.rep-mostrar .rep-controles { transform: none; }
 .janela.reprodutor.rep-cheia:not(.rep-mostrar) .rep-tela { cursor: none; }
 
+/* O programa Discos. */
+.janela.discos .mon-painel { flex: 1 1 auto; min-height: 0; }
+.dsc-lista { flex: 1 1 auto; min-height: 90px; display: flex; flex-direction: column; }
+.dsc-vazio { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-align: center; line-height: 13px; background: #fff; box-shadow: var(--campo); }
+.dsc-vazio[hidden], .mon-tabela[hidden] { display: none; }
+.dsc-gravacao { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.dsc-gravacao[hidden] { display: none; }
+.dsc-pizza { flex: none; width: 112px; height: 56px; margin: 6px 4px 10px; border-radius: 50%; box-shadow: 0 6px 0 #555; transform: scaleY(0.85); }
+.dsc-legenda { display: grid; grid-template-columns: 14px auto auto; gap: 3px 6px; align-items: center; }
+.dsc-legenda > :nth-child(3n) { text-align: right; }
+.dsc-ocupa { flex: none; height: auto; padding: 2px; max-height: 112px; overflow: auto; }
+.dsc-ocupa-linha { display: flex; align-items: center; gap: 4px; height: 18px; padding: 0 2px; }
+.dsc-ocupa-nome { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsc-ocupa-barra { flex: none; width: 90px; height: 9px; box-shadow: var(--raso); padding: 1px; background: var(--face); }
+.dsc-ocupa-barra > div { height: 100%; background: #0000ff; }
+.dsc-ocupa-tam { flex: none; width: 70px; text-align: right; }
+.dsc-limpeza-linha { display: flex; align-items: center; gap: 6px; height: 19px; }
+
 /* A Captura de tela. */
 .cap-area { flex: 1 1 auto; min-height: 0; display: flex; overflow: auto; padding: 6px; background: #808080; box-shadow: var(--campo); }
 .cap-previa { display: none; flex: none; margin: auto; max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); }

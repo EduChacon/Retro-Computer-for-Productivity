@@ -321,6 +321,15 @@ PENDRIVE_16 = [
     "................",
 ]
 
+# O pendrive pequeno, na frente do disco rígido do ícone dos Discos (16 pontos).
+PENDRIVE_MINI = [
+    "....KKKKKK",
+    "KKKKccccbK",
+    "KWLKcbbbBK",
+    "KKKKbBBBBK",
+    "....KKKKKK",
+]
+
 
 # 1.0: a bandeja. O sino das notificações e o cadeado (das redes protegidas e da tela de bloqueio).
 SINO_16 = [
@@ -1414,6 +1423,9 @@ def gerar(serenity):
     # A cópia de segurança: o disco rígido com as setas verdes da atualização (SerenityOS).
     feitos[32]['copia'] = colar(abrir_serenity(serenity, 32, 'hard-disk'), abrir_serenity(serenity, 16, 'reload'), 16, 16)
     feitos[16]['copia'] = colar(abrir_serenity(serenity, 16, 'hard-disk'), abrir_serenity(serenity, 16, 'reload').resize((9, 9), Image.NEAREST), 7, 7)
+    # O programa Discos: o disco rígido com o pendrive na frente.
+    feitos[32]['discos'] = colar(abrir_serenity(serenity, 32, 'hard-disk'), grade(PENDRIVE_16), 16, 17)
+    feitos[16]['discos'] = colar(abrir_serenity(serenity, 16, 'hard-disk'), grade(PENDRIVE_MINI), 6, 10)
     # A Central de segurança: o escudo com o cadeado da bandeja (desenhos próprios).
     feitos[32]['seguranca'] = colar(grade(escudo(32)), grade(CADEADO_16), 8, 7)
     feitos[16]['seguranca'] = grade(escudo(16))

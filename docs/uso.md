@@ -88,7 +88,15 @@ Como o disco C: é uma pasta comum, ele também pode ficar dentro de uma pasta s
 - Dois cliques num arquivo do pendrive o copiam para `Meus documentos/Recebidos` e o abrem de lá; o original fica intacto. Para trazer vários: botão direito › "Copiar para Meus documentos" ou "Copiar para a Área de trabalho".
 - Para levar: botão direito num arquivo do disco C: › Enviar para › o pendrive (ou Copiar e Colar). Nada é apagado nem gravado por cima no pendrive.
 - Antes de tirar: botão direito no pendrive › "Remover com segurança".
-- **Formatar** (botão direito no pendrive, no Linux): exFAT (lido pelo Windows, pelo Mac e pelo Linux) ou FAT32 (os aparelhos antigos), com o rótulo; pede a confirmação e a senha de administrador. Um pendrive que guarda o disco C: (o modo portátil) ou o próprio sistema não é formatado. No Windows e no Mac, a caixa leva ao Explorador de Arquivos ou ao Utilitário de Disco.
+- **Formatar** (botão direito no pendrive): exFAT (lido pelo Windows, pelo Mac e pelo Linux), FAT32 (os aparelhos antigos) ou, no Windows, NTFS, com o rótulo; "Usar o pendrive inteiro" apaga todas as partições e cria uma só. Pede a confirmação e, no Linux, a senha de administrador; no Windows e no Mac, o próprio sistema confirma. Um pendrive que guarda o disco C: (o modo portátil) ou o próprio sistema não é formatado.
+
+### Discos
+
+Iniciar › Programas › Acessórios › Discos (ou Painel de controle › Disco › Limpeza de disco…).
+
+- **Pendrives e cartões**: os pendrives, os cartões e os HDs ligados pela USB, inteiros, com as partições (também as sem letra, como as de um pendrive com o Linux gravado). Formatar, remover com segurança e **Gravar imagem…**: uma `.iso` ou `.img` do disco C: (como a do Linux Mint) vai para o pendrive inteiro e é conferida pedaço a pedaço, com o andamento e o tempo que falta; Parar interrompe. Depois de gravado, o pendrive liga outro computador.
+- **Espaço em disco**: quanto o disco C: ocupa, as pastas que mais ocupam e o espaço livre do computador. A **Limpeza de disco** apaga de vez, depois da confirmação, só o que for marcado: a Lixeira, as versões anteriores com mais de 30 dias, os arquivos temporários da Internet e as miniaturas do Explorador.
+- Arquivo › Ferramenta de discos do sistema abre a do próprio sistema (o Gerenciamento de disco do Windows, o Utilitário de Disco do Mac, o Discos do GNOME), para o que o programa não faz.
 
 ### O Explorador e as pastas compactadas
 

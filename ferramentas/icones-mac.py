@@ -1247,6 +1247,25 @@ def removivel(t):
     return s
 
 
+def discos(t):
+    """O programa Discos: o disco rígido com o disquete (o disco removível) na frente, embaixo à direita."""
+    s = disco(t)
+    if t == 32:
+        s.colar(removivel(16), 16, 16)
+    else:
+        s.grade(8, 8, [
+            'KKKKKKK.',
+            'KAcccAKK',
+            'KAcAcAAK',
+            'KAcccAAK',
+            'KAAAAAAK',
+            'KAWWWWAK',
+            'KAWWWWAK',
+            'KKKKKKKK',
+        ], {'K': K, 'A': C7, 'c': C3, 'W': BR})
+    return s
+
+
 def caixa_programas(t):
     """A Loja de programas: a caixa de papelão aberta, de três quartos, com as abas para fora e o
     disquete cinza saindo dela (como os instaladores da época), e a etiqueta na frente. A frente é
@@ -1351,6 +1370,7 @@ ICONES = {
     'computador': computador,
     'disco': disco,
     'removivel': removivel,
+    'discos': discos,
     'lixeira': lixeira,
     'lixeira-cheia': lambda t: lixeira(t, cheia=True),
     'arquivo': lambda t: doc(t),

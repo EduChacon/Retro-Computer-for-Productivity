@@ -131,7 +131,7 @@ const TOPICOS = [
 <p>Botão direito num arquivo do disco C: › <b>Enviar para</b> › o pendrive. Copiar e Colar também funcionam. Nada é apagado nem gravado por cima no pendrive.</p>
 <h2>Retirar</h2>
 <p>Antes de tirar o pendrive, use o botão direito nele › <b>Remover com segurança</b> e espere o aviso.</p>
-<p><b>Formatar</b> (botão direito no pendrive, no Linux): apaga tudo o que há nele e o prepara em exFAT (o Windows, o Mac e o Linux leem) ou FAT32 (os aparelhos antigos). Pede a confirmação e a senha de administrador; no Windows e no Mac, a caixa mostra o caminho do próprio sistema.</p>`],
+<p><b>Formatar</b> (botão direito no pendrive): apaga tudo o que há nele e o prepara em exFAT (o Windows, o Mac e o Linux leem) ou FAT32 (os aparelhos antigos). Pede a confirmação e, no Linux, a senha de administrador; no Windows e no Mac, o próprio sistema confirma. O programa <b>Discos</b> faz o mesmo e também grava imagens (veja o tópico Discos).</p>`],
     en: ['USB drives and cards', `
 <h2>Where they show up</h2>
 <p>USB drives, memory cards and external disks show up in <b>Computer</b>, with their free space. With Retro Computer as the Linux system, they are mounted automatically when plugged in, with a notice.</p>
@@ -141,7 +141,7 @@ const TOPICOS = [
 <p>Right-click a file on drive C: › <b>Send to</b> › the USB drive. Copy and Paste also work. Nothing on the USB drive is deleted or overwritten.</p>
 <h2>Removing</h2>
 <p>Before unplugging the USB drive, right-click it › <b>Safely remove</b> and wait for the notice.</p>
-<p><b>Format</b> (right-click the USB drive, on Linux): deletes everything on it and prepares it as exFAT (Windows, Mac and Linux read it) or FAT32 (old devices). It asks for confirmation and the administrator password; on Windows and Mac, the box shows the system's own way.</p>`],
+<p><b>Format</b> (right-click the USB drive): deletes everything on it and prepares it as exFAT (Windows, Mac and Linux read it) or FAT32 (old devices). It asks for confirmation and, on Linux, the administrator password; on Windows and Mac, the system itself confirms. The <b>Disks</b> program does the same and also writes images (see the Disks topic).</p>`],
     es: ['Memorias USB y tarjetas', `
 <h2>Dónde aparecen</h2>
 <p>Las memorias USB, las tarjetas de memoria y los discos externos aparecen en <b>Mi computadora</b>, con el espacio libre. Con Retro Computer como sistema de Linux, se montan solos al conectarlos, con un aviso.</p>
@@ -151,7 +151,40 @@ const TOPICOS = [
 <p>Clic derecho en un archivo del disco C: › <b>Enviar a</b> › la memoria. Copiar y Pegar también funcionan. Nada de la memoria se borra ni se sobrescribe.</p>
 <h2>Retirar</h2>
 <p>Antes de sacar la memoria, usa el clic derecho en ella › <b>Quitar de forma segura</b> y espera el aviso.</p>
-<p><b>Formatear</b> (clic derecho en la memoria, en Linux): borra todo lo que hay en ella y la prepara en exFAT (la leen Windows, Mac y Linux) o FAT32 (los aparatos antiguos). Pide la confirmación y la contraseña de administrador; en Windows y en Mac, la ventana muestra el camino del propio sistema.</p>`],
+<p><b>Formatear</b> (clic derecho en la memoria): borra todo lo que hay en ella y la prepara en exFAT (la leen Windows, Mac y Linux) o FAT32 (los aparatos antiguos). Pide la confirmación y, en Linux, la contraseña de administrador; en Windows y en Mac, el propio sistema confirma. El programa <b>Discos</b> hace lo mismo y también graba imágenes (mira el tema Discos).</p>`],
+  },
+  {
+    id: 'discos', icone: 'discos',
+    'pt-BR': ['Discos', `
+<h2>O programa Discos</h2>
+<p>Em <b>Iniciar › Programas › Acessórios › Discos</b>. Na aba <b>Pendrives e cartões</b> aparecem os pendrives, os cartões de memória e os HDs ligados pela USB, inteiros, com as partições embaixo de cada um (também a que não tem letra nem nome, como a de um pendrive com o Linux gravado). O disco do sistema e o que guarda o disco C: ou o próprio Retro Computer (o modo portátil) aparecem apagados e não podem ser apagados.</p>
+<h2>Formatar</h2>
+<p>Escolha o pendrive (ou uma partição dele) e clique em <b>Formatar…</b>: o exFAT é lido pelo Windows, pelo Mac e pelo Linux; o FAT32 serve aos aparelhos antigos (com arquivos de até 4 GB); no Windows, há também o NTFS. <b>Usar o pendrive inteiro</b> apaga todas as partições e cria uma só: é assim que um pendrive que recebeu uma imagem volta ao normal. No Linux, a senha de administrador é pedida; no Windows, aparece o aviso do próprio Windows; no Mac, a senha do Mac, se ele pedir.</p>
+<h2>Gravar uma imagem</h2>
+<p><b>Gravar imagem…</b> grava uma imagem .iso ou .img (como a do Linux Mint, para instalar o Linux num notebook) no pendrive inteiro, e depois confere a cópia, pedaço a pedaço. Tudo o que havia no pendrive é apagado. A imagem precisa estar no disco C: (o Navegador guarda o que baixa em Meus documentos › Recebidos); a compactada (.zip, .xz) precisa ser extraída antes. A barra mostra o andamento e o tempo que falta; <b>Parar</b> interrompe (o pendrive fica sem nada legível até ser gravado de novo ou formatado). Pronto, o pendrive liga outro computador. No Windows, se ele perguntar se quer formatar o pendrive, clique em <b>Cancelar</b>: ele não lê o formato da imagem, e isso é normal.</p>
+<h2>Espaço em disco</h2>
+<p>A aba <b>Espaço em disco</b> mostra quanto o disco C: ocupa, as pastas que mais ocupam e o espaço livre. A <b>Limpeza de disco</b> apaga de vez, depois da confirmação, só o que você marcar: a Lixeira, as versões anteriores com mais de 30 dias, os arquivos temporários da Internet (o cache do Navegador) e as miniaturas do Explorador (que voltam a ser feitas quando precisar). Os seus arquivos não são tocados.</p>
+<p>Para o que o programa não faz (mexer nas partições à mão, por exemplo), <b>Arquivo › Ferramenta de discos do sistema</b> abre a do próprio sistema.</p>`],
+    en: ['Disks', `
+<h2>The Disks program</h2>
+<p>In <b>Start › Programs › Accessories › Disks</b>. The <b>USB drives and cards</b> tab shows the USB drives, memory cards and hard disks connected by USB, whole, with the partitions under each one (also the one with no letter or name, like on a USB drive with Linux written to it). The system disk and the one that holds drive C: or Retro Computer itself (portable mode) appear grayed out and cannot be erased.</p>
+<h2>Formatting</h2>
+<p>Choose the USB drive (or a partition of it) and click <b>Format…</b>: exFAT is read by Windows, Mac and Linux; FAT32 suits old devices (with files of up to 4 GB); on Windows, there is also NTFS. <b>Use the whole USB drive</b> deletes all the partitions and creates a single one: that is how a USB drive that received an image goes back to normal. On Linux, the administrator password is requested; on Windows, Windows's own prompt appears; on Mac, the Mac password, if it asks.</p>
+<h2>Writing an image</h2>
+<p><b>Write image…</b> writes an .iso or .img image (like Linux Mint's, to install Linux on a laptop) to the whole USB drive, and then verifies the copy, piece by piece. Everything that was on the USB drive is deleted. The image must be on drive C: (the Browser keeps what it downloads in Documents › Received); a compressed one (.zip, .xz) must be extracted first. The bar shows the progress and the time left; <b>Stop</b> interrupts it (the USB drive is left with nothing readable until it is written again or formatted). When it is done, the USB drive starts another computer. On Windows, if it asks whether you want to format the USB drive, click <b>Cancel</b>: it cannot read the image's format, and that is normal.</p>
+<h2>Disk space</h2>
+<p>The <b>Disk space</b> tab shows how much drive C: takes up, the folders that take up the most and the free space. <b>Disk Cleanup</b> permanently deletes, after confirmation, only what you check: the Trash, previous versions older than 30 days, temporary Internet files (the Browser cache) and the Explorer thumbnails (which are made again when needed). Your files are not touched.</p>
+<p>For what the program does not do (editing partitions by hand, for example), <b>File › System disk tool</b> opens the system's own.</p>`],
+    es: ['Discos', `
+<h2>El programa Discos</h2>
+<p>En <b>Inicio › Programas › Accesorios › Discos</b>. La pestaña <b>Memorias USB y tarjetas</b> muestra las memorias USB, las tarjetas de memoria y los discos duros conectados por USB, enteros, con las particiones debajo de cada uno (también la que no tiene letra ni nombre, como la de una memoria con Linux grabado). El disco del sistema y el que guarda el disco C: o el propio Retro Computer (el modo portátil) aparecen atenuados y no se pueden borrar.</p>
+<h2>Formatear</h2>
+<p>Elige la memoria (o una partición de ella) y haz clic en <b>Formatear…</b>: exFAT lo leen Windows, Mac y Linux; FAT32 sirve para los aparatos antiguos (con archivos de hasta 4 GB); en Windows, también está NTFS. <b>Usar la memoria entera</b> borra todas las particiones y crea una sola: así una memoria que recibió una imagen vuelve a la normalidad. En Linux, se pide la contraseña de administrador; en Windows, aparece el aviso del propio Windows; en Mac, la contraseña del Mac, si la pide.</p>
+<h2>Grabar una imagen</h2>
+<p><b>Grabar imagen…</b> graba una imagen .iso o .img (como la de Linux Mint, para instalar Linux en una laptop) en la memoria entera, y después comprueba la copia, pedazo a pedazo. Todo lo que había en la memoria se borra. La imagen tiene que estar en el disco C: (el Navegador guarda lo que descarga en Mis documentos › Recibidos); la comprimida (.zip, .xz) hay que extraerla antes. La barra muestra el avance y el tiempo que falta; <b>Detener</b> la interrumpe (la memoria queda sin nada legible hasta que se grabe de nuevo o se formatee). Lista, la memoria arranca otra computadora. En Windows, si pregunta si quieres formatear la memoria, haz clic en <b>Cancelar</b>: no lee el formato de la imagen, y eso es normal.</p>
+<h2>Espacio en disco</h2>
+<p>La pestaña <b>Espacio en disco</b> muestra cuánto ocupa el disco C:, las carpetas que más ocupan y el espacio libre. La <b>Limpieza de disco</b> borra para siempre, después de la confirmación, solo lo que marques: la Papelera, las versiones anteriores de más de 30 días, los archivos temporales de Internet (la caché del Navegador) y las miniaturas del Explorador (que se vuelven a hacer cuando hace falta). Tus archivos no se tocan.</p>
+<p>Para lo que el programa no hace (modificar las particiones a mano, por ejemplo), <b>Archivo › Herramienta de discos del sistema</b> abre la del propio sistema.</p>`],
   },
   {
     id: 'barra', icone: 'relogio',

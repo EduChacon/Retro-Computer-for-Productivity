@@ -81,7 +81,7 @@ if (process.env.RETRO_BOOT) {
   fs.writeFileSync(arq, JSON.stringify({ ...atual, inicioRapido: false }));
 }
 // Roteiro "unidades": um "pendrive" que é uma pasta comum (RETRO_UNIDADES_FALSAS), com arquivos.
-if ((ROTEIRO === 'unidades' || ROTEIRO === 'antivirus') && !process.env.RETRO_UNIDADES_FALSAS) {
+if (['unidades', 'antivirus', 'discos'].includes(ROTEIRO) && !process.env.RETRO_UNIDADES_FALSAS) {
   const pen = path.join(tmp, 'pendrive');
   fs.mkdirSync(path.join(pen, 'Fotos'), { recursive: true });
   fs.mkdirSync(path.join(pen, 'System Volume Information'), { recursive: true });
@@ -2410,6 +2410,66 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.keyboard.press('Enter');
     await pagina.waitForTimeout(800);
     await foto('formatar-pronto');
+  },
+
+  // O programa Discos (com RETRO_UNIDADES_FALSAS: o pendrive de mentira e um segundo, com o Linux
+  // gravado; a senha de teste é "certa"): a lista, o botão direito, formatar o disco inteiro, gravar
+  // uma imagem com o andamento e o espaço do disco C: com a limpeza.
+  async discos() {
+    const receb = path.join(disco, DOCS, PASTAS[IDIOMA].recebidos);
+    fs.mkdirSync(receb, { recursive: true });
+    fs.writeFileSync(path.join(receb, 'linuxmint-22.3-xfce-64bit.iso'), Buffer.alloc(3 << 20, 7));
+    // Uma versão anterior de dois meses atrás, para a limpeza.
+    const pv = path.join(disco, '.versoes', DOCS, 'carta.txt');
+    fs.mkdirSync(pv, { recursive: true });
+    fs.writeFileSync(path.join(pv, new Date(Date.now() - 60 * 86400000).toISOString().replace(/[:.]/g, '-') + '.txt'), Buffer.alloc(420 << 10, 65));
+    await fecharTudo();
+    await abrir('discos');
+    await pagina.waitForTimeout(1200);
+    await foto('discos-lista');
+    await pagina.click('.janela.ativa .mon-linha:has-text("Kingston")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('discos-menu');
+    await pagina.keyboard.press('Escape');
+    // Formatar o disco inteiro (o pendrive com o Linux gravado, sem nada à vista).
+    await pagina.click(`.janela.ativa button:has-text("${T('Formatar…')}")`);
+    await pagina.waitForTimeout(600);
+    await foto('discos-formatar');
+    await pagina.click(`.janela.ativa button:has-text("${T('Fechar')}")`);
+    await pagina.waitForTimeout(300);
+    // Gravar a imagem no pendrive de mentira, com a senha de teste.
+    await pagina.click('.janela.ativa .mon-linha:has-text("SanDisk")');
+    await pagina.click(`.janela.ativa button:has-text("${T('Gravar imagem…')}")`);
+    await pagina.waitForTimeout(800);
+    await pagina.dblclick(`.janela.ativa .lista-arquivos .item:has-text("${PASTAS[IDIOMA].recebidos}")`);
+    await pagina.waitForTimeout(600);
+    await foto('discos-escolher');
+    await pagina.dblclick('.janela.ativa .lista-arquivos .item:has-text("linuxmint")');
+    await pagina.waitForTimeout(500);
+    await foto('discos-aviso');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1300);
+    await foto('discos-gravando');
+    await pagina.waitForSelector('.janela.ativa .msg-info, .janela.ativa img[src*="msg-info"]', { timeout: 20000 }).catch(() => { });
+    await pagina.waitForTimeout(600);
+    await foto('discos-gravada');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(400);
+    // O espaço do disco C: e a limpeza.
+    await pagina.click(`.janela.ativa .abas > div:has-text("${T('Espaço em disco')}")`);
+    await pagina.waitForTimeout(1500);
+    await foto('discos-espaco');
+    await pagina.click(`.janela.ativa button:has-text("${T('Limpar…')}")`);
+    await pagina.waitForTimeout(500);
+    await foto('discos-limpar');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1500);
+    await foto('discos-limpo');
+    console.log('versão antiga apagada?', !fs.existsSync(pv));
+    await pagina.keyboard.press('Enter');
   },
 
   // A acessibilidade (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e RETRO_ACESSIBILIDADE_FALSA=1):

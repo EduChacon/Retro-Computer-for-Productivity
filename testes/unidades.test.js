@@ -85,9 +85,8 @@ test('pastas do computador principal: só as que existem, sem a pasta do disco C
   await fora.levar('pc:mesa', ['Docs/carta.txt'], '');
   await fora.levar('pc:mesa', ['Docs/carta.txt'], '');
   assert.deepStrictEqual(fs.readdirSync(path.join(casa, 'desktop')).sort(), ['carta (2).txt', 'carta.txt']);
-  // Sem remover com segurança nem formatar; e nada sai da pasta.
+  // Sem remover com segurança; e nada sai da pasta.
   assert.strictEqual((await fora.ejetar('pc:mesa')).ok, false);
-  assert.strictEqual((await fora.formatar('pc:mesa')).ok, false);
   await assert.rejects(fora.listarPasta('pc:mesa', '../documents'));
   await assert.rejects(fora.listarPasta('pc:outra', ''));
   fs.rmSync(tmp, { recursive: true, force: true });

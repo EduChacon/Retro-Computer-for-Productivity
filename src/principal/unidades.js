@@ -4,11 +4,13 @@
  *
  *   Linux:   lsblk (as partições removíveis ou de USB), udisksctl para montar (sem senha,
  *            para a sessão aberta) e para remover com segurança;
- *   Windows: as unidades removíveis (Win32_LogicalDisk, DriveType 2), ejetadas pelo Explorer;
+ *   Windows: as unidades removíveis (Win32_LogicalDisk, DriveType 2) e as dos discos de USB,
+ *            ejetadas pelo Explorer;
  *   macOS:   os volumes em /Volumes (menos o do sistema), ejetados pelo diskutil.
  *
  * Nada aqui apaga nem grava por cima: os arquivos vêm para o disco C: (disco.importar) ou vão
  * para a unidade com um nome livre (disco.exportar). Um caminho nunca sai da raiz da unidade.
+ * Formatar fica em discos.js (com o disco inteiro e as imagens).
  */
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
@@ -53,15 +55,25 @@ function lerLsblk(json) {
 }
 
 /**
+ * O rótulo do volume que todos os sistemas aceitam: só letras sem acento, números, espaço, "-" e
+ * "_"; no FAT32, até 11 letras maiúsculas; no exFAT, até 15; no NTFS, até 32.
+ */
+function limparRotulo(rotulo, sistema) {
+  const limpo = String(rotulo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _-]/g, '').trim() || 'PENDRIVE';
+  if (sistema === 'fat32') return limpo.toUpperCase().slice(0, 11).trim();
+  if (sistema === 'exfat') return limpo.slice(0, 15).trim();
+  return limpo.slice(0, 32).trim();
+}
+
+/**
  * O comando que formata uma partição do pendrive (Linux): o exFAT (o padrão, lido pelo Windows,
  * pelo Mac e pelo Linux) ou o FAT32 (os aparelhos antigos, com arquivos de até 4 GB). Só os nomes
- * de dispositivo de disco passam; o rótulo fica só com letras, números, espaço, "-" e "_".
+ * de dispositivo de disco passam.
  */
 function comandoFormatar(dispositivo, sistema, rotulo) {
   if (!/^\/dev\/(sd[a-z]+\d*|mmcblk\d+(p\d+)?|nvme\d+n\d+(p\d+)?|vd[a-z]+\d*)$/.test(String(dispositivo))) return null;
-  const limpo = String(rotulo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _-]/g, '').trim();
-  if (sistema === 'fat32') return ['mkfs.vfat', ['-F', '32', '-n', (limpo || 'PENDRIVE').toUpperCase().slice(0, 11).trim(), dispositivo]];
-  if (sistema === 'exfat') return ['mkfs.exfat', ['-L', (limpo || 'PENDRIVE').slice(0, 15).trim(), dispositivo]];
+  if (sistema === 'fat32') return ['mkfs.vfat', ['-F', '32', '-n', limparRotulo(rotulo, sistema), dispositivo]];
+  if (sistema === 'exfat') return ['mkfs.exfat', ['-L', limparRotulo(rotulo, sistema), dispositivo]];
   return null;
 }
 
@@ -84,6 +96,19 @@ function dentro(raiz, rel = '') {
 // As pastas que os sistemas criam nas unidades e que ninguém precisa ver.
 const ESCONDIDAS = new Set(['system volume information', '$recycle.bin', 'recycler', '.trashes', '.spotlight-v100', '.fseventsd', '.trash-1000', 'lost+found']);
 const escondida = (nome) => nome.startsWith('.') || ESCONDIDAS.has(nome.toLowerCase());
+
+/*
+ * As unidades do Windows: as removíveis (DriveType 2) e as dos discos de USB, que o Windows às vezes
+ * vê como discos fixos (os HDs externos e alguns pendrives). A saída em UTF-8, para os acentos.
+ */
+const LISTAR_WINDOWS = `[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$usb = @{}
+foreach ($d in @(Get-CimInstance Win32_DiskDrive -Filter "InterfaceType='USB'")) {
+  foreach ($p in @(Get-CimAssociatedInstance -InputObject $d -ResultClassName Win32_DiskPartition)) {
+    foreach ($l in @(Get-CimAssociatedInstance -InputObject $p -ResultClassName Win32_LogicalDisk)) { $usb[[string]$l.DeviceID] = 1 }
+  }
+}
+@(Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 -or $usb.ContainsKey([string]$_.DeviceID) } | Select-Object DeviceID,VolumeName,Size) | ConvertTo-Json -Compress`;
 
 /* ---------- As unidades ---------- */
 
@@ -119,8 +144,7 @@ class Unidades {
   }
 
   async listarWindows() {
-    const s = await rodar('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-      '@(Get-CimInstance Win32_LogicalDisk -Filter "DriveType=2" | Select-Object DeviceID,VolumeName,Size) | ConvertTo-Json -Compress']);
+    const s = await rodar('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(LISTAR_WINDOWS, 'utf16le').toString('base64')], { timeout: 30000 });
     const d = JSON.parse(s.trim() || '[]');
     return (Array.isArray(d) ? d : [d]).filter((x) => x && x.DeviceID).map((x) => ({
       id: x.DeviceID, rotulo: x.VolumeName || '', letra: x.DeviceID, raiz: x.DeviceID + '\\', montada: true, tamanho: Number(x.Size) || 0,
@@ -178,28 +202,6 @@ class Unidades {
     }
     await this.listar();
     return { ok: true };
-  }
-
-  /**
-   * Formata o pendrive (Linux, com a senha de administrador): desmonta, formata a partição e
-   * monta de novo. Tudo o que havia nele é apagado: a tela pede a confirmação antes.
-   */
-  async formatar(id, { sistema = 'exfat', rotulo = '' } = {}, senha, comoAdmin) {
-    if (this.plataforma !== 'linux') return { ok: false, sistema: true };
-    const u = await this.unidade(id);
-    const cmd = comandoFormatar(u.id, sistema, rotulo);
-    if (!cmd) return { ok: false, erro: 'unidade' };
-    if (u.montada) {
-      try { await rodar('udisksctl', ['unmount', '-b', u.id, '--no-user-interaction'], { timeout: 60000 }); } catch (e) {
-        const ocupado = /busy|in use/i.test(String(e.saida || e.message));
-        return { ok: false, ocupado, erro: String(e.saida || e.message).split('\n')[0].slice(0, 300) };
-      }
-    }
-    const r = await comoAdmin(senha, cmd[0], cmd[1], { timeout: 10 * 60 * 1000 });
-    // Formatada ou não, a unidade volta a ficar à vista.
-    await rodar('udisksctl', ['mount', '-b', u.id, '--no-user-interaction'], { timeout: 30000 }).catch(() => { });
-    await this.listar();
-    return r;
   }
 
   /** O conteúdo de uma pasta da unidade. */
@@ -291,7 +293,6 @@ class PastasDoComputador extends Unidades {
 
   async montar(id) { return this.unidade(id); }
   async ejetar() { return { ok: false, erro: 'pasta' }; }
-  async formatar() { return { ok: false, erro: 'unidade' }; }
   async montarNovas() { return []; }
 
   async listarPasta(id, rel = '') {
@@ -346,13 +347,6 @@ class UnidadesFalsas extends Unidades {
     this.ligada = false;
     return { ok: true };
   }
-
-  // A de mentira não apaga nada: só confere a senha de teste ("certa") e o comando.
-  async formatar(id, { sistema = 'exfat', rotulo = '' } = {}, senha) {
-    if (senha !== 'certa') return { ok: false, senhaErrada: true };
-    this.formatada = comandoFormatar('/dev/sdz1', sistema, rotulo);
-    return { ok: true };
-  }
 }
 
-module.exports = { Unidades, UnidadesFalsas, PastasDoComputador, PASTAS_FORA, noDisco, caminhosDaLinha, lerLsblk, lerMontagem, dentro, escondida, comandoFormatar };
+module.exports = { Unidades, UnidadesFalsas, PastasDoComputador, PASTAS_FORA, noDisco, caminhosDaLinha, lerLsblk, lerMontagem, dentro, escondida, comandoFormatar, limparRotulo };
