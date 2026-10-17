@@ -137,9 +137,21 @@
     "deb": {
       "afterInstall": "recursos/linux/depois-de-instalar.sh",
       "afterRemove": "recursos/linux/depois-de-remover.sh",
-      "recommends": [
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0",
         "openbox",
         "x11-xserver-utils",
+        "x11-utils"
+      ],
+      "recommends": [
         "xinput",
         "network-manager",
         "pipewire-pulse | pulseaudio-utils | alsa-utils",
@@ -151,7 +163,6 @@
         "lxpolkit",
         "wmctrl",
         "xdotool",
-        "x11-utils",
         "udisks2",
         "bluez",
         "cups",

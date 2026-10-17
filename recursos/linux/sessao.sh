@@ -60,6 +60,15 @@ done
 # visual da época e a faixa de baixo livre para a barra de tarefas do Retro Computer.
 if command -v openbox >/dev/null 2>&1; then
   XDG_DATA_DIRS="$AQUI/openbox:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" openbox --config-file "$AQUI/openbox/rc.xml" &
+  # Espera o Openbox ficar pronto (até 5 segundos): aberta antes dele, a janela do Retro Computer
+  # não recebe a tela cheia.
+  if command -v xprop >/dev/null 2>&1; then
+    i=0
+    while [ "$i" -lt 50 ] && ! xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q "window id"; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+  fi
 fi
 
 # O Retro Computer. Se ele parar com erro, abre de novo; "Sair da sessão" (código 0) volta à tela de entrada.

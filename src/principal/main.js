@@ -454,7 +454,12 @@ function criarJanela() {
       webviewTag: true, // o Navegador (ver "O Navegador" abaixo)
     },
   });
-  janela.once('ready-to-show', () => { janela.show(); if (espalharAoAbrir) setTimeout(() => espalhar().catch(() => { }), 300); });
+  janela.once('ready-to-show', () => {
+    janela.show();
+    if (espalharAoAbrir) setTimeout(() => espalhar().catch(() => { }), 300);
+    // No modo sistema, a conferência de que a janela cobre a tela (sem o Openbox, ela não cobria).
+    if (MODO_SISTEMA) for (const ms of [1000, 4000]) setTimeout(ajustarNaPrincipal, ms);
+  });
   if (MODO_SISTEMA) for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(ajustarNaPrincipal, 300));
   else for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(monitoresMudaram, 400));
   // A área de trabalho fica sabendo onde está cada tela dentro da janela.
@@ -671,14 +676,25 @@ function avisarTelas(motivo = '') {
 }
 
 /** No modo sistema, a janela fica sempre na tela principal, inteira (também depois de uma troca de telas). */
+/**
+ * No modo sistema, a janela cobre a tela principal. Com o Openbox, a tela cheia faz isso; sem um
+ * gerenciador de janelas (o Openbox ainda abrindo, ou não instalado), o X não aplica a tela cheia,
+ * e a janela ficava no tamanho de abertura (1280 × 800), no meio da tela. Aí ela mesma toma a tela:
+ * fora da tela cheia, o Chromium não deixa a janela com o tamanho exato da tela (fica um ponto
+ * menor), por isso um ponto a mais em cada direção.
+ */
 function ajustarNaPrincipal() {
   if (!janela || janela.isDestroyed()) return;
   const b = screen.getPrimaryDisplay().bounds;
-  const j = janela.getBounds();
-  if (j.x === b.x && j.y === b.y && j.width === b.width && j.height === b.height) return;
+  const cobre = (j) => j.x <= b.x && j.y <= b.y && j.x + j.width >= b.x + b.width && j.y + j.height >= b.y + b.height;
+  if (cobre(janela.getBounds())) return;
   janela.setFullScreen(false);
   janela.setBounds(b);
   janela.setFullScreen(true);
+  setTimeout(() => {
+    if (!janela || janela.isDestroyed() || cobre(janela.getBounds())) return;
+    janela.setBounds({ x: b.x, y: b.y, width: b.width + 1, height: b.height + 1 });
+  }, 500);
 }
 
 /** No modo sistema, a outra tela (estendida) mostra a cor da área de trabalho, e não o preto do X. */

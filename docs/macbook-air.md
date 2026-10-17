@@ -47,18 +47,19 @@ Em um ou dois minutos aparece a área de trabalho do Linux Mint, rodando do pend
 5. Escolha a cidade (São Paulo), o seu nome, o nome do computador e uma senha (guarde essa senha: o computador vai pedi-la para instalar programas).
 6. Espere terminar, clique em **Reiniciar agora** e, quando o computador pedir, tire o pendrive e aperte Enter.
 
-## Parte 4 — O Wi-Fi (uns 5 minutos)
+## Parte 4 — O Wi-Fi (uns 10 minutos)
 
-O MacBook Air precisa de um controlador à parte para o Wi-Fi.
+O MacBook Air precisa de um controlador à parte para o Wi-Fi (o da placa Broadcom). A versão que vem no pendrive não funciona com o Linux de hoje, e a certa vem da internet: o celular empresta a dele por alguns minutos.
 
-1. Abra o menu (o botão no canto de baixo) e procure **Gerenciador de drivers**.
-2. Escolha o `broadcom-sta-dkms` e clique em **Aplicar as alterações**. Sem internet, o próprio Gerenciador pede para pôr de novo o pendrive da Parte 1, que já traz esse controlador.
-3. Reinicie o computador. O Wi-Fi aparece no canto de baixo, perto do relógio.
+1. No celular, ligue o Bluetooth e o compartilhamento da internet: no iPhone, Ajustes › **Acesso Pessoal** › **Permitir Que Outros se Conectem**; no Android, o **Roteador Bluetooth**.
+2. No Linux Mint, clique no ícone do Bluetooth (no canto de baixo, perto do relógio), escolha o celular e confirme o mesmo código nos dois. Depois, com o botão direito no celular, escolha conectar como ponto de acesso de rede. Pelo cabo USB também dá, se o cabo passar dados (alguns só carregam): o iPhone pergunta se confia no computador.
+3. Abra o menu (o botão no canto de baixo) e procure **Gerenciador de Drivers**. Ele procura os controladores na internet; escolha o `broadcom-sta-dkms` (a versão `6.30.223.271-23ubuntu1.3` ou mais nova) e clique em **Aplicar Mudanças**. Se a versão for mais antiga, feche o Gerenciador e, no Terminal, digite `sudo apt update` e depois `sudo apt install broadcom-sta-dkms`.
+4. Reinicie o computador. O Wi-Fi aparece no canto de baixo, perto do relógio, e o celular já pode ser desligado.
 
 ## Parte 5 — Instalar o Retro Computer (uns 5 minutos)
 
 1. No Firefox do Linux Mint, abra a página de [lançamentos](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest) e baixe o arquivo que termina em **`linux-amd64.deb`**.
-2. Na pasta Downloads, dê dois cliques nele e clique em **Instalar pacote** (a senha da Parte 3 é pedida).
+2. Na pasta Downloads, dê dois cliques nele e clique em **Instalar pacote** (a senha da Parte 3 é pedida). Junto, vem o Openbox, que cuida das janelas na sessão do Retro Computer.
 3. Saia da sessão: menu › **Sair** › **Encerrar sessão**.
 4. Na tela de entrada, clique no ícone ao lado do seu nome, escolha **Retro Computer** e entre com a sua senha.
 
@@ -74,5 +75,6 @@ Pronto: o MacBook liga no Retro Computer. Para ele entrar direto, sem a tela de 
 ## Se algo der errado
 
 - **A tecla Option não mostrou o pendrive**: desligue, confira se o pendrive está bem encaixado e tente de novo, segurando a tecla Option desde o primeiro instante. Se não adiantar, grave o pendrive outra vez (Parte 1).
-- **O Wi-Fi não apareceu**: refaça a Parte 4 com o pendrive da Parte 1 encaixado, ou ligue o celular pelo cabo USB e ative a "ancoragem USB" nele.
+- **O Wi-Fi não apareceu**: refaça a Parte 4 com a internet do celular ligada (pelo Bluetooth, se o cabo só carregar: com `lsusb` no Terminal, o celular tem que aparecer na lista) e confira a versão do controlador no Gerenciador de Drivers.
+- **O Retro Computer não preencheu a tela** (ficou num retângulo no meio, até a versão 1.9.0): falta o Openbox. No Prompt de comando, digite `sudo apt install openbox x11-xserver-utils x11-utils`, depois Iniciar › Desligar › **Sair da sessão**, e entre de novo na sessão Retro Computer.
 - **Quer o macOS de volta**: ligue segurando **Command + Option + R** (a recuperação pela internet) e reinstale o macOS pelo assistente.
