@@ -225,6 +225,16 @@ contextBridge.exposeInMainWorld('retro', {
     buscar: (termo, o) => chamar('indice:buscar', termo, o),
     estado: () => chamar('indice:estado'),
   },
+  // Receber do celular: ligar e parar o servidor da rede local, aceitar um aparelho e o código QR.
+  receber: {
+    iniciar: (ip) => chamar('receber:iniciar', ip),
+    parar: () => chamar('receber:parar'),
+    aprovar: (ip, sim) => chamar('receber:aprovar', ip, sim),
+    qr: (texto) => chamar('receber:qr', texto),
+    aoPedido: ouvir('receber:pedido'),
+    aoArquivo: ouvir('receber:arquivo'),
+    aoFim: ouvir('receber:fim'),
+  },
   // Os scanners: a lista, as escolhas de cada um e uma página em PNG.
   scanner: {
     listar: () => chamar('scanner:listar'),

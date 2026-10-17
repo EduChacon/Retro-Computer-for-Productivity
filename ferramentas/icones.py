@@ -394,6 +394,61 @@ NOTAS_16 = [
     "................",
 ]
 
+# 1.7: o celular (Receber do celular), desenho próprio.
+CELULAR_32 = [
+    "................................",
+    "................................",
+    "................................",
+    "..........KKKKKKKKKKKK..........",
+    "..........KDDDDDDDDDDK..........",
+    "..........KDDDKKKKDDDK..........",
+    "..........KDDDDDDDDDDK..........",
+    "..........KDKKKKKKKKDK..........",
+    "..........KDKuuuuuuKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKuTTTTTKDK..........",
+    "..........KDKKKKKKKKDK..........",
+    "..........KDDDDDDDDDDK..........",
+    "..........KDDDDKKDDDDK..........",
+    "..........KDDDKLLKDDDK..........",
+    "..........KDDDDKKDDDDK..........",
+    "..........KDDDDDDDDDDK..........",
+    "..........KKKKKKKKKKKK..........",
+    "................................",
+    "................................",
+    "................................",
+]
+
+CELULAR_16 = [
+    "................",
+    ".....KKKKKK.....",
+    ".....KDKKDK.....",
+    ".....KuuuuK.....",
+    ".....KuTTTK.....",
+    ".....KuTTTK.....",
+    ".....KuTTTK.....",
+    ".....KuTTTK.....",
+    ".....KuTTTK.....",
+    ".....KuTTTK.....",
+    ".....KuTTTK.....",
+    ".....KDDDDK.....",
+    ".....KDKKDK.....",
+    ".....KDDDDK.....",
+    ".....KKKKKK.....",
+    "................",
+]
+
 BLUETOOTH_16 = [
     "................",
     "................",
@@ -1526,6 +1581,8 @@ def gerar(serenity):
     feitos[16]['scanner'] = grade(SCANNER_16)
     feitos[32]['notas'] = grade(NOTAS_32)
     feitos[16]['notas'] = grade(NOTAS_16)
+    feitos[32]['celular'] = grade(CELULAR_32)
+    feitos[16]['celular'] = grade(CELULAR_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)
     feitos[32]['bluetooth'] = grade(BLUETOOTH_16).resize((32, 32), Image.NEAREST)
 

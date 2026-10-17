@@ -1855,3 +1855,22 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
   background: var(--nota); color: #000; line-height: 14px; }
 .nota-canto { position: absolute; right: 1px; bottom: 1px; width: 10px; height: 10px; cursor: var(--cur-nwse-resize, nwse-resize);
   background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.35) 60%, transparent 60%, transparent 75%, rgba(0, 0, 0, 0.35) 75%, rgba(0, 0, 0, 0.35) 85%, transparent 85%); }
+/* Receber do celular: o código QR, os passos, o endereço e os arquivos que chegaram. */
+.rec-corpo { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.rec-topo { display: flex; gap: 12px; align-items: flex-start; }
+.rec-qr-caixa { flex: 0 0 auto; padding: 2px; background: #fff; box-shadow: var(--campo); }
+.rec-qr { display: block; width: 148px; height: 148px; image-rendering: pixelated; }
+.rec-qr.apagado { opacity: 0.15; }
+.rec-passos { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; line-height: 13px; }
+.rec-passos ol { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.rec-endereco { font-weight: bold; color: #000080; user-select: text; word-break: break-all; padding: 3px 4px; background: #fff; box-shadow: var(--campo); }
+.rec-endereco:empty { display: none; }
+.rec-pasta { color: #404040; }
+.rec-rede { display: flex; align-items: center; gap: 6px; }
+.rec-rede[hidden] { display: none; }
+.rec-aviso { color: #800000; }
+.rec-estado { font-weight: bold; min-height: 13px; }
+.rec-lista { height: 72px; overflow: auto; background: #fff; box-shadow: var(--campo); padding: 2px; }
+.rec-item { display: flex; align-items: center; gap: 6px; padding: 1px 3px; white-space: nowrap; }
+.rec-item span:first-of-type { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.rec-tam { color: #404040; }

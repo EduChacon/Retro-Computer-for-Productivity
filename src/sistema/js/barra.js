@@ -591,6 +591,7 @@ async function itensProgramas() {
         prog('monitor', tr('Monitor do sistema'), 'monitor'),
         prog('notas', tr('Notas autoadesivas'), 'notas'),
         prog('prompt', tr('Prompt de comando'), 'prompt'),
+        prog('receber', tr('Receber do celular'), 'celular'),
         prog('midia', tr('Reprodutor de mídia'), 'reprodutor'),
         prog('imagens', tr('Visualizador de imagens'), 'imagens'),
         {

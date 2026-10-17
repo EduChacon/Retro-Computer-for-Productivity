@@ -40,6 +40,8 @@ const { FerramentasPdf } = require('./pdf');
 const { Ocr } = require('./ocr');
 const { Scanners, ScannersFalsos } = require('./scanner');
 const { Indice } = require('./indice');
+const { Receber, ehLocal } = require('./receber');
+const qrcode = require('qrcode-generator');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
@@ -205,7 +207,8 @@ let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
 let trabalhos = null; // o processo de trabalho (trabalho.js): as ferramentas de PDF e o OCR
-let indice = null; // a busca pelo conteúdo dos arquivos (indice.js)
+let indice = null;
+let receber = null; // receber do celular (receber.js), criado na primeira vez // a busca pelo conteúdo dos arquivos (indice.js)
 let cheiaPeloSite = false; // a janela entrou em tela cheia por um site do Navegador
 let loja = null; // a loja de programas: o Flathub no Linux (loja.js), o winget no Windows e o Homebrew no Mac (lojas.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
@@ -293,6 +296,27 @@ function agendarCopia() {
   };
   setTimeout(conferir, 2 * 60 * 1000).unref();
   setInterval(conferir, 10 * 60 * 1000).unref();
+}
+
+/** Os textos da página que o celular abre para enviar (no idioma do Retro Computer). */
+function textosReceber() {
+  return {
+    lang: idioma.idioma(),
+    titulo: tr('Enviar para o Retro Computer'),
+    aguardando: tr('Aguardando a aprovação no computador…'),
+    escolher: tr('Escolher fotos e arquivos'),
+    rodape: tr('Os arquivos vão para a pasta Recebidos do computador. Nada é apagado nem gravado por cima.'),
+    aprovado: tr('Pronto: escolha os arquivos para enviar.'),
+    recusado: tr('O computador recusou este aparelho.'),
+    enviando: tr('enviando…'),
+    enviado: tr('enviado'),
+    falhou: tr('não foi enviado'),
+    encerrado: tr('O envio foi encerrado no computador.'),
+    naoAprovado: tr('Este aparelho ainda não foi aceito no computador.'),
+    grande: tr('O arquivo passa de 4 GB.'),
+    sessao: tr('O limite de 20 GB por vez foi atingido.'),
+    semEspaco: tr('Não há espaço livre no computador.'),
+  };
 }
 
 /** A pasta do Diário de trabalho (o nome fica guardado: trocar de idioma não cria outra). */
@@ -1909,6 +1933,39 @@ function registrarPonte() {
   indice.agendar(30 * 1000);
   tratar('indice:buscar', (termo, o) => indice.buscar(String(termo || ''), { pasta: o && typeof o.pasta === 'string' ? o.pasta : '', max: Math.min(200, Math.max(1, Number(o && o.max) || 50)) }));
   tratar('indice:estado', () => indice.estado());
+  // Receber do celular (receber.js): o servidor só na rede local e só com a janela aberta.
+  tratar('receber:iniciar', async (ip) => {
+    if (!receber) {
+      receber = new Receber({
+        disco: () => disco,
+        pasta: () => { const p = config.obter().pastas || {}; return `${p.documentos}/${p.recebidos}`; },
+        avisar: (evento, dados) => enviar('receber:' + evento, dados),
+        textos: textosReceber,
+        // RETRO_RECEBER_FALSO=1 (as capturas, sem rede local): só no 127.0.0.1, que faz o papel do celular.
+        ...(process.env.RETRO_RECEBER_FALSO ? { local: (ip) => ip === '127.0.0.1' || ehLocal(ip), enderecos: () => [{ nome: 'lo', ip: '127.0.0.1' }] } : {}),
+      });
+    }
+    try {
+      return await receber.iniciar({ ip: typeof ip === 'string' ? ip : undefined });
+    } catch (e) {
+      if (e.codigo === 'semRede') throw new Error(tr('Este computador não está numa rede local (Wi-Fi ou cabo).'));
+      throw e;
+    }
+  });
+  tratar('receber:parar', () => { if (receber) receber.parar('fechado'); return true; });
+  tratar('receber:aprovar', (ip, sim) => (receber ? receber.aprovar(String(ip || ''), !!sim) : false));
+  // O código QR de um endereço (a matriz de pontos; a tela desenha).
+  tratar('receber:qr', (texto) => {
+    const t = String(texto || '');
+    if (!t || t.length > 300) return null;
+    const q = qrcode(0, 'M');
+    q.addData(t);
+    q.make();
+    const n = q.getModuleCount();
+    let pontos = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) pontos += q.isDark(r, c) ? '1' : '0';
+    return { n, pontos };
+  });
   // O Bluetooth (no Linux, pelo bluetoothctl; no Windows e no macOS, as configurações do sistema).
   const bluetooth = new (process.env.RETRO_BLUETOOTH_FALSO ? BluetoothFalso : Bluetooth)({ aoPergunta: (p) => enviar('bluetooth:pergunta', p) });
   tratar('bluetooth:estado', () => bluetooth.estado());
@@ -2361,6 +2418,7 @@ app.on('will-quit', (e) => {
 app.on('window-all-closed', () => {
   pararObservar();
   if (trabalhos) trabalhos.encerrar();
+  if (receber) receber.parar('fechado');
   if (terminais) terminais.fecharTodos();
   if (sistemaBandeja) sistemaBandeja.volume.fechar();
   app.quit();

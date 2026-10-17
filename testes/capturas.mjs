@@ -3920,6 +3920,63 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('versões guardadas:', fs.existsSync(path.join(disco, '.versoes')) ? execFileSync('find', [path.join(disco, '.versoes'), '-type', 'f']).toString().split('\n').filter((l) => /Agenda|Calendar/.test(l)).length : 0);
   },
 
+  // Receber do celular (com RETRO_RECEBER_FALSO=1: o servidor no 127.0.0.1, e o roteiro faz o papel
+  // do celular): a janela com o código QR, o aparelho aceito, a página do celular, dois arquivos
+  // (um com o mesmo nome de outro que já estava lá) e as tentativas com o código errado.
+  async receber() {
+    await fecharTudo();
+    const recebidos = path.join(disco, DOCS, PASTAS[IDIOMA].recebidos);
+    fs.mkdirSync(recebidos, { recursive: true });
+    fs.writeFileSync(path.join(recebidos, 'Lista.txt'), 'a que já estava');
+    await abrir('receber');
+    await pagina.waitForFunction(() => /^http:/.test((document.querySelector('.rec-endereco') || {}).textContent || ''), null, { timeout: 15000 });
+    const url = await pagina.textContent('.rec-endereco');
+    console.log('endereço:', url.replace(/[a-z2-9]{8}\/$/, '********/'));
+    await pagina.waitForTimeout(400);
+    await foto('receber-janela');
+    const pedir = (u, { method = 'GET', corpo = null, ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile' } = {}) => new Promise((ok) => {
+      const r = http.request(u, { method, agent: false, headers: { 'User-Agent': ua, Connection: 'close', ...(corpo ? { 'Content-Length': corpo.length } : {}) } }, (res) => {
+        const p = [];
+        res.on('data', (b) => p.push(b));
+        res.on('end', () => ok({ status: res.statusCode, texto: Buffer.concat(p).toString('utf8') }));
+      });
+      r.on('error', () => ok({ status: 'erro' }));
+      if (corpo) r.write(corpo);
+      r.end();
+    });
+    // O "celular" abre a página: o computador pergunta.
+    console.log('página:', (await pedir(url)).status);
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 10000 });
+    await pagina.waitForTimeout(300);
+    await foto('receber-pedido');
+    await pagina.click(`.janela.dialogo button:has-text("${T('&Aceitar')}")`);
+    await pagina.waitForTimeout(500);
+    // A página do celular, num aparelho de 390 × 700 (já aceito).
+    const tela = await app.evaluate(async ({ BrowserWindow }, u) => {
+      const w = new BrowserWindow({ width: 390, height: 700, show: false, webPreferences: { partition: 'celular-de-teste' } });
+      await w.loadURL(u, { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile' });
+      await new Promise((r) => setTimeout(r, 2500));
+      const img = await w.webContents.capturePage();
+      w.destroy();
+      return img.toPNG().toString('base64');
+    }, url);
+    n++;
+    fs.writeFileSync(path.join(SAIDA, `${String(n).padStart(2, '0')}-receber-celular.png`), Buffer.from(tela, 'base64'));
+    // Dois arquivos: um novo e um com o nome de um que já estava (não grava por cima).
+    console.log('envio 1:', (await pedir(url + 'arquivo?nome=' + encodeURIComponent('Foto do quadro.jpg'), { method: 'PUT', corpo: Buffer.alloc(150000, 7) })).status);
+    console.log('envio 2:', (await pedir(url + 'arquivo?nome=Lista.txt', { method: 'PUT', corpo: Buffer.from('a do celular') })).status);
+    await pagina.waitForTimeout(800);
+    console.log('na pasta:', JSON.stringify(fs.readdirSync(recebidos).sort()), '| a que estava:', fs.readFileSync(path.join(recebidos, 'Lista.txt'), 'utf8'));
+    await foto('receber-recebidos');
+    // Alguém tentando adivinhar o código: depois de 20, desliga.
+    const errado = url.replace(/[a-z2-9]{8}\/$/, 'zzzzzzzz/');
+    for (let i = 0; i < 20; i++) await pedir(errado);
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 10000 });
+    await pagina.waitForTimeout(300);
+    await foto('receber-tentativas');
+    console.log('depois das tentativas, a página:', (await pedir(url)).status);
+  },
+
   // As notas autoadesivas: a primeira pelo Iniciar (na frente das janelas), outra pelo +, a cor, o
   // arrastar, o Esc (de volta para trás), a nota mudada por fora (o .txt) e a exclusão (para a Lixeira).
   // Reabrir ao ligar: três janelas (o Explorador numa pasta, o Bloco de notas com um arquivo e a
