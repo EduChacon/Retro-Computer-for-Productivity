@@ -6,7 +6,7 @@
  * o DOS e o Mac Plus) e as caixas de diálogo ficam de fora. Painel › Aparência › Configurações
  * desliga.
  */
-import { lista, eventos as evJanelas } from './janelas.js';
+import { lista, eventos as evJanelas, numAreas, garantirAreas, moverParaArea } from './janelas.js';
 import { estado, definirConfig, abrir, app } from './sistema.js';
 
 const FORA = new Set(['prompt', 'claude', 'dos', 'mac', 'ocr', 'desligar', 'executar']);
@@ -29,7 +29,7 @@ export function retrato() {
     try { args = j.reabrir ? j.reabrir() : {}; } catch { args = null; }
     if (args === null) continue;
     const { x, y, w, h } = j.ret;
-    r.push({ p: j.programa, args, ret: { x, y, w, h }, max: !!j.maximizada, min: !!j.minimizada });
+    r.push({ p: j.programa, args, ret: { x, y, w, h }, max: !!j.maximizada, min: !!j.minimizada, area: j.area || 0 });
   }
   // A ordem da pilha: a janela da frente é a última aberta de novo.
   return r.slice(-MAX);
@@ -40,10 +40,12 @@ function guardar() {
   timer = null;
   if (congelado || !ligado()) return Promise.resolve();
   const janelas = retrato();
-  const texto = JSON.stringify(janelas);
+  // As áreas de trabalho também voltam, como no Windows (também as que estão vazias).
+  const areas = numAreas();
+  const texto = JSON.stringify([janelas, areas]);
   if (texto === ultimo) return Promise.resolve();
   ultimo = texto;
-  return definirConfig({ reabrir: { janelas } }).catch(() => { });
+  return definirConfig({ reabrir: { janelas, areas } }).catch(() => { });
 }
 
 const agendar = () => { clearTimeout(timer); timer = setTimeout(guardar, 1500); };
@@ -84,6 +86,7 @@ async function reabrirJanelas() {
   if (!ligado() || !Array.isArray(salvas) || !salvas.length) { congelado = false; return 0; }
   congelado = true;
   let n = 0;
+  garantirAreas(Number(estado.config.reabrir.areas) || 1);
   try {
     for (const s of salvas.slice(0, MAX)) {
       if (!s || typeof s.p !== 'string' || FORA.has(s.p)) continue;
@@ -119,4 +122,6 @@ function lugar(j, s) {
   j.aplicarRet();
   if (s.max && j.redim && !j.maximizada) j.maximizar();
   if (s.min && !j.minimizada) j.minimizar();
+  // A janela volta para a área de trabalho em que estava (a tela começa na primeira).
+  if (Number.isInteger(s.area) && s.area > 0 && s.area < numAreas()) moverParaArea(j, s.area);
 }

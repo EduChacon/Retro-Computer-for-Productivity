@@ -36,6 +36,26 @@ test('atalhos: a tecla do logotipo com letras, números e setas', () => {
   assert.strictEqual(acaoDaTecla(tecla('x', { meta: true }), p), null);
 });
 
+test('atalhos: as áreas de trabalho, a Visão das tarefas e o painel de emojis', () => {
+  const p = { plataforma: 'win32' };
+  assert.strictEqual(acaoDaTecla(tecla('d', { meta: true, control: true }, 'KeyD'), p), 'area:nova');
+  assert.strictEqual(acaoDaTecla(tecla('ArrowLeft', { meta: true, control: true }), p), 'area:esquerda');
+  assert.strictEqual(acaoDaTecla(tecla('ArrowRight', { meta: true, control: true }), p), 'area:direita');
+  assert.strictEqual(acaoDaTecla(tecla('F4', { meta: true, control: true }), p), 'area:fechar');
+  assert.strictEqual(acaoDaTecla(tecla('ArrowLeft', { meta: true, control: true, shift: true }), p), null);
+  assert.strictEqual(acaoDaTecla(tecla('Tab', { meta: true }), p), 'visao-tarefas');
+  assert.strictEqual(acaoDaTecla(tecla('.', { meta: true }, 'Period'), p), 'emojis');
+  assert.strictEqual(acaoDaTecla(tecla(';', { meta: true }, 'Semicolon'), p), 'emojis');
+  // No ABNT2, o ponto e vírgula fica noutra tecla: vale pelo caractere.
+  assert.strictEqual(acaoDaTecla(tecla(';', { meta: true }, 'Slash'), p), 'emojis');
+  // O Alt+Tab continua o alternador; o Ctrl+D sem o logotipo não é nada.
+  assert.strictEqual(acaoDaTecla(tecla('Tab', { alt: true }), p), 'alternar');
+  assert.strictEqual(acaoDaTecla(tecla('d', { control: true }), p), null);
+  const globais = new Map(GLOBAIS);
+  assert.strictEqual(globais.get('Super+Control+Right'), 'area:direita');
+  assert.strictEqual(globais.get('Super+Tab'), 'visao-tarefas');
+});
+
 test('atalhos: no Mac, a tecla do logotipo é o Cmd dos programas', () => {
   assert.strictEqual(acaoDaTecla(tecla('e', { meta: true }), { plataforma: 'darwin' }), null);
   assert.strictEqual(acaoDaTecla(tecla('ArrowLeft', { meta: true }), { plataforma: 'darwin' }), null);

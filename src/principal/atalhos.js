@@ -13,13 +13,28 @@
  *   logotipo + 1…9        fixado:N (o programa fixado nessa posição)
  *   logotipo + seta       encaixe:ArrowLeft… (os cantos magnéticos)
  *   logotipo + "+" e "-"  lupa+, lupa- (a lupa da Acessibilidade); logotipo + Esc: lupa-sair
+ *   logotipo + Tab        visao-tarefas (as áreas de trabalho e as janelas de cada uma)
+ *   logotipo + Ctrl + D   area:nova; + Ctrl + ← e →: area:esquerda, area:direita; + Ctrl + F4: area:fechar
+ *   logotipo + "." e ";"  emojis (o painel de emojis)
  */
 
 const DO_LOGOTIPO = { e: 'explorador', r: 'executar', d: 'area-de-trabalho', m: 'minimizar-tudo', i: 'painel', s: 'busca', q: 'busca', v: 'area-transferencia', l: 'bloquear' };
 
 function acaoDoLogotipo(input) {
-  if (!input.meta || input.control || input.alt) return null;
+  if (!input.meta || input.alt) return null;
   const k = input.key && input.key.length === 1 ? input.key.toLowerCase() : input.key;
+  // As áreas de trabalho, como no Windows: logotipo + Ctrl com D, as setas para os lados e F4.
+  if (input.control) {
+    if (input.shift) return null;
+    if (k === 'ArrowLeft') return 'area:esquerda';
+    if (k === 'ArrowRight') return 'area:direita';
+    if ((input.code || '') === 'KeyD' || k === 'd') return 'area:nova';
+    if (k === 'F4') return 'area:fechar';
+    return null;
+  }
+  if (k === 'Tab' && !input.shift) return 'visao-tarefas';
+  // O painel de emojis: o ponto e o ponto e vírgula (pela tecla, que muda de lugar nos teclados).
+  if (!input.shift && (k === '.' || k === ';' || /^(Period|Semicolon)$/.test(input.code || ''))) return 'emojis';
   // A lupa: o "+" (com ou sem o Shift, que o "+" pede em alguns teclados), o "-" e o Esc.
   if (/^(Equal|NumpadAdd)$/.test(input.code || '') || k === '+') return 'lupa+';
   if (/^(Minus|NumpadSubtract)$/.test(input.code || '')) return 'lupa-';
@@ -50,7 +65,7 @@ function acaoDaTecla(input, { plataforma = process.platform, sistema = false } =
  * fotografa o que está na tela primeiro.)
  */
 function trazORetro(acao) {
-  return /^(alternar|alternar-volta|explorador|executar|painel|busca|area-transferencia|bloquear|fixado:\d)$/.test(String(acao));
+  return /^(alternar|alternar-volta|explorador|executar|painel|busca|area-transferencia|bloquear|fixado:\d|visao-tarefas|area:\w+)$/.test(String(acao));
 }
 
 /** As mesmas teclas como atalhos globais do modo sistema (valem também com um programa do Linux na frente). */
@@ -59,6 +74,8 @@ const GLOBAIS = [
   ...Object.entries({ E: 'explorador', R: 'executar', D: 'area-de-trabalho', M: 'minimizar-tudo', I: 'painel', S: 'busca', V: 'area-transferencia', L: 'bloquear' })
     .map(([k, a]) => ['Super+' + k, a]),
   ['Super+Shift+S', 'captura-regiao'],
+  ['Super+Tab', 'visao-tarefas'], ['Super+Control+D', 'area:nova'], ['Super+Control+Left', 'area:esquerda'],
+  ['Super+Control+Right', 'area:direita'], ['Super+Control+F4', 'area:fechar'], ['Super+.', 'emojis'], ['Super+;', 'emojis'],
   ...['Left', 'Right', 'Up', 'Down'].map((s) => ['Super+' + s, 'encaixe:Arrow' + s]),
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ['Super+' + n, 'fixado:' + n]),
 ];

@@ -8,6 +8,8 @@ import { montarBarra } from './barra.js';
 import { montarBarraMac } from './barra-mac.js';
 import { aplicarTema, temaMac, temaAtual } from './tema.js';
 import { aplicarEsquema, esquemaAtual, esquemaValido, fundoParaEsquema } from './esquemas.js';
+// As áreas de trabalho: o aviso do nome ao trocar (a Visão das tarefas abre por ele).
+import './areas.js';
 import { montarMesa, atualizar as atualizarMesa } from './mesa.js';
 import { tocar } from './sons.js';
 import { confirmar } from './dialogos.js';

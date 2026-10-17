@@ -5,7 +5,7 @@
  * programas e do Navegador; no modo sistema, também com um programa do Linux na frente.
  */
 import { h, img } from './util.js';
-import { lista, recentes, janelaAtiva, opcoes, mostrarAreaDeTrabalho, minimizarTodas } from './janelas.js';
+import { lista, recentes, janelaAtiva, opcoes, mostrarAreaDeTrabalho, minimizarTodas, daAreaAtual, areaAtual, irParaArea, novaArea, fecharArea } from './janelas.js';
 import { estado, abrir } from './sistema.js';
 import { janelasNativas, retroAtivo, minimizarNativas } from './janelas-nativas.js';
 import { iconeNativoJa } from './nativos.js';
@@ -16,12 +16,12 @@ import { tr } from './idioma.js';
 
 let alt = null; // { itens, i, el, icones, titulo }
 
-/** As janelas na ordem do uso: a da frente primeiro; as do Linux depois das do Retro Computer. */
+/** As janelas na ordem do uso: a da frente primeiro; as do Linux depois das do Retro Computer. Só as da área de trabalho de agora, como no Windows. */
 function janelasParaAlternar() {
   const nativas = janelasNativas();
-  const doRetro = [...recentes].reverse().filter((j) => !j.fechada && !j.dialogo);
+  const doRetro = [...recentes].reverse().filter((j) => !j.fechada && !j.dialogo && daAreaAtual(j));
   // As que nunca foram usadas (raro) entram no fim, na ordem de abertura.
-  for (const j of lista) if (!j.dialogo && !doRetro.includes(j)) doRetro.push(j);
+  for (const j of lista) if (!j.dialogo && daAreaAtual(j) && !doRetro.includes(j)) doRetro.push(j);
   const ativaNativa = nativas.find((n) => n.ativa);
   if (ativaNativa) return [ativaNativa, ...doRetro, ...nativas.filter((n) => n !== ativaNativa)];
   return [...doRetro, ...nativas];
@@ -136,6 +136,13 @@ const ACOES = {
   'lupa+': () => import('./acessibilidade.js').then((m) => m.mudarLupa(1)),
   'lupa-': () => import('./acessibilidade.js').then((m) => m.mudarLupa(-1)),
   'lupa-sair': () => import('./acessibilidade.js').then((m) => { if (m.nivelLupa() > 1) m.mudarLupa(0); }),
+  // As áreas de trabalho e a Visão das tarefas (areas.js).
+  'visao-tarefas': () => import('./areas.js').then((m) => m.alternarVisao()),
+  'area:nova': () => novaArea(),
+  'area:esquerda': () => irParaArea(areaAtual() - 1),
+  'area:direita': () => irParaArea(areaAtual() + 1),
+  'area:fechar': () => fecharArea(),
+  emojis: () => import('./emojis.js').then((m) => m.abrirEmojis()).catch(() => { }),
 };
 
 retro.sistema.aoTecla((acao) => {

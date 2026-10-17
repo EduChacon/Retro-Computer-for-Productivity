@@ -53,6 +53,15 @@ let ativa = null;
 let programaAbrindo = null;
 // A ordem em que as janelas foram usadas (a mais recente no fim), para o Alt+Tab.
 export const recentes = [];
+// As áreas de trabalho (como as do Windows de hoje): cada janela é de uma; só as da área de agora
+// ficam à vista, na barra de tarefas e no Alt+Tab. As caixas de diálogo ficam sempre à vista.
+export const MAX_AREAS = 8;
+let areaAgora = 0;
+let totalAreas = 1;
+export const areaAtual = () => areaAgora;
+export const numAreas = () => totalAreas;
+/** A janela é da área de agora? (Os diálogos e as janelas do Linux, sempre.) */
+export const daAreaAtual = (j) => !!(j.nativa || j.dialogo || (j.area || 0) === areaAgora);
 // Os cantos magnéticos: arrastar a janela até a borda encaixa (Painel › Aparência › Configurações).
 export const opcoes = { encaixe: true };
 
@@ -85,6 +94,8 @@ export class Janela {
     this.icone = o.icone || null;
     this.dialogo = !!o.dialogo;
     this.programa = o.programa || programaAbrindo || null;
+    // A área de trabalho: a de agora (o Reabrir ao ligar pode pôr a janela na área em que ela estava).
+    this.area = !this.dialogo && Number.isInteger(o.area) && o.area >= 0 && o.area < totalAreas ? o.area : areaAgora;
     this.minimizada = false;
     this.maximizada = false;
     this.fechada = false;
@@ -181,7 +192,8 @@ export class Janela {
     lista.push(this);
     acompanharArea();
     if (o.maximizada) this.maximizar();
-    this.focar();
+    if (daAreaAtual(this)) this.focar();
+    else this.el.classList.add('outra-area');
     eventos.emit('mudou');
   }
 
@@ -242,6 +254,8 @@ export class Janela {
 
   focar() {
     if (this.fechada) return;
+    // A janela de outra área de trabalho leva para ela (como no Windows).
+    if (!daAreaAtual(this)) irParaArea(this.area, { focar: false });
     if (this.minimizada) this.restaurarDoMinimizado();
     if (ativa === this) {
       this.el.style.zIndex = this.dialogo ? 800001 + lista.indexOf(this) : this.el.style.zIndex;
@@ -278,7 +292,7 @@ export class Janela {
     if (ativa === this) {
       ativa = null;
       this.el.classList.remove('ativa');
-      const prox = [...lista].reverse().find((j) => j !== this && !j.minimizada && !j.fechada);
+      const prox = [...lista].reverse().find((j) => j !== this && !j.minimizada && !j.fechada && daAreaAtual(j));
       if (prox) prox.focar();
     }
     this.ev.emit('minimizada');
@@ -390,7 +404,7 @@ export class Janela {
     this.ev.emit('fechada');
     if (ativa === this) {
       ativa = null;
-      const prox = [...lista].reverse().find((j) => !j.minimizada && !j.fechada);
+      const prox = [...lista].reverse().find((j) => !j.minimizada && !j.fechada && daAreaAtual(j));
       if (prox) prox.focar();
       else document.getElementById('mesa').focus();
     }
@@ -660,7 +674,7 @@ const soltarEncaixe = (j) => { j.encaixe = null; j.el.classList.remove('encaixad
 export function emCascata() {
   let i = 0;
   for (const j of lista) {
-    if (j.dialogo || j.minimizada) continue;
+    if (j.dialogo || j.minimizada || !daAreaAtual(j)) continue;
     j.restaurar();
     soltarEncaixe(j);
     j.ret.x = 10 + i * 24;
@@ -673,7 +687,7 @@ export function emCascata() {
 }
 
 export function lado(vertical) {
-  const vis = lista.filter((j) => !j.dialogo && !j.minimizada);
+  const vis = lista.filter((j) => !j.dialogo && !j.minimizada && daAreaAtual(j));
   if (!vis.length) return;
   const t = area().getBoundingClientRect();
   vis.forEach((j, i) => {
@@ -692,7 +706,7 @@ export function lado(vertical) {
 }
 
 export function minimizarTodas() {
-  for (const j of lista) if (!j.dialogo) j.minimizar();
+  for (const j of lista) if (!j.dialogo && daAreaAtual(j)) j.minimizar();
 }
 
 /**
@@ -709,7 +723,7 @@ export function desativarJanelas() {
 // Logotipo+D: a primeira vez mostra a área de trabalho; a segunda devolve as mesmas janelas.
 let escondidas = null;
 export function mostrarAreaDeTrabalho() {
-  const abertas = lista.filter((j) => !j.dialogo && !j.minimizada);
+  const abertas = lista.filter((j) => !j.dialogo && !j.minimizada && daAreaAtual(j));
   if (!abertas.length && escondidas) {
     const voltar = escondidas.filter((j) => !j.fechada);
     escondidas = null;
@@ -719,4 +733,89 @@ export function mostrarAreaDeTrabalho() {
   escondidas = abertas;
   for (const j of abertas) j.minimizar();
   return 'escondeu';
+}
+
+/* ---------- As áreas de trabalho ---------- */
+
+function mostrarDaArea() {
+  for (const j of lista) j.el.classList.toggle('outra-area', !daAreaAtual(j));
+}
+
+/** Tira a janela da frente quando ela sai da área à vista, e põe na frente a mais recente da área. */
+function acertarAtiva(focar = true) {
+  if (ativa && !daAreaAtual(ativa)) {
+    ativa.el.classList.remove('ativa');
+    ativa.ev.emit('desativada');
+    ativa = null;
+  }
+  if (!ativa && focar) {
+    const prox = [...recentes].reverse().find((j) => daAreaAtual(j) && !j.minimizada && !j.fechada);
+    if (prox) prox.focar();
+  }
+}
+
+/** Avisa a barra (e, quando a área à vista trocou, quem mostra o nome dela no meio da tela). */
+function avisarAreas(trocou = false) {
+  if (trocou) eventos.emit('area', areaAgora);
+  eventos.emit('mudou');
+}
+
+/** Vai para a área n (0 é a primeira): as janelas dela aparecem, as outras somem. */
+export function irParaArea(n, { focar = true } = {}) {
+  const alvo = Math.max(0, Math.min(totalAreas - 1, Math.trunc(Number(n)) || 0));
+  if (alvo === areaAgora) return;
+  areaAgora = alvo;
+  escondidas = null;
+  mostrarDaArea();
+  acertarAtiva(focar);
+  avisarAreas(true);
+}
+
+/** Uma área nova, no fim (com ir, vai para ela). Devolve o número dela, ou null no limite. */
+export function novaArea({ ir = true } = {}) {
+  if (totalAreas >= MAX_AREAS) return null;
+  totalAreas++;
+  if (ir) irParaArea(totalAreas - 1);
+  else avisarAreas();
+  return totalAreas - 1;
+}
+
+/** Fecha a área n: as janelas dela vão para a da esquerda (as da primeira, para a seguinte), como no Windows. */
+export function fecharArea(n = areaAgora) {
+  if (totalAreas <= 1 || !Number.isInteger(n) || n < 0 || n >= totalAreas) return false;
+  const destino = Math.max(0, n - 1);
+  for (const j of lista) {
+    if ((j.area || 0) === n) j.area = destino;
+    else if ((j.area || 0) > n) j.area--;
+  }
+  totalAreas--;
+  const via = areaAgora === n;
+  if (via) areaAgora = destino;
+  else if (areaAgora > n) areaAgora--;
+  escondidas = null;
+  mostrarDaArea();
+  acertarAtiva();
+  avisarAreas(via);
+  return true;
+}
+
+/** Leva a janela para a área n ('nova': uma área nova, sem ir para ela). */
+export function moverParaArea(j, n) {
+  if (!j || j.dialogo || j.fechada || j.nativa) return;
+  const alvo = n === 'nova' ? novaArea({ ir: false }) : n;
+  if (alvo == null) return;
+  const k = Math.max(0, Math.min(totalAreas - 1, Math.trunc(Number(alvo)) || 0));
+  if ((j.area || 0) === k) return;
+  j.area = k;
+  mostrarDaArea();
+  acertarAtiva();
+  avisarAreas();
+}
+
+/** As áreas que o Reabrir ao ligar devolve (só aumenta o número, até o limite). */
+export function garantirAreas(n) {
+  const k = Math.min(MAX_AREAS, Math.trunc(Number(n)) || 1);
+  if (k <= totalAreas) return;
+  totalAreas = k;
+  avisarAreas();
 }

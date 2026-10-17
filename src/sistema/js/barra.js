@@ -6,7 +6,7 @@
  */
 import { h, img, caminhoTela, nomeDe, tipoDe } from './util.js';
 import { abrirMenu, fecharMenus } from './menus.js';
-import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, minimizarTodas } from './janelas.js';
+import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, minimizarTodas, daAreaAtual, areaAtual, numAreas, irParaArea, novaArea, fecharArea, moverParaArea, MAX_AREAS } from './janelas.js';
 import { janelasNativas, eventosNativas, retroAtivo } from './janelas-nativas.js';
 import { estado, abrir, abrirArquivo, eventos as evSistema, definirConfig, pastaDocs, app, instalado } from './sistema.js';
 import { tr, marcar, localidade } from './idioma.js';
@@ -84,8 +84,9 @@ export function montarBarra() {
   const bandeja = h('div#bandeja', focoIco, focoEl, ...itens.antes, relogio, ...itens.depois);
   busca = montarBusca();
   busca.hidden = !mostrarBusca();
+  areasEl = h('div#areas', { hidden: true, role: 'toolbar', 'aria-label': tr('Áreas de trabalho') });
   // Como no Windows de hoje: o Iniciar, a busca e os programas fixados à esquerda.
-  barra.append(btIniciar, h('div.sep-barra'), busca, fixadosEl, sepFixados, tarefas, bandeja);
+  barra.append(btIniciar, h('div.sep-barra'), busca, fixadosEl, sepFixados, tarefas, areasEl, bandeja);
   barra.addEventListener('contextmenu', menuDaBarra);
 
   evJanelas.on('mudou', desenharTarefas);
@@ -117,7 +118,7 @@ export function montarBarra() {
 
 /** A busca, a bandeja (a rede, o volume…), o relógio e o tempo do Foco: o tema Mac os tira daqui (barra-mac.js). */
 export function pecasDaBarra() {
-  return { busca, bandeja: document.getElementById('bandeja'), relogio, foco: pecasBandeja ? pecasBandeja.foco : [] };
+  return { busca, bandeja: document.getElementById('bandeja'), relogio, foco: pecasBandeja ? pecasBandeja.foco : [], areas: areasEl };
 }
 
 /** Devolve a busca e a bandeja para a barra de tarefas, nos lugares de sempre. */
@@ -127,6 +128,7 @@ export function devolverPecas() {
   if (!barra || !busca) return;
   if (busca.parentNode !== barra) fixadosEl.before(busca);
   if (bandeja && bandeja.parentNode !== barra) barra.append(bandeja);
+  if (areasEl && areasEl.parentNode !== barra) bandeja.before(areasEl);
   // O relógio e o Foco voltam para a bandeja, na ordem de sempre.
   if (bandeja && pecasBandeja && relogio.parentNode !== bandeja) bandeja.replaceChildren(...pecasBandeja.foco, ...pecasBandeja.antes, relogio, ...pecasBandeja.depois);
 }
@@ -158,6 +160,9 @@ function menuDaBarra(e) {
     { rotulo: tr('Lado a lado &vertical'), acao: () => lado(true) },
     { separador: true },
     { rotulo: tr('&Minimizar todas as janelas'), acao: minimizarTodas },
+    { separador: true },
+    { rotulo: tr('Vi&são das tarefas'), atalho: tr('Logotipo+Tab'), acao: () => import('./areas.js').then((m) => m.abrirVisao()) },
+    { rotulo: tr('&Nova área de trabalho'), atalho: tr('Logotipo+Ctrl+D'), desativado: numAreas() >= MAX_AREAS, acao: () => novaArea() },
     { separador: true },
     { rotulo: tr('Mostrar a caixa de &busca'), marcado: mostrarBusca(), acao: () => definirConfig({ barra: { busca: !mostrarBusca() } }).then(() => { busca.hidden = !mostrarBusca(); }) },
     ...(variasTelas() ? [{ rotulo: tr('Mostrar a barra em todas as &telas'), marcado: barraEmTodas(), acao: () => definirConfig({ barra: { todasTelas: !barraEmTodas() } }) }] : []),
@@ -349,7 +354,8 @@ function desenharTarefas() {
   // Com um programa do Linux na frente, nenhuma janela do Retro Computer fica apertada.
   const ativa = retroAtivo() ? janelaAtiva() : null;
   // As janelas dos programas do Linux (modo sistema) vêm depois das do Retro Computer.
-  const visiveis = emOrdem([...lista.filter((j) => !j.dialogo), ...janelasNativas()]);
+  // Só as janelas da área de trabalho de agora (as do Linux ficam em todas).
+  const visiveis = emOrdem([...lista.filter((j) => !j.dialogo && daAreaAtual(j)), ...janelasNativas()]);
   const icones = modoBotoes() === 'icones';
   // Com o nome: os fixados ficam à parte, como a Inicialização rápida da época.
   const rapidos = icones ? [] : fixados().map(programaDe).filter(Boolean);
@@ -372,6 +378,48 @@ function desenharTarefas() {
   if (icones) desenharGrupos(visiveis, ativa);
   else tarefas.replaceChildren(...visiveis.map((j) => botaoJanela(j, ativa, tarefas, (bs) => bs.forEach((x, i) => posicaoJanela.set(chaveJanela(x.janela), i)))));
   desenharOutras(visiveis, ativa, icones);
+  desenharAreas();
+}
+
+/* ---------- As áreas de trabalho ---------- */
+
+let areasEl = null;
+export const nomeArea = (n) => tr('Área de trabalho {n}', { n: n + 1 });
+
+/** O submenu "Mover para": as outras áreas e uma nova. */
+export function itensMoverPara(j) {
+  const itens = [];
+  for (let n = 0; n < numAreas(); n++) if (n !== (j.area || 0)) itens.push({ rotulo: nomeArea(n).replace(/&/g, '&&'), acao: () => moverParaArea(j, n) });
+  if (itens.length) itens.push({ separador: true });
+  itens.push({ rotulo: tr('&Nova área de trabalho'), desativado: numAreas() >= MAX_AREAS, acao: () => moverParaArea(j, 'nova') });
+  return itens;
+}
+
+/** O seletor das áreas na barra (como o "pager" da época): um botão por área, só com mais de uma. */
+function desenharAreas() {
+  if (!areasEl) return;
+  const n = numAreas();
+  areasEl.hidden = n < 2;
+  if (n < 2) { areasEl.replaceChildren(); return; }
+  const agora = areaAtual();
+  areasEl.replaceChildren(...Array.from({ length: n }, (_, i) => {
+    const qtd = lista.filter((j) => !j.dialogo && !j.fechada && (j.area || 0) === i).length;
+    const b = h('button.area' + (i === agora ? '.apertado' : ''), { title: `${nomeArea(i)} · ${tr('{n} janela(s)', { n: qtd })}`, 'aria-pressed': String(i === agora) }, String(i + 1));
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => irParaArea(i));
+    b.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      abrirMenu([
+        { rotulo: tr('&Ir para esta área'), negrito: true, desativado: i === agora, acao: () => irParaArea(i) },
+        { rotulo: tr('Vi&são das tarefas'), atalho: tr('Logotipo+Tab'), acao: () => import('./areas.js').then((m) => m.abrirVisao()) },
+        { separador: true },
+        { rotulo: tr('&Nova área de trabalho'), desativado: numAreas() >= MAX_AREAS, acao: () => novaArea() },
+        { rotulo: tr('&Fechar esta área de trabalho'), acao: () => fecharArea(i) },
+      ], { x: e.clientX, y: e.clientY, acima: true });
+    });
+    return b;
+  }));
 }
 
 /** O botão de uma janela na barra (faixa: a lista de botões; aoSoltar: a ordem nova, depois de arrastar). */
@@ -396,6 +444,7 @@ function botaoJanela(j, ativa, faixa, aoSoltar) {
       { rotulo: tr('&Restaurar'), desativado: !j.nativa && !j.minimizada && !j.maximizada, acao: () => { j.focar(); j.restaurar(); } },
       { rotulo: tr('Mi&nimizar'), desativado: j.minimizada, acao: () => j.minimizar() },
       ...(j.nativa ? [] : [{ rotulo: tr('Ma&ximizar'), desativado: j.maximizada, acao: () => { j.focar(); j.maximizar(); } }]),
+      ...(j.nativa ? [] : [{ separador: true }, { rotulo: tr('Mo&ver para'), sub: () => itensMoverPara(j) }]),
       ...(p ? [{ separador: true }, fixarOuDesafixar(p.chave)] : []),
       { separador: true },
       { rotulo: tr('&Fechar'), negrito: true, atalho: 'Alt+F4', acao: () => j.fechar() },

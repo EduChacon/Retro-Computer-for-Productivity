@@ -3991,7 +3991,9 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await abrir('calculadora');
     await pagina.waitForTimeout(1500);
     await pagina.evaluate(() => { const j = window.__retro.janelas.lista.find((x) => x.programa === 'calculadora'); j.ret.x = 640; j.ret.y = 300; j.aplicarRet(); });
-    const janelas = () => pagina.evaluate(() => window.__retro.janelas.lista.filter((j) => !j.fechada && !j.dialogo).map((j) => [j.programa, j.titulo, j.ret.x, j.ret.y, j.ret.w, j.ret.h]));
+    // A Calculadora vai para uma segunda área de trabalho: ela volta para lá.
+    await pagina.evaluate(() => { const J = window.__retro.janelas; J.moverParaArea(J.lista.find((x) => x.programa === 'calculadora'), 'nova'); });
+    const janelas = () => pagina.evaluate(() => window.__retro.janelas.lista.filter((j) => !j.fechada && !j.dialogo).map((j) => [j.programa, j.titulo, j.ret.x, j.ret.y, j.ret.w, j.ret.h, j.area]));
     const antes = await janelas();
     console.log('antes:', JSON.stringify(antes));
     await foto('reabrir-antes');
@@ -4004,8 +4006,80 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.waitForTimeout(1500);
     const depois = await janelas();
     console.log('depois:', JSON.stringify(depois));
-    console.log('iguais?', JSON.stringify(antes) === JSON.stringify(depois));
+    console.log('iguais?', JSON.stringify(antes) === JSON.stringify(depois), '| áreas:', await pagina.evaluate(() => window.__retro.janelas.numAreas()));
     await foto('reabrir-depois');
+  },
+
+  // As áreas de trabalho: a nova pelo logotipo+Ctrl+D (com o nome no meio da tela), as janelas de cada
+  // uma, a barra e o Alt+Tab só com as da área, o seletor da barra, a Visão das tarefas (arrastar uma
+  // janela para outra área, e o clique numa janela de outra área), o Mover para do botão da barra e o
+  // fechar de uma área (as janelas dela vão para a do lado).
+  async areas() {
+    await fecharTudo();
+    const est = () => pagina.evaluate(() => {
+      const J = window.__retro.janelas;
+      return {
+        area: J.areaAtual() + 1, de: J.numAreas(),
+        vistas: J.lista.filter((j) => !j.dialogo && getComputedStyle(j.el).display !== 'none').map((j) => j.programa),
+        barra: [...document.querySelectorAll('#tarefas button')].map((b) => b.title),
+        seletor: [...document.querySelectorAll('#areas button.area')].map((b) => b.textContent + (b.classList.contains('apertado') ? '*' : '')),
+      };
+    });
+    await abrir('bloco');
+    await pagina.waitForTimeout(300);
+    await pagina.keyboard.type('Na primeira área de trabalho.');
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(700);
+    console.log('uma área:', JSON.stringify(await est()));
+    await tecla('area:nova');
+    await pagina.waitForTimeout(250);
+    console.log('aviso:', await pagina.evaluate(() => (document.querySelector('.aviso-area') || {}).textContent || null));
+    await foto('areas-aviso');
+    await abrir('calculadora');
+    await abrir('caracteres');
+    await pagina.waitForTimeout(800);
+    console.log('na segunda:', JSON.stringify(await est()));
+    await foto('areas-segunda');
+    await tecla('alternar');
+    await pagina.waitForTimeout(300);
+    console.log('Alt+Tab:', await pagina.$$eval('.alt-icone', (es) => es.map((e) => e.title)));
+    await tecla('alternar-cancelar');
+    await pagina.click('#areas button.area >> nth=0');
+    await pagina.waitForTimeout(500);
+    console.log('de volta à primeira:', JSON.stringify(await est()));
+    await foto('areas-primeira');
+    // A Visão das tarefas: o Bloco de notas arrastado para a segunda área.
+    await tecla('visao-tarefas');
+    await pagina.waitForSelector('#visao-tarefas .vt-area', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    await foto('areas-visao');
+    await pagina.locator('#visao-tarefas .vt-area >> nth=0').locator('.vt-item', { hasText: T('Bloco de notas') }).dragTo(pagina.locator('#visao-tarefas .vt-area >> nth=1'));
+    await pagina.waitForTimeout(400);
+    await foto('areas-visao-movida');
+    console.log('depois de arrastar:', JSON.stringify(await est()));
+    // O clique numa janela da outra área vai até ela.
+    await pagina.locator('#visao-tarefas .vt-area >> nth=1').locator('.vt-item', { hasText: T('Calculadora') }).click();
+    await pagina.waitForTimeout(500);
+    console.log('pelo clique na Visão:', JSON.stringify(await est()), '| aberta:', await pagina.evaluate(() => !!document.getElementById('visao-tarefas')));
+    // O botão direito na barra (no tema Mac, que não tem a barra, na Visão das tarefas): Mover para › Área de trabalho 1.
+    if (temaMacLigado) {
+      await tecla('visao-tarefas');
+      await pagina.waitForSelector('#visao-tarefas .vt-area', { timeout: 5000 });
+      await pagina.locator('#visao-tarefas .vt-item', { hasText: T('Calculadora') }).click({ button: 'right' });
+    } else await pagina.locator('#tarefas button', { hasText: T('Calculadora') }).click({ button: 'right' });
+    await pagina.waitForTimeout(200);
+    await pagina.locator('.menu .opcao', { hasText: T('Mo&ver para').replace('&', '') }).hover();
+    await pagina.waitForTimeout(400);
+    await foto('areas-mover');
+    await pagina.locator('.menu .opcao', { hasText: T('Área de trabalho {n}').replace('{n}', '1') }).click();
+    await pagina.waitForTimeout(400);
+    if (temaMacLigado) await pagina.keyboard.press('Escape');
+    console.log('calculadora movida:', JSON.stringify(await est()));
+    // Fechar a segunda área (logotipo+Ctrl+F4): as janelas dela vão para a primeira.
+    await tecla('area:fechar');
+    await pagina.waitForTimeout(400);
+    console.log('fechada a segunda:', JSON.stringify(await est()));
+    await foto('areas-fechada');
   },
 
   // Os esquemas de cores (esquemas.js): a escolha com a prévia, o Noite nas janelas, nos menus, no

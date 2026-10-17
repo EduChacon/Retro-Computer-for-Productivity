@@ -290,6 +290,9 @@ html.tema-mac.varias-telas #barra-mac { left: var(--tela-x); right: auto; width:
 #barra-mac .relogio.com-data { display: flex; gap: 6px; }
 #barra-mac .foco-tempo { color: #800000; }
 #barra-mac .bm-direita > img { width: 16px; height: 16px; }
+#barra-mac #areas { margin: 0; gap: 2px; }
+#barra-mac #areas button.area { width: 18px; height: 15px; min-height: 0; line-height: 13px; font-weight: normal; border-radius: 3px; }
+#barra-mac #areas button.area.apertado { background: var(--mac-destaque); color: #fff; padding: 0; }
 #barra-mac .bm-app { box-shadow: inset 1px 0 var(--sombra), inset 2px 0 var(--luz); padding: 0 6px 0 9px; }
 #barra-mac .bm-app img { width: 16px; height: 16px; }
 #barra-mac .bm-app span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }

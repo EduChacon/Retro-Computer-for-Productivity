@@ -10,7 +10,7 @@
  */
 import { h, img } from './util.js';
 import { abrirMenu, barraDeMenus, fecharMenus } from './menus.js';
-import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, desativarJanelas } from './janelas.js';
+import { lista, eventos as evJanelas, janelaAtiva, emCascata, lado, desativarJanelas, daAreaAtual, novaArea, numAreas, MAX_AREAS } from './janelas.js';
 import { janelasNativas, eventosNativas } from './janelas-nativas.js';
 import { estado, abrir, eventos as evSistema, definirConfig, pastaDocs, pastaMesa } from './sistema.js';
 import { tr } from './idioma.js';
@@ -69,8 +69,9 @@ export function montarBarraMac() {
 function aplicar() {
   if (!barra) return;
   if (temaMac()) {
-    const { busca, bandeja, relogio, foco } = pecasDaBarra();
-    direita.replaceChildren(...foco, relogio);
+    const { busca, bandeja, relogio, foco, areas } = pecasDaBarra();
+    // As áreas de trabalho (com mais de uma) ficam ao lado do relógio, na barra de menus.
+    direita.replaceChildren(...[areas].filter(Boolean), ...foco, relogio);
     modulos.replaceChildren(...[busca, bandeja].filter(Boolean));
   } else {
     devolverPecas();
@@ -186,7 +187,8 @@ function definicaoMesa() {
 
 async function menuDosProgramas() {
   const frente = janelaAtiva();
-  const js = lista.filter((j) => !j.dialogo && !j.fechada);
+  // As janelas da área de trabalho de agora (as outras aparecem na Visão das tarefas).
+  const js = lista.filter((j) => !j.dialogo && !j.fechada && daAreaAtual(j));
   const nativas = janelasNativas();
   const nomeFrente = frente && !frente.minimizada ? nomeDe(frente).nome : null;
   const r = btApp.getBoundingClientRect();
@@ -208,6 +210,9 @@ async function menuDosProgramas() {
     { rotulo: tr('&Em cascata'), desativado: !js.length, acao: emCascata },
     { rotulo: tr('Lado a lado &horizontal'), desativado: !js.length, acao: () => lado(false) },
     { rotulo: tr('Lado a lado &vertical'), desativado: !js.length, acao: () => lado(true) },
+    { separador: true },
+    { rotulo: tr('Vi&são das tarefas'), acao: () => import('./areas.js').then((m) => m.abrirVisao()) },
+    { rotulo: tr('&Nova área de trabalho'), desativado: numAreas() >= MAX_AREAS, acao: () => novaArea() },
   ], { x: r.left, y: r.bottom, aoFechar: () => btApp.classList.remove('aberto') });
 }
 

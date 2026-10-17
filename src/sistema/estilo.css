@@ -296,7 +296,7 @@ hr.sulco { border: none; height: 2px; box-shadow: inset 0 1px var(--sombra), ins
   min-height: 60px;
 }
 .janela.maximizada { box-shadow: none; padding: 0; }
-.janela.minimizada { display: none; }
+.janela.minimizada, .janela.outra-area { display: none; }
 
 /* Os cantos magnéticos: o contorno quadriculado de onde a janela vai encaixar (só a borda). */
 .previa-encaixe {
@@ -730,6 +730,36 @@ html.varias-telas #barra { left: var(--tela-x); right: auto; width: var(--tela-w
   padding: 0 6px 0 4px;
 }
 #bandeja img, .barra-tela .bandeja img { width: 16px; height: 16px; }
+/* As áreas de trabalho na barra (com mais de uma): um botão pequeno por área, a de agora apertada. */
+#areas { flex: none; display: flex; align-items: center; gap: 1px; margin-right: 3px; }
+#areas button.area { min-width: 0; width: 20px; height: calc(var(--altura-barra) - 6px); padding: 0; font-weight: bold; }
+#areas button.area.apertado { background: var(--face) var(--xadrez); padding: 1px 0 0 1px; }
+/* A Visão das tarefas (logotipo+Tab): uma caixa por cima das janelas, uma coluna por área. */
+#visao-tarefas { position: absolute; inset: 0; z-index: 700000; display: flex; align-items: center; justify-content: center;
+  /* A tela escurecida em xadrez, como a do Desligar da época. */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='1' y='1' width='1' height='1'/%3E%3C/svg%3E"); }
+.vt-caixa { background: var(--face); box-shadow: var(--relevo-janela); padding: 3px; max-width: calc(100% - 32px); max-height: calc(100% - 32px); display: flex; flex-direction: column; }
+.vt-areas { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; overflow: auto; min-height: 0; }
+.vt-area { width: 170px; display: flex; flex-direction: column; gap: 3px; padding: 3px; box-shadow: var(--raso); }
+.vt-area.atual { box-shadow: inset 0 0 0 2px var(--selecao); }
+.vt-area.sobre { background: var(--face) var(--xadrez); }
+.vt-topo { display: flex; gap: 2px; }
+.vt-cab { flex: 1; min-width: 0; text-align: left; font-weight: bold; padding: 0 6px; }
+.vt-cab.atual { color: var(--destaque); }
+.vt-fechar { min-width: 0; width: 22px; padding: 0; font-weight: bold; }
+.vt-lista { flex: 1; min-height: 110px; max-height: 260px; overflow: auto; background: var(--janela); box-shadow: var(--campo); padding: 2px; display: flex; flex-direction: column; }
+.vt-item { min-width: 0; min-height: 20px; box-shadow: none; background: transparent; display: flex; align-items: center; gap: 4px; padding: 0 4px; text-align: left; }
+.vt-item span { overflow: hidden; text-overflow: ellipsis; }
+.vt-item.minimizada span { color: var(--texto-fraco); }
+.vt-item:hover, .vt-item:focus-visible { background: var(--selecao); color: var(--selecao-texto); }
+.vt-item:focus-visible::after { display: none; }
+.vt-vazia { padding: 8px 4px; color: var(--texto-fraco); }
+.vt-nova { width: 130px; min-height: 140px; white-space: normal; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.vt-mais { font-size: 20px; line-height: 20px; font-weight: bold; }
+.vt-dica { padding: 0 10px 8px; color: var(--texto-fraco); line-height: 13px; max-width: 760px; }
+/* O nome da área ao trocar (logotipo+Ctrl+← e →), no meio do alto da tela, por um instante. */
+.aviso-area { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); z-index: 700001; pointer-events: none;
+  padding: 8px 16px; font-weight: bold; background: var(--face); box-shadow: var(--relevo-janela); }
 #bandeja .relogio, .barra-tela .bandeja .relogio { min-width: 38px; text-align: right; padding-top: 1px; }
 /* Com a data: duas linhas apertadas na altura da bandeja. */
 #bandeja .relogio.com-data, .barra-tela .bandeja .relogio.com-data { display: flex; flex-direction: column; align-items: flex-end; line-height: 12px; padding-top: 0; }
