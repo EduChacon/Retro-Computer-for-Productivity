@@ -172,6 +172,8 @@ await pagina.waitForSelector('#iniciar', { timeout: 30000 });
 // (No tema Mac, a Faixa de controle começa recolhida: os roteiros a abrem, para achar a busca e a bandeja.)
 if (process.env.RETRO_TEMA) await pagina.evaluate((tema) => window.__retro.definirConfig({ tema, ...(tema === 'mac' ? { barra: { faixaAberta: true } } : {}) }), process.env.RETRO_TEMA);
 temaMacLigado = process.env.RETRO_TEMA === 'mac';
+// RETRO_ESQUEMA=noite (ou outro de esquemas.js): qualquer roteiro num esquema de cores do PC clássico.
+if (process.env.RETRO_ESQUEMA) { await pagina.evaluate((esquema) => window.__retro.definirConfig({ esquema }), process.env.RETRO_ESQUEMA); await pagina.waitForTimeout(400); }
 await pagina.waitForTimeout(800);
 
 /** O mouse sobre o Programas do Iniciar aberto, pelo nome: a posição muda com os fixados e, no tema Mac, com o Sobre no alto. */
@@ -4004,6 +4006,67 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('depois:', JSON.stringify(depois));
     console.log('iguais?', JSON.stringify(antes) === JSON.stringify(depois));
     await foto('reabrir-depois');
+  },
+
+  // Os esquemas de cores (esquemas.js): a escolha com a prévia, o Noite nas janelas, nos menus, no
+  // Painel e numa caixa, os outros escuros e dois claros, e a volta ao Padrão (sem a regra na página).
+  async esquemas() {
+    await fecharTudo();
+    const estadoEsq = () => pagina.evaluate(() => ({
+      regra: !!document.getElementById('esquema-cores'), escuro: document.documentElement.classList.contains('esquema-escuro'),
+      face: getComputedStyle(document.documentElement).getPropertyValue('--face').trim(), fundo: window.__retro.estado.config.papel.cor,
+    }));
+    await abrir('painel', { secao: 'aparencia', aba: 'tema' });
+    await pagina.waitForTimeout(600);
+    await pagina.selectOption('.janela.ativa .previa-esquema ~ .linha select', 'noite');
+    await pagina.waitForTimeout(300);
+    await foto('esquemas-escolha');
+    await pagina.locator('.janela.ativa button', { hasText: T('OK') }).first().click();
+    await pagina.waitForTimeout(1000);
+    console.log('noite:', JSON.stringify(await estadoEsq()));
+    const janelas = async () => {
+      await abrir('explorador', { pasta: DOCS });
+      await pagina.waitForTimeout(700);
+      await abrir('bloco');
+      await pagina.waitForTimeout(400);
+      await pagina.keyboard.type('Um texto no Bloco de notas.');
+      await pagina.keyboard.down('Shift');
+      for (let i = 0; i < 6; i++) await pagina.keyboard.press('ArrowLeft');
+      await pagina.keyboard.up('Shift');
+    };
+    await janelas();
+    await pagina.locator('.janela.ativa .menubar > div').first().click();
+    await pagina.waitForTimeout(300);
+    await foto('esquemas-noite');
+    await pagina.keyboard.press('Escape');
+    await fecharTudo();
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Efeitos') }).click();
+    await pagina.waitForTimeout(300);
+    await pagina.evaluate((t) => import('./js/dialogos.js').then((m) => { m.mensagem({ titulo: t.titulo, texto: t.texto, tipo: 'pergunta', botoes: [{ texto: t.sim, valor: true, padrao: true }, { texto: t.nao, valor: false }] }); }),
+      { titulo: T('Excluir a nota'), texto: T('Excluir esta nota? Ela vai para a Lixeira, de onde pode ser restaurada.'), sim: T('&Sim'), nao: T('&Não') });
+    await pagina.waitForTimeout(400);
+    await foto('esquemas-noite-painel');
+    await pagina.keyboard.press('Escape');
+    await fecharTudo();
+    await pagina.click('#iniciar');
+    await pagina.waitForTimeout(400);
+    await foto('esquemas-noite-iniciar');
+    await pagina.keyboard.press('Escape');
+    // Os outros, como o Claude os muda (pela configuração): o fundo de sempre acompanha.
+    for (const id of ['meianoite', 'fosforo', 'ambar', 'oceano', 'areia']) {
+      await pagina.evaluate((e) => window.__retro.definirConfig({ esquema: e }), id);
+      await pagina.waitForTimeout(500);
+      await janelas();
+      await pagina.waitForTimeout(300);
+      console.log(id + ':', JSON.stringify(await estadoEsq()));
+      await foto('esquemas-' + id);
+      await fecharTudo();
+    }
+    await pagina.evaluate(() => window.__retro.definirConfig({ esquema: 'padrao' }));
+    await pagina.waitForTimeout(500);
+    console.log('padrão de volta:', JSON.stringify(await estadoEsq()));
   },
 
   async notas() {

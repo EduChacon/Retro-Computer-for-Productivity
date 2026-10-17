@@ -69,7 +69,7 @@ class Programas {
       h('hr.sulco'),
       h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
         h('button', { on: { click: () => this.deArquivo() } }, tr('Instalar de um arquivo .zip…')),
-        h('div', { style: { flex: '1', color: '#808080', lineHeight: '12px' } }, tr('Para instalar um pacote "nome-web-versão.zip" já baixado.')),
+        h('div', { style: { flex: '1', color: 'var(--texto-fraco)', lineHeight: '12px' } }, tr('Para instalar um pacote "nome-web-versão.zip" já baixado.')),
         h('button', { on: { click: () => this.j.fechar() } }, tr('Fechar'))),
     );
     // As abas: os programas recomendados (os Craft) e a loja do computador (o Flathub no Linux,
@@ -123,7 +123,7 @@ class Programas {
         else if (inst) det = tr('Instalado: versão {versao}', { versao: inst.versao });
         else det = p.tamanho ? tr('Não instalado · cerca de {tamanho}', { tamanho: p.tamanho }) : tr('Não instalado');
         const detEl = h('div.det', det);
-        if (nova) detEl.style.color = '#008000';
+        if (nova) detEl.style.color = 'var(--sucesso)';
         const el = h('div.linha-programa', img(p.icone || 'programa', 32),
           h('div.info', h('div.nome', p.nome), h('div.desc', doCatalogo(p.descricao)), detEl));
         el.addEventListener('mousedown', () => this.selecionar(p.id));

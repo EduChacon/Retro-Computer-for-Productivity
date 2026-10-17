@@ -40,6 +40,7 @@ html.tema-mac {
   --selecao-texto: #000000;
   --dica: #ffffcc;
   --mac-destaque: #4747b8; /* o realce dos menus, a barra de progresso e o anel do foco */
+  --destaque: #4747b8; /* as letras em destaque (os títulos da Ajuda, os dias da Agenda) */
   --mac-lavanda: #ccccff;
   --mac-contorno: #555555;
   --relevo-janela: inset 0 0 0 1px var(--mac-contorno), inset 2px 2px var(--luz), inset -2px -2px var(--sombra);

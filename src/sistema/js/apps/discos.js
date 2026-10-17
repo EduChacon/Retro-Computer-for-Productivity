@@ -127,7 +127,7 @@ class JanelaDiscos {
     // O andamento da gravação (escondido fora dela).
     this.gFase = h('div');
     this.gBarra = h('div');
-    this.gNumeros = h('div', { style: { color: '#404040', minHeight: '13px' } });
+    this.gNumeros = h('div', { style: { color: 'var(--texto-meio)', minHeight: '13px' } });
     this.btParar = h('button', { on: { click: () => this.parar() } }, tr('Parar'));
     this.gTitulo = h('legend');
     this.pGravacao = h('fieldset.dsc-gravacao', { hidden: true }, this.gTitulo,
@@ -399,7 +399,7 @@ class JanelaDiscos {
     const maior = Math.max(1, ...itens.map((x) => x[1]));
     this.eOcupa.replaceChildren(...itens.map(([nome, t, icone]) => h('div.dsc-ocupa-linha', img(icone, 16), h('span.dsc-ocupa-nome', nome),
       h('div.dsc-ocupa-barra', h('div', { style: { width: Math.max(t ? 1 : 0, (t / maior) * 100) + '%' } })), h('span.dsc-ocupa-tam', tamanho(t)))));
-    if (u.incompleto) this.eOcupa.append(h('div', { style: { padding: '2px 4px', color: '#404040' } }, tr('(muitos arquivos: a conta parou no meio)')));
+    if (u.incompleto) this.eOcupa.append(h('div', { style: { padding: '2px 4px', color: 'var(--texto-meio)' } }, tr('(muitos arquivos: a conta parou no meio)')));
     // A limpeza: cada item com o tamanho; o que tem zero fica desmarcado.
     const opcoes = [
       ['lixeira', tr('Lixeira'), u.lixeira],

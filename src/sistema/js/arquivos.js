@@ -474,7 +474,7 @@ export async function versoesAnteriores(rel) {
     el.addEventListener('dblclick', () => restaurarEsta());
     return el;
   });
-  const listaEl = h('div.lista-arquivos.vista-lista', { style: { height: '160px', flexWrap: 'nowrap' } }, linhas.length ? linhas : h('div', { style: { padding: '6px', color: '#808080' } }, tr('Ainda não há versões anteriores deste arquivo.')));
+  const listaEl = h('div.lista-arquivos.vista-lista', { style: { height: '160px', flexWrap: 'nowrap' } }, linhas.length ? linhas : h('div', { style: { padding: '6px', color: 'var(--texto-fraco)' } }, tr('Ainda não há versões anteriores deste arquivo.')));
   const restaurarEsta = async () => {
     if (!escolhida) return;
     const ok = await confirmar(tr('Voltar {nome} para a versão de {data}?\n\nO conteúdo atual também fica guardado nas versões.', { nome: nomeDe(rel), data: dataHora(escolhida.modificado) }), { titulo: tr('Restaurar versão') });

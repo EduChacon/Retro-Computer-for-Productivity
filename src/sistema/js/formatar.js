@@ -104,7 +104,7 @@ function caixaFormatar({ nome, capacidade, rotulo: rotuloInicial, alvo, inteiro 
     campo(tr('Rótulo do volume:'), rotulo),
     h('label', { style: { display: 'flex', gap: '6px', alignItems: 'flex-start', lineHeight: '13px', marginBottom: '8px' } }, chkInteiro,
       h('span', tr('Usar o pendrive inteiro (apaga todas as partições e cria uma só)'))),
-    h('div', { style: { color: '#800000', lineHeight: '13px', margin: '4px 0 8px' } }, tr('Formatar apaga todos os arquivos do disco.')),
+    h('div', { style: { color: 'var(--alerta)', lineHeight: '13px', margin: '4px 0 8px' } }, tr('Formatar apaga todos os arquivos do disco.')),
     situacao,
     h('div.acoes.direita', btIniciar, btFechar));
   btIniciar.addEventListener('click', async () => {

@@ -15,7 +15,7 @@ const net = require('node:net');
 const crypto = require('node:crypto');
 
 /** O que o Claude pode mudar nas configurações (o resto fica só com o usuário, no Painel). */
-const PERMITIDAS = ['idioma', 'telaCheia', 'escala', 'papel', 'tema', 'sons', 'volume', 'protecaoTela', 'mesa', 'barra', 'iniciar',
+const PERMITIDAS = ['idioma', 'telaCheia', 'escala', 'papel', 'tema', 'esquema', 'sons', 'volume', 'protecaoTela', 'mesa', 'barra', 'iniciar',
   'janelas', 'luzNoturna', 'transferencia', 'diario', 'acessibilidade', 'foco', 'jogos', 'naoPerturbe'];
 
 /** Só as chaves permitidas; as outras voltam na lista das recusadas. */
@@ -46,7 +46,7 @@ const FERRAMENTAS = [
   },
   {
     name: 'mudar_configuracoes',
-    description: `Muda as configurações do Retro Computer (mescladas com as atuais; as listas são trocadas inteiras). Só valem estas chaves: ${PERMITIDAS.join(', ')}. Exemplos: { "papel": { "cor": "#004080", "padrao": "nenhum" } } (o fundo da área de trabalho), { "barra": { "fixados": ["explorador", "bloco"] } }, { "iniciar": { "pequenos": true, "fixados": ["calculadora"] } }, { "sons": false }, { "luzNoturna": { "ligada": true } }, { "tema": "mac" } (o tema do Mac clássico; "pc" volta ao de sempre). A senha, a chave de API, o disco e as atualizações ficam só com o usuário, no Painel de controle.`,
+    description: `Muda as configurações do Retro Computer (mescladas com as atuais; as listas são trocadas inteiras). Só valem estas chaves: ${PERMITIDAS.join(', ')}. Exemplos: { "papel": { "cor": "#004080", "padrao": "nenhum" } } (o fundo da área de trabalho), { "barra": { "fixados": ["explorador", "bloco"] } }, { "iniciar": { "pequenos": true, "fixados": ["calculadora"] } }, { "sons": false }, { "luzNoturna": { "ligada": true } }, { "tema": "mac" } (o tema do Mac clássico; "pc" volta ao de sempre). { "esquema": "noite" } (o esquema de cores do PC clássico: padrao, areia, ardosia, berinjela, musgo, oceano, tijolo, rosa, e os escuros noite, meianoite, fosforo e ambar). A senha, a chave de API, o disco e as atualizações ficam só com o usuário, no Painel de controle.`,
     inputSchema: { type: 'object', properties: { configuracoes: { type: 'object', description: 'A parte das configurações a mudar.' } }, required: ['configuracoes'] },
   },
   {

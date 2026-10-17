@@ -30,7 +30,7 @@ class JanelaAntivirus {
     this.lista = h('div.av-lista.campo', { tabIndex: 0 });
     this.btVerificar = h('button.padrao', { on: { click: () => (this.rodando ? this.parar() : this.verificar()) } }, tr('Verificar agora'));
     this.btLixeira = h('button', { disabled: true, on: { click: () => this.mandarParaLixeira() } }, tr('Mandar para a Lixeira'));
-    this.motor = h('div', { style: { color: '#404040', lineHeight: '13px', flex: '1' } });
+    this.motor = h('div', { style: { color: 'var(--texto-meio)', lineHeight: '13px', flex: '1' } });
     this.btMotor = h('button', { hidden: true });
     this.j.corpo.style.padding = '8px';
     this.j.corpo.style.display = 'flex';

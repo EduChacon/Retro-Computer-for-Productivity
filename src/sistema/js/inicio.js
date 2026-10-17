@@ -7,6 +7,7 @@ import { aplicarFundo, aplicarEscala, fundoParaTema } from './aparencia.js';
 import { montarBarra } from './barra.js';
 import { montarBarraMac } from './barra-mac.js';
 import { aplicarTema, temaMac, temaAtual } from './tema.js';
+import { aplicarEsquema, esquemaAtual, esquemaValido, fundoParaEsquema } from './esquemas.js';
 import { montarMesa, atualizar as atualizarMesa } from './mesa.js';
 import { tocar } from './sons.js';
 import { confirmar } from './dialogos.js';
@@ -165,6 +166,7 @@ async function iniciar() {
   estado.raizDisco = await retro.disco.raiz();
   await atualizarProgramas().catch(() => { });
   aplicarTema(estado.config.tema);
+  aplicarEsquema(estado.config.esquema);
   evSistema.on('config', () => {
     // O fundo de sempre de um tema vira o do outro, mude o tema por onde mudar (o Painel já manda
     // o fundo trocado; o Claude, pelo servidor MCP, só o tema).
@@ -177,6 +179,15 @@ async function iniciar() {
       if (papel.cor !== atual.cor || papel.padrao !== atual.padrao) definirConfig({ papel }).catch(() => { });
     }
     aplicarTema(estado.config.tema);
+    // O esquema de cores, do mesmo jeito: o fundo de sempre de um vira o do outro (só no PC clássico).
+    const esqAntes = esquemaAtual();
+    const esqDepois = esquemaValido(estado.config.esquema);
+    if (esqAntes !== esqDepois) {
+      const atual = estado.config.papel || {};
+      const papel = depois === 'pc' ? fundoParaEsquema(atual, esqAntes, esqDepois) : atual;
+      if (papel !== atual) { aplicarFundo(papel); definirConfig({ papel }).catch(() => { }); }
+      aplicarEsquema(esqDepois);
+    }
   });
   aplicarFundo(estado.config.papel);
   await aplicarEscala(estado.config.escala);

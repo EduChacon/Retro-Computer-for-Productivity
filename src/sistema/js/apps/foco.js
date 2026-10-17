@@ -202,7 +202,7 @@ class JanelaFoco {
     this.j = new Janela({ id: 'foco', titulo: tr('Foco'), icone: 'foco', largura: 320, altura: 300, redimensionavel: false, maximizavel: false });
     this.tempo = h('div.foco-relogio');
     this.fase = h('div.foco-fase');
-    this.hoje = h('div', { style: { textAlign: 'center', color: '#808080', marginTop: '4px' } });
+    this.hoje = h('div', { style: { textAlign: 'center', color: 'var(--texto-fraco)', marginTop: '4px' } });
     this.btIniciar = h('button.padrao', { on: { click: () => (F.rodando ? pausar() : iniciar()) } });
     const c = cfg();
     const num = (v, min, max) => h('input', { type: 'number', value: v, min, max, style: { width: '46px' } });

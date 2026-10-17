@@ -11,6 +11,7 @@ import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, er
 import { deslizante } from '../controles.js';
 import { CORES, PADROES, FUNDO_INICIO, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS, fundoParaTema } from '../aparencia.js';
 import { TEMAS, temaMac } from '../tema.js';
+import { ESQUEMAS, esquemaValido, variaveisDoEsquema, fundoParaEsquema } from '../esquemas.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
@@ -220,7 +221,7 @@ function dialogoBarra(args = {}) {
       ...botoesJanelas),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', mac ? tr('Ícones da Faixa de controle') : tr('Ícones da bandeja')),
       h('div.lp-itens', ...chksBandeja.map((x) => h('label', x.el, h('span', x.rotulo)))),
-      h('div', { style: { color: '#404040', marginTop: '4px' } }, tr('O Bluetooth e a bateria só aparecem quando o computador os tem.'))),
+      h('div', { style: { color: 'var(--texto-meio)', marginTop: '4px' } }, tr('O Bluetooth e a bateria só aparecem quando o computador os tem.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Fixados na barra de tarefas')), fixBarra.el));
   // A aba Menu Iniciar: os fixados no alto, os itens à vista, os ícones pequenos e os recentes.
   const fixIni = listaDeProgramas(ini.fixados || [], tr('Nenhum programa fixado. Clique com o botão direito num programa do Iniciar e escolha "Fixar no menu Iniciar".'));
@@ -228,7 +229,7 @@ function dialogoBarra(args = {}) {
   const chks = ITENS_INICIAR.map((it) => ({ id: it.id, el: h('input', { type: 'checkbox', checked: !ocultos.has(it.id) }), rotulo: tr(it.rotulo) }));
   const chkPequenos = h('input', { type: 'checkbox', checked: !!ini.pequenos });
   const chkRecentes = h('input', { type: 'checkbox', checked: ini.recentes !== false });
-  const avisoLimpo = h('span', { style: { color: '#404040' } });
+  const avisoLimpo = h('span', { style: { color: 'var(--texto-meio)' } });
   const btLimpar = h('button', { type: 'button', disabled: !(c.recentes || []).length, on: { click: async () => { await definirConfig({ recentes: [] }); btLimpar.disabled = true; avisoLimpo.textContent = tr('A lista foi limpa.'); } } }, rotulo(tr('&Limpar a lista')));
   const abaIniciar = h('div',
     h('fieldset', { style: { margin: '0 0 8px' } }, h('legend', tr('Fixados no alto do menu Iniciar')), fixIni.el),
@@ -266,7 +267,7 @@ function escolhaDeFundo(papel, aoMudar) {
   const marcarCores = () => [...cores.children].forEach((el, i) => el.classList.toggle('sel', CORES[i] === papel.cor));
   const outra = h('input', { type: 'color', style: { width: '40px', height: '21px', padding: '0', border: 'none' } });
   outra.addEventListener('input', () => { papel.cor = outra.value; marcarCores(); aoMudar(); });
-  const listaPadroes = h('select', { size: 6, style: { height: 'auto', width: '140px', background: '#fff' } }, Object.entries(PADROES).map(([k, p]) => h('option', { value: k }, tr(p.nome))));
+  const listaPadroes = h('select', { size: 6, style: { height: 'auto', width: '140px', background: 'var(--janela)' } }, Object.entries(PADROES).map(([k, p]) => h('option', { value: k }, tr(p.nome))));
   listaPadroes.addEventListener('change', () => { papel.padrao = listaPadroes.value; aoMudar(); });
   const atualizar = () => { marcarCores(); outra.value = papel.cor || '#008080'; listaPadroes.value = papel.padrao || 'nenhum'; };
   atualizar();
@@ -356,10 +357,47 @@ function dialogoAparencia(args = {}) {
     });
     return h('label.tema-opcao', h('div.previa-tema.' + k, h('div.pt-menus'), h('div.pt-janela', h('div.pt-titulo'), h('div.pt-corpo')), h('div.pt-barra')), h('span', radio, tr(nome)));
   });
+  // O esquema de cores do PC clássico (esquemas.js), com a prévia: as janelas, o menu, o texto e um botão.
+  let esquema = esquemaValido(c.esquema);
+  const selEsquema = h('select', { style: { width: '100%' } }, Object.entries(ESQUEMAS).map(([k, e]) => h('option', { value: k }, tr(e.nome))));
+  selEsquema.value = esquema;
+  const previaEsq = h('div.previa-esquema',
+    h('div.pe-janela.inativa', h('div.pe-titulo', tr('Janela inativa'))),
+    h('div.pe-janela.ativa',
+      h('div.pe-titulo', tr('Janela ativa')),
+      h('div.pe-menus', h('span', tr('Normal')), h('span.des', tr('Desativado')), h('span.sel', tr('Selecionado'))),
+      h('div.pe-campo', tr('Texto da janela'), ' ', h('span.pe-sel', tr('selecionado')), h('div.pe-fraco', tr('Uma nota mais apagada')), h('a', tr('Um link')))),
+    h('div.pe-janela.pe-msg', h('div.pe-titulo', tr('Mensagem')), h('div.pe-texto', tr('Texto da mensagem')), h('div.pe-botao', tr('OK'))));
+  const mostrarEsquema = () => {
+    previaEsq.style.cssText = variaveisDoEsquema(esquema);
+    previaEsq.style.background = ESQUEMAS[esquema].mesa;
+  };
+  selEsquema.addEventListener('change', () => {
+    Object.assign(papel, fundoParaEsquema(papel, esquema, selEsquema.value));
+    esquema = esquemaValido(selEsquema.value);
+    mostrarEsquema();
+    fundo.atualizar();
+    atualizarPrevia();
+  });
+  mostrarEsquema();
+  const notaEsquema = h('div', { style: { color: 'var(--texto-fraco)', lineHeight: '13px', marginTop: '6px' } });
+  const marcarTemaEsquema = () => {
+    selEsquema.disabled = tema === 'mac';
+    previaEsq.classList.toggle('apagada', tema === 'mac');
+    notaEsquema.textContent = tema === 'mac'
+      ? tr('O Mac clássico tem as cores próprias: o esquema vale para o PC clássico.')
+      : tr('Os esquemas escuros deixam as janelas, os campos e as listas escuros, com o texto claro.');
+  };
+  marcarTemaEsquema();
+  for (const o of opcoesTema) o.querySelector('input').addEventListener('change', marcarTemaEsquema);
   const abaTema = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tema')), h('div.temas', ...opcoesTema)),
-    h('div', { style: { color: '#808080', lineHeight: '13px' } },
-      tr('O PC clássico tem a barra de tarefas e o Iniciar embaixo. O Mac clássico, inspirado no Mac OS 9, tem a barra de menus no alto da tela (o menu do logotipo no lugar do Iniciar, os menus da janela da frente e, no canto, o menu dos programas abertos), a Faixa de controle com os programas fixados, as janelas que se recolhem com um duplo clique no título e os ícones próprios dele.')));
+    h('div', { style: { color: 'var(--texto-fraco)', lineHeight: '13px' } },
+      tr('O PC clássico tem a barra de tarefas e o Iniciar embaixo. O Mac clássico, inspirado no Mac OS 9, tem a barra de menus no alto da tela (o menu do logotipo no lugar do Iniciar, os menus da janela da frente e, no canto, o menu dos programas abertos), a Faixa de controle com os programas fixados, as janelas que se recolhem com um duplo clique no título e os ícones próprios dele.')),
+    h('fieldset', { style: { margin: '10px 0 0' } }, h('legend', tr('Esquema de cores')),
+      previaEsq,
+      h('div.linha', { style: { marginTop: '6px' } }, h('div.select-caixa', { style: { flex: '1' } }, selEsquema)),
+      notaEsquema));
 
   const chkProt = h('input', { type: 'checkbox', checked: protecao.ligada });
   const minProt = h('input', { type: 'number', min: 1, max: 120, value: protecao.minutos, style: { width: '56px' } });
@@ -415,7 +453,7 @@ function dialogoAparencia(args = {}) {
   }).catch(() => { });
   // As várias telas: no modo sistema, o arranjo (duplicar, estender, uma só); fora dele, o monitor.
   const varias = { el: h('div', { hidden: true, style: { marginTop: '8px' } }), antes: null, escolhido: null, monitor: null, monitorAntes: null, duas: null, duasAntes: null };
-  const notaVarias = (texto) => h('div', { style: { color: '#808080', lineHeight: '13px', marginTop: '4px' } }, texto);
+  const notaVarias = (texto) => h('div', { style: { color: 'var(--texto-fraco)', lineHeight: '13px', marginTop: '4px' } }, texto);
   if (c.modoSistema) {
     retro.tela.telas().then((e) => {
       if (!e || !e.disponivel || e.telas.length < 2) return;
@@ -462,11 +500,11 @@ function dialogoAparencia(args = {}) {
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tela')),
       h('div', h('label', radioCheia, h('span', tr('Tela cheia (recomendado para o foco)')))),
       h('div', { style: { marginTop: '6px' } }, h('label', radioJanela, h('span', tr('Numa janela do computador principal')))),
-      c.modoSistema ? null : h('div', { style: { marginTop: '6px', color: '#808080' } }, tr('A tecla F11 alterna a qualquer momento.')),
+      c.modoSistema ? null : h('div', { style: { marginTop: '6px', color: 'var(--texto-fraco)' } }, tr('A tecla F11 alterna a qualquer momento.')),
       areaTela, varias.el),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Tamanho dos pixels')),
       h('div.linha', h('div.select-caixa', { style: { flex: '1' } }, selEscala)),
-      h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Nos tamanhos inteiros (1, 2, 3 e 4), cada pixel da interface usa um número inteiro de pixels da tela, e as letras e os ícones ficam mais nítidos; os do meio dão um tamanho entre eles.'))),
+      h('div', { style: { color: 'var(--texto-fraco)', lineHeight: '13px' } }, tr('Nos tamanhos inteiros (1, 2, 3 e 4), cada pixel da interface usa um número inteiro de pixels da tela, e as letras e os ícones ficam mais nítidos; os do meio dão um tamanho entre eles.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Inicialização')),
       h('label', chkRapido, h('span', tr('Pular a tela de abertura'))),
       h('div', { style: { marginTop: '4px' } }, h('label', chkReabrir, h('span', tr('Reabrir as janelas que estavam abertas')))),
@@ -502,7 +540,7 @@ function dialogoAparencia(args = {}) {
   const abaEfeitos = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Janelas')),
       h('label', chkEncaixe, h('span', tr('Encaixar as janelas ao arrastá-las até as bordas e os cantos da tela'))),
-      h('div', { style: { color: '#808080', marginTop: '6px', lineHeight: '13px' } },
+      h('div', { style: { color: 'var(--texto-fraco)', marginTop: '6px', lineHeight: '13px' } },
         tr('À esquerda ou à direita, a janela ocupa metade da tela; num canto, um quarto; no alto, a tela toda. A tecla do logotipo com as setas faz o mesmo.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Luz noturna')),
       h('label', chkLuz, h('span', tr('Deixar as cores mais quentes, com menos azul, para descansar a vista'))),
@@ -524,7 +562,7 @@ function dialogoAparencia(args = {}) {
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Ícones da área de trabalho')),
       h('div.mesa-icones', ...caixasMesa.map(({ k, c }) => h('label', c, img(NOMES_MESA[k][1], 16), h('span', tr(NOMES_MESA[k][0]))))),
       h('div.acoes', { style: { marginTop: '8px' } }, h('button', { type: 'button', on: { click: () => { for (const { k, c } of caixasMesa) c.checked = ICONES_PADRAO.includes(k); } } }, rotulo(tr('Restaurar o &padrão'))))),
-    h('div', { style: { color: '#808080', lineHeight: '13px' } },
+    h('div', { style: { color: 'var(--texto-fraco)', lineHeight: '13px' } },
       tr('Para pôr outro programa na área de trabalho, use o botão direito nele, no menu Iniciar › Adicionar à área de trabalho. Os arquivos e as pastas da área de trabalho ficam na pasta Área de trabalho do disco C:.')));
 
   const dlg = dialogoBase({
@@ -538,7 +576,7 @@ function dialogoAparencia(args = {}) {
       aplicarProt();
       escala = selEscala.value;
       previaLuz = false;
-      await definirConfig({ papel, tema, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, reabrir: { ligado: chkReabrir.checked }, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
+      await definirConfig({ papel, tema, esquema, escala, protecaoTela: protecao, inicioRapido: chkRapido.checked, reabrir: { ligado: chkReabrir.checked }, janelas: { encaixe: chkEncaixe.checked }, luzNoturna: lerLuz() });
       await definirIconesSistema(caixasMesa.filter((x) => x.c.checked).map((x) => x.k));
       if (chkAbrirAoEntrar && !chkAbrirAoEntrar.disabled) await retro.sistema.abrirAoEntrar(chkAbrirAoEntrar.checked).catch(() => { });
       aplicarFundo(papel);
@@ -631,10 +669,10 @@ function inicioComComputador() {
   caixa.append(lugar);
   retro.sistema.sessao().then((s) => {
     if (!s.instalada) {
-      lugar.replaceChildren(h('div', { style: { color: '#808080' } }, tr('Para usar o Retro Computer como o sistema do computador, instale o pacote .deb: ele acrescenta a sessão "Retro Computer" à tela de entrada do Linux.')));
+      lugar.replaceChildren(h('div', { style: { color: 'var(--texto-fraco)' } }, tr('Para usar o Retro Computer como o sistema do computador, instale o pacote .deb: ele acrescenta a sessão "Retro Computer" à tela de entrada do Linux.')));
       return;
     }
-    const partes = [h('div', { style: { color: '#808080', marginBottom: '6px' } }, c.modoSistema
+    const partes = [h('div', { style: { color: 'var(--texto-fraco)', marginBottom: '6px' } }, c.modoSistema
       ? tr('O Retro Computer está como o sistema do computador (a sessão "Retro Computer"). Para voltar à área de trabalho do Linux, use Desligar › Sair da sessão.')
       : tr('Para usar o Retro Computer como o sistema do computador, escolha a sessão "Retro Computer" na tela de entrada do Linux.'))];
     if (s.lightdm) {
@@ -671,7 +709,7 @@ function mudarSenha(tirar) {
     const atual = campo();
     const nova = campo();
     const repetir = campo();
-    const aviso = h('div', { style: { color: '#800000', minHeight: '13px', marginTop: '4px' } });
+    const aviso = h('div', { style: { color: 'var(--alerta)', minHeight: '13px', marginTop: '4px' } });
     const linha = (rot, c) => h('div', { style: { display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', gap: '6px', marginBottom: '6px' } }, h('span', rot), c);
     const ok = h('button.padrao', { type: 'button' }, tr('OK'));
     const confirmar = async () => {
@@ -729,7 +767,7 @@ function dialogoSenhas() {
       h('div', { style: { marginBottom: '5px' } }, h('label', chkVoltar, h('span', tr('Ao voltar da suspensão (ou ao fechar a tampa)')))),
       h('div', { style: { marginBottom: '5px' } }, h('label', chkProtecao, h('span', tr('Ao sair da proteção de tela')))),
       h('div', h('label', chkAbrir, h('span', tr('Ao abrir o Retro Computer')))),
-      estado.config.plataforma === 'linux' ? h('div', { style: { color: '#808080', marginTop: '8px', lineHeight: '13px' } }, tr('No Linux, a senha de entrada do Linux também desbloqueia (para o caso de esquecer a do Retro Computer).')) : null));
+      estado.config.plataforma === 'linux' ? h('div', { style: { color: 'var(--texto-fraco)', marginTop: '8px', lineHeight: '13px' } }, tr('No Linux, a senha de entrada do Linux também desbloqueia (para o caso de esquecer a do Retro Computer).')) : null));
   return dialogoBase({
     titulo: tr('Propriedades de Senhas'), icone: 'chave', larg: 400,
     abas: [{ titulo: tr('Tela de bloqueio'), conteudo }],
@@ -818,7 +856,7 @@ function dialogoUsuarios() {
       discoEl, emUso),
     h('label', chkPerguntar, h('span', tr('Perguntar quem vai usar ao abrir o Retro Computer'))),
     // Os usuários não são uma barreira de segurança: o Prompt de qualquer um alcança os arquivos de todos.
-    h('div', { style: { color: '#808080', marginTop: '8px', lineHeight: '13px' } }, tr('Os usuários separam as áreas de trabalho de quem divide o computador, mas não são uma proteção: o Prompt de comando de qualquer um deles alcança os arquivos de todos.')));
+    h('div', { style: { color: 'var(--texto-fraco)', marginTop: '8px', lineHeight: '13px' } }, tr('Os usuários separam as áreas de trabalho de quem divide o computador, mas não são uma proteção: o Prompt de comando de qualquer um deles alcança os arquivos de todos.')));
   return dialogoBase({
     titulo: tr('Propriedades de Usuários'), icone: 'usuarios', larg: 420,
     abas: [{ titulo: tr('Usuários'), conteudo }],
@@ -861,7 +899,7 @@ function dialogoPadroes() {
       linha.addEventListener('mousedown', () => { sel = i; desenhar(); });
       linha.addEventListener('dblclick', () => btMudar.click());
       return linha;
-    }) : [h('div', { style: { color: '#808080', padding: '2px 3px' } }, tr('Nenhum tipo tem um programa escolhido.'))]));
+    }) : [h('div', { style: { color: 'var(--texto-fraco)', padding: '2px 3px' } }, tr('Nenhum tipo tem um programa escolhido.'))]));
     btMudar.disabled = btVoltar.disabled = !l.length;
     descricao.textContent = l.length ? tr('Os arquivos {tipo} (.{ext}) abrem com {programa}.', { tipo: tipoDe('a.' + l[sel]).descricao, ext: l[sel], programa: nomeDoPadrao(l[sel], pend[l[sel]]) }) : '';
   };
@@ -944,7 +982,7 @@ function dialogoTeclado() {
   const atalhos = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Área de transferência')),
       h('label', chkHistorico, h('span', tr('Guardar o histórico do que é copiado (logotipo + V)'))),
-      h('div', { style: { color: '#808080', marginTop: '6px', lineHeight: '13px' } },
+      h('div', { style: { color: 'var(--texto-fraco)', marginTop: '6px', lineHeight: '13px' } },
         tr('Os últimos 25 textos copiados, só na memória: nada vai para o disco, e tudo some ao fechar o Retro Computer. O que os gerenciadores de senhas marcam como secreto fica de fora.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Teclas de atalho')),
       h('div', { style: { lineHeight: '13px' } }, tr('Alt+Tab troca de janela, Alt+F4 fecha, e a tecla do logotipo com uma letra abre o que se usa mais: E, o Explorador; R, o Executar; D, a área de trabalho; V, a área de transferência; L, o bloqueio.')),
@@ -1033,7 +1071,7 @@ async function dialogoMouse() {
   const movimento = h('div',
     grupo(tr('Velocidade do ponteiro'), velM.el, acelM.el),
     grupo(tr('Roda do mouse'), natM.el),
-    m ? null : h('div', { style: { color: '#808080', lineHeight: '13px' } }, tr('Nenhum mouse ligado agora: estas opções valem quando um for ligado.')));
+    m ? null : h('div', { style: { color: 'var(--texto-fraco)', lineHeight: '13px' } }, tr('Nenhum mouse ligado agora: estas opções valem quando um for ligado.')));
 
   // O touchpad.
   const velT = velocidade(t, tr('Velocidade do ponteiro do touchpad'));
@@ -1131,7 +1169,7 @@ function dialogoSeguranca() {
   const chkHttps = h('input', { type: 'checkbox', checked: n.soHttps !== false });
   const chkLimpar = h('input', { type: 'checkbox', checked: !!n.limparAoFechar });
   const chkHistorico = h('input', { type: 'checkbox', checked: !estado.config.transferencia || estado.config.transferencia.historico !== false });
-  const nota = (texto) => h('div', { style: { color: '#808080', margin: '4px 0 10px 18px', lineHeight: '13px' } }, texto);
+  const nota = (texto) => h('div', { style: { color: 'var(--texto-fraco)', margin: '4px 0 10px 18px', lineHeight: '13px' } }, texto);
   const privacidade = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Navegador')),
       h('label', chkHttps, h('span', tr('Só conexões seguras (HTTPS)'))),
@@ -1211,7 +1249,7 @@ function dialogoCopia() {
       h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, campo, h('button', { type: 'button', on: { click: escolher } }, rotulo(tr('&Escolher…'))))),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Quando')),
       h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, h('label', chk, h('span', tr('Fazer a cópia sozinho:'))), h('div.select-caixa', sel)),
-      h('div', { style: { color: '#808080', marginTop: '6px', lineHeight: '13px' } }, tr('Com o destino desligado (o disco externo guardado), a cópia espera: ela é feita quando ele voltar.'))),
+      h('div', { style: { color: 'var(--texto-fraco)', marginTop: '6px', lineHeight: '13px' } }, tr('Com o destino desligado (o disco externo guardado), a cópia espera: ela é feita quando ele voltar.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Situação')), situacao,
       h('div.acoes', { style: { marginTop: '8px' } }, btAgora, btAbrir)));
   const j = dialogoBase({
@@ -1231,7 +1269,7 @@ function dialogoCopia() {
 function dialogoFirewall() {
   const radioLigado = h('input', { type: 'radio', name: 'firewall', disabled: true });
   const radioDesligado = h('input', { type: 'radio', name: 'firewall', disabled: true });
-  const nota = h('div', { style: { color: '#808080', marginTop: '8px', lineHeight: '13px' } }, tr('Lendo…'));
+  const nota = h('div', { style: { color: 'var(--texto-fraco)', marginTop: '8px', lineHeight: '13px' } }, tr('Lendo…'));
   let antes = null;
   retro.firewall.estado().then((e) => {
     if (!e || !e.disponivel) { nota.textContent = tr('O firewall deste computador é configurado pelo próprio sistema.'); return; }
@@ -1289,7 +1327,7 @@ async function dialogoDisco() {
       h('button', { on: { click: () => retro.disco.mostrar('') } }, tr('Mostrar a pasta')),
       estado.config.portatil ? null : h('button', { on: { click: trocar } }, tr('Trocar a pasta…'))),
     // No modo portátil, o disco vai junto com o programa (num pendrive, por exemplo).
-    estado.config.portatil ? h('div', { style: { color: '#404040', lineHeight: '13px', marginBottom: '10px' } }, tr('Modo portátil: as configurações, os programas e o disco C: ficam na pasta "Retro Computer (dados)", ao lado do programa.')) : null,
+    estado.config.portatil ? h('div', { style: { color: 'var(--texto-meio)', lineHeight: '13px', marginBottom: '10px' } }, tr('Modo portátil: as configurações, os programas e o disco C: ficam na pasta "Retro Computer (dados)", ao lado do programa.')) : null,
     h('hr.sulco'),
     h('div', { style: { display: 'grid', gridTemplateColumns: '14px 100px 1fr', gap: '4px 6px', alignItems: 'center' } },
       h('div', { style: { width: '12px', height: '12px', background: '#0000ff', boxShadow: 'inset 0 0 0 1px #000' } }), tr('Espaço usado:'), tamanho(usado),
@@ -1321,7 +1359,7 @@ async function dialogoDisco() {
   const abas = [{ titulo: tr('Geral'), conteudo }];
   // A busca pelo conteúdo: o índice dos documentos (só neste computador; desligado, ele é apagado).
   const chkConteudo = h('input', { type: 'checkbox', checked: (estado.config.busca || {}).conteudo !== false });
-  const situacaoIndice = h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '8px' } });
+  const situacaoIndice = h('div', { style: { color: 'var(--texto-meio)', lineHeight: '13px', marginTop: '8px' } });
   retro.indice.estado().then((e) => {
     situacaoIndice.textContent = !e.ligado ? '' : e.faltam
       ? tr('{n} documento(s) no índice; faltam {f}.', { n: e.comTexto, f: e.faltam })
@@ -1334,7 +1372,7 @@ async function dialogoDisco() {
       h('hr.sulco'),
       h('div', { style: { lineHeight: '13px', margin: '8px 0' } }, tr('O Localizar e a caixa de busca da barra de tarefas também procuram dentro dos documentos: textos, Word, OpenDocument, planilhas, apresentações e PDFs. O texto de cada um fica guardado só neste computador, na pasta de dados do Retro Computer.')),
       h('label', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, chkConteudo, rotulo(tr('Procurar também &dentro dos arquivos'))),
-      h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '8px' } }, tr('Desligada, a busca fica só pelos nomes, e o texto guardado é apagado.')),
+      h('div', { style: { color: 'var(--texto-meio)', lineHeight: '13px', marginTop: '8px' } }, tr('Desligada, a busca fica só pelos nomes, e o texto guardado é apagado.')),
       situacaoIndice),
   });
   let chkFora = null;
@@ -1401,7 +1439,7 @@ async function dialogoClaude() {
     btInstalar.hidden = !!p;
   });
   const campo = h('input', { type: 'password', placeholder: c.temChave ? tr('•••••••• (guardada)') : 'sk-ant-…', spellcheck: false, style: { width: '100%' } });
-  const situacao = h('div', { style: { color: '#808080', marginTop: '4px', lineHeight: '13px' } },
+  const situacao = h('div', { style: { color: 'var(--texto-fraco)', marginTop: '4px', lineHeight: '13px' } },
     c.cofre
       ? (c.temChave ? tr('Há uma chave guardada (cifrada pelo cofre de senhas do sistema).') : tr('Nenhuma chave guardada.'))
       : tr('O cofre de senhas do sistema não está disponível: a chave não pode ser guardada aqui.'));
@@ -1416,7 +1454,7 @@ async function dialogoClaude() {
         h('button', { disabled: !c.cofre, on: { click: guardar } }, tr('Guardar')),
         h('button', { disabled: !c.temChave, on: { click: apagar } }, tr('Apagar a chave')),
         h('button', { on: { click: () => abrirEndereco('https://console.anthropic.com/settings/keys') } }, tr('Obter uma chave…')))),
-    h('p', { style: { color: '#808080' } }, tr('A chave só é entregue ao Prompt de comando (variável ANTHROPIC_API_KEY); ela não aparece na tela nem vai para o disco C:.')),
+    h('p', { style: { color: 'var(--texto-fraco)' } }, tr('A chave só é entregue ao Prompt de comando (variável ANTHROPIC_API_KEY); ela não aparece na tela nem vai para o disco C:.')),
   );
   async function guardar() {
     const v = campo.value.trim();
@@ -1465,7 +1503,7 @@ function dialogoIdioma() {
     h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' } }, img('internet', 32), h('div', { style: { lineHeight: '14px' } }, tr('O idioma vale para o Retro Computer e para os programas que têm a interface traduzida (o WordCraft, por exemplo).'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Idioma')),
       radios.map(({ o, r }) => h('div', { style: { margin: '4px 0' } }, h('label', r, h('span', o.nome))))),
-    h('p', { style: { color: '#808080', lineHeight: '13px' } }, tr('As pastas do disco C: continuam com os nomes de quando foram criadas.')),
+    h('p', { style: { color: 'var(--texto-fraco)', lineHeight: '13px' } }, tr('As pastas do disco C: continuam com os nomes de quando foram criadas.')),
   );
   dialogoBase({
     titulo: tr('Propriedades de Idioma'),
@@ -1546,7 +1584,7 @@ async function abaAudio() {
       h('div', { style: { display: 'flex', gap: '10px', alignItems: 'flex-start' } }, img('som', 32),
         h('div', { style: { flex: '1', minWidth: '0', display: 'flex', flexDirection: 'column', gap: '6px' } },
           linhaSel(tr('Aparelho preferido:'), selSaida),
-          h('div', { style: { lineHeight: '13px', color: '#404040' } }, tr('O que está tocando passa para o aparelho escolhido. O volume fica no ícone do alto-falante, na bandeja.')),
+          h('div', { style: { lineHeight: '13px', color: 'var(--texto-meio)' } }, tr('O que está tocando passa para o aparelho escolhido. O volume fica no ícone do alto-falante, na bandeja.')),
           h('div', h('button', { type: 'button', on: { click: async () => { await aplicarSaida(); tocar('info'); } } }, tr('Testar')))))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Gravação')),
       h('div', { style: { display: 'flex', gap: '10px', alignItems: 'flex-start' } }, img('microfone', 32),
@@ -1587,7 +1625,7 @@ function dialogoInternet() {
   const rFirefox = h('input', { type: 'radio', name: 'links', checked: links === 'auto' || links === 'firefox', disabled: true });
   const rRetro = h('input', { type: 'radio', name: 'links', checked: links === 'retro' });
   const rPrincipal = h('input', { type: 'radio', name: 'links', checked: links === 'principal', disabled: !!estado.config.modoSistema });
-  const notaFirefox = h('div', { style: { color: '#808080', margin: '2px 0 6px 18px', lineHeight: '13px' } }, tr('Lendo…'));
+  const notaFirefox = h('div', { style: { color: 'var(--texto-fraco)', margin: '2px 0 6px 18px', lineHeight: '13px' } }, tr('Lendo…'));
   const btFirefox = h('button', { type: 'button', hidden: true });
   const lerFirefox = async () => {
     const tem = await conferirFirefox();
@@ -1758,7 +1796,7 @@ async function dialogoAcessibilidade() {
   const linux = await retro.acessibilidade.estado().catch(() => ({ disponivel: false }));
   const a = estado.config.acessibilidade || {};
   const plat = estado.config.plataforma;
-  const nota = (texto) => h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '6px' } }, texto);
+  const nota = (texto) => h('div', { style: { color: 'var(--texto-meio)', lineHeight: '13px', marginTop: '6px' } }, texto);
   const caixa = (marcado, rot, desligada = false) => {
     const c = h('input', { type: 'checkbox', checked: !!marcado, disabled: desligada });
     return { c, el: h('label', c, h('span', rot)) };
@@ -1859,7 +1897,7 @@ async function dialogoEnergia() {
   const conteudo = h('div',
     cabeca(tr('Com o computador parado, a tela apaga e ele suspende depois do tempo escolhido. Na volta, a senha da tela de bloqueio é pedida (se houver).')),
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Com o computador parado')), grade,
-      h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '8px' } }, tr('Com um som tocando (um vídeo, uma música), o computador não suspende sozinho.'))),
+      h('div', { style: { color: 'var(--texto-meio)', lineHeight: '13px', marginTop: '8px' } }, tr('Com um som tocando (um vídeo, uma música), o computador não suspende sozinho.'))),
     est.tampaPossivel ? h('fieldset', { style: { margin: '0' } }, h('legend', tr('Tampa do notebook')),
       h('div', { style: { display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: '8px' } }, h('span', tr('Ao fechar a tampa:')), caixa(tampa))) : null);
   let tampaAntes = est.tampa;
@@ -1936,8 +1974,8 @@ function dialogoData() {
       // Fora do modo sistema, a data e a hora são as do computador principal.
       const plat = estado.config.plataforma;
       const conteudo = h('div', relogio, texto,
-        h('p', { style: { color: '#808080', textAlign: 'center', marginTop: '10px' } }, tr('A data e a hora vêm do computador principal.')),
-        h('p', { style: { color: '#808080', textAlign: 'center' } }, tr('Fuso horário: {fuso}', { fuso: Intl.DateTimeFormat().resolvedOptions().timeZone })),
+        h('p', { style: { color: 'var(--texto-fraco)', textAlign: 'center', marginTop: '10px' } }, tr('A data e a hora vêm do computador principal.')),
+        h('p', { style: { color: 'var(--texto-fraco)', textAlign: 'center' } }, tr('Fuso horário: {fuso}', { fuso: Intl.DateTimeFormat().resolvedOptions().timeZone })),
         plat === 'win32' || plat === 'darwin' ? h('div', { style: { textAlign: 'center' } }, h('button', { type: 'button', on: { click: () => retro.dataHora.configuracoesDoSistema().catch(() => { }) } }, tr('Abrir as configurações do sistema…'))) : null,
         barra);
       const j = dialogoBase({ titulo, icone: 'relogio', larg: 320, abas: [{ titulo: tr('Data e hora'), conteudo }], aoAplicar: () => definirConfig({ barra: { data: chkData.checked } }) });
@@ -1955,7 +1993,7 @@ function dialogoData() {
     const travar = () => { campoData.disabled = ntp.checked; campoHora.disabled = ntp.checked; };
     ntp.addEventListener('change', travar);
     travar();
-    const sinc = h('div', { style: { color: '#404040', lineHeight: '13px', marginLeft: '18px' } },
+    const sinc = h('div', { style: { color: 'var(--texto-meio)', lineHeight: '13px', marginLeft: '18px' } },
       dh.ntp ? (dh.sincronizado ? tr('A hora está acertada pela internet.') : tr('A hora ainda não foi acertada pela internet (sem conexão?).')) : '');
     const abaHora = h('div', relogio, texto,
       h('fieldset', { style: { margin: '10px 0 0' } }, h('legend', tr('Acertar a hora')),
@@ -1996,16 +2034,16 @@ function dialogoSobre() {
   const c = estado.config;
   const sistema = ({ win32: 'Windows', darwin: 'macOS', linux: 'Linux' })[c.plataforma] || c.plataforma;
   const versaoEl = h('div', tr('Versão {versao} · {sistema}', { versao: c.versaoApp, sistema }));
-  const novidade = h('div', { style: { color: '#808080' } }, tr('Procurando versões novas…'));
+  const novidade = h('div', { style: { color: 'var(--texto-fraco)' } }, tr('Procurando versões novas…'));
   const link = (texto, acao) => h('a', { href: '#', on: { click: (e) => { e.preventDefault(); acao(); } } }, texto);
   // Onde a cópia se atualiza sozinha: baixar, acompanhar e reiniciar; nas outras, a página de download.
   const mostrar = (e) => {
-    novidade.style.color = '#008000';
+    novidade.style.color = 'var(--sucesso)';
     if (e.etapa === 'disponivel') novidade.replaceChildren(tr('Há uma versão nova: {versao}.', { versao: e.versao }) + ' ', link(tr('Atualizar agora'), () => retro.sistema.atualizacao.baixar().catch(() => { })));
     else if (e.etapa === 'baixando') novidade.textContent = tr('Baixando a versão {versao}… {n}%', { versao: e.versao || '', n: e.progresso || 0 });
     else if (e.etapa === 'baixada') novidade.replaceChildren(tr('A versão {versao} está pronta.', { versao: e.versao }) + ' ', link(tr('Reiniciar e instalar'), () => reiniciarParaAtualizar()));
-    else if (e.etapa === 'atual') { novidade.style.color = '#808080'; novidade.textContent = tr('Esta é a versão mais recente.'); }
-    else if (e.etapa === 'erro') { novidade.style.color = '#800000'; novidade.textContent = tr('Não foi possível atualizar: {erro}', { erro: e.erro || '?' }); }
+    else if (e.etapa === 'atual') { novidade.style.color = 'var(--texto-fraco)'; novidade.textContent = tr('Esta é a versão mais recente.'); }
+    else if (e.etapa === 'erro') { novidade.style.color = 'var(--alerta)'; novidade.textContent = tr('Não foi possível atualizar: {erro}', { erro: e.erro || '?' }); }
   };
   retro.sistema.atualizacao.info().then(async (inf) => {
     if (inf.sozinho) {
@@ -2017,7 +2055,7 @@ function dialogoSobre() {
     const v = await retro.sistema.novaVersao(true);
     if (v && v.temAtualizacao) {
       novidade.replaceChildren(tr('Há uma versão nova: {versao}.', { versao: v.nova }) + ' ', link(tr('Baixar'), () => abrirEndereco(v.pagina)));
-      novidade.style.color = '#008000';
+      novidade.style.color = 'var(--sucesso)';
     } else novidade.textContent = tr('Esta é a versão mais recente.');
   }).catch(() => { novidade.textContent = tr('Não foi possível procurar versões novas.'); });
   const conteudo = h('div.texto-ajuda',
@@ -2030,7 +2068,7 @@ function dialogoSobre() {
     h('p', tr('DOS: o DOSBox do projeto js-dos (GPL-2.0), sem modificação; o código-fonte está em github.com/js-dos/emulators.')),
     h('p', tr('Os programas Craft são do ArtCraft Team (MIT ou Apache-2.0), baixados dos lançamentos oficiais; os nomes e logotipos são marcas deles.')),
     h('p', tr('Claude e Claude Code são da Anthropic.')),
-    h('p', { style: { color: '#808080' } }, tr('O visual homenageia os computadores pessoais dos anos 90; nenhum ícone, som ou fonte da Microsoft ou da Apple é usado.')),
+    h('p', { style: { color: 'var(--texto-fraco)' } }, tr('O visual homenageia os computadores pessoais dos anos 90; nenhum ícone, som ou fonte da Microsoft ou da Apple é usado.')),
   );
   dialogoBase({ titulo: tr('Sobre o Retro Computer'), icone: 'computador', larg: 400, abas: [{ titulo: tr('Geral'), conteudo }] });
 }

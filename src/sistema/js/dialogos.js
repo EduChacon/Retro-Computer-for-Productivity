@@ -61,7 +61,7 @@ export function confirmarComPrazo(texto, segundos, { titulo = tr('Confirmar') } 
     let feito = false;
     let resta = segundos;
     const j = new Janela({ titulo, dialogo: true, largura: 380, altura: 150, aoFechar: () => { if (!feito) { feito = true; clearInterval(timer); resolve(false); } } });
-    const contagem = h('div', { style: { marginTop: '6px', color: '#000080' } });
+    const contagem = h('div', { style: { marginTop: '6px', color: 'var(--destaque)' } });
     const mostrar = () => { contagem.textContent = tr('Voltando à configuração anterior em {n} segundos.', { n: resta }); };
     const fim = (v) => {
       if (feito) return;
