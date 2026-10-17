@@ -154,8 +154,8 @@ def pasta(t, aberta=False):
         s.contorno()
         s.hlinha(3, 11, 7, P2)          # a luz da aba
         s.hlinha(2, 12, 8, P3)
-        s.hlinha(2, 29, 10, P5)         # o fundo por dentro, mais escuro
-        s.hlinha(2, 29, 11, P5)
+        s.hlinha(2, 28, 10, P5)         # o fundo por dentro, mais escuro (até o contorno, sem cobri-lo)
+        s.hlinha(2, 28, 11, P5)
         if aberta:
             # A frente caída: um trapézio mais largo embaixo, com a boca aberta em cima.
             s.ret(2, 10, 29, 12, P6)
@@ -183,7 +183,7 @@ def pasta(t, aberta=False):
         s.poligono([(0, 4), (1, 2), (6, 2), (7, 4), (15, 4), (15, 14), (0, 14)], P4)
         s.contorno()
         s.hlinha(2, 5, 3, P2)
-        s.hlinha(1, 14, 5, P5)
+        s.hlinha(1, 13, 5, P5)
         frente = Tela(16)
         if aberta:
             frente.poligono([(0, 7), (16, 7), (15, 15), (1, 15)], P3)
@@ -323,15 +323,36 @@ def folha(alt=28, linhas=False):
     s.vlinha(w - d, 0, d, K)
     s.hlinha(w - d, w - 1, d, K)
     s.linha(w - d, 0, w, d, K)
-    for i in range(1, d - 1):
-        s.ponto(w - d + i, i, C3)
-    # A sombra da folha (dentro, embaixo e à direita).
-    s.hlinha(1, w - 1, alt - 1, PAPEL3)
-    s.vlinha(w - 1, d + 1, alt - 1, PAPEL3)
+    for i in range(2, d):
+        s.ponto(w - d + i - 1, i, C3)
+    # A sombra da folha (dentro, embaixo e à direita: o contorno fica na última coluna e na última linha).
+    s.hlinha(1, w - 2, alt - 2, PAPEL3)
+    s.vlinha(w - 2, d + 1, alt - 2, PAPEL3)
     if linhas:
         for y in range(d + 4, alt - 3, 3):
             s.hlinha(3, w - 4 - (3 if y % 2 else 0), y, C5)
     return s
+
+
+# A folha de 16 pontos: a dobra no canto, o contorno inteiro e a sombra por dentro, embaixo e à direita.
+FOLHA_16 = [
+    "..KKKKKKKKK.....",
+    "..KWWWWWWWKK....",
+    "..KWWWWWWWKcK...",
+    "..KWWWWWWWKKK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KWWWWWWWWsK...",
+    "..KsssssssssK...",
+    "..KKKKKKKKKKK...",
+    "................",
+]
 
 
 def doc(t, emblema=None, linhas=False, faixa=None):
@@ -348,23 +369,13 @@ def doc(t, emblema=None, linhas=False, faixa=None):
         if emblema:
             emblema(s, 32)
     else:
-        f = Tela(16)
-        f.poligono([(2, 0), (10, 0), (13, 3), (13, 15), (2, 15)], PAPEL)
-        f.contorno()
-        f.vlinha(10, 0, 3, K)
-        f.hlinha(10, 12, 3, K)
-        f.ponto(11, 1, C2)
-        f.ponto(11, 2, C2)
-        f.ponto(12, 2, C2)
-        f.hlinha(3, 12, 14, PAPEL3)
-        f.vlinha(12, 4, 14, PAPEL3)
-        s.colar(f, 0, 0)
+        s.grade(0, 0, FOLHA_16, {'K': K, 'W': PAPEL, 'c': C2, 's': PAPEL3})
         if linhas:
             for y in (5, 7, 9, 11):
                 s.hlinha(4, 10 if y != 11 else 8, y, C5)
         if faixa:
-            s.ret(3, 11, 12, 13, faixa[0])
-            s.hlinha(3, 12, 10, K)
+            s.ret(3, 11, 11, 13, faixa[0])
+            s.hlinha(3, 11, 10, K)
         if emblema:
             emblema(s, 16)
     return s
@@ -774,7 +785,7 @@ def computador(t):
         s.ret(9, 25, 22, 27, C3)
         s.ret(6, 27, 25, 29, C2)
         s.contorno()
-        s.relevo(4, 4, 24, 24, BR, C5)
+        s.relevo(4, 4, 24, 23, BR, C5)
         s.poligono([(25, 4), (27, 6), (27, 23), (25, 24)], C4)
         s.vlinha(25, 4, 24, C6)
         # A tela, funda, com o brilho no canto.
@@ -791,15 +802,24 @@ def computador(t):
         s.ponto(17, 22, VERD)
         s.hlinha(7, 24, 28, C4)
     else:
-        s.poligono([(1, 1), (13, 1), (14, 2), (14, 12), (13, 13), (1, 13)], C2)
-        s.ret(4, 13, 11, 13, C3)
-        s.ret(3, 14, 12, 15, C2)
-        s.contorno()
-        s.ret(3, 3, 11, 10, K)
-        s.ret(4, 4, 10, 9, cor('2a8080'))
-        s.hlinha(4, 6, 4, cor('9fe0e0'))
-        s.vlinha(13, 2, 12, C5)
-        s.ponto(10, 11, VERD)
+        s.grade(0, 0, [
+            ".KKKKKKKKKKKKKK.",
+            ".KWWWWWWWWWWWcK.",
+            ".KWKKKKKKKKKKsK.",
+            ".KWKbbbaaaaaKsK.",
+            ".KWKbaaaaaaaKsK.",
+            ".KWKaaaaaaaaKsK.",
+            ".KWKaaaaaaaaKsK.",
+            ".KWKaaaaaaaaKsK.",
+            ".KWKKKKKKKKKKsK.",
+            ".KWccccccccvcsK.",
+            ".KcsssssssssssK.",
+            ".KKKKKKKKKKKKKK.",
+            ".....KddddK.....",
+            "...KKKKKKKKKK...",
+            "...KWccccccsK...",
+            "...KKKKKKKKKK...",
+        ], {'K': K, 'W': BR, 'c': C2, 's': C5, 'd': C3, 'a': cor('2a8080'), 'b': cor('9fe0e0'), 'v': VERD})
     return s
 
 
@@ -812,8 +832,8 @@ def disco(t):
         # O alto (mais claro), a frente e o lado.
         s.poligono([(3, 12), (8, 9), (30, 9), (25, 12)], C1)
         s.hlinha(3, 25, 13, K)
-        s.ret(3, 14, 24, 23, C3)
-        s.relevo(3, 14, 24, 23, BR, C5)
+        s.ret(3, 14, 24, 22, C3)
+        s.relevo(3, 14, 24, 22, BR, C5)
         s.poligono([(26, 13), (30, 10), (30, 20), (26, 23)], C5)
         s.vlinha(25, 13, 23, K)
         s.linha(25, 13, 30, 9, K)
@@ -826,10 +846,10 @@ def disco(t):
         s.contorno()
         s.poligono([(1, 6), (3, 5), (14, 5), (12, 6)], C1)
         s.hlinha(1, 12, 7, K)
-        s.vlinha(12, 7, 12, K)
-        s.ret(13, 7, 14, 10, C5)
+        s.vlinha(12, 7, 11, K)
+        s.ret(13, 7, 13, 9, C5)
         s.hlinha(2, 9, 9, C6)
-        s.ponto(2, 11, VERD)
+        s.ponto(2, 10, VERD)
     return s
 
 
@@ -849,10 +869,10 @@ def lixeira(t, cheia=False):
         s.hlinha(9, 23, 29, C5)
         tampa = Tela(32)
         ty = topo - 4
-        tampa.ret(5, ty + 1, 26, ty + 3, C2)
+        tampa.ret(5, ty + 1, 26, ty + 4, C2)
         tampa.ret(13, ty - 1, 18, ty, C2)
         tampa.contorno()
-        tampa.hlinha(6, 25, ty + 1, BR)
+        tampa.hlinha(6, 25, ty + 2, BR)
         tampa.hlinha(6, 25, ty + 3, C5)
         tampa.ret(14, ty, 17, ty, C4)
         if cheia:
@@ -869,20 +889,19 @@ def lixeira(t, cheia=False):
         else:
             s.colar(tampa, 0, 0)
     else:
-        topo = 5
+        # Cheia, a lata fica um ponto mais baixa: os papéis aparecem entre a boca e a tampa levantada.
+        topo = 5 if cheia else 4
         s.poligono([(3, topo), (13, topo), (12, 15), (4, 15)], C3)
         s.contorno()
-        for x in (5, 8, 11):
-            s.vlinha(x, topo + 2, 13, C6)
+        for x in (6, 9):
+            s.vlinha(x, topo + 3, 12, C6)
         tampa = Tela(16)
-        tampa.ret(2, 2, 13, 3, C2)
+        tampa.ret(2, 2, 13, 4, C2)
         tampa.ret(6, 1, 9, 1, C2)
         tampa.contorno()
         if cheia:
-            p = Tela(16)
-            p.poligono([(4, 5), (6, 1), (9, 2), (11, 0), (12, 5)], BR)
-            p.contorno()
-            s.colar(p, 0, 0)
+            # Os papéis, ponto a ponto: o monte branco com uma dobra, entre a boca e a tampa.
+            s.grade(0, 3, ['....KKKKKKKK....', '...KWWWWsWWWK...'], {'K': K, 'W': BR, 's': C5})
             t2 = Tela(16)
             t2.colar(tampa, 0, -2)
             s.colar(t2, 0, 0)
@@ -970,7 +989,7 @@ def bloco(t):
     if t == 32:
         s.ret(6, 4, 25, 29, AMAR3)
         s.contorno()
-        s.ret(6, 4, 25, 7, AMAR)
+        s.ret(7, 5, 24, 7, AMAR)
         s.hlinha(7, 24, 8, K)
         for y in range(11, 28, 3):
             s.hlinha(8, 23, y, cor('aab4dd'))
@@ -983,7 +1002,7 @@ def bloco(t):
     else:
         s.ret(3, 2, 12, 15, AMAR3)
         s.contorno()
-        s.hlinha(3, 12, 3, AMAR)
+        s.hlinha(4, 11, 3, AMAR)
         s.hlinha(4, 11, 4, K)
         for y in (7, 9, 11, 13):
             s.hlinha(5, 10, y, cor('aab4dd'))
@@ -1035,14 +1054,14 @@ def balao(t, sinal, fundo=P2, escuro=P6):
 
 def sinal_interrogacao(s, t, c):
     if t == 32:
-        s.grade(11, 5, ['..######..', '.##....##.', '.##....##.', '......##..', '.....##...', '....##....', '....##....', '..........', '....##....', '....##....'], {'#': c})
+        s.grade(11, 8, ['..######..', '.##....##.', '.##....##.', '......##..', '.....##...', '....##....', '....##....', '..........', '....##....', '....##....'], {'#': c})
     else:
-        s.grade(5, 2, ['.##.', '#..#', '..#.', '.#..', '....', '.#..'], {'#': c})
+        s.grade(5, 3, ['.####.', '##..##', '....##', '...##.', '..##..', '......', '..##..'], {'#': c})
 
 
 def sinal_info(s, t, c):
     if t == 32:
-        s.grade(13, 5, ['..##..', '..##..', '......', '.###..', '..##..', '..##..', '..##..', '..##..', '.####.'], {'#': c})
+        s.grade(13, 8, ['..##..', '..##..', '......', '.###..', '..##..', '..##..', '..##..', '..##..', '.####.'], {'#': c})
     else:
         s.grade(7, 2, ['.#', '..', '##', '.#', '.#', '##'], {'#': c})
 
@@ -1191,8 +1210,8 @@ def assistente(t):
         s.contorno()
         s.hlinha(5, 26, 5, P1)
         s.vlinha(3, 7, 19, P1)
-        s.hlinha(6, 27, 22, P4)
-        s.vlinha(29, 8, 20, P4)
+        s.hlinha(6, 26, 21, P4)
+        s.vlinha(28, 8, 20, P4)
         for x in (9, 15, 21):
             s.ret(x, 12, x + 2, 14, P6)
             s.hlinha(x + 1, x + 3, 15, P1)
@@ -1211,12 +1230,12 @@ def removivel(t):
     if t == 32:
         s.poligono([(3, 3), (27, 3), (29, 5), (29, 29), (3, 29)], C7)
         s.contorno()
-        s.relevo(4, 4, 28, 28, C6, C8)
+        s.relevo(4, 4, 27, 27, C6, C8)
         s.ret(9, 4, 22, 12, C3)
         s.relevo(9, 4, 22, 12, BR, C5)
         s.ret(18, 6, 20, 10, C7)
-        s.ret(7, 16, 25, 28, BR)
-        s.relevo(7, 16, 25, 28, BR, C4)
+        s.ret(7, 16, 25, 27, BR)
+        s.relevo(7, 16, 25, 27, BR, C4)
         for y in (19, 22, 25):
             s.hlinha(9, 23, y, C4)
     else:
@@ -1224,7 +1243,7 @@ def removivel(t):
         s.contorno()
         s.ret(4, 2, 10, 5, C3)
         s.ret(8, 3, 9, 4, C7)
-        s.ret(3, 8, 12, 13, BR)
+        s.ret(3, 8, 12, 12, BR)
     return s
 
 
@@ -1307,6 +1326,19 @@ ICONES = {
 }
 
 
+def fechar_contorno(im):
+    """A borda de fora sempre escura, como nos ícones da época: o ponto aceso e claro que encosta no
+    vazio (uma sombra ou uma luz desenhada por cima do contorno) volta a ser preto."""
+    px = im.load()
+    w, h = im.size
+    vazio = lambda x, y: not (0 <= x < w and 0 <= y < h) or px[x, y][3] == 0
+    claros = [(x, y) for y in range(h) for x in range(w)
+              if px[x, y][3] and sum(px[x, y][:3]) >= 300 and any(vazio(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    for x, y in claros:
+        px[x, y] = K
+    return im
+
+
 def gerar():
     feitos = {16: {}, 32: {}}
     for nome, f in ICONES.items():
@@ -1314,7 +1346,7 @@ def gerar():
             s = f(t)
             if s is None:
                 continue
-            feitos[t][nome] = s.im
+            feitos[t][nome] = fechar_contorno(s.im)
     for t in (16, 32):
         pasta_t = os.path.join(DESTINO, str(t))
         os.makedirs(pasta_t, exist_ok=True)
