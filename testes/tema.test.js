@@ -87,3 +87,29 @@ test('no tema Mac, a borda de fora de cada ícone é escura (nenhuma sombra ou l
     }
   }
 });
+
+test('no tema Mac, o sinal das caixas do título fica no meio delas (o quadrado do aumentar, as linhas do recolher)', () => {
+  const css = fs.readFileSync(path.join(SISTEMA, 'tema-mac.css'), 'utf8');
+  for (const nome of ['aumentar', 'aumentar-apertado', 'recolher', 'recolher-apertado']) {
+    const m = new RegExp(`--mac-${nome}: url\\("data:image/svg\\+xml,([^"]+)"\\)`).exec(css);
+    assert.ok(m, nome);
+    const svg = decodeURIComponent(m[1]);
+    // O sinal é o cinza do miolo (#777777 no normal, o preto de dentro no apertado): só os pontos de 3 a 9.
+    const pontos = [];
+    for (const p of svg.matchAll(/<path fill='(#[0-9a-f]{6})' d='([^']+)'\/>/g)) {
+      if (!/apertado/.test(nome) && p[1] !== '#777777') continue;
+      for (const r of p[2].matchAll(/M(\d+) (\d+)h(\d+)v1h-\d+z/g)) {
+        const x = Number(r[1]); const y = Number(r[2]); const w = Number(r[3]);
+        if (x < 3 || y < 3 || x + w - 1 > 9 || y > 9) continue;
+        if (/apertado/.test(nome) && p[1] !== '#000000') continue;
+        pontos.push([x, y], [x + w - 1, y]);
+      }
+    }
+    assert.ok(pontos.length, nome);
+    const xs = pontos.map((q) => q[0]);
+    const ys = pontos.map((q) => q[1]);
+    // A caixa tem 13 pontos, o poço e o contorno: o meio dela é o 6.
+    assert.equal((Math.min(...xs) + Math.max(...xs)) / 2, 6, `${nome}: fora do meio na horizontal`);
+    assert.equal((Math.min(...ys) + Math.max(...ys)) / 2, 6, `${nome}: fora do meio na vertical`);
+  }
+});

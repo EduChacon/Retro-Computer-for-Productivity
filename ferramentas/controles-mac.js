@@ -45,9 +45,9 @@ function apertado(b) {
   }).join(''));
 }
 
-const quadrado = []; // o "aumentar": um quadrado menor, no alto e à esquerda
-for (let x = 1; x <= 5; x++) quadrado.push([x, 1], [x, 5]);
-for (let y = 2; y <= 4; y++) quadrado.push([1, y], [5, y]);
+const quadrado = []; // o "aumentar": um quadrado menor, no meio do botão (de 2 a 6 no botão de 9, cujo meio é o 4)
+for (let x = 2; x <= 6; x++) quadrado.push([x, 2], [x, 6]);
+for (let y = 3; y <= 5; y++) quadrado.push([2, y], [6, y]);
 const linhas = []; // o "recolher": duas linhas no meio
 for (let x = 1; x <= 7; x++) linhas.push([x, 3], [x, 5]);
 const xis = [[2, 2], [6, 2], [3, 3], [5, 3], [4, 4], [3, 5], [5, 5], [2, 6], [6, 6]]; // o fechar apertado
