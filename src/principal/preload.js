@@ -446,6 +446,12 @@ contextBridge.exposeInMainWorld('retro', {
     aoBloquear: ouvir('bloqueio:bloquear'),
     pronto: () => chamar('bloqueio:pronto'),
   },
+  // O chaveiro do Linux trancado (o modo sistema): a senha vai direto para o processo principal.
+  chaveiro: {
+    estado: () => chamar('chaveiro:estado'),
+    abrir: (senha) => chamar('chaveiro:abrir', senha),
+    aoAbrir: ouvir('chaveiro:aberto'),
+  },
   // A bandeja: o volume, o brilho e a rede do computador.
   bandeja: {
     bateria: () => chamar('bandeja:bateria'),

@@ -20,6 +20,7 @@ import { atualizarEmSegundoPlano } from './apps/programas.js';
 import { programasAbertos } from './apps/craft.js';
 import { procurarAtualizacao } from './atualizacao.js';
 import { bloquearAoAbrir } from './bloqueio.js';
+import { pedirChaveiroAoAbrir } from './chaveiro.js';
 import { carregarPerfis, telaDeEntrada } from './perfis.js';
 import { iniciarLuzNoturna } from './luz-noturna.js';
 import { iniciarTelas, telaDoPonto } from './telas.js';
@@ -255,6 +256,8 @@ async function iniciar() {
   // Com "pedir a senha ao abrir", a área de trabalho só aparece depois da senha (a não ser que ela
   // tenha sido pedida na tela de entrada, ou que seja o mesmo usuário abrindo de novo).
   if (!entrou) bloquearAoAbrir();
+  // O chaveiro do Linux trancado (a entrada automática): a senha numa caixa do Retro Computer.
+  pedirChaveiroAoAbrir();
   boot.classList.remove('visivel');
   boot.replaceChildren();
   if (!rapido) tocar('inicio');

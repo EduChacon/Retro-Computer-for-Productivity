@@ -126,10 +126,12 @@ function migrar(dados) {
 }
 
 class Config {
-  constructor(pasta, cofre) {
+  /** trancado(): o chaveiro do Linux está trancado (o modo sistema)? Aí o cofre não é tocado (ver chaveiro.js). */
+  constructor(pasta, cofre, { trancado = null } = {}) {
     this.arquivo = path.join(pasta, 'config.json');
     this.arquivoChave = path.join(pasta, 'chave-claude.bin');
     this.cofre = cofre;
+    this.trancado = trancado;
     this.dados = mesclar(PADRAO, {});
     try {
       this.dados = migrar(mesclar(PADRAO, { versao: 1, ...JSON.parse(fs.readFileSync(this.arquivo, 'utf8')) }));
@@ -157,6 +159,7 @@ class Config {
   /* ---------- A chave de API do Claude ---------- */
 
   cofreDisponivel() {
+    if (this.trancado && this.trancado()) return false;
     try { return this.cofre.isEncryptionAvailable(); } catch { return false; }
   }
 
@@ -170,6 +173,7 @@ class Config {
       try { fs.rmSync(this.arquivoChave, { force: true }); } catch { }
       return false;
     }
+    if (this.trancado && this.trancado()) throw new Error(tr('O chaveiro do Linux está trancado; a chave não foi guardada. Abra o chaveiro e tente de novo.'));
     if (!this.cofreDisponivel()) throw new Error(tr('O cofre de senhas do sistema não está disponível; a chave não foi guardada.'));
     fs.mkdirSync(path.dirname(this.arquivoChave), { recursive: true });
     fs.writeFileSync(this.arquivoChave, this.cofre.encryptString(limpa), { mode: 0o600 });
@@ -177,7 +181,7 @@ class Config {
   }
 
   lerChave() {
-    if (!this.temChave()) return null;
+    if (!this.temChave() || (this.trancado && this.trancado())) return null;
     try { return this.cofre.decryptString(fs.readFileSync(this.arquivoChave)); } catch { return null; }
   }
 }

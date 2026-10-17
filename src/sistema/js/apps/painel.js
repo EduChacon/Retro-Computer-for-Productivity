@@ -19,6 +19,7 @@ import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
 import { BUSCAS, CORREIOS, paraEndereco, conferirFirefox } from './navegador.js';
 import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
 import { comSenhaAdmin } from '../admin.js';
+import { abrirChaveiro } from '../chaveiro.js';
 import { aplicarLuzNoturna } from '../luz-noturna.js';
 import { programaDe, programasFixaveis, ITENS_INICIAR, ICONES_BANDEJA } from '../barra.js';
 import { perfisInfo, atualizarPerfis, nomeDoPerfil } from '../perfis.js';
@@ -1201,7 +1202,8 @@ function dialogoSeguranca() {
     else if (e.instalavel) av.definir(false, tr('Não instalado'), tr('O antivírus ClamAV não está instalado. Verificar… o instala.'));
     else av.definir(true, tr('Pelo sistema'), tr('O próprio sistema verifica os arquivos.'));
     const s = await retro.seguranca.estado().catch(() => ({}));
-    if (!s.temChave) chave.definir(true, tr('Nenhuma'), tr('Nenhuma chave de API guardada (o Claude Code pode entrar com a conta).'));
+    if (s.chaveiro === 'trancado') chave.definir(false, tr('Chaveiro trancado'), tr('O chaveiro do Linux está trancado: a chave e os cookies do Navegador esperam a senha de entrada. Claude… o abre.'));
+    else if (!s.temChave) chave.definir(true, tr('Nenhuma'), tr('Nenhuma chave de API guardada (o Claude Code pode entrar com a conta).'));
     else if (s.chaveiro === 'basic_text') chave.definir(false, tr('Sem chaveiro'), tr('Sem o chaveiro do Linux, a chave fica só embaralhada no disco. Instale o GNOME Keyring (o pacote gnome-keyring) e entre de novo no computador.'));
     else chave.definir(true, tr('Cifrada'), tr('A chave fica cifrada pelo cofre de senhas do sistema.'));
   }
@@ -1486,7 +1488,9 @@ async function dialogoClaude() {
   });
   const campo = h('input', { type: 'password', placeholder: c.temChave ? tr('•••••••• (guardada)') : 'sk-ant-…', spellcheck: false, style: { width: '100%' } });
   const situacao = h('div', { style: { color: 'var(--texto-fraco)', marginTop: '4px', lineHeight: '13px' } },
-    c.cofre
+    c.chaveiroTrancado
+      ? tr('O chaveiro do Linux está trancado: abra-o para guardar ou usar a chave.')
+      : c.cofre
       ? (c.temChave ? tr('Há uma chave guardada (cifrada pelo cofre de senhas do sistema).') : tr('Nenhuma chave guardada.'))
       : tr('O cofre de senhas do sistema não está disponível: a chave não pode ser guardada aqui.'));
   const conteudo = h('div.texto-ajuda',
@@ -1496,8 +1500,8 @@ async function dialogoClaude() {
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Chave de API (opcional)')),
       h('p', { style: { marginTop: '0' } }, tr('Com uma chave, o Claude Code a usa direto; sem ela, ele pede para entrar com a conta da sua assinatura do Claude.')),
       campo, situacao,
-      h('div', { style: { display: 'flex', gap: '6px', marginTop: '8px' } },
-        h('button', { disabled: !c.cofre, on: { click: guardar } }, tr('Guardar')),
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' } },
+        c.chaveiroTrancado ? h('button', { on: { click: abrirOChaveiro } }, tr('Abrir o chaveiro…')) : h('button', { disabled: !c.cofre, on: { click: guardar } }, tr('Guardar')),
         h('button', { disabled: !c.temChave, on: { click: apagar } }, tr('Apagar a chave')),
         h('button', { on: { click: () => abrirEndereco('https://console.anthropic.com/settings/keys') } }, tr('Obter uma chave…')))),
     h('p', { style: { color: 'var(--texto-fraco)' } }, tr('A chave só é entregue ao Prompt de comando (variável ANTHROPIC_API_KEY); ela não aparece na tela nem vai para o disco C:.')),
@@ -1515,6 +1519,12 @@ async function dialogoClaude() {
       erro(e.message, 'Claude');
     }
   }
+  // Aberto o chaveiro, a caixa volta com o cofre pronto (o Guardar no lugar do Abrir o chaveiro).
+  async function abrirOChaveiro() {
+    if (!(await abrirChaveiro())) return;
+    if (jan) jan.fechar();
+    dialogoClaude();
+  }
   async function apagar() {
     if (!(await confirmar(tr('Apagar a chave de API guardada?'), { titulo: 'Claude' }))) return;
     await retro.config.gravarChave('');
@@ -1528,7 +1538,7 @@ async function dialogoClaude() {
     h('label', { style: { marginBottom: '8px' } }, chkAjustes, h('span', tr('Deixar o Claude ajustar o Retro Computer'))),
     h('p', tr('Pedindo em palavras ("deixe o fundo azul-marinho", "ponha a Calculadora no menu Iniciar", "instale o WordCraft"), o Claude muda a aparência, a barra de tarefas, o menu Iniciar, os sons, os atalhos e os programas, e manda para a Lixeira o que for apagar.')),
     h('p', tr('Ele nunca muda a senha, a chave de API, a pasta do disco nem as atualizações, e o Claude Code pergunta antes de cada ajuste. Vale para os próximos Claude abertos.')));
-  dialogoBase({
+  const jan = dialogoBase({
     titulo: tr('Propriedades do Claude'), icone: 'claude', larg: 400,
     abas: [{ titulo: tr('Geral'), conteudo }, { titulo: tr('Ajustes'), conteudo: ajustes }],
     aoAplicar: () => definirConfig({ claude: { ajustes: chkAjustes.checked } }),

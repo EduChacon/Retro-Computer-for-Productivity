@@ -43,7 +43,8 @@ if command -v xset >/dev/null 2>&1; then
 fi
 
 # O chaveiro do Linux (GNOME Keyring), que a tela de entrada já abriu com a senha: guarda os
-# cookies do Navegador, a chave do Claude e as senhas dos outros programas cifrados.
+# cookies do Navegador, a chave do Claude e as senhas dos outros programas cifrados. Com a entrada
+# direta (sem senha), ele fica trancado, e o Retro Computer pede a senha numa caixa dele (chaveiro.js).
 if command -v gnome-keyring-daemon >/dev/null 2>&1; then
   eval "$(gnome-keyring-daemon --start --components=secrets,pkcs11 2>/dev/null)" || true
   export GNOME_KEYRING_CONTROL

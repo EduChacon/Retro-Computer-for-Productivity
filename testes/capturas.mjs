@@ -3282,6 +3282,50 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await foto('bloqueio-linux-central');
   },
 
+  // O chaveiro do Linux trancado (com RETRO_CHAVEIRO_FALSO=1, que começa trancado e abre com "certa"): a caixa
+  // do Retro Computer na abertura, a senha errada, o Cancelar, a Central de segurança e o Abrir o chaveiro…
+  async chaveiro() {
+    const CX = `.janela.dialogo:has-text("${T('Chaveiro do Linux')}")`;
+    await pagina.waitForSelector(`${CX} input[type=password]`, { timeout: 15000 });
+    await pagina.waitForTimeout(600);
+    console.log('na abertura: trancado?', await pagina.evaluate(() => window.__retro.estado.config.chaveiroTrancado), '| cofre:', await pagina.evaluate(() => window.__retro.estado.config.cofre));
+    await foto('chaveiro-caixa');
+    await pagina.keyboard.type('errada');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForSelector(`${CX}:has-text("${T('A senha não está certa. Digite a senha do chaveiro do Linux (em geral, a mesma da entrada):')}")`, { timeout: 8000 });
+    await pagina.waitForTimeout(300);
+    await foto('chaveiro-errada');
+    // Cancelar: a área de trabalho segue, sem o cofre (nada pergunta pelo Linux por trás).
+    await pagina.click(`${CX} button:has-text("${T('Cancelar')}")`);
+    await pagina.waitForTimeout(500);
+    console.log('cancelado: caixas abertas', await pagina.locator(CX).count(), '| estado:', JSON.stringify(await pagina.evaluate(() => retro.chaveiro.estado())));
+    await abrir('painel', { secao: 'seguranca' });
+    await pagina.waitForTimeout(1500);
+    console.log('Central:', JSON.stringify(await pagina.$$eval('.janela.ativa', (l) => l.map((e) => e.innerText.split('\n').filter((x) => /Claude|chaveiro|keyring|llavero/i.test(x))).flat())));
+    await foto('chaveiro-central');
+    await fecharTudo();
+    // Com RETRO_SENHA_LINUX_FALSA=certa: a senha que desbloqueia a tela de bloqueio também abre o chaveiro.
+    if (process.env.RETRO_SENHA_LINUX_FALSA) {
+      await app.evaluate(({ powerMonitor }) => powerMonitor.emit('suspend'));
+      await pagina.waitForSelector('#bloqueio input[type=password]', { timeout: 5000 });
+      await pagina.keyboard.type(process.env.RETRO_SENHA_LINUX_FALSA);
+      await pagina.keyboard.press('Enter');
+      await pagina.waitForTimeout(2500);
+      console.log('pela tela de bloqueio: bloqueado?', await pagina.locator('#bloqueio').count(), '| chaveiro', JSON.stringify(await pagina.evaluate(() => retro.chaveiro.estado())), '| na tela:', await pagina.evaluate(() => window.__retro.estado.config.chaveiroTrancado));
+      return;
+    }
+    await abrir('painel', { secao: 'claude' });
+    await pagina.waitForTimeout(800);
+    await foto('chaveiro-claude');
+    await pagina.click(`.janela.ativa button:has-text("${T('Abrir o chaveiro…')}")`);
+    await pagina.waitForSelector(`${CX} input[type=password]`, { timeout: 5000 });
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1500);
+    console.log('aberto: estado', JSON.stringify(await pagina.evaluate(() => retro.chaveiro.estado())), '| na tela:', await pagina.evaluate(() => window.__retro.estado.config.chaveiroTrancado), '| cofre agora:', (await pagina.evaluate(() => retro.config.obter())).cofre);
+    await foto('chaveiro-claude-aberto');
+  },
+
   async bloqueio() {
     await fecharTudo();
     await abrir('painel', { secao: 'senhas' });

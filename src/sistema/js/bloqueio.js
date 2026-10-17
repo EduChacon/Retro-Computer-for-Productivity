@@ -73,6 +73,7 @@ export function bloquear() {
       window.removeEventListener('keydown', prender, true);
       tela.remove();
       tela = null;
+      document.dispatchEvent(new Event('retro-desbloqueado'));
       return;
     }
     tocar('erro');

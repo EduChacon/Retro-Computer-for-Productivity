@@ -848,6 +848,7 @@ const TOPICOS = [
     'pt-BR': ['Linux como sistema', `
 <h2>A sessão Retro Computer</h2>
 <p>No Linux, o pacote .deb acrescenta a sessão <b>Retro Computer</b> à tela de entrada: escolhida ela, o computador abre direto no Retro Computer, sem a área de trabalho do Linux por baixo. Em Painel de controle › Aparência › Configurações, dá para entrar direto nela ao ligar, sem a tela de entrada.</p>
+<p>Entrando direto, o <b>chaveiro do Linux</b> (que guarda os cookies do Navegador e a chave do Claude) fica trancado, porque nenhuma senha foi digitada. O Retro Computer pede a senha de entrada do Linux numa caixa dele, ao ligar, e abre o chaveiro com ela; a senha digitada na tela de bloqueio também o abre. Sem a senha, o computador funciona, e a chave do Claude espera: Painel de controle › Claude › <b>Abrir o chaveiro…</b>.</p>
 <h2>O que muda</h2>
 <ul>
 <li>Desligar oferece desligar, reiniciar e suspender o computador de verdade, e sair da sessão.</li>
@@ -860,6 +861,7 @@ const TOPICOS = [
     en: ['Linux as the system', `
 <h2>The Retro Computer session</h2>
 <p>On Linux, the .deb package adds the <b>Retro Computer</b> session to the login screen: when you choose it, the computer opens straight into Retro Computer, without the Linux desktop underneath. In Control Panel › Appearance › Settings, you can enter it directly at power-on, without the login screen.</p>
+<p>When it enters directly, the <b>Linux keyring</b> (which keeps the Browser cookies and the Claude key) stays locked, because no password was typed. Retro Computer asks for your Linux sign-in password in a box of its own at power-on and unlocks the keyring with it; the password typed on the lock screen unlocks it too. Without the password, the computer works and the Claude key waits: Control Panel › Claude › <b>Unlock the Keyring…</b>.</p>
 <h2>What changes</h2>
 <ul>
 <li>Shut Down offers to really turn off, restart and suspend the computer, and to sign out.</li>
@@ -872,6 +874,7 @@ const TOPICOS = [
     es: ['Linux como sistema', `
 <h2>La sesión Retro Computer</h2>
 <p>En Linux, el paquete .deb agrega la sesión <b>Retro Computer</b> a la pantalla de inicio de sesión: al elegirla, la computadora abre directo en Retro Computer, sin el escritorio de Linux debajo. En Panel de control › Apariencia › Configuración, se puede entrar directo en ella al encender, sin la pantalla de inicio de sesión.</p>
+<p>Al entrar directo, el <b>llavero de Linux</b> (que guarda las cookies del Navegador y la clave de Claude) queda bloqueado, porque no se escribió ninguna contraseña. Retro Computer pide la contraseña de inicio de Linux en un cuadro propio al encender y desbloquea el llavero con ella; la contraseña escrita en la pantalla de bloqueo también lo desbloquea. Sin la contraseña, la computadora funciona y la clave de Claude espera: Panel de control › Claude › <b>Desbloquear el llavero…</b>.</p>
 <h2>Qué cambia</h2>
 <ul>
 <li>Apagar ofrece apagar, reiniciar y suspender la computadora de verdad, y cerrar la sesión.</li>

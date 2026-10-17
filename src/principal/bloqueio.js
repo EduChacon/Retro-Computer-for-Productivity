@@ -95,6 +95,11 @@ class Bloqueio {
     return !!this.guardada();
   }
 
+  /** Só a senha de entrada do Linux (para criar o chaveiro dela, sem a do Retro Computer). */
+  async conferirLinux(senha) {
+    return this.falsaLinux ? !!senha && senha === this.falsaLinux : confereLinux(senha);
+  }
+
   async conferir(senha) {
     const linux = this.falsaLinux ? !!senha && senha === this.falsaLinux : await confereLinux(senha);
     const ok = (await confere(senha, this.guardada())) || linux;

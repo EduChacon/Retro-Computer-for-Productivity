@@ -72,6 +72,7 @@ const { modoAcentos, gravarCompose } = require('./teclado');
 const ortografia = require('./ortografia');
 const { Calendarios, semEnderecos, buscarNaRede, buscarFalso } = require('./calendarios');
 const { Nuvens } = require('./nuvem');
+const { Chaveiro, ChaveiroFalso } = require('./chaveiro');
 // As configurações como a área de trabalho (e o Claude) as veem: sem a senha e sem os endereços dos calendários.
 const semSegredos = (c) => semEnderecos(semSenha(c, { senhaLinux: !!(bloqueio && bloqueio.linux) }));
 
@@ -222,6 +223,11 @@ let receber = null; // receber do celular (receber.js), criado na primeira vez /
 let cheiaPeloSite = false; // a janela entrou em tela cheia por um site do Navegador
 let loja = null; // a loja de programas: o Flathub no Linux (loja.js), o winget no Windows e o Homebrew no Mac (lojas.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
+// O chaveiro do Linux no modo sistema (chaveiro.js) e se ele está trancado (true, 'sem' chaveiro ainda ou false):
+// trancado, o cofre (o safeStorage) não é tocado, senão a caixa do Linux pararia o Retro Computer.
+let chaveiro = null;
+let chaveiroTrancado = false;
+let errosChaveiro = 0;
 let energiaOpcoes = null; // as opções de energia do modo sistema (energia.js)
 let acessLinux = null; // as teclas de aderência e as do mouse do modo sistema (acessibilidade.js)
 let unidades = null; // os pendrives e cartões (unidades.js)
@@ -242,6 +248,28 @@ function enviar(canal, ...args) {
   if (!janela || janela.isDestroyed()) return false;
   janela.webContents.send(canal, ...args);
   return true;
+}
+
+/**
+ * Abre o chaveiro do Linux trancado com a senha: { ok }, { negado } ou { erro }. Sem chaveiro ainda, ele
+ * seria criado com qualquer senha, então só com a de entrada do Linux. As tentativas erradas seguidas
+ * demoram cada vez mais, como as da tela de bloqueio (a de lá, silenciosa, não conta).
+ */
+async function abrirChaveiro(senha, { silencioso = false } = {}) {
+  if (!chaveiro || !chaveiroTrancado) return { ok: true };
+  if (!senha || senha.length > 1024) return { negado: true };
+  if (!silencioso && errosChaveiro) await new Promise((r) => setTimeout(r, Math.min(30, 2 ** (errosChaveiro - 1)) * 1000));
+  const r = chaveiroTrancado === 'sem' && !(await bloqueio.conferirLinux(senha)) ? { negado: true } : await chaveiro.abrir(senha);
+  if (r.ok) {
+    const t = await chaveiro.trancado().catch(() => null);
+    if (t === true) return { erro: true };
+    chaveiroTrancado = false;
+    errosChaveiro = 0;
+    enviar('chaveiro:aberto');
+    return { ok: true };
+  }
+  if (r.negado && !silencioso) errosChaveiro++;
+  return r;
 }
 
 /** Os nomes das pastas do disco: os que já existem nele ou os do idioma atual. */
@@ -1309,6 +1337,7 @@ function registrarPonte() {
     versaoApp: app.getVersion(),
     temChave: config.temChave(),
     cofre: config.cofreDisponivel(),
+    chaveiroTrancado: !!chaveiroTrancado,
     telaCheiaAgora: emTelaCheia(),
     idiomaEfetivo: idioma.idioma(),
     idiomaSistema: app.getLocale(),
@@ -1320,7 +1349,7 @@ function registrarPonte() {
     // Os nomes da Agenda e da pasta das notas são guardados na primeira vez (trocar de idioma não
     // cria outros); só esses dois, só uma vez e só com um nome válido. O resto das pastas, nunca.
     const pastas = parte && parte.pastas && typeof parte.pastas === 'object' ? parte.pastas : null;
-    const proibidas = ['disco', 'versao', 'pastas'];
+    const proibidas = ['disco', 'versao', 'pastas', 'chaveiroTrancado'];
     for (const k of proibidas) delete parte[k];
     if (pastas) {
       const atuais = config.obter().pastas || {};
@@ -1435,7 +1464,15 @@ function registrarPonte() {
   tratar('antivirus:parar', () => { antivirus.parar(); return true; });
   tratar('antivirus:instalar', (senha) => antivirus.instalar(String(senha || ''), (s) => enviar('antivirus:instalando', String(s).slice(-2000))));
   tratar('antivirus:atualizar', (senha) => antivirus.atualizar(String(senha || '')));
-  tratar('bloqueio:conferir', (senha) => bloqueio.conferir(String(senha || '')));
+  tratar('bloqueio:conferir', async (senha) => {
+    const s = String(senha || '');
+    const ok = await bloqueio.conferir(s);
+    // A senha que desbloqueou também abre o chaveiro trancado (em geral, é a mesma da entrada do Linux).
+    if (ok && chaveiroTrancado) await abrirChaveiro(s, { silencioso: true }).catch(() => { });
+    return ok;
+  });
+  tratar('chaveiro:estado', () => ({ trancado: !!chaveiroTrancado }));
+  tratar('chaveiro:abrir', (senha) => abrirChaveiro(String(senha || '')));
   registrarPerfis();
   tratar('bloqueio:definir', (atual, nova) => bloqueio.definir(String(atual || ''), String(nova || '')));
   tratar('config:chave', (chave) => config.gravarChave(chave));
@@ -1920,7 +1957,7 @@ function registrarPonte() {
     temChave: config.temChave(),
     cofre: config.cofreDisponivel(),
     // No Linux, sem um chaveiro (o GNOME Keyring ou a carteira do KDE), o "cofre" é só um texto embaralhado.
-    chaveiro: process.platform === 'linux' ? (() => { try { return safeStorage.getSelectedStorageBackend(); } catch { return 'unknown'; } })() : null,
+    chaveiro: chaveiroTrancado ? 'trancado' : process.platform === 'linux' ? (() => { try { return safeStorage.getSelectedStorageBackend(); } catch { return 'unknown'; } })() : null,
   }));
   tratar('sistema:telaCheia', async (v) => {
     if (MODO_SISTEMA) return true;
@@ -2453,7 +2490,7 @@ app.on('second-instance', (_e, argv) => {
 });
 
 app.whenReady().then(async () => {
-  config = new Config(app.getPath('userData'), safeStorage);
+  config = new Config(app.getPath('userData'), safeStorage, { trancado: () => !!chaveiroTrancado });
   calendarios = new Calendarios({
     pasta: path.join(app.getPath('userData'), 'calendarios'), config,
     buscar: process.env.RETRO_CALENDARIOS_FALSOS ? buscarFalso(process.env.RETRO_CALENDARIOS_FALSOS) : buscarNaRede,
@@ -2474,7 +2511,13 @@ app.whenReady().then(async () => {
   }
   bloqueio = new Bloqueio(config, { falsaLinux: process.env.RETRO_SENHA_LINUX_FALSA || null });
   // No modo sistema, a senha de entrada do Linux basta para bloquear (antes de a tela pedir as configurações).
-  await Promise.race([bloqueio.prepararLinux(MODO_SISTEMA).catch(() => false), new Promise((r) => setTimeout(r, 2000))]);
+  // Ao mesmo tempo, o chaveiro do Linux: trancado (a entrada automática), a área de trabalho pede a senha numa
+  // caixa dela, antes de qualquer pedido ao cofre.
+  if (process.env.RETRO_CHAVEIRO_FALSO) chaveiro = new ChaveiroFalso();
+  else if (MODO_SISTEMA && app.commandLine.getSwitchValue('password-store') === 'gnome-libsecret') chaveiro = new Chaveiro();
+  const ateDois = (p, valor) => Promise.race([p.catch(() => valor), new Promise((r) => setTimeout(() => r(valor), 2000))]);
+  const [, trancado] = await Promise.all([ateDois(bloqueio.prepararLinux(MODO_SISTEMA), false), chaveiro ? ateDois(chaveiro.trancado(), null) : null]);
+  chaveiroTrancado = trancado === true || trancado === 'sem' ? trancado : false;
   // A tela bloqueia antes de o computador dormir (e quando o próprio sistema bloqueia, e ao fechar
   // a tampa): na volta, a senha é pedida. No modo sistema, a suspensão espera a tela de bloqueio
   // aparecer (até 2 segundos), para a área de trabalho não aparecer por um instante ao abrir a tampa.
