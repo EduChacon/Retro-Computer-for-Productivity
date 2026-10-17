@@ -87,9 +87,11 @@ async function rodar(texto) {
 function abrirLocalizar(args = {}) {
   const aberta = janelas.find((j) => j.id === 'localizar');
   if (aberta) return aberta.focar();
-  const j = new Janela({ id: 'localizar', titulo: tr('Localizar: Todos os arquivos'), icone: 'localizar', largura: 520, altura: 380, status: [tr('Digite parte do nome e clique em Localizar agora.')] });
+  const j = new Janela({ id: 'localizar', titulo: tr('Localizar: Todos os arquivos'), icone: 'localizar', largura: 560, altura: 400, status: [tr('Digite parte do nome ou do texto e clique em Localizar agora.')] });
   const nome = h('input', { type: 'text', spellcheck: false, style: { flex: '1' }, value: args.termo || '' });
   const onde = h('input', { type: 'text', value: caminhoTela(args.pasta || ''), style: { flex: '1' } });
+  // Contendo o texto: a busca pelo conteúdo (o índice do processo principal).
+  const texto = h('input', { type: 'text', spellcheck: false, style: { flex: '1' }, value: args.texto || '' });
   const btLocalizar = h('button.padrao', tr('Localizar agora'));
   const btNova = h('button', tr('Nova pesquisa'));
   const area = h('div.lista-arquivos', { style: { flex: '1', marginTop: '8px' } });
@@ -97,8 +99,9 @@ function abrirLocalizar(args = {}) {
   j.corpo.append(
     h('div', { style: { display: 'flex', gap: '10px' } },
       h('fieldset', { style: { flex: '1', margin: '0' } }, h('legend', tr('Nome e local')),
-        h('div.linha', h('span', { style: { width: '62px' } }, rotulo(tr('&Nome:'))), nome),
-        h('div.linha', h('span', { style: { width: '62px' } }, rotulo(tr('&Examinar:'))), onde)),
+        h('div.linha', h('span', { style: { width: '70px', flex: 'none' } }, rotulo(tr('&Nome:'))), nome),
+        h('div.linha', h('span', { style: { width: '70px', flex: 'none' } }, rotulo(tr('&Examinar:'))), onde),
+        h('div.linha', h('span', { style: { width: '70px', flex: 'none' } }, rotulo(tr('&Contendo:'))), texto)),
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '6px' } }, btLocalizar, btNova, img('localizar', 32, { style: { margin: '6px auto 0' } }))),
     area,
   );
@@ -112,7 +115,26 @@ function abrirLocalizar(args = {}) {
     btLocalizar.disabled = true;
     j.definirStatus([tr('Procurando…')]);
     try {
-      const achados = await retro.disco.buscar(nome.value.trim(), { pasta: caminhoInterno(onde.value) });
+      const pasta = caminhoInterno(onde.value);
+      const conteudo = texto.value.trim();
+      if (conteudo) {
+        // Pelo conteúdo (e, com um nome, só os que também têm o nome).
+        const parte = nome.value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const achados = (await retro.indice.buscar(conteudo, { pasta, max: 200 }))
+          .filter((f) => !parte || f.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(parte));
+        vista.o.colunas = [tr('Nome'), tr('Pasta'), tr('Trecho'), tr('Modificado')];
+        vista.desenhar(achados.map((f) => ({
+          chave: f.rel, rotulo: f.nome, icone: tipoDe(f.nome, false).icone, rel: f.rel, nome: f.nome, pasta: false,
+          colunas: [caminhoTela(paiDe(f.rel)), f.trecho.length > 90 ? f.trecho.slice(0, 89) + '…' : f.trecho, dataHora(f.modificado)],
+        })));
+        const est = await retro.indice.estado().catch(() => null);
+        j.definirStatus([est && !est.ligado ? tr('A busca pelo conteúdo está desligada (Painel de controle › Disco C:).')
+          : est && est.faltam ? tr('{n} arquivo(s) encontrado(s). O índice ainda está lendo {f} arquivo(s).', { n: achados.length, f: est.faltam })
+            : tr('{n} arquivo(s) encontrado(s)', { n: achados.length })]);
+        return;
+      }
+      const achados = await retro.disco.buscar(nome.value.trim(), { pasta });
+      vista.o.colunas = [tr('Nome'), tr('Pasta'), tr('Tamanho'), tr('Modificado')];
       vista.desenhar(achados.map((f) => {
         const t = tipoDe(f.nome, f.pasta);
         return { chave: f.rel, rotulo: f.nome, icone: t.icone, rel: f.rel, nome: f.nome, pasta: f.pasta, colunas: [caminhoTela(paiDe(f.rel)), f.pasta ? '' : tamanho(f.tamanho), dataHora(f.modificado)] };
@@ -126,9 +148,10 @@ function abrirLocalizar(args = {}) {
   };
   btLocalizar.addEventListener('click', localizar);
   nome.addEventListener('keydown', (e) => { if (e.key === 'Enter') localizar(); });
-  btNova.addEventListener('click', () => { nome.value = ''; vista.desenhar([]); nome.focus(); j.definirStatus([tr('Digite parte do nome e clique em Localizar agora.')]); });
+  texto.addEventListener('keydown', (e) => { if (e.key === 'Enter') localizar(); });
+  btNova.addEventListener('click', () => { nome.value = ''; texto.value = ''; vista.desenhar([]); nome.focus(); j.definirStatus([tr('Digite parte do nome ou do texto e clique em Localizar agora.')]); });
   nome.focus();
-  if (args.termo) localizar();
+  if (args.termo || args.texto) localizar();
 }
 
 /* ---------- Desligar ---------- */

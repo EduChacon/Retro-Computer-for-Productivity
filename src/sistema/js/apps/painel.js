@@ -1317,6 +1317,24 @@ async function dialogoDisco() {
   // caminhos de lá para cá. Os atalhos lá fora só são criados quando o usuário pede.
   const pc = await retro.computador.estado().catch(() => null);
   const abas = [{ titulo: tr('Geral'), conteudo }];
+  // A busca pelo conteúdo: o índice dos documentos (só neste computador; desligado, ele é apagado).
+  const chkConteudo = h('input', { type: 'checkbox', checked: (estado.config.busca || {}).conteudo !== false });
+  const situacaoIndice = h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '8px' } });
+  retro.indice.estado().then((e) => {
+    situacaoIndice.textContent = !e.ligado ? '' : e.faltam
+      ? tr('{n} documento(s) no índice; faltam {f}.', { n: e.comTexto, f: e.faltam })
+      : tr('{n} documento(s) no índice.', { n: e.comTexto });
+  }).catch(() => { });
+  abas.push({
+    titulo: tr('Busca'),
+    conteudo: h('div',
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' } }, img('localizar', 32), h('b', tr('Busca pelo conteúdo'))),
+      h('hr.sulco'),
+      h('div', { style: { lineHeight: '13px', margin: '8px 0' } }, tr('O Localizar e a caixa de busca da barra de tarefas também procuram dentro dos documentos: textos, Word, OpenDocument, planilhas, apresentações e PDFs. O texto de cada um fica guardado só neste computador, na pasta de dados do Retro Computer.')),
+      h('label', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, chkConteudo, rotulo(tr('Procurar também &dentro dos arquivos'))),
+      h('div', { style: { color: '#404040', lineHeight: '13px', marginTop: '8px' } }, tr('Desligada, a busca fica só pelos nomes, e o texto guardado é apagado.')),
+      situacaoIndice),
+  });
   let chkFora = null;
   let chkEnviar = null;
   if (pc && pc.disponivel) {
@@ -1353,7 +1371,9 @@ async function dialogoDisco() {
   }
   dialogoBase({
     titulo: tr('Propriedades de Disco local (C:)'), icone: 'disco', larg: 380, abas,
-    aoAplicar: chkFora ? async () => {
+    aoAplicar: async () => {
+      if (chkConteudo.checked !== ((estado.config.busca || {}).conteudo !== false)) await definirConfig({ busca: { conteudo: chkConteudo.checked } });
+      if (!chkFora) return;
       if (chkFora.checked !== pc.visivel) {
         await definirConfig({ computador: { pastas: chkFora.checked } });
         pc.visivel = chkFora.checked;
@@ -1364,7 +1384,7 @@ async function dialogoDisco() {
         if (r.ok) pc.enviarPara = chkEnviar.checked;
         else { chkEnviar.checked = pc.enviarPara; erro(tr('Não foi possível mudar o "Enviar para" do Windows: {erro}', { erro: r.erro || '?' })); }
       }
-    } : undefined,
+    },
   });
 }
 

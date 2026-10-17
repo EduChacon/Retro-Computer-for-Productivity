@@ -220,6 +220,11 @@ contextBridge.exposeInMainWorld('retro', {
   ocr: {
     imagem: (item, idioma) => chamar('ocr:imagem', item, idioma),
   },
+  // A busca pelo conteúdo dos arquivos do disco C:.
+  indice: {
+    buscar: (termo, o) => chamar('indice:buscar', termo, o),
+    estado: () => chamar('indice:estado'),
+  },
   // Os scanners: a lista, as escolhas de cada um e uma página em PNG.
   scanner: {
     listar: () => chamar('scanner:listar'),

@@ -1310,6 +1310,11 @@ img.de-fora { object-fit: contain; image-rendering: auto; }
 .busca-item.ativo { background: var(--selecao); color: var(--selecao-texto); }
 .busca-dica { color: #808080; margin-left: auto; max-width: 130px; }
 .busca-item.ativo .busca-dica { color: #c0c0ff; }
+.busca-item.com-trecho { align-items: flex-start; }
+.busca-item.com-trecho > img { margin-top: 1px; }
+.busca-texto { display: flex; flex-direction: column; min-width: 0; }
+.busca-trecho { color: #606060; font-size: 0.92em; }
+.busca-item.ativo .busca-trecho { color: #c0c0ff; }
 .busca-vazio { padding: 2px 6px; color: #808080; }
 
 /* O calendário do relógio */

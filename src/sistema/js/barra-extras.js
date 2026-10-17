@@ -195,10 +195,17 @@ export async function procurar(termo) {
     const tp = tipoDe(f.nome, f.pasta);
     r.push({ grupo: 'arquivos', rotulo: f.nome, dica: caminhoTela(paiDe(f.rel)), icone: tp.icone, abrir: () => (f.pasta ? abrir('explorador', { pasta: f.rel }) : abrirArquivo(f.rel)) });
   }
+  // Dentro dos arquivos (o índice): os que têm o texto, sem repetir os achados pelo nome.
+  if (t.length >= 3) {
+    const pelosNomes = new Set(arquivos.map((f) => f.rel));
+    const dentro = (await retro.indice.buscar(termo.trim(), { max: 6 }).catch(() => [])).filter((f) => !pelosNomes.has(f.rel)).slice(0, 5);
+    for (const f of dentro) r.push({ grupo: 'conteudo', rotulo: f.nome, dica: f.trecho, icone: tipoDe(f.nome, false).icone, abrir: () => abrirArquivo(f.rel) });
+    if (dentro.length) r.push({ grupo: 'conteudo', rotulo: tr('Ver todos no Localizar…'), icone: 'localizar', abrir: () => abrir('localizar', { texto: termo.trim() }) });
+  }
   return r;
 }
 
-const GRUPOS = { conta: marcar('Calculadora'), programas: marcar('Programas'), configuracoes: marcar('Configurações'), arquivos: marcar('Arquivos') };
+const GRUPOS = { conta: marcar('Calculadora'), programas: marcar('Programas'), configuracoes: marcar('Configurações'), arquivos: marcar('Arquivos'), conteudo: marcar('Dentro dos arquivos') };
 
 export function montarBusca() {
   const campo = h('input', { type: 'search', spellcheck: false, placeholder: tr('Pesquisar'), 'aria-label': tr('Pesquisar') });
@@ -234,7 +241,10 @@ export function montarBusca() {
     resultados.forEach((r, i) => {
       if (r.grupo !== grupo) { grupo = r.grupo; painel.append(h('div.busca-grupo', tr(GRUPOS[grupo]))); }
       const ico = r.iconeUrl ? h('img.de-fora', { src: r.iconeUrl, width: 16, height: 16, alt: '' }) : img(r.icone, 16);
-      const op = h('div.busca-item' + (i === ativo ? '.ativo' : ''), { title: r.dica || '' }, ico, h('span', r.rotulo), r.dica ? h('span.busca-dica', r.dica) : null);
+      // Dentro dos arquivos: o trecho achado vai embaixo do nome.
+      const op = r.grupo === 'conteudo' && r.dica
+        ? h('div.busca-item.com-trecho' + (i === ativo ? '.ativo' : ''), { title: r.dica }, ico, h('div.busca-texto', h('span', r.rotulo), h('span.busca-trecho', r.dica)))
+        : h('div.busca-item' + (i === ativo ? '.ativo' : ''), { title: r.dica || '' }, ico, h('span', r.rotulo), r.dica ? h('span.busca-dica', r.dica) : null);
       op.addEventListener('mousedown', (e) => { e.preventDefault(); escolher(i); });
       op.addEventListener('mouseenter', () => { ativo = i; desenhar(); });
       painel.append(op);

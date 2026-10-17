@@ -39,6 +39,8 @@ const PADRAO = {
   transferencia: { historico: true },
   // O Navegador: só conexões seguras (http:// vira https://) e apagar os dados ao fechar.
   navegador: { soHttps: true, limparAoFechar: false },
+  // A busca pelo conteúdo dos arquivos (o índice, na pasta de dados do usuário; desligada, ele é apagado).
+  busca: { conteudo: true },
   // O Diário de trabalho: anotar sozinho os focos concluídos e os arquivos alterados.
   diario: { ligado: false },
   // A cópia de segurança do disco C: (todo dia ou toda semana), para uma pasta fora dele.

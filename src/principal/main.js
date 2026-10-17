@@ -39,6 +39,7 @@ const { Trabalhos } = require('./trabalho');
 const { FerramentasPdf } = require('./pdf');
 const { Ocr } = require('./ocr');
 const { Scanners, ScannersFalsos } = require('./scanner');
+const { Indice } = require('./indice');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
@@ -204,6 +205,7 @@ let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
 let trabalhos = null; // o processo de trabalho (trabalho.js): as ferramentas de PDF e o OCR
+let indice = null; // a busca pelo conteúdo dos arquivos (indice.js)
 let cheiaPeloSite = false; // a janela entrou em tela cheia por um site do Navegador
 let loja = null; // a loja de programas: o Flathub no Linux (loja.js), o winget no Windows e o Homebrew no Mac (lojas.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
@@ -262,7 +264,7 @@ async function abrirDisco() {
   await disco.preparar([pastas.documentos, pastas.mesa]);
   if (primeiraVez && !fs.existsSync(path.join(raiz, pastas.documentos, pastas.leiame))) await criarBoasVindas(pastas);
   pararObservar();
-  pararObservar = disco.observar((mudancas) => enviar('disco:mudou', mudancas), (rel) => { if (diario) diario.arquivoMudou(rel).catch(() => { }); });
+  pararObservar = disco.observar((mudancas) => { enviar('disco:mudou', mudancas); if (indice) indice.agendar(); }, (rel) => { if (diario) diario.arquivoMudou(rel).catch(() => { }); });
 }
 
 /** O nome da pasta da cópia de segurança dentro do destino (guardado, como o do diário). */
@@ -1266,6 +1268,7 @@ function registrarPonte() {
     }
     const r = config.definir(parte);
     if (parte.transferencia && historico) historico.ligar(r.transferencia.historico !== false);
+    if (parte.busca && indice) indice.ligar((r.busca || {}).conteudo !== false).catch(() => { });
     if (parte.papel && MODO_SISTEMA) fundoDaRaiz();
     return semSegredos(r);
   });
@@ -1887,6 +1890,11 @@ function registrarPonte() {
   tratar('scanner:digitalizar', (id, o) => scanners.digitalizar(String(id), o && typeof o === 'object' ? { cor: String(o.cor || 'cor'), dpi: Number(o.dpi) || 200, origem: String(o.origem || '') } : {}));
   tratar('scanner:parar', () => scanners.parar());
   tratar('scanner:doSistema', () => scanners.abrirDoSistema());
+  // A busca pelo conteúdo: o índice fica na pasta de dados do usuário e começa meio minuto depois de abrir.
+  indice = new Indice({ disco, trabalhos, pasta: path.join(app.getPath('userData'), 'indice'), ligado: (config.obter().busca || {}).conteudo !== false });
+  indice.agendar(30 * 1000);
+  tratar('indice:buscar', (termo, o) => indice.buscar(String(termo || ''), { pasta: o && typeof o.pasta === 'string' ? o.pasta : '', max: Math.min(200, Math.max(1, Number(o && o.max) || 50)) }));
+  tratar('indice:estado', () => indice.estado());
   // O Bluetooth (no Linux, pelo bluetoothctl; no Windows e no macOS, as configurações do sistema).
   const bluetooth = new (process.env.RETRO_BLUETOOTH_FALSO ? BluetoothFalso : Bluetooth)({ aoPergunta: (p) => enviar('bluetooth:pergunta', p) });
   tratar('bluetooth:estado', () => bluetooth.estado());

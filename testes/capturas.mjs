@@ -3738,6 +3738,47 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await lerTexto('Contrato.pdf', 'ocr-pdf-texto');
   },
 
+  // A busca pelo conteúdo: um texto, um Word, uma planilha e um PDF; o índice lê todos (meio minuto
+  // depois de abrir), e a busca acha pelo texto de dentro, na caixa da barra e no Localizar.
+  async busca() {
+    const docs = path.join(disco, DOCS);
+    fs.writeFileSync(path.join(docs, 'Recibo.txt'), 'Recebi de Maria a quantia referente ao aluguel de outubro.\nSão Paulo, 17 de outubro de 2026.');
+    await docxSimples(path.join(docs, 'Relatório.docx'));
+    await xlsxSimples(path.join(docs, 'Despesas.xlsx'), 'Outubro', [['Item', 'Valor'], ['Aluguel do escritório', 2400], ['Internet', 120]]);
+    pdfSimples(path.join(docs, 'Contrato de locação.pdf'), [['Contrato de locacao', 'O locatario pagara o aluguel ate o dia cinco.'], ['Clausula segunda', 'Multa de dez por cento.']]);
+    const inicio = Date.now();
+    let est = null;
+    while (Date.now() - inicio < 90000) {
+      est = await pagina.evaluate(() => retro.indice.estado());
+      if (est.comTexto >= 5 && !est.faltam) break;
+      await pagina.waitForTimeout(1000);
+    }
+    console.log('índice:', JSON.stringify(est), 'em', Math.round((Date.now() - inicio) / 1000), 's');
+    await fecharTudo();
+    await pagina.click('#busca-barra input');
+    await pagina.keyboard.type('aluguel');
+    await pagina.waitForSelector('.busca-resultados .busca-item.com-trecho', { timeout: 10000 }).catch(() => { });
+    await pagina.waitForTimeout(500);
+    console.log('na caixa:', JSON.stringify(await pagina.$$eval('.busca-resultados .busca-item', (l) => l.map((e) => e.textContent))));
+    await foto('busca-caixa');
+    await pagina.keyboard.press('Escape');
+    await pagina.evaluate(() => { const c = document.querySelector('#busca-barra input'); if (c) { c.value = ''; c.blur(); } });
+    await abrir('localizar', { texto: 'dez por cento' });
+    await pagina.waitForTimeout(1500);
+    console.log('no Localizar:', JSON.stringify(await pagina.$$eval('.janela.ativa .linha-item', (l) => l.map((e) => e.textContent))));
+    await foto('busca-localizar');
+    await fecharTudo();
+    await abrir('localizar', { texto: 'escritorio' });
+    await pagina.waitForTimeout(1500);
+    console.log('sem acento:', JSON.stringify(await pagina.$$eval('.janela.ativa .linha-item', (l) => l.map((e) => e.textContent))));
+    await fecharTudo();
+    await abrir('painel', { secao: 'disco' });
+    await pagina.waitForTimeout(800);
+    await pagina.click(`.janela.ativa .abas > div:has-text("${T('Busca')}")`).catch(() => pagina.click(`.janela.ativa [role=tab]:has-text("${T('Busca')}")`));
+    await pagina.waitForTimeout(500);
+    await foto('busca-painel');
+  },
+
   // O Digitalizar (com RETRO_SCANNER_FALSO=1): dois scanners de mentira, duas páginas, o PDF salvo e o
   // texto dele pelo OCR (a página de mentira é um ofício desenhado na hora).
   async scanner() {
