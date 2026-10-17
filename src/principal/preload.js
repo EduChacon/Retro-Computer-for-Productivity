@@ -208,6 +208,14 @@ contextBridge.exposeInMainWorld('retro', {
     imprimir: (html, o) => chamar('impressoras:imprimir', html, o),
     pdf: (html, rel) => chamar('impressoras:pdf', html, rel),
   },
+  // As ferramentas de PDF: os caminhos são do disco C:; os resultados vão para o disco também.
+  pdf: {
+    info: (rels) => chamar('pdf:info', rels),
+    combinar: (itens, destino) => chamar('pdf:combinar', itens, destino),
+    extrair: (rel, intervalo, destino) => chamar('pdf:extrair', rel, intervalo, destino),
+    separar: (rel) => chamar('pdf:separar', rel),
+    girar: (rel, graus) => chamar('pdf:girar', rel, graus),
+  },
   monitor: {
     amostra: () => chamar('monitor:amostra'),
     processos: () => chamar('monitor:processos'),

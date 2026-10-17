@@ -9,7 +9,7 @@
  * A área de trabalho fala com este processo só pela ponte do preload
  * (window.retro); os programas, só pela área de trabalho (postMessage).
  */
-const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard, ClipboardItem, webContents } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, net, session, shell, dialog, safeStorage, Menu, screen, nativeImage, desktopCapturer, globalShortcut, powerMonitor, clipboard, ClipboardItem, webContents, utilityProcess } = require('electron');
 const fs = require('node:fs');
 const { spawn, execFile, execFileSync } = require('node:child_process');
 const fsp = require('node:fs/promises');
@@ -35,6 +35,8 @@ const { servirArquivo, miniatura } = require('./servir');
 const compactados = require('./compactados');
 const { Monitor } = require('./monitor');
 const { Impressoras, ImpressorasFalsas, papelDoPais } = require('./impressoras');
+const { Trabalhos } = require('./trabalho');
+const { FerramentasPdf } = require('./pdf');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
@@ -199,6 +201,7 @@ let terminais = null;
 let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
+let trabalhos = null; // o processo de trabalho (trabalho.js): as ferramentas de PDF
 let cheiaPeloSite = false; // a janela entrou em tela cheia por um site do Navegador
 let loja = null; // a loja de programas: o Flathub no Linux (loja.js), o winget no Windows e o Homebrew no Mac (lojas.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
@@ -1856,6 +1859,15 @@ function registrarPonte() {
     if (!wc || wc.isDestroyed() || wc.getType() !== 'webview' || !janela || wc.hostWebContents !== janela.webContents) throw new Error(tr('A página não está mais aberta.'));
     return disco.gravar(destinoPdf(rel), await wc.printToPDF({ printBackground: true, pageSize: papel() }));
   });
+  // As ferramentas de PDF (combinar, separar, extrair e girar): o trabalho com os arquivos de fora
+  // fica no processo de trabalho, longe deste e da janela.
+  trabalhos = new Trabalhos({ utilityProcess });
+  const ferramentasPdf = new FerramentasPdf({ disco, trabalhos, papel });
+  tratar('pdf:info', (rels) => ferramentasPdf.info(rels));
+  tratar('pdf:combinar', (itens, destino) => ferramentasPdf.combinar(itens, destino));
+  tratar('pdf:extrair', (rel, intervalo, destino) => ferramentasPdf.extrair(rel, intervalo, destino));
+  tratar('pdf:separar', (rel) => ferramentasPdf.separar(rel));
+  tratar('pdf:girar', (rel, graus) => ferramentasPdf.girar(rel, graus));
   // O Bluetooth (no Linux, pelo bluetoothctl; no Windows e no macOS, as configurações do sistema).
   const bluetooth = new (process.env.RETRO_BLUETOOTH_FALSO ? BluetoothFalso : Bluetooth)({ aoPergunta: (p) => enviar('bluetooth:pergunta', p) });
   tratar('bluetooth:estado', () => bluetooth.estado());
@@ -2307,6 +2319,7 @@ app.on('will-quit', (e) => {
 
 app.on('window-all-closed', () => {
   pararObservar();
+  if (trabalhos) trabalhos.encerrar();
   if (terminais) terminais.fecharTodos();
   if (sistemaBandeja) sistemaBandeja.volume.fechar();
   app.quit();

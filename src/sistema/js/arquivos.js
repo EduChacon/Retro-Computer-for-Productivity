@@ -13,6 +13,7 @@ import { tr } from './idioma.js';
 import { listarUnidades, levarParaUnidade, nomeUnidade, lerPastaUnidade, unidadeConhecida } from './unidades.js';
 import { ehCompactado, extrairEMostrar, compactarItens } from './compactados.js';
 import { ehFixada, alternarFixada, seguirPasta } from './acesso.js';
+import { itensDoMenu as itensPdf } from './pdf.js';
 
 export const TIPO_ARRASTO = 'application/x-retro-arquivos';
 // Os atalhos de programas da área de trabalho (as chaves): soltos numa pasta, viram arquivos de atalho.
@@ -388,6 +389,9 @@ export function menuDeItens(sel, o = {}) {
     if (EXTS_PAPEL.includes(extensao(um.nome))) itens.push({ rotulo: tr('Usar como papel de &parede'), icone: 'aparencia', acao: () => usarComoPapel(um.rel) });
     itens.push({ rotulo: tr('Pe&dir ao Claude'), icone: 'claude', sub: () => pedidosAoClaude(um) });
   }
+  // As ferramentas de PDF: um PDF (separar, extrair, girar), uma imagem (converter) ou vários (combinar).
+  const pdf = itensPdf(sel);
+  if (pdf) itens.push({ rotulo: tr('Ferramentas de PD&F'), icone: 'pdf', sub: () => pdf });
   // O antivírus: um arquivo ou uma pasta de cada vez.
   if (um && um.rel != null) itens.push({ rotulo: tr('Verificar com o antivír&us'), icone: 'seguranca', acao: () => abrir('antivirus', { alvo: { tipo: 'disco', rel: um.rel } }) });
   if (sel.length) {

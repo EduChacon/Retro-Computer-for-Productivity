@@ -583,6 +583,7 @@ async function itensProgramas() {
         prog('discos', tr('Discos'), 'discos'),
         prog('dos', tr('DOS'), 'dos'),
         prog('foco', tr('Foco (Pomodoro)'), 'foco'),
+        prog('pdf', tr('Ferramentas de PDF'), 'pdf'),
         prog('mac', tr('Mac Plus'), 'mac'),
         prog('caracteres', tr('Mapa de caracteres'), 'caracteres'),
         prog('monitor', tr('Monitor do sistema'), 'monitor'),

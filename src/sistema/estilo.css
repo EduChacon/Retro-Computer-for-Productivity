@@ -1721,6 +1721,21 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 
 /* O Antivírus: a lista das ameaças encontradas. */
 .av-lista { flex: 1 1 auto; min-height: 70px; height: auto; overflow: auto; padding: 2px; background: #fff; }
+/* Ferramentas de PDF: a lista na ordem, os botões do lado e os do PDF escolhido. */
+.pdf-corpo { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.pdf-meio { flex: 1 1 auto; min-height: 0; display: flex; gap: 6px; }
+.pdf-lista { flex: 1 1 auto; height: auto; min-height: 80px; overflow: auto; padding: 2px; background: #fff; }
+.pdf-lado { display: flex; flex-direction: column; gap: 4px; }
+.pdf-lado button { min-width: 84px; }
+.pdf-item { display: flex; align-items: center; gap: 6px; padding: 1px 3px; white-space: nowrap; }
+.pdf-item.sel { background: var(--selecao); color: var(--selecao-texto); }
+.pdf-item.ruim .pdf-pag { color: #a00000; }
+.pdf-item.sel.ruim .pdf-pag { color: inherit; }
+.pdf-nome { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.pdf-pag { flex: 0 0 auto; color: #404040; }
+.pdf-item.sel .pdf-pag { color: inherit; }
+.pdf-vazio { padding: 12px 8px; color: #606060; text-align: center; white-space: normal; }
+.pdf-um { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 4px 8px 8px; }
 .av-linha { display: grid; grid-template-columns: 16px 1fr auto; gap: 6px; align-items: center; padding: 1px 2px; }
 .av-linha.sel { background: var(--selecao); color: var(--selecao-texto); }
 .av-arquivo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -263,6 +263,20 @@ function pdfSimples(arquivo, paginas) {
   fs.writeFileSync(arquivo, Buffer.from(saida, 'latin1'));
 }
 
+/** Um PDF protegido (o dicionário Encrypt no trailer, como os extratos de banco com senha de dono). */
+function pdfProtegido(arquivo) {
+  const objs = [null, '<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Count 1 /Kids [3 0 R] >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>',
+    '<< /Filter /Standard /V 1 /R 2 /O (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) /U (bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb) /P -4 >>'];
+  let s = '%PDF-1.4\n';
+  const pos = [];
+  for (let k = 1; k < objs.length; k++) { pos[k] = s.length; s += `${k} 0 obj\n${objs[k]}\nendobj\n`; }
+  const xref = s.length;
+  s += `xref\n0 ${objs.length}\n0000000000 65535 f \n` + pos.slice(1).map((p) => String(p).padStart(10, '0') + ' 00000 n \n').join('');
+  s += `trailer\n<< /Size ${objs.length} /Root 1 0 R /Encrypt 4 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  fs.writeFileSync(arquivo, Buffer.from(s, 'latin1'));
+}
+
 async function esperarPronto(ms = 90000) {
   await pagina.waitForFunction(() => !document.querySelector('.corpo .carga-programa'), null, { timeout: ms });
   await pagina.waitForTimeout(1500);
@@ -3560,7 +3574,9 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
       for (let i = 0; i < 150 && !fs.existsSync(arq); i++) await pagina.waitForTimeout(200);
       if (!fs.existsSync(arq)) return console.log('PDF:', nome, '— não foi gravado; na pasta:', fs.readdirSync(pdfs).join(', '));
       const b = fs.readFileSync(arq);
-      console.log('PDF:', nome, b.length, 'bytes, cabeçalho', JSON.stringify(b.subarray(0, 5).toString('latin1')), 'páginas', (b.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length);
+      let paginas = '?';
+      try { paginas = /Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [arq]).toString())[1]; } catch { }
+      console.log('PDF:', nome, b.length, 'bytes, cabeçalho', JSON.stringify(b.subarray(0, 5).toString('latin1')), 'páginas', paginas);
       try { execFileSync('pdftoppm', ['-png', '-r', '40', '-f', '1', '-l', '1', arq, path.join(SAIDA, 'pdf-' + path.parse(nome).name.replace(/\W+/g, '-'))]); } catch { }
     };
     const menuArquivo = async () => {
@@ -3613,6 +3629,77 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.keyboard.press('Enter');
     await conferirPdf('Orçamento 2026 27.pdf');
     servidor.close();
+
+    // As ferramentas de PDF pelo botão direito do Explorador: separar, extrair, girar e combinar.
+    const { PDFDocument } = require('pdf-lib');
+    const rotacoes = async (nome) => (await PDFDocument.load(fs.readFileSync(path.join(pdfs, nome)), { updateMetadata: false })).getPages().map((p) => p.getRotation().angle).join(',');
+    pdfSimples(path.join(pdfs, 'Contrato.pdf'), [['Contrato', 'Página 1'], ['Cláusulas', 'Página 2'], ['Assinaturas', 'Página 3']]);
+    pdfSimples(path.join(pdfs, 'Anexo.pdf'), [['Anexo', 'Página única']]);
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(1200);
+    const item = (nome) => `.janela.ativa .item:has(.rotulo:text-is("${nome}"))`;
+    const ferramenta = async (nome, rotulo, fotografar) => {
+      await pagina.click(item(nome), { button: 'right' });
+      await pagina.waitForTimeout(300);
+      await pagina.hover(`.menu .opcao:has-text("${T('Ferramentas de PD&F')}")`);
+      await pagina.waitForTimeout(400);
+      if (fotografar) await foto(fotografar);
+      await pagina.click(`.menu .opcao:has-text("${T(rotulo)}")`);
+    };
+    await ferramenta('Contrato.pdf', '&Separar as páginas', 'pdf-ferramentas-menu');
+    await pagina.waitForTimeout(2500);
+    const pastaPaginas = path.join(pdfs, T('{nome} (páginas)').replace('{nome}', 'Contrato'));
+    console.log('separadas:', fs.existsSync(pastaPaginas) ? fs.readdirSync(pastaPaginas).join(' | ') : '(nenhuma pasta)');
+    await ferramenta('Contrato.pdf', 'E&xtrair páginas…');
+    await pagina.waitForSelector('#camada-modal .janela input[type=text]', { timeout: 10000 });
+    await pagina.waitForTimeout(300);
+    await pagina.fill('#camada-modal .janela input[type=text]', '3, 1');
+    await foto('pdf-extrair');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(600);
+    console.log('nome sugerido:', await pagina.inputValue('#camada-modal .janela input[type=text]'));
+    await pagina.keyboard.press('Enter');
+    await conferirPdf(T('{nome} (páginas {paginas})').replace('{nome}', 'Contrato').replace('{paginas}', '3,1') + '.pdf');
+    await ferramenta('Anexo.pdf', 'Girar à &direita');
+    await pagina.waitForTimeout(2000);
+    console.log('girado:', await rotacoes('Anexo.pdf'), '| versões:', fs.readdirSync(path.join(disco, '.versoes', DOCS, 'Anexo.pdf')).length);
+    // Dois arquivos escolhidos (um PDF e uma imagem): combinar em um PDF.
+    await pagina.click(item('Anexo.pdf'));
+    await pagina.click(item('Paisagem.png'), { modifiers: ['Control'] });
+    await pagina.click(item('Paisagem.png'), { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('Ferramentas de PD&F')}")`);
+    await pagina.waitForTimeout(400);
+    await foto('pdf-combinar-menu');
+    await pagina.click(`.menu .opcao:has-text("${T('&Combinar em um PDF…')}")`);
+    await pagina.waitForSelector('#camada-modal .janela', { timeout: 10000 });
+    await pagina.waitForTimeout(300);
+    const nomeCombinado = await pagina.inputValue('#camada-modal .janela input[type=text]');
+    console.log('nome sugerido:', nomeCombinado);
+    await pagina.keyboard.press('Enter');
+    await conferirPdf(nomeCombinado);
+    // A janela Ferramentas de PDF: a lista na ordem, Descer, e o protegido marcado.
+    pdfProtegido(path.join(pdfs, 'Extrato do banco.pdf'));
+    await fecharTudo();
+    await abrir('pdf', { arquivos: [`${DOCS}/Contrato.pdf`, `${DOCS}/Paisagem.png`, `${DOCS}/Anexo.pdf`] });
+    await pagina.waitForTimeout(1500);
+    await pagina.click(`.janela.ativa .pdf-item:has-text("Contrato.pdf")`);
+    await pagina.click(`.janela.ativa button:has-text("${T('Descer')}")`);
+    await pagina.waitForTimeout(300);
+    await foto('pdf-janela');
+    await pagina.evaluate((r) => window.__retro.abrir('pdf', { arquivos: [r] }), `${DOCS}/Extrato do banco.pdf`);
+    await pagina.waitForTimeout(1200);
+    await foto('pdf-janela-protegido');
+    await pagina.click(`.janela.ativa .pdf-item:has-text("Extrato do banco.pdf")`);
+    await pagina.click(`.janela.ativa button:has-text("${T('Remover')}")`);
+    await pagina.click(`.janela.ativa button:has-text("${T('Combinar em um PDF…')}")`);
+    await pagina.waitForSelector('#camada-modal .janela', { timeout: 10000 });
+    await pagina.fill('#camada-modal .janela input[type=text]', 'Tudo junto.pdf');
+    await pagina.keyboard.press('Enter');
+    await conferirPdf('Tudo junto.pdf');
+    await pagina.waitForTimeout(800);
+    await foto('pdf-janela-combinado');
   },
 
   // O Bluetooth (com RETRO_BLUETOOTH_FALSO=1): a bandeja, o Painel, procurar e parear um teclado.

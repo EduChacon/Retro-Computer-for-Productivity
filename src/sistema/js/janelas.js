@@ -523,6 +523,23 @@ window.addEventListener('blur', () => {
   }, 0);
 });
 
+/*
+ * Com uma caixa modal aberta, o foco fica nela. Um programa por baixo que pega o foco de volta um
+ * instante depois de outra caixa fechar (o "ativada" com setTimeout do Explorador) não leva as teclas
+ * da caixa nova: o Enter dela abriria o arquivo escolhido no Explorador.
+ */
+document.addEventListener('focusin', (e) => {
+  const caixa = [...lista].reverse().find((j) => j.dialogo && !j.fechada);
+  if (!caixa) return;
+  if (caixa.el.contains(e.target)) { caixa.ultimoFoco = e.target; return; }
+  // Os menus, a tela de bloqueio e a de entrada ficam por cima de tudo e guardam o foco delas.
+  if (e.target.closest && e.target.closest('.menu, #camada-menus, #bloqueio, #entrada')) return;
+  const alvo = caixa.ultimoFoco && caixa.el.contains(caixa.ultimoFoco)
+    ? caixa.ultimoFoco
+    : caixa.el.querySelector('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]');
+  if (alvo) alvo.focus();
+});
+
 /* ---------- Os cantos magnéticos ---------- */
 
 const BORDA = 6;   // a distância da borda que conta como encostar
