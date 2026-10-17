@@ -18,8 +18,9 @@
     <font place="OnScreenDisplay"><name>DejaVu Sans</name><size>8</size></font>
   </theme>
   <desktops><number>1</number></desktops>
-  <!-- A altura da barra de tarefas do Retro Computer (com a data no relógio, ela cresce). -->
-  <margins><top>0</top><bottom>34</bottom><left>0</left><right>0</right></margins>
+  <!-- A altura da barra de tarefas do Retro Computer: o Retro Computer muda estes números na cópia
+       da sessão (sessao.sh) quando a barra muda de altura (a data no relógio, o tamanho dos pixels). -->
+  <margins><top>0</top><bottom>28</bottom><left>0</left><right>0</right></margins>
   <keyboard></keyboard>
   <mouse>
     <dragThreshold>3</dragThreshold>

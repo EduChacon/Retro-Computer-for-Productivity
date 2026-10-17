@@ -12,6 +12,7 @@ const TAREFAS = {
   'pdf:extrair': (d) => require('./pdf-ops').extrair(d.bytes, d.intervalo),
   'pdf:separar': (d) => require('./pdf-ops').separar(d.bytes),
   'pdf:girar': (d) => require('./pdf-ops').girar(d.bytes, d.graus),
+  'pdf:marcar': (d) => require('./pdf-ops').marcar(d.bytes, d.marcas),
   'ocr:reconhecer': (d) => require('./ocr-ops').reconhecer(d.bytes, d.idioma, d.langPath),
   'texto:extrair': (d) => require('./extrair-texto').extrair(d.bytes, d.ext),
 };

@@ -1871,6 +1871,11 @@ function registrarPonte() {
   tratar('firewall:estado', () => firewall.estado());
   tratar('firewall:definir', (ligar, senha) => firewall.definir(!!ligar, String(senha || '')));
   tratar('janelasLinux:encaixar', (id, seta) => janelasLinux && janelasLinux.encaixar(String(id), String(seta)));
+  // As faixas das barras do Retro Computer (em pontos da tela), para as janelas do Linux não as cobrirem.
+  tratar('janelasLinux:margens', (m) => {
+    const n = (v) => (Number.isFinite(Number(v)) ? Math.max(0, Math.min(500, Math.round(Number(v)))) : 0);
+    return janelasLinux ? janelasLinux.margens({ cima: n(m && m.cima), baixo: n(m && m.baixo) }) : false;
+  });
   tratar('janelasLinux:minimizarTodas', async () => {
     const n = janelasLinux ? await janelasLinux.minimizarTodas() : 0;
     if (janela && !janela.isDestroyed()) janela.focus();
@@ -2057,6 +2062,7 @@ function registrarPonte() {
   tratar('pdf:extrair', (rel, intervalo, destino) => ferramentasPdf.extrair(rel, intervalo, destino));
   tratar('pdf:separar', (rel) => ferramentasPdf.separar(rel));
   tratar('pdf:girar', (rel, graus) => ferramentasPdf.girar(rel, graus));
+  tratar('pdf:marcar', (rel, marcas, destino) => ferramentasPdf.marcar(rel, marcas, destino));
   // O texto das imagens e das páginas digitalizadas (OCR), também no processo de trabalho.
   const ocr = new Ocr({ disco, trabalhos, pasta: path.join(BASE_DADOS, 'ocr') });
   tratar('ocr:imagem', (item, idioma) => ocr.imagem(item, String(idioma || '')));

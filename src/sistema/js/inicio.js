@@ -58,6 +58,7 @@ registrarPreguicoso({ agenda: { nome: 'Agenda', icone: 'calendario', tipos: ['ic
 registrarPreguicoso({ discos: { nome: 'Discos', icone: 'discos' } }, () => import('./apps/discos.js'));
 registrarPreguicoso({ nuvem: { nome: 'Nuvem', icone: 'nuvem' } }, () => import('./apps/nuvem.js'));
 registrarPreguicoso({ pdf: { nome: 'Ferramentas de PDF', icone: 'pdf' } }, () => import('./apps/pdf.js'));
+registrarPreguicoso({ leitorpdf: { nome: 'Leitor de PDF', icone: 'leitor-pdf', tipos: ['pdf'] } }, () => import('./apps/leitorpdf.js'));
 registrarPreguicoso({ ocr: { nome: 'Copiar o texto', icone: 'texto' } }, () => import('./apps/ocr.js'));
 registrarPreguicoso({ scanner: { nome: 'Digitalizar', icone: 'scanner' } }, () => import('./apps/scanner.js'));
 registrarPreguicoso({ receber: { nome: 'Receber do celular', icone: 'celular' } }, () => import('./apps/receber.js'));

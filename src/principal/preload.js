@@ -207,6 +207,7 @@ contextBridge.exposeInMainWorld('retro', {
     fechar: (id) => chamar('janelasLinux:fechar', id),
     encaixar: (id, seta) => chamar('janelasLinux:encaixar', id, seta),
     minimizarTodas: () => chamar('janelasLinux:minimizarTodas'),
+    margens: (m) => chamar('janelasLinux:margens', m),
     aoMudar: ouvir('janelasLinux:mudou'),
   },
   atualizacoesLinux: {
@@ -246,6 +247,7 @@ contextBridge.exposeInMainWorld('retro', {
     extrair: (rel, intervalo, destino) => chamar('pdf:extrair', rel, intervalo, destino),
     separar: (rel) => chamar('pdf:separar', rel),
     girar: (rel, graus) => chamar('pdf:girar', rel, graus),
+    marcar: (rel, marcas, destino) => chamar('pdf:marcar', rel, marcas, destino),
   },
   // O texto de uma imagem do disco ({ rel }) ou desenhada pela tela ({ png }), sem internet.
   ocr: {

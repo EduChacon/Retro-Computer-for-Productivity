@@ -18,6 +18,48 @@ function receber(r) {
 if (window.retro && retro.janelasLinux) {
   retro.janelasLinux.aoMudar(receber);
   retro.janelasLinux.listar().then(receber).catch(() => { });
+  vigiarFaixas();
+}
+
+/**
+ * As faixas das barras do Retro Computer, em pontos da tela: a barra de tarefas embaixo e, no tema
+ * Mac, a barra de menus em cima. O Openbox as recebe como margens (no modo sistema), e as janelas
+ * do Linux maximizadas encostam nelas, sem cobrir a barra nem deixar fresta.
+ */
+export function faixasDasBarras() {
+  const alt = window.innerHeight;
+  let cima = 0;
+  let baixo = 0;
+  for (const id of ['barra', 'barra-mac']) {
+    const el = document.getElementById(id);
+    if (!el || getComputedStyle(el).display === 'none') continue;
+    const r = el.getBoundingClientRect();
+    if (r.height <= 0 || r.width < 300) continue;
+    if (r.top <= 1) cima = Math.max(cima, r.bottom);
+    else if (r.bottom >= alt - 1) baixo = Math.max(baixo, alt - r.top);
+  }
+  const k = window.devicePixelRatio || 1;
+  return { cima: Math.round(cima * k), baixo: Math.round(baixo * k) };
+}
+
+/** Manda as faixas de novo quando a barra muda de altura (a data no relógio, o tamanho dos pixels, o tema). */
+function vigiarFaixas() {
+  let ultima = '';
+  let espera = null;
+  const enviar = () => {
+    clearTimeout(espera);
+    espera = setTimeout(() => {
+      const f = faixasDasBarras();
+      const chave = `${f.cima},${f.baixo}`;
+      if (chave === ultima || (!f.cima && !f.baixo)) return;
+      ultima = chave;
+      retro.janelasLinux.margens(f).catch(() => { });
+    }, 300);
+  };
+  const medir = new ResizeObserver(enviar);
+  for (const id of ['barra', 'barra-mac']) { const el = document.getElementById(id); if (el) medir.observe(el); }
+  window.addEventListener('resize', enviar);
+  new MutationObserver(enviar).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 }
 
 /** O Retro Computer está na frente (nenhuma janela do Linux ativa)? */

@@ -1,7 +1,8 @@
 /*
  * As ferramentas de PDF do lado do disco: lê os arquivos do disco C: (só dele, pelo Disco), manda o
  * trabalho para o processo de trabalho (trabalho.js → pdf-ops.js) e grava o resultado. O original
- * nunca muda, a não ser no Girar, que grava por cima e guarda a versão anterior (Versões anteriores).
+ * nunca muda, a não ser no Girar e nas marcas (os destaques e as notas do Leitor de PDF), que gravam
+ * por cima e guardam a versão anterior (Versões anteriores).
  */
 'use strict';
 const path = require('path');
@@ -11,6 +12,33 @@ const MAX_ARQUIVO = 300 * 1024 * 1024;
 const MAX_TOTAL = 600 * 1024 * 1024;
 const MAX_ITENS = 500;
 const TIPO_DA_EXT = { '.pdf': 'pdf', '.jpg': 'jpg', '.jpeg': 'jpg', '.png': 'png' };
+
+const CORES_MARCA = ['amarelo', 'verde', 'azul', 'rosa'];
+const MAX_MARCAS = 5000;
+const MAX_QUADS = 400;
+const MAX_TEXTO = 20000;
+const numeroOk = (v) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 1e6;
+const paginaOk = (v) => Number.isInteger(v) && v >= 0 && v < 100000;
+
+/** As marcas que vêm da tela, conferidas (o que não serve sai; nada de outros campos). */
+function limparMarcas(marcas) {
+  const m = marcas && typeof marcas === 'object' ? marcas : {};
+  const adicionar = (Array.isArray(m.adicionar) ? m.adicionar : []).slice(0, MAX_MARCAS).flatMap((a) => {
+    if (!a || !paginaOk(a.pagina)) return [];
+    const cor = CORES_MARCA.includes(a.cor) ? a.cor : 'amarelo';
+    const texto = String(a.texto || '').slice(0, MAX_TEXTO);
+    if (a.tipo === 'destaque') {
+      const quads = (Array.isArray(a.quads) ? a.quads : []).slice(0, MAX_QUADS).filter((q) => Array.isArray(q) && q.length === 8 && q.every(numeroOk));
+      return quads.length ? [{ tipo: 'destaque', pagina: a.pagina, quads, cor, texto }] : [];
+    }
+    if (a.tipo === 'nota' && numeroOk(a.x) && numeroOk(a.y)) return [{ tipo: 'nota', pagina: a.pagina, x: a.x, y: a.y, cor, texto }];
+    return [];
+  });
+  const remover = (Array.isArray(m.remover) ? m.remover : []).slice(0, MAX_MARCAS)
+    .filter((r) => r && paginaOk(r.pagina) && /^\d{1,9}R\d{0,5}$/.test(String(r.id || '')))
+    .map((r) => ({ pagina: r.pagina, id: String(r.id) }));
+  return { adicionar, remover, autor: String(m.autor || '').slice(0, 120) };
+}
 
 const baseDe = (nome) => nome.slice(0, nome.length - path.posix.extname(nome).length) || nome;
 
@@ -129,6 +157,21 @@ class FerramentasPdf {
     return { pasta: pasta.rel, paginas: partes.length };
   }
 
+  /**
+   * Grava as marcas do Leitor de PDF (os destaques e as notas novos e os apagados) no próprio PDF,
+   * guardando a versão anterior, ou num outro (o Salvar como).
+   */
+  async marcar(rel, marcas, relDestino) {
+    const a = await this.ler(rel);
+    if (!/\.pdf$/i.test(a.nome)) throw new Error(tr('"{nome}" não é um PDF que se consiga ler.', { nome: a.nome }));
+    const destino = relDestino ? this.destino(relDestino) : a.rel;
+    const limpas = limparMarcas(marcas);
+    // Sem nada a mudar: o mesmo arquivo fica como está, e o Salvar como faz só a cópia.
+    if (!limpas.adicionar.length && !limpas.remover.length) return destino === a.rel ? this.disco.info(a.rel) : this.disco.gravar(destino, a.bytes);
+    const bytes = await this.tarefa('pdf:marcar', { bytes: a.bytes, marcas: limpas }, a.nome);
+    return this.disco.gravar(destino, bytes);
+  }
+
   /** Gira todas as páginas e grava por cima (a versão anterior fica guardada). */
   async girar(rel, graus) {
     const a = await this.ler(rel);
@@ -138,4 +181,4 @@ class FerramentasPdf {
   }
 }
 
-module.exports = { FerramentasPdf, MAX_ARQUIVO, MAX_TOTAL };
+module.exports = { FerramentasPdf, limparMarcas, MAX_ARQUIVO, MAX_TOTAL };

@@ -4187,6 +4187,158 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('hoje, sem os dois:', JSON.stringify(await pagina.$$eval(`${AG} .ag-item`, (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
   },
 
+  // O Leitor de PDF: um PDF de duas páginas feito na hora, aberto com dois cliques (o programa padrão);
+  // destacar com o mouse (amarelo e verde), uma nota, a lista das marcas, salvar (as anotações no
+  // arquivo, conferidas pelo pdf-lib, e a versão anterior guardada), abrir de novo, mudar a cor,
+  // apagar e desfazer; e um PDF com assinatura digital, que oferece salvar uma cópia.
+  async leitorPdf() {
+    const { PDFDocument, StandardFonts, PDFName, PDFString, PDFHexString } = require('pdf-lib');
+    const pasta = path.join(disco, DOCS);
+    const LP = '.janela:has(.lp-area)';
+    const fazerPdf = async (assinado) => {
+      const d = await PDFDocument.create();
+      const f = await d.embedFont(StandardFonts.Helvetica);
+      const b = await d.embedFont(StandardFonts.HelveticaBold);
+      for (let n = 1; n <= 2; n++) {
+        const p = d.addPage([595, 842]);
+        p.drawText(n === 1 ? 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS' : 'CLÁUSULA TERCEIRA', { x: 72, y: 770, size: 14, font: b });
+        const linhas = [
+          'As partes acima qualificadas celebram o presente contrato, que se rege',
+          'pelas cláusulas seguintes e pelas disposições do Código Civil.',
+          'O prazo para a entrega dos serviços é de quinze dias úteis, contados',
+          'da assinatura, prorrogável uma vez por igual período, mediante aviso.',
+          'O pagamento será feito em três parcelas iguais, até o quinto dia útil',
+          'de cada mês, por transferência bancária para a conta indicada.',
+        ];
+        linhas.forEach((t, i) => p.drawText(t, { x: 72, y: 730 - i * 22, size: 12, font: f }));
+        if (assinado && n === 1) {
+          const ctx = d.context;
+          const v = ctx.register(ctx.obj({ Type: 'Sig', Filter: 'Adobe.PPKLite', SubFilter: 'adbe.pkcs7.detached', ByteRange: [0, 0, 0, 0], Contents: PDFHexString.of('00') }));
+          const campo = ctx.register(ctx.obj({ FT: 'Sig', T: PDFString.of('Assinatura'), V: v, Type: 'Annot', Subtype: 'Widget', Rect: [0, 0, 0, 0], F: 132, P: p.ref }));
+          p.node.set(PDFName.of('Annots'), ctx.obj([campo]));
+          d.catalog.set(PDFName.of('AcroForm'), ctx.obj({ Fields: [campo], SigFlags: 3 }));
+        }
+      }
+      return d.save();
+    };
+    const anotacoes = async (nome) => {
+      const d = await PDFDocument.load(fs.readFileSync(path.join(pasta, nome)), { updateMetadata: false });
+      return d.getPages().map((p, i) => (p.node.Annots() ? p.node.Annots().asArray() : []).map((r) => {
+        const a = d.context.lookup(r);
+        const c = a.lookup(PDFName.of('Contents'));
+        return `p${i + 1}:${String(a.get(PDFName.of('Subtype'))).slice(1)}${c ? ' "' + c.decodeText().slice(0, 30) + '"' : ''}`;
+      })).flat();
+    };
+    // Arrasta o mouse por cima de um pedaço de linha (os pedaços do texto da camada do pdf.js).
+    const arrastarTexto = async (pag, de, ate) => {
+      const caixas = await pagina.$$eval(`${LP} .lp-pagina[data-n="${pag}"] .textLayer span`, (l) => l.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, t: e.textContent }; }).filter((r) => r.w > 2));
+      const a = caixas[de];
+      const b = caixas[ate];
+      await pagina.mouse.move(a.x + 2, a.y + a.h / 2);
+      await pagina.mouse.down();
+      await pagina.mouse.move((a.x + b.x + b.w) / 2, b.y + b.h / 2, { steps: 5 });
+      await pagina.mouse.move(b.x + b.w - 2, b.y + b.h / 2, { steps: 5 });
+      await pagina.mouse.up();
+      await pagina.waitForTimeout(400);
+      return [a.t, b.t];
+    };
+    const lista = () => pagina.$$eval(`${LP} .lp-item`, (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')));
+    const versoes = (nome) => pagina.evaluate((r) => retro.disco.versoes(r).then((v) => v.length).catch((e) => 'erro: ' + e.message), `${DOCS}/${nome}`);
+
+    await fecharTudo();
+    fs.writeFileSync(path.join(pasta, 'Contrato.pdf'), await fazerPdf(false));
+    // Dois cliques: o Leitor de PDF é o programa padrão do .pdf.
+    await pagina.evaluate((r) => import('./js/sistema.js').then((m) => m.abrirArquivo(r)), `${DOCS}/Contrato.pdf`);
+    await pagina.waitForSelector(`${LP} .lp-pagina[data-n="0"] .textLayer span`, { timeout: 20000 });
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 60, y: 10, w: 860, h: 640 }; j.aplicarRet(); });
+    await pagina.waitForTimeout(1200);
+    console.log('título:', await pagina.$eval(`${LP} .titulo`, (e) => e.textContent), '| páginas:', await pagina.locator(`${LP} .lp-pagina`).count(), '| status:', JSON.stringify(await pagina.$$eval(`${LP} .status > *`, (l) => l.map((e) => e.textContent))));
+    await foto('leitor-aberto');
+    // Destacar: a ferramenta e o arrastar sobre o texto.
+    await pagina.click(`${LP} button[data-ferr="destacar"]`);
+    console.log('destacado:', JSON.stringify(await arrastarTexto(0, 3, 3)));
+    await pagina.click(`${LP} .lp-cor[data-cor="verde"]`);
+    console.log('destacado:', JSON.stringify(await arrastarTexto(0, 5, 6)));
+    // A nota: a ferramenta, o clique na página e a caixa.
+    await pagina.click(`${LP} .lp-cor[data-cor="amarelo"]`);
+    await pagina.click(`${LP} button[data-ferr="nota"]`);
+    const pg0 = await pagina.locator(`${LP} .lp-pagina[data-n="0"]`).boundingBox();
+    await pagina.mouse.click(pg0.x + pg0.width * 0.86, pg0.y + pg0.height * 0.12);
+    await pagina.waitForSelector('.janela.dialogo .lp-texto-nota', { timeout: 5000 });
+    await pagina.keyboard.type('Conferir o prazo com a cláusula 5ª — ação nº 123.');
+    await foto('leitor-nota');
+    await pagina.keyboard.press('Control+Enter');
+    await pagina.waitForTimeout(500);
+    // A lista das marcas (Exibir).
+    await pagina.click(`${LP} .menubar > div:has-text("${T('E&xibir')}")`);
+    await pagina.click(`.menu .opcao:has-text("${T('A lista das &marcas')}")`);
+    await pagina.waitForTimeout(800);
+    console.log('marcas:', JSON.stringify(await lista()), '| título:', await pagina.$eval(`${LP} .titulo`, (e) => e.textContent));
+    await foto('leitor-marcas');
+    // Salvar: as anotações vão para o arquivo, e a versão anterior fica guardada.
+    await pagina.click(`${LP} button[data-ferr="salvar"]`);
+    await pagina.waitForFunction((s) => !document.querySelector(s + ' .titulo').textContent.startsWith('*'), LP, { timeout: 20000 });
+    await pagina.waitForSelector(`${LP} .lp-item`, { timeout: 20000 });
+    await pagina.waitForTimeout(800);
+    console.log('no arquivo:', JSON.stringify(await anotacoes('Contrato.pdf')), '| versões anteriores:', await versoes('Contrato.pdf'), '| lista lida de volta:', JSON.stringify(await lista()));
+    try { execFileSync('pdftoppm', ['-png', '-r', '60', '-f', '1', '-l', '1', path.join(pasta, 'Contrato.pdf'), path.join(SAIDA, 'leitor-poppler')]); } catch { }
+    await foto('leitor-salvo');
+    // Mudar a cor de um destaque (o botão direito) e apagar outro; desfazer o apagar.
+    const d0 = await pagina.locator(`${LP} .lp-pagina[data-n="0"] .lp-destaque`).first().boundingBox();
+    await pagina.click(`${LP} button[data-ferr="selecionar"]`);
+    await pagina.mouse.click(d0.x + d0.width / 2, d0.y + d0.height / 2, { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('leitor-menu-marca');
+    await pagina.click(`.menu .opcao:has-text("${T('A&zul').replace('&', '')}")`);
+    await pagina.waitForTimeout(300);
+    const nota = await pagina.locator(`${LP} .lp-nota`).first().boundingBox();
+    await pagina.mouse.click(nota.x + nota.width / 2, nota.y + nota.height / 2);
+    await pagina.keyboard.press('Delete');
+    await pagina.waitForTimeout(300);
+    console.log('sem a nota:', JSON.stringify(await lista()));
+    await pagina.keyboard.press('Control+z');
+    await pagina.waitForTimeout(300);
+    console.log('desfeito:', JSON.stringify(await lista()));
+    await pagina.mouse.click(nota.x + nota.width / 2, nota.y + nota.height / 2);
+    await pagina.keyboard.press('Delete');
+    await pagina.keyboard.press('Control+s');
+    await pagina.waitForFunction((s) => !document.querySelector(s + ' .titulo').textContent.startsWith('*'), LP, { timeout: 20000 });
+    await pagina.waitForTimeout(1200);
+    console.log('depois de mudar e apagar:', JSON.stringify(await anotacoes('Contrato.pdf')), '| versões:', await versoes('Contrato.pdf'));
+    await foto('leitor-mudado');
+    // Fechar com uma marca não salva pergunta.
+    await pagina.click(`${LP} button[data-ferr="destacar"]`);
+    await arrastarTexto(0, 1, 1);
+    await pagina.evaluate(() => { window.__retro.janelas.janelaAtiva().fechar(); });
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await foto('leitor-fechar');
+    await pagina.click(`.janela.dialogo button:has-text("${T('&Não')}")`);
+    await pagina.waitForTimeout(500);
+    console.log('fechado sem salvar:', JSON.stringify(await anotacoes('Contrato.pdf')));
+    // O PDF assinado: Salvar oferece a cópia, e o original fica como estava.
+    fs.writeFileSync(path.join(pasta, 'Sentença assinada.pdf'), await fazerPdf(true));
+    const antes = fs.readFileSync(path.join(pasta, 'Sentença assinada.pdf'));
+    await abrir('leitorpdf', { arquivo: `${DOCS}/Sentença assinada.pdf` });
+    await pagina.waitForSelector(`${LP} .lp-pagina[data-n="0"] .textLayer span`, { timeout: 20000 });
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 60, y: 10, w: 860, h: 640 }; j.aplicarRet(); });
+    await pagina.waitForTimeout(1000);
+    await pagina.click(`${LP} button[data-ferr="destacar"]`);
+    await arrastarTexto(0, 4, 4);
+    await pagina.keyboard.press('Control+s');
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await foto('leitor-assinado');
+    await pagina.click(`.janela.dialogo button:has-text("${T('Salvar uma &cópia…').replace('&', '')}")`);
+    await pagina.waitForSelector('#camada-modal .janela', { timeout: 10000 });
+    await pagina.waitForTimeout(400);
+    await foto('leitor-copia');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForFunction((s) => !document.querySelector(s + ' .titulo').textContent.startsWith('*'), LP, { timeout: 20000 });
+    await pagina.waitForTimeout(800);
+    const copia = fs.readdirSync(pasta).find((n) => n !== 'Sentença assinada.pdf' && n.startsWith('Sentença assinada'));
+    console.log('cópia:', copia, JSON.stringify(copia ? await anotacoes(copia) : null), '| original igual:', Buffer.compare(antes, fs.readFileSync(path.join(pasta, 'Sentença assinada.pdf'))) === 0, '| título:', await pagina.$eval(`${LP} .titulo`, (e) => e.textContent));
+    await foto('leitor-copia-aberta');
+  },
+
   // A Nuvem (com RETRO_NUVEM_FALSA=<pasta>: as contas sem o rclone, a "nuvem" é uma pasta comum):
   // adicionar o Google Drive (a caixa do login), a conta no Meu computador e na árvore, as pastas dela,
   // trazer e levar cópias, desconectar, cancelar outro login e remover (os arquivos ficam na nuvem).
@@ -4767,6 +4919,41 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     try { execFileSync('import', ['-window', 'root', tela]); console.log('captura:', tela); } catch (e) { console.log('sem o import:', e.message); }
     await foto('firefox-barra');
     console.log('na barra:', JSON.stringify(await pagina.evaluate(() => [...document.querySelectorAll('#tarefas button')].map((b) => b.title))));
+  },
+  // As margens das janelas do Linux (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1, o openbox rodando com
+  // a cópia do rc.xml em RETRO_OPENBOX_RC e o xlogo): a janela maximizada encosta na barra de tarefas,
+  // sem fresta nem por cima dela, com a barra de sempre, com a data no relógio e com os pixels em 2.
+  async margens() {
+    if (!process.env.RETRO_OPENBOX_RC) throw new Error('rode com RETRO_OPENBOX_RC e o openbox');
+    await fecharTudo();
+    // A janela do Retro Computer cobre a tela, como na sessão (o roteiro abre numa de 1024 × 700).
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
+    const xlogo = spawn('xlogo', ['-geometry', '300x200+100+100'], { stdio: 'ignore' });
+    await pagina.waitForTimeout(2500);
+    const conferir = async (nome) => {
+      await pagina.waitForTimeout(2500);
+      try { execFileSync('wmctrl', ['-r', 'xlogo', '-b', 'add,maximized_vert,maximized_horz']); } catch { }
+      await pagina.waitForTimeout(1500);
+      // A posição e o tamanho de dentro da janela (o xwininfo: o xdotool conta a moldura duas vezes) e a moldura embaixo.
+      const id = execFileSync('xdotool', ['search', '--name', '^xlogo$']).toString().trim().split('\n')[0];
+      const geo = execFileSync('xwininfo', ['-id', id]).toString();
+      const val = (k) => Number(new RegExp(k === 'Y' ? 'Absolute upper-left Y:\\s+(-?\\d+)' : 'Height:\\s+(\\d+)').exec(geo)[1]);
+      const moldura = /=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)/.exec(execFileSync('xprop', ['-id', id, '_NET_FRAME_EXTENTS']).toString());
+      const barra = await pagina.evaluate(() => { const r = document.getElementById('barra').getBoundingClientRect(); return { topo: Math.round(r.top * devicePixelRatio), alt: Math.round(r.height * devicePixelRatio), tela: Math.round(innerHeight * devicePixelRatio) }; });
+      const fundo = val('Y') + val('HEIGHT') + (moldura ? Number(moldura[4]) : 0);
+      const margem = /<bottom>(\d+)<\/bottom>/.exec(fs.readFileSync(process.env.RETRO_OPENBOX_RC, 'utf8'))[1];
+      console.log(`${nome}: a barra começa em ${barra.topo} (altura ${barra.alt}); a janela maximizada termina em ${fundo}; a margem do Openbox: ${margem}; ${fundo === barra.topo ? 'encostada' : 'FRESTA OU POR CIMA'}`);
+      const tela = path.join(SAIDA, `${String(++n).padStart(2, '0')}-margens-${nome}.png`);
+      try { execFileSync('import', ['-window', 'root', tela]); console.log('captura:', tela); } catch { }
+    };
+    await conferir('barra');
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ barra: { ...window.__retro.estado.config.barra, data: true } })));
+    await conferir('com-data');
+    await pagina.evaluate(() => { window.__retro.estado.config.escala = 2; return import('./js/aparencia.js').then((m) => m.aplicarEscala(2)); });
+    await conferir('pixels-2');
+    await pagina.evaluate(() => { window.__retro.estado.config.escala = 'auto'; return import('./js/aparencia.js').then((m) => m.aplicarEscala('auto')); });
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ barra: { ...window.__retro.estado.config.barra, data: false } })));
+    xlogo.kill();
   },
   async janelasLinux() {
     await fecharTudo();

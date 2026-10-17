@@ -52,6 +52,24 @@ test('janelas do Linux: a área útil e a moldura para encaixar com a tecla do l
   assert.strictEqual(await j.encaixar('0x3a00007', 'Diagonal'), false);
 });
 
+test('janelas do Linux: as margens do Openbox seguem a barra (só os números mudam)', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const rc = fs.readFileSync(path.join(__dirname, '..', 'recursos', 'linux', 'openbox', 'rc.xml'), 'utf8');
+  const novo = jl.trocarMargens(rc, { cima: 20, baixo: 34 });
+  assert.match(novo, /<margins><top>20<\/top><bottom>34<\/bottom><left>0<\/left><right>0<\/right><\/margins>/);
+  assert.strictEqual(novo.replace(/<margins>[\s\S]*?<\/margins>/, ''), rc.replace(/<margins>[\s\S]*?<\/margins>/, ''));
+  // Os valores fora do lugar ficam no limite; sem o bloco, ele entra no fim.
+  assert.match(jl.trocarMargens(rc, { cima: -5, baixo: 99999 }), /<top>0<\/top><bottom>500<\/bottom>/);
+  assert.match(jl.trocarMargens('<openbox_config>\n</openbox_config>', { baixo: 28 }), /<margins><top>0<\/top><bottom>28<\/bottom>.*<\/margins>\n<\/openbox_config>/);
+  // Sem o rc.xml da sessão (ou com um caminho que não é um .xml), nada muda.
+  assert.strictEqual(await new jl.JanelasLinux({ rcOpenbox: 'rc.xml' }).margens({ baixo: 28 }), false);
+  assert.strictEqual(new jl.JanelasLinux({ rcOpenbox: '/etc/passwd' }).rcOpenbox, null);
+  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-openbox-'));
+  assert.strictEqual(new jl.JanelasLinux({ rcOpenbox: path.join(pasta, 'rc.xml') }).rcOpenbox, path.join(pasta, 'rc.xml'));
+});
+
 test('tela: os modos do xrandr da tela principal', async () => {
   const { lerXrandr, Tela } = require('../src/principal/tela');
   const texto = [

@@ -6,6 +6,7 @@
  * Computer mostra também os programas da Loja e os outros do Linux.
  */
 const fs = require('node:fs');
+const path = require('node:path');
 const { execFile, spawn } = require('node:child_process');
 
 function rodar(cmd, args, { timeout = 4000 } = {}) {
@@ -47,6 +48,19 @@ function lerMoldura(texto) {
   return m ? { e: Number(m[1]), d: Number(m[2]), c: Number(m[3]), b: Number(m[4]) } : { e: 0, d: 0, c: 0, b: 0 };
 }
 
+/**
+ * O rc.xml do Openbox com as margens novas (em pontos da tela): a faixa de cima e a de baixo ficam
+ * para as barras do Retro Computer, e as janelas do Linux maximizadas encostam nelas. Só os números
+ * das margens mudam; sem o bloco <margins>, ele entra antes do </openbox_config>.
+ */
+function trocarMargens(xml, { cima = 0, baixo = 0 } = {}) {
+  const n = (v) => Math.max(0, Math.min(500, Math.round(Number(v) || 0)));
+  const bloco = `<margins><top>${n(cima)}</top><bottom>${n(baixo)}</bottom><left>0</left><right>0</right></margins>`;
+  const texto = String(xml);
+  if (/<margins>[\s\S]*?<\/margins>/.test(texto)) return texto.replace(/<margins>[\s\S]*?<\/margins>/, () => bloco);
+  return texto.replace(/<\/openbox_config>/, () => `  ${bloco}\n</openbox_config>`);
+}
+
 /** Os ids de janela comparáveis (o wmctrl põe zeros à esquerda: 0x03a00007; o xprop, não). */
 const normalizar = (id) => '0x' + String(id || '').replace(/^0x0*/i, '').toLowerCase();
 
@@ -55,7 +69,10 @@ class JanelasLinux {
    * pidsProprios(): os pids do Retro Computer (as janelas dele não entram);
    * programaDe(janela): o id do .desktop do programa (para o ícone e para fixar), ou null.
    */
-  constructor({ pidsProprios = () => new Set([process.pid]), programaDe = () => null, aoMudar = () => { }, areaPadrao = () => null } = {}) {
+  constructor({ pidsProprios = () => new Set([process.pid]), programaDe = () => null, aoMudar = () => { }, areaPadrao = () => null, rcOpenbox = process.env.RETRO_OPENBOX_RC } = {}) {
+    // A cópia do rc.xml que a sessão deu ao Openbox (sessao.sh), para as margens seguirem a barra.
+    this.rcOpenbox = rcOpenbox && path.isAbsolute(rcOpenbox) && /\.xml$/i.test(rcOpenbox) ? rcOpenbox : null;
+    this.margemAtual = '';
     this.pidsProprios = pidsProprios;
     this.areaPadrao = areaPadrao;
     this.programaDe = programaDe;
@@ -131,6 +148,28 @@ class JanelasLinux {
     const h = area.h - mold.c - mold.b;
     await rodar('wmctrl', tirarMax).catch(() => { });
     await rodar('wmctrl', ['-ir', id, '-e', `0,${x},${area.y},${Math.max(100, w)},${Math.max(100, h)}`]).catch(() => { });
+    return true;
+  }
+
+  /**
+   * As margens das janelas do Linux (a altura das barras do Retro Computer, em pontos da tela): o
+   * rc.xml da sessão muda, e o Openbox lê de novo (as janelas maximizadas acompanham). Com a margem
+   * fixa, a barra de 28 pontos deixava uma fresta embaixo do Firefox.
+   */
+  async margens({ cima = 0, baixo = 0 } = {}) {
+    if (!this.rcOpenbox || !existe('openbox')) return false;
+    const chave = `${Math.round(cima)},${Math.round(baixo)}`;
+    if (chave === this.margemAtual) return true;
+    let xml;
+    try { xml = await fs.promises.readFile(this.rcOpenbox, 'utf8'); } catch { return false; }
+    const novo = trocarMargens(xml, { cima, baixo });
+    if (novo !== xml) {
+      const tmp = `${this.rcOpenbox}.${process.pid}.tmp`;
+      await fs.promises.writeFile(tmp, novo, { mode: 0o600 });
+      await fs.promises.rename(tmp, this.rcOpenbox);
+      await rodar('openbox', ['--reconfigure']).catch(() => { });
+    }
+    this.margemAtual = chave;
     return true;
   }
 
@@ -217,7 +256,8 @@ class JanelasFalsas extends JanelasLinux {
   async fechar(id) { this.falsas = this.falsas.filter((j) => j.id !== id); this.avisar(); return true; }
   async encaixar(id, seta) { (this.encaixes = this.encaixes || []).push([id, seta]); return true; }
   async colar() { this.colados = (this.colados || 0) + 1; return true; }
+  async margens(m) { this.margensPedidas = m; return true; }
   avisar() { this.listar().then((r) => this.aoMudar(r)); }
 }
 
-module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar, lerAreaUtil, lerMoldura };
+module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar, lerAreaUtil, lerMoldura, trocarMargens };

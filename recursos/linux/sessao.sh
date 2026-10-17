@@ -59,7 +59,15 @@ done
 # As janelas dos programas do Linux (LibreOffice, Firefox…): um gerenciador leve, com o
 # visual da época e a faixa de baixo livre para a barra de tarefas do Retro Computer.
 if command -v openbox >/dev/null 2>&1; then
-  XDG_DATA_DIRS="$AQUI/openbox:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" openbox --config-file "$AQUI/openbox/rc.xml" &
+  # Uma cópia do rc.xml só deste usuário (a do pacote é só de leitura): o Retro Computer muda nela
+  # as margens, para as janelas maximizadas encostarem na barra de tarefas, qualquer que seja a altura dela.
+  RC="$AQUI/openbox/rc.xml"
+  PASTA_RC="${XDG_RUNTIME_DIR:-$HOME/.cache}/retro-computer"
+  if mkdir -p "$PASTA_RC" 2>/dev/null && chmod 700 "$PASTA_RC" 2>/dev/null && cp "$AQUI/openbox/rc.xml" "$PASTA_RC/openbox-rc.xml" 2>/dev/null; then
+    RC="$PASTA_RC/openbox-rc.xml"
+    export RETRO_OPENBOX_RC="$RC"
+  fi
+  XDG_DATA_DIRS="$AQUI/openbox:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" openbox --config-file "$RC" &
   # Espera o Openbox ficar pronto (até 5 segundos): aberta antes dele, a janela do Retro Computer
   # não recebe a tela cheia.
   if command -v xprop >/dev/null 2>&1; then

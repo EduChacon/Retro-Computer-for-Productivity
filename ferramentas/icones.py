@@ -1000,6 +1000,63 @@ def celular(tam):
     return [''.join(l) for l in c]
 
 
+# O marca-texto em 16, à mão (a conta de marca_texto deixa pontos soltos nesse tamanho).
+MARCA_TEXTO_16 = [
+    "............KK..",
+    "...........KWLK.",
+    "..........KWLGGK",
+    ".........KWLGGK.",
+    "........KKKKKK..",
+    ".......KeYyKK...",
+    "......KeYYyK....",
+    ".....KeYYyK.....",
+    "....KeYYyK......",
+    "...KKKKKK.......",
+    "...KYYYK........",
+    "..KYYK..........",
+    "..KKK...........",
+    "................",
+    "...YYYYYYYYYYYY.",
+    "...YYYYYYYYYYYY.",
+]
+
+
+def marca_texto(tam):
+    """O marca-texto (a ferramenta Destacar do Leitor de PDF), desenho próprio: a caneta na diagonal, com
+    a tampa cinza no alto à direita, o corpo amarelo (a luz do lado de cima, a sombra do de baixo), a
+    ponta chanfrada embaixo à esquerda e o traço amarelo que ela deixa."""
+    if tam < 32:
+        return grade(MARCA_TEXTO_16)
+    k = tam // 16
+    im = Image.new('RGBA', (tam, tam), (0, 0, 0, 0))
+    # u = x - y corre ao longo da caneta (cresce para o alto à direita); v = x + y a atravessa.
+    meio = 15 * k
+    larg = 2 * k  # do meio até o contorno
+    for y in range(tam):
+        for x in range(tam):
+            u, v = x - y, x + y
+            d = v - meio
+            if abs(d) > larg or not (-11 * k <= u <= 13 * k):
+                continue
+            borda = abs(d) == larg or u in (-11 * k, 13 * k)
+            if u < -6 * k:  # a ponta: mais estreita, com a tinta amarela
+                if abs(d) > larg - k or (u < -8 * k and abs(d) > larg - 2 * k + (k > 1)):
+                    continue
+                cor = P['K'] if abs(d) == larg - k or u == -11 * k else P['Y']
+            elif borda or u in (-6 * k, -5 * k) or u in (5 * k, 6 * k):
+                cor = P['K']  # o contorno e os anéis da ponta e da tampa
+            elif u > 6 * k:  # a tampa
+                cor = P['W'] if d < -larg // 2 else (P['G'] if d > larg // 2 else P['L'])
+            else:  # o corpo
+                cor = P['e'] if d < -larg // 2 else (P['y'] if d > larg // 2 else P['Y'])
+            im.putpixel((x, y), cor + (255,))
+    # O traço do marca-texto, embaixo.
+    for y in range(tam - 3 * k, tam - k):
+        for x in range(4 * k, tam - k):
+            im.putpixel((x, y), P['Y'] + (255,))
+    return im
+
+
 def nuvem(tam):
     """A nuvem (as contas na nuvem do Linux), desenho próprio: quatro bolhas sobre uma base reta, branca
     e azulada, com o contorno preto, a luz um ponto para dentro em cima e à esquerda e a sombra azul
@@ -1612,6 +1669,21 @@ def sem_papeis(im):
     return im
 
 
+def destacado(folha, tam):
+    """Uma faixa amarela, misturada como o marca-texto (os riscos do texto continuam escuros), sobre uma
+    linha do texto da folha."""
+    im = folha.copy()
+    y0, y1 = (19, 23) if tam >= 32 else (10, 12)
+    for y in range(y0, y1):
+        for x in range(round(tam * 0.22), round(tam * 0.78)):
+            r, g, b, a = im.getpixel((x, y))
+            if a < 128:
+                continue
+            Y = P['Y']
+            im.putpixel((x, y), (r * Y[0] // 255, g * Y[1] // 255, b * Y[2] // 255, 255))
+    return im
+
+
 def colar(base, sobre, x, y):
     im = base.copy()
     im.alpha_composite(sobre, (x, y))
@@ -1706,6 +1778,11 @@ def gerar(serenity):
     feitos[16]['notas'] = grade(NOTAS_16)
     feitos[32]['celular'] = grade(celular(32))
     feitos[16]['celular'] = grade(celular(16))
+    # O Leitor de PDF: a folha do PDF (SerenityOS) com uma linha destacada e, no 32, o marca-texto.
+    feitos[32]['destacar'] = marca_texto(32)
+    feitos[16]['destacar'] = marca_texto(16)
+    feitos[32]['leitor-pdf'] = colar(destacado(abrir_serenity(serenity, 32, 'filetype-pdf'), 32), marca_texto(16), 16, 16)
+    feitos[16]['leitor-pdf'] = destacado(abrir_serenity(serenity, 16, 'filetype-pdf'), 16)
     feitos[32]['nuvem'] = nuvem(32)
     feitos[16]['nuvem'] = nuvem(16)
     feitos[32]['emoji'] = grade(EMOJI_32)

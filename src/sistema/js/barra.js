@@ -636,6 +636,7 @@ async function itensProgramas() {
         prog('emojis', tr('Emojis'), 'emoji'),
         prog('foco', tr('Foco (Pomodoro)'), 'foco'),
         prog('pdf', tr('Ferramentas de PDF'), 'pdf'),
+        prog('leitorpdf', tr('Leitor de PDF'), 'leitor-pdf'),
         prog('mac', tr('Mac Plus'), 'mac'),
         prog('caracteres', tr('Mapa de caracteres'), 'caracteres'),
         prog('monitor', tr('Monitor do sistema'), 'monitor'),

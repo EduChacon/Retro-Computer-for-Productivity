@@ -1573,6 +1573,54 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .slides-dica { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); padding: 3px 10px; white-space: pre; background: var(--face); box-shadow: var(--relevo); opacity: 0; transition: opacity 0.3s; }
 .slides-dica.visivel { opacity: 1; }
 
+/* O Leitor de PDF: as páginas (o papel, branco) sobre o cinza da área, a camada do texto do pdf.js
+   (transparente, para selecionar), os destaques por baixo dela (misturados ao texto) e as notas por cima. */
+.lp-corpo { flex: 1 1 auto; min-height: 0; display: flex; }
+.lp-area { position: relative; flex: 1 1 auto; min-width: 0; overflow: auto; background: #808080; box-shadow: var(--campo); outline: none; }
+.lp-folhas { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; min-width: max-content; }
+.lp-pagina { position: relative; flex: none; background: #fff; box-shadow: 1px 1px 0 #000, 2px 2px 0 #404040; overflow: hidden;
+  --user-unit: 1; --total-scale-factor: calc(var(--scale-factor) * var(--user-unit)); --scale-round-x: 1px; --scale-round-y: 1px; }
+.lp-canvas { position: absolute; left: 0; top: 0; }
+.lp-marcas, .lp-notas { position: absolute; inset: 0; pointer-events: none; }
+.lp-destaque { position: absolute; mix-blend-mode: multiply; }
+.lp-destaque.escolhida { outline: 1px dashed #000; outline-offset: 1px; }
+.lp-nota { position: absolute; pointer-events: auto; box-sizing: border-box; border: 1px solid #000; cursor: var(--cur-default, default);
+  background-image: linear-gradient(to bottom, transparent 30%, #4d4d4d 30%, #4d4d4d 36%, transparent 36%, transparent 48%, #4d4d4d 48%, #4d4d4d 54%, transparent 54%, transparent 66%, #4d4d4d 66%, #4d4d4d 72%, transparent 72%);
+  background-size: 70% 100%; background-repeat: no-repeat; background-position: 50% 0; }
+.lp-nota.escolhida { outline: 1px dashed #000; outline-offset: 2px; }
+.lp-area[data-modo="nota"] .lp-pagina, .lp-area[data-modo="nota"] .textLayer span { cursor: var(--cur-crosshair, crosshair); }
+.lp-aviso { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; text-align: center; color: #fff; }
+.lp-painel { flex: none; width: 190px; display: flex; flex-direction: column; margin-right: 2px; background: var(--janela); color: var(--texto); box-shadow: var(--campo); }
+.lp-painel[hidden] { display: none; }
+.lp-painel-titulo { padding: 2px 4px; background: var(--face); box-shadow: inset 0 -1px var(--sombra); }
+.lp-lista { flex: 1 1 auto; overflow: auto; }
+.lp-item { display: flex; gap: 4px; padding: 3px 4px; cursor: var(--cur-default, default); }
+.lp-item.escolhida { background: var(--selecao); color: var(--selecao-texto); }
+.lp-item-cor { flex: none; width: 12px; height: 12px; margin-top: 1px; box-shadow: inset 0 0 0 1px #000; }
+.lp-item-cor.nota { width: 10px; height: 12px; }
+.lp-item-texto { min-width: 0; display: flex; flex-direction: column; }
+.lp-item-texto span { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.lp-vazia { padding: 6px; color: var(--texto-fraco); }
+.lp-cor { padding: 0 3px; }
+.lp-amostra { display: block; width: 12px; height: 12px; box-shadow: inset 0 0 0 1px #000; }
+.lp-caixa-nota { padding: 8px 10px 0; display: flex; flex-direction: column; gap: 6px; }
+.lp-texto-nota { width: 100%; box-sizing: border-box; resize: vertical; }
+
+/* A camada do texto do pdf.js (as regras do pdf_viewer.css que ela precisa, Apache-2.0): o texto
+   invisível no lugar do da página, para selecionar e copiar. */
+.textLayer { color-scheme: only light; position: absolute; text-align: initial; inset: 0; overflow: clip; opacity: 1; line-height: 1;
+  letter-spacing: normal; word-spacing: normal; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText; z-index: 0;
+  --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); }
+.textLayer :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: var(--cur-text, text); transform-origin: 0% 0%; user-select: text; }
+.textLayer > :not(.markedContent), .textLayer .markedContent span:not(.markedContent) { z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
+.textLayer .markedContent { display: contents; }
+.textLayer span[role="img"] { user-select: none; cursor: var(--cur-default, default); }
+.textLayer ::selection { background: rgb(0 0 255 / 0.3); color: transparent; }
+.textLayer br::selection { background: transparent; }
+.textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: var(--cur-default, default); user-select: none; }
+.textLayer.selecting .endOfContent { top: 0; }
+
 /* O Reprodutor de mídia. */
 .rep-tela { flex: 1 1 auto; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #000; box-shadow: var(--campo); }
 .rep-video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }

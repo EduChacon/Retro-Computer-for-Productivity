@@ -1,5 +1,5 @@
 /*
- * As ferramentas de PDF (combinar, separar, extrair páginas e girar), com o pdf-lib, sobre os bytes:
+ * As ferramentas de PDF (combinar, separar, extrair páginas, girar e marcar), com o pdf-lib, sobre os bytes:
  * não lê nem grava o disco (quem grava é o processo principal, pelo Disco). Roda no processo de
  * trabalho (trabalho-processo.js), longe da janela, e também no Node, para os testes.
  *
@@ -11,7 +11,7 @@
  *   vazio      nada a fazer
  */
 'use strict';
-const { PDFDocument, degrees, PageSizes } = require('pdf-lib');
+const { PDFDocument, degrees, PageSizes, PDFName, PDFArray, PDFDict, PDFRef, PDFHexString, PDFString } = require('pdf-lib');
 
 const MAX_PAGINAS = 5000;
 
@@ -51,15 +51,36 @@ function marcarAutor(doc) {
 
 const salvar = (doc) => doc.save({ useObjectStreams: true });
 
-/** Quantas páginas tem (e se tem senha), sem mudar nada. */
+/** Quantas páginas tem, se tem senha e se tem assinatura digital, sem mudar nada. */
 async function info(bytes) {
   try {
     const doc = await abrir(bytes);
-    return { paginas: doc.getPageCount(), senha: false };
+    return { paginas: doc.getPageCount(), senha: false, assinado: assinado(doc) };
   } catch (e) {
-    if (e.codigo === 'senha') return { paginas: 0, senha: true };
+    if (e.codigo === 'senha') return { paginas: 0, senha: true, assinado: false };
     throw e;
   }
+}
+
+/**
+ * Se há uma assinatura digital preenchida (um campo /Sig com o /V): gravar o PDF de novo (o pdf-lib
+ * reescreve o arquivo inteiro) faz a assinatura deixar de valer, e a tela avisa antes.
+ */
+function assinado(doc) {
+  try {
+    const form = doc.catalog.lookupMaybe(PDFName.of('AcroForm'), PDFDict);
+    const campos = form && form.lookupMaybe(PDFName.of('Fields'), PDFArray);
+    const pilha = campos ? campos.asArray().slice() : [];
+    for (let n = 0; pilha.length && n < 20000; n++) {
+      const c = doc.context.lookup(pilha.pop());
+      if (!(c instanceof PDFDict)) continue;
+      const ft = c.lookup(PDFName.of('FT'));
+      if (ft === PDFName.of('Sig') && c.get(PDFName.of('V'))) return true;
+      const filhos = c.lookupMaybe(PDFName.of('Kids'), PDFArray);
+      if (filhos) pilha.push(...filhos.asArray());
+    }
+  } catch { /* um formulário malfeito não é uma assinatura */ }
+  return false;
 }
 
 /** O tamanho da página de uma imagem: a imagem inteira, sem margem, dentro do papel (deitado se ela for larga). */
@@ -169,4 +190,150 @@ async function girar(bytes, graus) {
   return salvar(doc);
 }
 
-module.exports = { info, combinar, extrair, separar, girar, lerIntervalo, paginaDaImagem, MAX_PAGINAS };
+/* ---------- Marcar: os destaques e as notas ---------- */
+
+// As cores das marcas (a tela escolhe pelo nome; a conta fica aqui).
+const CORES = {
+  amarelo: [1, 0.92, 0.23],
+  verde: [0.56, 0.89, 0.42],
+  azul: [0.47, 0.78, 1],
+  rosa: [1, 0.62, 0.8],
+};
+const MAX_MARCAS = 5000;
+const MAX_QUADS = 400;
+const MAX_TEXTO = 20000;
+const NOTA = 20; // o tamanho do ícone da nota, em pontos do PDF
+// Só estes tipos de anotação podem sair (nunca um campo, uma assinatura ou um link).
+const TIPOS_REMOVIVEIS = ['Highlight', 'Text'].map((n) => PDFName.of(n));
+
+const numero = (v) => { const n = Number(v); if (!Number.isFinite(n) || Math.abs(n) > 1e6) throw erro('vazio', 'número'); return Math.round(n * 1000) / 1000; };
+const fmt = (n) => String(Math.round(n * 1000) / 1000);
+const corDe = (nome) => CORES[nome] || CORES.amarelo;
+const textoPdf = (s) => PDFHexString.fromText(String(s || '').slice(0, MAX_TEXTO));
+
+/** A referência de uma anotação pelo id do pdf.js ("12R" ou "12R3"), ou null. */
+function refDe(id) {
+  const m = /^(\d{1,9})R(\d{0,5})$/.exec(String(id || ''));
+  return m ? PDFRef.of(Number(m[1]), m[2] ? Number(m[2]) : 0) : null;
+}
+
+/** O desenho (a aparência) do destaque: os retângulos de cada trecho, misturados ao texto (Multiply). */
+function aparenciaDestaque(ctx, quads, rect, cor) {
+  const [r, g, b] = cor;
+  let ops = `/GS0 gs ${fmt(r)} ${fmt(g)} ${fmt(b)} rg\n`;
+  for (const q of quads) {
+    // QuadPoints: em cima à esquerda, em cima à direita, embaixo à esquerda, embaixo à direita.
+    ops += `${fmt(q[0])} ${fmt(q[1])} m ${fmt(q[2])} ${fmt(q[3])} l ${fmt(q[6])} ${fmt(q[7])} l ${fmt(q[4])} ${fmt(q[5])} l h f\n`;
+  }
+  return ctx.register(ctx.stream(ops, {
+    Type: 'XObject', Subtype: 'Form', BBox: rect,
+    Resources: { ExtGState: { GS0: { Type: 'ExtGState', BM: 'Multiply', CA: 1, ca: 1 } } },
+  }));
+}
+
+/** O desenho da nota: um papelzinho com a ponta dobrada e três linhas (desenho próprio). */
+function aparenciaNota(ctx, x, y, cor) {
+  const [r, g, b] = cor;
+  const s = NOTA;
+  const d = 6; // a ponta dobrada
+  const ops = [
+    `${fmt(r)} ${fmt(g)} ${fmt(b)} rg 0 0 0 RG 1 w`,
+    `${x + 0.5} ${y + 0.5} m ${x + s - d} ${y + 0.5} l ${x + s - 0.5} ${y + d} l ${x + s - 0.5} ${y + s - 0.5} l ${x + 0.5} ${y + s - 0.5} l h B`,
+    `${fmt(r * 0.75)} ${fmt(g * 0.75)} ${fmt(b * 0.75)} rg ${x + s - d} ${y + 0.5} m ${x + s - d} ${y + d} l ${x + s - 0.5} ${y + d} l h B`,
+    `0.3 0.3 0.3 RG`,
+    `${x + 4} ${y + 14} m ${x + s - 4} ${y + 14} l S`,
+    `${x + 4} ${y + 10.5} m ${x + s - 4} ${y + 10.5} l S`,
+    `${x + 4} ${y + 7} m ${x + s - d - 2} ${y + 7} l S`,
+  ].join('\n');
+  return ctx.register(ctx.stream(ops, { Type: 'XObject', Subtype: 'Form', BBox: [x, y, x + s, y + s] }));
+}
+
+/** As anotações da página, sem normalizar a página (o pdf-lib embrulharia o conteúdo dela em q/Q). */
+function anotacoesDa(pagina, ctx) {
+  let annots = pagina.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+  if (!annots) {
+    annots = ctx.obj([]);
+    pagina.node.set(PDFName.of('Annots'), annots);
+  }
+  return annots;
+}
+
+/**
+ * Grava as marcas no PDF: adicionar [{ tipo: 'destaque', pagina, quads: [[8 números]], cor, texto }
+ * ou { tipo: 'nota', pagina, x, y, cor, texto }] (em pontos do PDF; x e y, o canto de cima à esquerda
+ * da nota) e remover [{ pagina, id }] (o id do pdf.js; só destaques e notas saem). autor: o nome
+ * que vai no /T. Devolve os bytes do PDF novo.
+ */
+async function marcar(bytes, { adicionar = [], remover = [], autor = '' } = {}) {
+  if (!Array.isArray(adicionar) || !Array.isArray(remover)) throw erro('vazio');
+  if (!adicionar.length && !remover.length) throw erro('vazio');
+  if (adicionar.length + remover.length > MAX_MARCAS) throw erro('vazio', 'marcas demais');
+  const doc = await abrir(bytes);
+  const ctx = doc.context;
+  const paginas = doc.getPages();
+  const pagina = (i) => {
+    const n = Number(i);
+    if (!Number.isInteger(n) || n < 0 || n >= paginas.length) throw erro('intervalo', String(i));
+    return paginas[n];
+  };
+  // Primeiro saem as apagadas (uma marca mudada é uma removida e uma nova).
+  for (const r of remover) {
+    const ref = refDe(r && r.id);
+    if (!ref) continue;
+    const p = pagina(r.pagina);
+    const annots = p.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+    if (!annots) continue;
+    const i = annots.asArray().findIndex((a) => a instanceof PDFRef && a.objectNumber === ref.objectNumber && a.generationNumber === ref.generationNumber);
+    if (i < 0) continue;
+    const anot = ctx.lookupMaybe(ref, PDFDict);
+    const tipo = anot && anot.lookup(PDFName.of('Subtype'));
+    if (!TIPOS_REMOVIVEIS.includes(tipo)) continue;
+    annots.remove(i);
+    // A janelinha do comentário (o /Popup) sai junto.
+    const popup = anot.get(PDFName.of('Popup'));
+    if (popup instanceof PDFRef) {
+      const j = annots.asArray().findIndex((a) => a instanceof PDFRef && a.objectNumber === popup.objectNumber && a.generationNumber === popup.generationNumber);
+      if (j >= 0) annots.remove(j);
+      ctx.delete(popup);
+    }
+    ctx.delete(ref);
+  }
+  const agora = PDFString.fromDate(new Date());
+  const t = textoPdf(String(autor || '').slice(0, 120));
+  for (const m of adicionar) {
+    if (!m || typeof m !== 'object') continue;
+    const p = pagina(m.pagina);
+    const cor = corDe(m.cor);
+    let dict;
+    if (m.tipo === 'destaque') {
+      if (!Array.isArray(m.quads) || !m.quads.length || m.quads.length > MAX_QUADS) throw erro('vazio', 'trechos');
+      const quads = m.quads.map((q) => {
+        if (!Array.isArray(q) || q.length !== 8) throw erro('vazio', 'trecho');
+        return q.map(numero);
+      });
+      const xs = quads.flatMap((q) => [q[0], q[2], q[4], q[6]]);
+      const ys = quads.flatMap((q) => [q[1], q[3], q[5], q[7]]);
+      const rect = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+      dict = ctx.obj({
+        Type: 'Annot', Subtype: 'Highlight', Rect: rect, QuadPoints: quads.flat(), C: cor, F: 4,
+        P: p.ref, M: agora, T: t, Contents: textoPdf(m.texto),
+        AP: { N: aparenciaDestaque(ctx, quads, rect, cor) },
+      });
+    } else if (m.tipo === 'nota') {
+      const x = numero(m.x);
+      const y = numero(m.y) - NOTA;
+      dict = ctx.obj({
+        Type: 'Annot', Subtype: 'Text', Rect: [x, y, x + NOTA, y + NOTA], C: cor, F: 4, Name: 'Comment', Open: false,
+        P: p.ref, M: agora, T: t, Contents: textoPdf(m.texto),
+        AP: { N: aparenciaNota(ctx, x, y, cor) },
+      });
+    } else {
+      throw erro('vazio', 'tipo');
+    }
+    anotacoesDa(p, ctx).push(ctx.register(dict));
+  }
+  doc.setModificationDate(new Date());
+  return doc.save({ useObjectStreams: true });
+}
+
+module.exports = { info, combinar, extrair, separar, girar, marcar, assinado, lerIntervalo, paginaDaImagem, CORES, MAX_PAGINAS };

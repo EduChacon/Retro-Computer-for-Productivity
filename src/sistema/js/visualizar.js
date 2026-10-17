@@ -29,12 +29,15 @@ async function carregarPdfjs() {
   return pdfjs;
 }
 
-/** Um PDF do disco C: aberto pelo pdf.js (sem eval, com as fontes e os mapas locais): a tarefa de carregar. */
-export async function abrirPdfDoDisco(rel) {
+/**
+ * Um PDF do disco C: aberto pelo pdf.js (sem eval, com as fontes e os mapas locais): a tarefa de carregar.
+ * versao (a hora do arquivo): o endereço muda com ela, e o PDF gravado de novo não vem da memória.
+ */
+export async function abrirPdfDoDisco(rel, versao) {
   const lib = await carregarPdfjs();
   const base = new URL('../vendor/pdfjs/', import.meta.url).href;
   return lib.getDocument({
-    url: new URL(urlDoDisco(rel), location.href).href,
+    url: new URL(urlDoDisco(rel) + (versao ? '?v=' + encodeURIComponent(versao) : ''), location.href).href,
     isEvalSupported: false,
     standardFontDataUrl: base + 'standard_fonts/',
     cMapUrl: base + 'cmaps/',
