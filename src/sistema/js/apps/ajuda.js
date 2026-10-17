@@ -216,6 +216,11 @@ const TOPICOS = [
   {
     id: 'pdf', icone: 'pdf',
     'pt-BR': ['PDF, digitalização e OCR', `
+<h2>O Leitor de PDF</h2>
+<p>Dois cliques num PDF abrem o <b>Leitor de PDF</b> (também em Iniciar › Programas › Acessórios). A roda do mouse e as teclas Page Up e Page Down passam as páginas; <b>Ctrl+0</b> ajusta à largura da janela, <b>Ctrl+1</b> mostra no tamanho real e <b>Ctrl+G</b> vai a uma página. O texto se seleciona com o mouse e se copia com <b>Ctrl+C</b>.</p>
+<h2>Destacar e anotar</h2>
+<p>Na barra de ferramentas, <b>Destacar</b> pinta o texto que você selecionar, na cor escolhida ao lado (amarelo, verde, azul ou rosa); com o texto já selecionado, <b>Ctrl+H</b> faz o mesmo. <b>Nota</b> põe um papelzinho no lugar do clique, com o texto que você escrever: arraste-o para mudar de lugar, e dois cliques o editam. A lista das marcas, à esquerda, leva a cada uma; o botão direito numa marca muda a cor, edita a nota ou apaga a marca, e <b>Ctrl+Z</b> desfaz.</p>
+<p><b>Salvar</b> (<b>Ctrl+S</b>) grava as marcas no próprio PDF, e o arquivo de antes fica em <b>Versões anteriores</b>; <b>Salvar como…</b> grava uma cópia com as marcas. Elas são as anotações comuns do PDF: aparecem também nos leitores de PDF do computador e do celular. Num PDF com assinatura digital, o Leitor avisa antes de gravar por cima, porque a assinatura deixa de valer (a versão assinada continua guardada); os PDFs protegidos contra mudanças só se leem.</p>
 <h2>Salvar como PDF</h2>
 <p>No Bloco de notas, no Visualizador de imagens e no Navegador, <b>Arquivo › Salvar como PDF…</b> grava a página (a mesma da impressão) num PDF do disco C:, sem impressora nenhuma. O papel segue o país: o Carta nos Estados Unidos, no Canadá e no México; o A4 nos outros.</p>
 <h2>As ferramentas de PDF</h2>
@@ -225,6 +230,11 @@ const TOPICOS = [
 <h2>Digitalizar</h2>
 <p>Em <b>Iniciar › Programas › Acessórios › Digitalizar</b>: escolha o scanner, a cor e a resolução e clique em <b>Digitalizar</b>, uma página por vez. As páginas se juntam na lista; depois, <b>Salvar…</b> grava tudo num PDF ou como imagens, e <b>Depois, copiar o texto (OCR)</b> abre o texto do PDF em seguida. No Linux, os scanners de rede (Wi-Fi) e os da USB funcionam pelo SANE (os pacotes "sane-utils" e "sane-airscan"); no Windows, pelo próprio Windows. No Mac, que não deixa outro programa usar o scanner, o botão abre a <b>Captura de Imagem</b> do sistema.</p>`],
     en: ['PDF, scanning and OCR', `
+<h2>The PDF Reader</h2>
+<p>Double-clicking a PDF opens the <b>PDF Reader</b> (also in Start › Programs › Accessories). The mouse wheel and the Page Up and Page Down keys turn the pages; <b>Ctrl+0</b> fits the page to the window width, <b>Ctrl+1</b> shows it at actual size and <b>Ctrl+G</b> goes to a page. Text is selected with the mouse and copied with <b>Ctrl+C</b>.</p>
+<h2>Highlighting and notes</h2>
+<p>On the toolbar, <b>Highlight</b> paints the text you select, in the color chosen next to it (yellow, green, blue or pink); with the text already selected, <b>Ctrl+H</b> does the same. <b>Note</b> puts a small sticky note where you click, with the text you type: drag it to move it, and double-click to edit it. The list of marks on the left takes you to each one; right-clicking a mark changes its color, edits the note or deletes the mark, and <b>Ctrl+Z</b> undoes.</p>
+<p><b>Save</b> (<b>Ctrl+S</b>) writes the marks into the PDF itself, and the previous file stays in <b>Previous versions</b>; <b>Save As…</b> saves a copy with the marks. They are standard PDF annotations: they also show up in the PDF readers of computers and phones. On a PDF with a digital signature, the Reader warns you before saving over it, because the signature stops being valid (the signed version is still kept); PDFs protected against changes can only be read.</p>
 <h2>Save as PDF</h2>
 <p>In Notepad, the Image Viewer and the Browser, <b>File › Save as PDF…</b> saves the page (the same as the printout) to a PDF on drive C:, with no printer at all. The paper follows the country: Letter in the United States, Canada and Mexico; A4 elsewhere.</p>
 <h2>The PDF tools</h2>
@@ -234,6 +244,11 @@ const TOPICOS = [
 <h2>Scan</h2>
 <p>In <b>Start › Programs › Accessories › Scan</b>: choose the scanner, the color and the resolution and click <b>Scan</b>, one page at a time. The pages gather in the list; then <b>Save…</b> saves them all in a PDF or as images, and <b>Then copy the text (OCR)</b> opens the PDF's text right after. On Linux, network (Wi-Fi) and USB scanners work through SANE (the "sane-utils" and "sane-airscan" packages); on Windows, through Windows itself. On the Mac, which does not let other programs use the scanner, the button opens the system's <b>Image Capture</b>.</p>`],
     es: ['PDF, escaneo y OCR', `
+<h2>El Lector de PDF</h2>
+<p>Doble clic en un PDF abre el <b>Lector de PDF</b> (también en Inicio › Programas › Accesorios). La rueda del mouse y las teclas Re Pág y Av Pág pasan las páginas; <b>Ctrl+0</b> ajusta al ancho de la ventana, <b>Ctrl+1</b> muestra el tamaño real y <b>Ctrl+G</b> va a una página. El texto se selecciona con el mouse y se copia con <b>Ctrl+C</b>.</p>
+<h2>Resaltar y anotar</h2>
+<p>En la barra de herramientas, <b>Resaltar</b> pinta el texto que selecciones, en el color elegido al lado (amarillo, verde, azul o rosa); con el texto ya seleccionado, <b>Ctrl+H</b> hace lo mismo. <b>Nota</b> pone un papelito donde hagas clic, con el texto que escribas: arrástralo para cambiarlo de lugar, y con doble clic lo editas. La lista de marcas, a la izquierda, lleva a cada una; el clic derecho en una marca cambia el color, edita la nota o borra la marca, y <b>Ctrl+Z</b> deshace.</p>
+<p><b>Guardar</b> (<b>Ctrl+S</b>) graba las marcas en el propio PDF, y el archivo anterior queda en <b>Versiones anteriores</b>; <b>Guardar como…</b> guarda una copia con las marcas. Son las anotaciones comunes del PDF: aparecen también en los lectores de PDF de la computadora y del celular. En un PDF con firma digital, el Lector avisa antes de grabar encima, porque la firma deja de valer (la versión firmada sigue guardada); los PDF protegidos contra cambios solo se leen.</p>
 <h2>Guardar como PDF</h2>
 <p>En el Bloc de notas, el Visor de imágenes y el Navegador, <b>Archivo › Guardar como PDF…</b> guarda la página (la misma de la impresión) en un PDF del disco C:, sin ninguna impresora. El papel sigue el país: Carta en Estados Unidos, Canadá y México; A4 en los demás.</p>
 <h2>Las herramientas de PDF</h2>
@@ -748,19 +763,25 @@ const TOPICOS = [
 <p>Com uma senha (Painel de controle › Senhas), <b>Iniciar › Bloquear o computador</b> cobre a tela até a senha ser digitada. Nenhuma tecla passa para os programas por trás, e as tentativas erradas seguidas demoram cada vez mais.</p>
 <h2>Quando pedir a senha</h2>
 <p>Com uma senha, ela é pedida ao abrir o Retro Computer (como no Windows) e ao voltar da suspensão (ou ao fechar a tampa); também pode ser pedida ao sair da proteção de tela. Cada um desses momentos se liga e se desliga em Painel de controle › Senhas.</p>
-<p>No Linux, a senha de entrada do Linux também desbloqueia, para o caso de esquecer a do Retro Computer. No Retro Computer como sistema, a tecla do logotipo + L bloqueia.</p>`],
+<p>No Linux, a senha de entrada do Linux também desbloqueia, para o caso de esquecer a do Retro Computer. No Retro Computer como sistema, a tecla do logotipo + L bloqueia.</p>
+<h2>Com o Retro Computer como sistema</h2>
+<p>Mesmo sem uma senha própria, o Retro Computer como sistema bloqueia com a senha de entrada do Linux (a mesma da tela de entrada e das caixas de administrador): ao fechar a tampa do notebook (também quando ela não suspende), antes de suspender e ao sair da proteção de tela. O computador só dorme depois de a tela de bloqueio aparecer, para nada ficar à vista ao abrir a tampa. Se a conta do Linux não tiver senha, nada bloqueia: crie uma senha do Retro Computer. Cada momento se desliga em Painel de controle › Senhas.</p>`],
     en: ['Password and lock', `
 <h2>Locking the computer</h2>
 <p>With a password (Control Panel › Passwords), <b>Start › Lock the Computer</b> covers the screen until the password is typed. No key reaches the programs behind it, and repeated wrong attempts take longer and longer.</p>
 <h2>When to ask for the password</h2>
 <p>With a password, it is asked when Retro Computer opens (as on Windows) and when waking from sleep (or closing the lid); it can also be asked when leaving the screen saver. Each of these moments is turned on and off in Control Panel › Passwords.</p>
-<p>On Linux, the Linux login password also unlocks, in case you forget the Retro Computer one. With Retro Computer as the system, the logo key + L locks.</p>`],
+<p>On Linux, the Linux login password also unlocks, in case you forget the Retro Computer one. With Retro Computer as the system, the logo key + L locks.</p>
+<h2>With Retro Computer as the system</h2>
+<p>Even without a password of its own, Retro Computer as the system locks with your Linux login password (the same as the login screen and the administrator boxes): when you close the laptop lid (also when the lid does not suspend), before sleeping and when leaving the screen saver. The computer only goes to sleep after the lock screen appears, so nothing is left in view when you open the lid. If the Linux account has no password, nothing locks: create a Retro Computer password. Each moment is turned off in Control Panel › Passwords.</p>`],
     es: ['Contraseña y bloqueo', `
 <h2>Bloquear la computadora</h2>
 <p>Con una contraseña (Panel de control › Contraseñas), <b>Inicio › Bloquear la computadora</b> cubre la pantalla hasta que se escribe la contraseña. Ninguna tecla llega a los programas de detrás, y los intentos fallidos seguidos tardan cada vez más.</p>
 <h2>Cuándo pedir la contraseña</h2>
 <p>Con una contraseña, se pide al abrir Retro Computer (como en Windows) y al volver de la suspensión (o al cerrar la tapa); también se puede pedir al salir del protector de pantalla. Cada uno de estos momentos se activa y se desactiva en Panel de control › Contraseñas.</p>
-<p>En Linux, la contraseña de entrada de Linux también desbloquea, por si olvidas la de Retro Computer. Con Retro Computer como sistema, la tecla del logotipo + L bloquea.</p>`],
+<p>En Linux, la contraseña de entrada de Linux también desbloquea, por si olvidas la de Retro Computer. Con Retro Computer como sistema, la tecla del logotipo + L bloquea.</p>
+<h2>Con Retro Computer como sistema</h2>
+<p>Aun sin una contraseña propia, Retro Computer como sistema bloquea con la contraseña de entrada de Linux (la misma de la pantalla de entrada y de los cuadros de administrador): al cerrar la tapa del portátil (también cuando no suspende), antes de suspender y al salir del protector de pantalla. La computadora solo se duerme después de que aparece la pantalla de bloqueo, para que nada quede a la vista al abrir la tapa. Si la cuenta de Linux no tiene contraseña, nada se bloquea: crea una contraseña de Retro Computer. Cada momento se desactiva en Panel de control › Contraseñas.</p>`],
   },
   {
     id: 'usuarios', icone: 'usuarios',

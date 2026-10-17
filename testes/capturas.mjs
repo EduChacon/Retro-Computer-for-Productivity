@@ -4308,7 +4308,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.keyboard.press('Control+Enter');
     await pagina.waitForTimeout(500);
     // A lista das marcas (Exibir).
-    await pagina.click(`${LP} .menubar > div:has-text("${T('E&xibir')}")`);
+    await pagina.click(`.janela.ativa .menubar > div:has-text("${T('E&xibir')}")`);
     await pagina.click(`.menu .opcao:has-text("${T('A lista das &marcas')}")`);
     await pagina.waitForTimeout(800);
     console.log('marcas:', JSON.stringify(await lista()), '| título:', await pagina.$eval(`${LP} .titulo`, (e) => e.textContent));

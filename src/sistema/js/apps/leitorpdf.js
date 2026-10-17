@@ -510,7 +510,7 @@ class Leitor {
     this.lista.replaceChildren(...lista.map((m) => {
       const rgb = `rgb(${this.rgbDe(m).join(',')})`;
       const el = h('div.lp-item' + (m.id === this.escolhida ? '.escolhida' : ''), { dataset: { id: m.id }, title: m.texto || '' },
-        h('span.lp-item-cor' + (m.tipo === 'nota' ? '.nota' : ''), { style: { background: rgb } }),
+        h('span.lp-item-cor' + (m.tipo === 'nota' ? '.lp-item-nota' : ''), { style: { background: rgb } }),
         h('div.lp-item-texto',
           h('b', tr('Página {n}', { n: m.pagina + 1 })),
           h('span', m.texto ? m.texto.slice(0, 120) : (m.tipo === 'nota' ? tr('(nota vazia)') : tr('Destaque')))));

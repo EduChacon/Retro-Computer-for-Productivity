@@ -1597,7 +1597,7 @@ button.cal-seta { min-width: 0; width: 22px; height: 20px; min-height: 20px; pad
 .lp-item { display: flex; gap: 4px; padding: 3px 4px; cursor: var(--cur-default, default); }
 .lp-item.escolhida { background: var(--selecao); color: var(--selecao-texto); }
 .lp-item-cor { flex: none; width: 12px; height: 12px; margin-top: 1px; box-shadow: inset 0 0 0 1px #000; }
-.lp-item-cor.nota { width: 10px; height: 12px; }
+.lp-item-cor.lp-item-nota { width: 10px; height: 12px; }
 .lp-item-texto { min-width: 0; display: flex; flex-direction: column; }
 .lp-item-texto span { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .lp-vazia { padding: 6px; color: var(--texto-fraco); }
