@@ -403,6 +403,110 @@ const ROTEIROS = {
     console.log(invadido ? 'AUDITORIA: FALHOU' : 'AUDITORIA: ok');
   },
 
+  // O corretor ortográfico (ortografia.js e campos.js): a palavra errada sublinhada no Bloco de notas,
+  // o botão direito com as sugestões, a troca, o "Adicionar ao dicionário", o Copiar, o Painel › Idioma ›
+  // Ortografia e o mesmo menu no quadro de um programa (um Craft de mentira, como o da auditoria).
+  async ortografia() {
+    await fecharTudo();
+    const ERRADA = { 'pt-BR': 'Errda', en: 'Wrogn', es: 'Palabar' }[IDIOMA] || 'Errda';
+    const NOME = 'Retrocomputer';
+    await abrir('bloco');
+    await pagina.waitForTimeout(600);
+    const campo = pagina.locator('.janela.ativa textarea');
+    await campo.click();
+    // O corretor só marca as palavras com a página em foco: no Xvfb sem gerenciador de janelas, ninguém dá
+    // o foco à janela, e o protocolo de depuração o finge. As palavras são marcadas depois de o dicionário
+    // abrir (uns segundos depois de ligar).
+    console.log('em foco:', await pagina.evaluate(() => document.hasFocus()));
+    const cdpFoco = await pagina.context().newCDPSession(pagina);
+    await cdpFoco.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+    await pagina.waitForTimeout(2500);
+    // As teclas pela janela (apertar, o caractere e soltar): o Chromium só marca o que vem digitado assim.
+    await app.evaluate(async ({ BrowserWindow }, texto) => {
+      const wc = BrowserWindow.getAllWindows()[0].webContents;
+      for (const ch of texto) {
+        const tecla = ch === ' ' ? 'Space' : ch === '\n' ? 'Return' : ch;
+        wc.sendInputEvent({ type: 'keyDown', keyCode: tecla });
+        if (ch !== '\n') wc.sendInputEvent({ type: 'char', keyCode: ch });
+        wc.sendInputEvent({ type: 'keyUp', keyCode: tecla });
+        await new Promise((ok) => setTimeout(ok, 30));
+      }
+    }, `${ERRADA} ${NOME} `);
+    // O Chromium confere as palavras quando a digitação para (uns segundos).
+    await pagina.waitForTimeout(3500);
+    console.log('o corretor:', JSON.stringify(await app.evaluate(({ app: a, session }) => {
+      const fs = process.mainModule.require('node:fs');
+      const p = process.mainModule.require('node:path').join(a.getPath('userData'), 'Dictionaries');
+      return { idiomas: session.defaultSession.getSpellCheckerLanguages(), ligado: session.defaultSession.isSpellCheckerEnabled(), arquivos: fs.existsSync(p) ? fs.readdirSync(p) : [] };
+    })));
+    const caixa = await campo.boundingBox();
+    await foto('ortografia-sublinhado');
+    const menu = () => pagina.$$eval('.menu.menu-campo .opcao', (os) => os.map((o) => (o.classList.contains('desativada') ? '-' : '') + o.textContent.trim()));
+    // O botão direito na primeira palavra (o começo da primeira linha).
+    await pagina.mouse.click(caixa.x + 8, caixa.y + 7, { button: 'right' });
+    await pagina.waitForSelector('.menu.menu-campo', { timeout: 5000 });
+    await pagina.waitForTimeout(200);
+    console.log('menu na errada:', JSON.stringify(await menu()));
+    await foto('ortografia-sugestoes');
+    await pagina.click('.menu.menu-campo .opcao.negrito >> nth=0');
+    await pagina.waitForTimeout(400);
+    console.log('depois da troca:', JSON.stringify(await campo.inputValue()));
+    // A segunda palavra vai para o dicionário: depois, o menu dela não tem mais sugestões.
+    const texto = await campo.inputValue();
+    const larg = await pagina.evaluate(([t, i]) => { const c = document.createElement('canvas').getContext('2d'); c.font = getComputedStyle(document.querySelector('.janela.ativa textarea')).font; return c.measureText(t.slice(0, i)).width; }, [texto, texto.indexOf(NOME) + 3]);
+    await pagina.mouse.click(caixa.x + 4 + larg, caixa.y + 7, { button: 'right' });
+    await pagina.waitForSelector('.menu.menu-campo', { timeout: 5000 });
+    console.log('menu na segunda:', JSON.stringify(await menu()));
+    await pagina.locator('.menu.menu-campo .opcao', { hasText: T('&Adicionar ao dicionário').replace('&', '') }).click();
+    await pagina.waitForTimeout(800);
+    await pagina.mouse.click(caixa.x + 4 + larg, caixa.y + 7, { button: 'right' });
+    await pagina.waitForSelector('.menu.menu-campo', { timeout: 5000 });
+    console.log('menu depois de guardar:', JSON.stringify(await menu()));
+    // Selecionar tudo e copiar, pelo menu.
+    await pagina.locator('.menu.menu-campo .opcao', { hasText: T('&Selecionar tudo').replace('&', '') }).click();
+    await pagina.waitForTimeout(400);
+    console.log('selecionado:', JSON.stringify(await campo.evaluate((c) => [c.selectionStart, c.selectionEnd, c.value.length])));
+    await pagina.mouse.click(caixa.x + 30, caixa.y + 7, { button: 'right' });
+    await pagina.waitForSelector('.menu.menu-campo', { timeout: 5000 });
+    console.log('menu com tudo selecionado:', JSON.stringify(await menu()));
+    await pagina.locator('.menu.menu-campo .opcao', { hasText: T('&Copiar').replace('&', '') }).click();
+    await pagina.waitForTimeout(400);
+    console.log('copiado:', JSON.stringify(await app.evaluate(async ({ clipboard }) => clipboard.readText())));
+    await fecharTudo();
+    // O Painel › Idioma › Ortografia.
+    await abrir('painel', { secao: 'idioma' });
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Ortografia') }).click();
+    await pagina.waitForTimeout(300);
+    await foto('ortografia-painel');
+    await pagina.keyboard.press('Escape');
+    await fecharTudo();
+    // No quadro de um programa: o mesmo menu, no lugar do clique.
+    const prog = path.join(dados, 'programas', 'ortografia');
+    fs.mkdirSync(prog, { recursive: true });
+    fs.writeFileSync(path.join(prog, 'programa.json'), JSON.stringify({ id: 'ortografia', nome: 'Ortografia', versao: '1.0.0' }));
+    fs.writeFileSync(path.join(prog, 'index.html'), `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff"><textarea style="width:300px;height:80px;font:16px sans-serif">${ERRADA} texto</textarea></body>`);
+    await pagina.evaluate(() => {
+      const q = document.createElement('iframe');
+      q.id = 'quadro-orto';
+      q.src = 'programa://ortografia/';
+      q.style.cssText = 'position:absolute;left:300px;top:200px;width:320px;height:100px;border:0;z-index:1';
+      document.getElementById('tela').append(q);
+    });
+    await pagina.waitForTimeout(2500);
+    await pagina.mouse.click(310, 212);
+    await pagina.waitForTimeout(1200);
+    await pagina.mouse.click(310, 212, { button: 'right' });
+    await pagina.waitForSelector('.menu.menu-campo', { timeout: 5000 });
+    const r = await pagina.$eval('.menu.menu-campo', (m) => { const b = m.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top) }; });
+    console.log('no quadro:', JSON.stringify(await menu()), '| o menu em', JSON.stringify(r), '(o clique em 310, 212)');
+    await foto('ortografia-quadro');
+    await pagina.click('.menu.menu-campo .opcao.negrito >> nth=0');
+    await pagina.waitForTimeout(500);
+    console.log('no quadro, depois da troca:', JSON.stringify(await pagina.frameLocator('#quadro-orto').locator('textarea').inputValue()));
+    await pagina.evaluate(() => document.getElementById('quadro-orto').remove());
+  },
+
   // O ç do teclado EUA internacional (´ seguido de c), como no Windows, com o Linux em qualquer
   // idioma (rode com LANG=en_US.UTF-8; precisa do setxkbmap e do xdotool): digita no Bloco de notas.
   async cedilha() {
@@ -3920,6 +4024,138 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     const texto = fs.readFileSync(path.join(docs, T('Agenda') + '.ics'), 'utf8');
     console.log('arquivo:', (texto.match(/BEGIN:VEVENT/g) || []).length, 'eventos;', (texto.match(/RECURRENCE-ID/g) || []).length, 'alterada;', /RRULE:FREQ=WEEKLY;BYDAY=MO,TH/.test(texto) ? 'regra semanal ok' : 'regra semanal PERDIDA', '; linhas até 75 bytes:', texto.split('\r\n').every((l) => Buffer.byteLength(l) <= 75));
     console.log('versões guardadas:', fs.existsSync(path.join(disco, '.versoes')) ? execFileSync('find', [path.join(disco, '.versoes'), '-type', 'f']).toString().split('\n').filter((l) => /Agenda|Calendar/.test(l)).length : 0);
+  },
+
+  // Os calendários da internet da Agenda (com RETRO_CALENDARIOS_FALSOS=<pasta>: o roteiro grava os .ics
+  // nela, e o "servidor" responde com o arquivo do fim do endereço): assinar, os recusados (o http e o
+  // que não é calendário), o lembrete de um deles, os eventos com o globo, só para ler, a cópia para a
+  // Agenda, esconder e remover; e o endereço secreto, que fica no config.json e não chega à tela.
+  async calendarios() {
+    const pastaFalsa = process.env.RETRO_CALENDARIOS_FALSOS;
+    if (!pastaFalsa) throw new Error('rode com RETRO_CALENDARIOS_FALSOS=<pasta>');
+    fs.mkdirSync(pastaFalsa, { recursive: true });
+    const d2 = (n) => String(n).padStart(2, '0');
+    const agora = new Date();
+    const utc = (d) => `${d.getUTCFullYear()}${d2(d.getUTCMonth() + 1)}${d2(d.getUTCDate())}T${d2(d.getUTCHours())}${d2(d.getUTCMinutes())}00Z`;
+    const dia = (d) => `${d.getFullYear()}${d2(d.getMonth() + 1)}${d2(d.getDate())}`;
+    const daqui = (min) => new Date(Math.ceil((agora.getTime() + min * 60000) / 60000) * 60000);
+    const amanha = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1);
+    const depois = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 2);
+    const evento = (uid, titulo, ini, fim, extra = []) => ['BEGIN:VEVENT', `UID:${uid}`, `DTSTART${ini.length === 8 ? ';VALUE=DATE' : ''}:${ini}`, `DTEND${fim.length === 8 ? ';VALUE=DATE' : ''}:${fim}`, `SUMMARY:${titulo}`, ...extra, 'END:VEVENT'];
+    const calendario = (nome, eventos) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Teste//PT', `X-WR-CALNAME:${nome}`, ...eventos.flat(), 'END:VCALENDAR', ''].join('\r\n');
+    // O de feriados (dia todo) e o do trabalho (em UTC, com um lembrete que vence agora e uma reunião
+    // marcada no fuso de Nova York, que tem que aparecer na hora daqui).
+    fs.writeFileSync(path.join(pastaFalsa, 'feriados.ics'), calendario('Feriados nacionais', [
+      evento('feriado-hoje@teste', 'Dia do feriado de teste', dia(agora), dia(amanha)),
+      evento('finados@teste', 'Finados', `${agora.getFullYear()}1102`, `${agora.getFullYear()}1103`, ['RRULE:FREQ=YEARLY']),
+    ]));
+    const ny = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(amanha.getTime() + 12 * 3600000)).replace(/-/g, '');
+    fs.writeFileSync(path.join(pastaFalsa, 'trabalho.ics'), calendario('Trabalho (Google)', [
+      evento('sessao@teste', 'Sessão de julgamento', utc(daqui(10)), utc(daqui(70)), ['LOCATION:Sala 511', 'DESCRIPTION:Pauta com 32 processos.', 'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:-PT30M', 'END:VALARM']),
+      evento('ny@teste', 'Reunião com Nova York (9h de lá)', `${ny}T090000`, `${ny}T100000`, []).map((l) => l.replace(/^DTSTART:/, 'DTSTART;TZID=America/New_York:').replace(/^DTEND:/, 'DTEND;TZID=America/New_York:')),
+    ]));
+    fs.writeFileSync(path.join(pastaFalsa, 'pagina.ics'), '<!doctype html><title>Entrar</title>');
+    await fecharTudo();
+    await abrir('agenda');
+    await pagina.waitForSelector('.janela.ativa .ag-lista', { timeout: 15000 });
+    await pagina.waitForTimeout(400);
+    await pagina.click(`.janela.ativa .menubar > div:has-text("${T('&Arquivo')}")`);
+    await pagina.waitForTimeout(300);
+    await foto('calendarios-menu');
+    await pagina.click(`.menu .opcao:has-text("${T('&Calendários da internet…')}")`);
+    await pagina.waitForSelector('.janela.ativa .ag-cals', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    await foto('calendarios-vazio');
+    const assinar = async (endereco, { nome = '', lembretes = false, fotografar = '' } = {}) => {
+      await pagina.click(`.janela:has(.ag-cals) button:has-text("${T('&Adicionar…')}")`);
+      await pagina.waitForSelector('.janela.dialogo .ag-form', { timeout: 5000 });
+      await pagina.fill('.janela.dialogo .ag-form input[type=text] >> nth=0', endereco);
+      if (nome) await pagina.fill('.janela.dialogo .ag-form input[type=text] >> nth=1', nome);
+      if (lembretes) await pagina.check('.janela.dialogo .ag-form input[type=checkbox]');
+      if (fotografar) { await pagina.waitForTimeout(200); await foto(fotografar); }
+      await pagina.click('.janela.dialogo .ag-form button.padrao');
+      await pagina.waitForTimeout(1200);
+    };
+    await assinar('webcal://exemplo.invalid/feriados.ics', { fotografar: 'calendarios-adicionar' });
+    // Os recusados: o http e a página que não é um calendário (a caixa fica aberta, com o erro).
+    for (const [endereco, fotoNome] of [['http://exemplo.invalid/feriados.ics', 'calendarios-http'], ['https://exemplo.invalid/pagina.ics', 'calendarios-formato']]) {
+      await assinar(endereco);
+      const msg = await pagina.locator('.janela.dialogo .mensagem').last().innerText().catch(() => '');
+      console.log('recusado:', endereco, '→', JSON.stringify(msg));
+      await foto(fotoNome);
+      await pagina.locator('.janela.dialogo:has(.mensagem) button.padrao').last().click();
+      await pagina.waitForTimeout(300);
+      await pagina.click(`.janela.dialogo:has(.ag-form) button:has-text("${T('Cancelar')}")`);
+      await pagina.waitForTimeout(300);
+    }
+    // O do trabalho, com um endereço "secreto" e os lembretes: o da sessão vence agora.
+    await assinar('https://exemplo.invalid/calendar/ical/private-segredo123/trabalho.ics', { lembretes: true });
+    await pagina.waitForSelector(`.janela:has-text("${T('1 lembrete')}")`, { timeout: 30000 });
+    await pagina.waitForTimeout(500);
+    await foto('calendarios-lembrete');
+    await pagina.click(`.janela:has-text("${T('1 lembrete')}") button:has-text("${T('&Descartar')}")`);
+    await pagina.waitForTimeout(400);
+    console.log('calendários:', JSON.stringify(await pagina.$$eval('.ag-cals .ag-item', (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
+    await foto('calendarios-lista');
+    // O endereço secreto: no config.json, sim; na tela, não.
+    const naTela = JSON.stringify(await pagina.evaluate(() => retro.config.obter()));
+    const noArquivo = fs.readFileSync(path.join(dados, 'config.json'), 'utf8');
+    console.log('endereço secreto: no config.json', noArquivo.includes('private-segredo123'), '| na tela', naTela.includes('segredo123'), '| site na tela', naTela.includes('"site":"exemplo.invalid"'));
+    // A Agenda: hoje, com o feriado e a sessão (com o globo); amanhã, a reunião de Nova York na hora daqui.
+    await abrir('agenda');
+    await pagina.waitForTimeout(500);
+    console.log('hoje:', JSON.stringify(await pagina.$$eval('.janela.ativa .ag-item', (l) => l.map((e) => `${e.classList.contains('externo') ? '[internet] ' : ''}${e.innerText.replace(/\n/g, ' | ')}`))));
+    await foto('calendarios-agenda');
+    const AG = '.janela:has(.ag-esq)';
+    const diaTexto = (d) => `${d.getFullYear()}-${d2(d.getMonth() + 1)}-${d2(d.getDate())}`;
+    await abrir('agenda', { dia: diaTexto(amanha) });
+    await pagina.waitForTimeout(400);
+    // A reunião é às 9h de Nova York: o instante, pelo fuso de lá, na hora daqui.
+    const offNy = (() => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(new Date(amanha.getTime() + 12 * 3600000)).map((x) => [x.type, x.value])); return Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor((amanha.getTime() + 12 * 3600000) / 60000) * 60000; })();
+    const esperadaNy = new Date(Date.UTC(Number(ny.slice(0, 4)), Number(ny.slice(4, 6)) - 1, Number(ny.slice(6, 8)), 9) - offNy);
+    console.log('amanhã:', JSON.stringify(await pagina.$$eval(`${AG} .ag-item`, (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))), '| a de Nova York tem que estar às', esperadaNy.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    await foto('calendarios-fuso');
+    await abrir('agenda', { dia: diaTexto(agora) });
+    await pagina.waitForTimeout(300);
+    // Dois cliques num evento da internet: os detalhes, só para ler; e a cópia para a Agenda.
+    await pagina.dblclick(`${AG} .ag-item.externo:has-text("Sessão de julgamento")`);
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    await foto('calendarios-detalhes');
+    await pagina.click(`.janela.dialogo button:has-text("${T('&Copiar para a Agenda…')}")`);
+    await pagina.waitForSelector('.janela.dialogo .ag-form', { timeout: 5000 });
+    await pagina.fill('.janela.dialogo .ag-form input[type=text] >> nth=0', 'Sessão de julgamento (preparar os votos)');
+    await pagina.click('.janela.dialogo .ag-form button.padrao');
+    await pagina.waitForTimeout(900);
+    const agendaIcs = fs.readFileSync(path.join(disco, DOCS, T('Agenda') + '.ics'), 'utf8');
+    console.log('cópia na Agenda.ics:', agendaIcs.includes('preparar os votos'), '| os da internet fora do arquivo:', !agendaIcs.includes('Finados') && !agendaIcs.includes('sessao@teste'));
+    // Excluir um da internet: só o aviso.
+    await abrir('agenda', { dia: diaTexto(agora) });
+    await pagina.waitForTimeout(300);
+    await pagina.click(`${AG} .ag-item.externo:has-text("Dia do feriado")`);
+    console.log('Excluir desativado no da internet:', await pagina.locator(`${AG} button:has-text("${T('Ex&cluir')}")`).isDisabled());
+    console.log('hoje, com a cópia:', JSON.stringify(await pagina.$$eval(`${AG} .ag-item`, (l) => l.map((e) => `${e.classList.contains('externo') ? '[internet] ' : ''}${e.innerText.replace(/\n/g, ' | ')}`))));
+    // Esconder o de feriados e depois remover o do trabalho.
+    const CAL = '.janela:has(.ag-cals)';
+    await abrir('agenda');
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.janela.ativa .menubar > div:has-text("${T('&Arquivo')}")`);
+    await pagina.click(`.menu .opcao:has-text("${T('&Calendários da internet…')}")`);
+    await pagina.waitForSelector(`${CAL}.ativa`, { timeout: 5000 });
+    await pagina.click(`${CAL} .ag-cals .ag-item >> nth=0`);
+    await pagina.uncheck(`${CAL} .ag-cal-opcoes input >> nth=0`);
+    await pagina.waitForTimeout(500);
+    await foto('calendarios-escondido');
+    await pagina.click(`${CAL} .ag-cals .ag-item >> nth=1`);
+    await pagina.click(`${CAL} button:has-text("${T('&Remover')}")`);
+    await pagina.waitForSelector('.janela.dialogo .mensagem', { timeout: 5000 });
+    await foto('calendarios-remover');
+    await pagina.click(`.janela.dialogo button:has-text("${T('&Sim')}")`);
+    await pagina.waitForTimeout(500);
+    console.log('depois de remover:', JSON.stringify(await pagina.$$eval('.ag-cals .ag-item', (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))), '| cópias guardadas:', fs.readdirSync(path.join(dados, 'calendarios')).length);
+    await abrir('agenda');
+    await pagina.waitForTimeout(400);
+    console.log('hoje, sem os dois:', JSON.stringify(await pagina.$$eval(`${AG} .ag-item`, (l) => l.map((e) => e.innerText.replace(/\n/g, ' | ')))));
   },
 
   // Receber do celular (com RETRO_RECEBER_FALSO=1: o servidor no 127.0.0.1, e o roteiro faz o papel

@@ -17,7 +17,7 @@ class Bloco {
     this.quebra = true;
     this.zoom = 1;
     this.fixa = !!(estado.config.bloco && estado.config.bloco.fixa);
-    this.texto = h('textarea.quebra', { spellcheck: false, wrap: 'soft' });
+    this.texto = h('textarea.quebra', { wrap: 'soft' });
     this.texto.classList.toggle('proporcional', !this.fixa);
     this.j = new Janela({
       titulo: `${tr('Sem título')} - ${tr('Bloco de notas')}`,

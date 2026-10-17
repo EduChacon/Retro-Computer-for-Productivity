@@ -2,7 +2,8 @@
  * O calendário no formato iCalendar (.ics, a RFC 5545), o mesmo do Google Agenda, do Outlook e do
  * Calendário do Mac: ler, gravar e abrir as repetições num intervalo de datas. Sem a tela: testado
  * no Node (testes/ics.test.js). Os horários são os do relógio do computador (os com "Z", em UTC,
- * são trazidos para a hora daqui; os com fuso, ficam como estão escritos).
+ * são trazidos para a hora daqui; os com fuso ficam como estão escritos, menos nos calendários da
+ * internet, lidos com { fusos: true }: neles, a hora do fuso de lá vira a daqui).
  *
  * Um evento: { uid, titulo, descricao, local, inicio, fim, diaTodo, lembrete, repetir, extra }
  *   inicio, fim   "AAAA-MM-DD" (o dia todo) ou "AAAA-MM-DDTHH:MM"; fim pode faltar
@@ -60,13 +61,47 @@ function lerLinha(linha) {
 const desescapar = (s) => String(s).replace(/\\([\\;,nN])/g, (_, c) => (c === 'n' || c === 'N' ? '\n' : c));
 const escapar = (s) => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 
-/** Uma data do .ics → "AAAA-MM-DD" ou "AAAA-MM-DDTHH:MM" (a com "Z" vem para a hora daqui). */
-function lerData(valor, params) {
+const formatosFuso = new Map();
+
+/** O formato do Intl de um fuso (o nome da IANA, ou o fim dele: "/mozilla.org/…/America/New_York"). */
+function formatoFuso(tzid) {
+  const s = String(tzid || '').trim();
+  if (formatosFuso.has(s)) return formatosFuso.get(s);
+  let f = null;
+  for (const nome of [s, (/([A-Za-z_]+(?:\/[A-Za-z0-9_+-]+){1,2})$/.exec(s) || [])[1]]) {
+    if (!nome) continue;
+    try { f = new Intl.DateTimeFormat('en-US', { timeZone: nome, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }); break; } catch { /* outro nome */ }
+  }
+  if (formatosFuso.size < 200) formatosFuso.set(s, f);
+  return f;
+}
+
+/** A hora de um fuso (ano, mês 1–12, dia, hora, minuto) → o mesmo instante (Date), ou null sem o fuso. */
+export function horaDoFuso(ano, mes, dia, hora, min, tzid) {
+  const f = formatoFuso(tzid);
+  if (!f) return null;
+  const parede = Date.UTC(ano, mes - 1, dia, hora, min);
+  // Quanto o fuso está à frente do UTC num instante (duas voltas acertam a troca do horário de verão).
+  const desvio = (t) => {
+    const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, x.value]));
+    return Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour) % 24, Number(p.minute), Number(p.second)) - Math.floor(t / 1000) * 1000;
+  };
+  let t = parede - desvio(parede);
+  t = parede - desvio(t);
+  return new Date(t);
+}
+
+/** Uma data do .ics → "AAAA-MM-DD" ou "AAAA-MM-DDTHH:MM" (a com "Z", e com fusos a com TZID, vem para a hora daqui). */
+function lerData(valor, params, fusos = false) {
   const v = String(valor || '').trim();
   const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(v);
   if (!m) return null;
   if (!m[4] || params.VALUE === 'DATE') return `${m[1]}-${m[2]}-${m[3]}`;
   if (m[7]) return dataHoraTexto(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6] || 0))));
+  if (fusos && params.TZID) {
+    const d = horaDoFuso(Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5]), params.TZID);
+    if (d) return dataHoraTexto(d);
+  }
   return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}`;
 }
 
@@ -96,8 +131,11 @@ function lerRegra(v) {
   return r;
 }
 
-/** Lê um .ics: { eventos, nome } (o nome do calendário, se houver). */
-export function lerIcs(texto) {
+/**
+ * Lê um .ics: { eventos, nome } (o nome do calendário, se houver). Com fusos, as horas com TZID
+ * vêm para a hora daqui (o calendário da internet, só de ler; o da Agenda volta como foi escrito).
+ */
+export function lerIcs(texto, { fusos = false } = {}) {
   const eventos = [];
   let nome = '';
   let atual = null;
@@ -139,8 +177,8 @@ export function lerIcs(texto) {
     else if (n === 'SUMMARY') atual.titulo = desescapar(valor);
     else if (n === 'DESCRIPTION') atual.descricao = desescapar(valor);
     else if (n === 'LOCATION') atual.local = desescapar(valor);
-    else if (n === 'DTSTART') atual.inicio = lerData(valor, params);
-    else if (n === 'DTEND') atual.fim = lerData(valor, params);
+    else if (n === 'DTSTART') atual.inicio = lerData(valor, params, fusos);
+    else if (n === 'DTEND') atual.fim = lerData(valor, params, fusos);
     else if (n === 'DURATION' && atual.inicio) {
       const min = -lerDuracao(valor);
       const d = paraData(atual.inicio);
@@ -148,8 +186,8 @@ export function lerIcs(texto) {
     } else if (n === 'RRULE') atual.repetir = lerRegra(valor);
     else if (n === 'EXDATE') {
       // Pode vir em várias linhas e com várias datas por linha.
-      for (const x of valor.split(',')) { const d = lerData(x, params); if (d && atual.excecoes.length < MAX_OCORRENCIAS) atual.excecoes.push(d); }
-    } else if (n === 'RECURRENCE-ID') atual.recorrencia = lerData(valor, params);
+      for (const x of valor.split(',')) { const d = lerData(x, params, fusos); if (d && atual.excecoes.length < MAX_OCORRENCIAS) atual.excecoes.push(d); }
+    } else if (n === 'RECURRENCE-ID') atual.recorrencia = lerData(valor, params, fusos);
     else if (!CONHECIDAS.has(n)) atual.extra.push(linha);
   }
   return { eventos, nome };

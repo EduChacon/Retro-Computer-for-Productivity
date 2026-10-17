@@ -6,6 +6,9 @@ import { tr, marcar, localidade } from './idioma.js';
 export function h(seletor, props, ...filhos) {
   const m = seletor.match(/^([a-z0-9-]+)?((?:[.#][\w-]+)*)$/i);
   const el = document.createElement((m && m[1]) || 'div');
+  // O corretor ortográfico fica nos textos (o Bloco de notas, as notas): os campos de uma linha (a
+  // busca, o endereço, o nome de um arquivo) só o têm com spellcheck: true.
+  if (el.tagName === 'INPUT') el.spellcheck = false;
   if (m && m[2]) {
     for (const parte of m[2].match(/[.#][\w-]+/g)) {
       if (parte[0] === '.') el.classList.add(parte.slice(1));
@@ -17,7 +20,8 @@ export function h(seletor, props, ...filhos) {
     props = null;
   }
   for (const [k, v] of Object.entries(props || {})) {
-    if (v == null || v === false) continue;
+    // O spellcheck: false vale (desliga o corretor no campo); os outros false ficam de fora.
+    if (v == null || (v === false && k !== 'spellcheck')) continue;
     if (k === 'on') for (const [ev, fn] of Object.entries(v)) el.addEventListener(ev, fn);
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
     else if (k === 'dataset') Object.assign(el.dataset, v);

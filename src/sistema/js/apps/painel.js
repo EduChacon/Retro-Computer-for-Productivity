@@ -1543,12 +1543,35 @@ function dialogoIdioma() {
       radios.map(({ o, r }) => h('div', { style: { margin: '4px 0' } }, h('label', r, h('span', o.nome))))),
     h('p', { style: { color: 'var(--texto-fraco)', lineHeight: '13px' } }, tr('As pastas do disco C: continuam com os nomes de quando foram criadas.')),
   );
+  // O corretor ortográfico (ortografia.js, no processo principal): ligado e os idiomas dos dicionários.
+  const o = { ligada: true, idiomas: [], ...(c.ortografia || {}) };
+  const doIdioma = { 'pt-BR': 'pt-BR', en: 'en-US', es: 'es-ES' }[c.idiomaEfetivo] || 'pt-BR';
+  const noMac = c.plataforma === 'darwin';
+  const chkOrto = h('input', { type: 'checkbox', checked: o.ligada !== false });
+  const dicionarios = [['pt-BR', tr('Português (Brasil)')], ['en-US', tr('Inglês (Estados Unidos)')], ['es-ES', tr('Espanhol')]].map(([cod, nome]) => ({
+    cod, chk: h('input', { type: 'checkbox', checked: (o.idiomas && o.idiomas.length ? o.idiomas : [doIdioma]).includes(cod) }), nome,
+  }));
+  const marcarOrto = () => { for (const d of dicionarios) d.chk.disabled = noMac || !chkOrto.checked; };
+  chkOrto.addEventListener('change', marcarOrto);
+  marcarOrto();
+  const abaOrto = h('div',
+    h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' } }, img('bloco', 32), h('label', chkOrto, h('span', tr('Verificar a ortografia enquanto escrevo')))),
+    h('fieldset', { style: { margin: '0' } }, h('legend', tr('Idiomas do corretor')),
+      dicionarios.map((d) => h('div', { style: { margin: '4px 0' } }, h('label', d.chk, h('span', d.nome))))),
+    h('p', { style: { color: 'var(--texto-fraco)', lineHeight: '13px' } }, noMac
+      ? tr('No Mac, o corretor é o do próprio sistema, que reconhece o idioma sozinho.')
+      : tr('As palavras erradas ficam sublinhadas no Bloco de notas, nas notas, na Agenda e nos programas; o botão direito numa delas mostra as sugestões. Os dicionários vão junto com o Retro Computer: nada vai para a internet.')),
+  );
   dialogoBase({
     titulo: tr('Propriedades de Idioma'),
     icone: 'internet',
     larg: 380,
-    abas: [{ titulo: tr('Idioma'), conteudo }],
+    abas: [{ titulo: tr('Idioma'), conteudo }, { titulo: tr('Ortografia'), conteudo: abaOrto }],
     aoAplicar: async () => {
+      // Só o idioma da interface marcado: fica vazio (acompanha o idioma, se ele mudar).
+      const marcados = dicionarios.filter((d) => d.chk.checked).map((d) => d.cod);
+      const idiomas = marcados.length === 1 && marcados[0] === doIdioma ? [] : marcados;
+      await definirConfig({ ortografia: { ligada: chkOrto.checked, idiomas } });
       const escolhido = (radios.find((x) => x.r.checked) || radios[0]).o.cod;
       if (escolhido === (estado.config.idioma || 'auto')) return;
       await definirConfig({ idioma: escolhido });

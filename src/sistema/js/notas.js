@@ -111,7 +111,7 @@ function menuDaNota(n, x, y) {
 
 function montarNota(rel, texto) {
   const p = noLugar(posicoes()[nomeDe(rel)] || {});
-  const area = h('textarea.nota-texto', { spellcheck: false, maxLength: MAX_BYTES / 2, 'aria-label': semExtensao(nomeDe(rel)) });
+  const area = h('textarea.nota-texto', { maxLength: MAX_BYTES / 2, 'aria-label': semExtensao(nomeDe(rel)) });
   area.value = texto;
   const n = { rel, texto: area, lido: texto, timer: null, salvoEm: null, versaoEm: 0, el: null };
   const topo = h('div.nota-topo',

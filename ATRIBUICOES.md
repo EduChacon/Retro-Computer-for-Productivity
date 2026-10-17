@@ -58,6 +58,16 @@ Feitos ponto a ponto em `ferramentas/icones.py`: `computador`, `desligar` (o mes
 - **Licença:** domínio público.
 - **Uso:** a latitude e a longitude da cidade de referência de cada fuso (`src/sistema/js/fusos-dados.js`, gerado por `ferramentas/fusos.py`), para o pôr e o nascer do sol do esquema de cores da noite e da luz noturna (`src/sistema/js/sol.js`).
 
+## Dicionários do corretor ortográfico: os do Hunspell do Chromium
+
+- **Origem:** os dicionários do Hunspell que o Chromium distribui (<https://chromium.googlesource.com/chromium/deps/hunspell_dictionaries>), no formato dele (`.bdic`), sem modificação: `pt-BR-3-0.bdic`, `en-US-10-1.bdic` e `es-ES-3-0.bdic`, em `src/principal/dicionarios/`, com os textos que os acompanham (`README_pt_BR.txt`, `README_en_US.txt`, `README_es_ES.txt` e o `LICENSE` do repositório deles). O código-fonte de cada um (o `.dic` e o `.aff`) está no mesmo repositório.
+- **Uso:** o corretor ortográfico dos campos de texto (`src/principal/ortografia.js`), copiados para a pasta dos dicionários do Chromium; nada é baixado da internet. No Mac, o corretor é o do próprio sistema, e os arquivos não são usados.
+- **Licenças:**
+  - português do Brasil: o VERO, "Copyright (C) 2006 - 2010 por Raimundo Santos Moura" e colaboradores, sob a GNU LGPL 2.1 (o aviso está no `pt_BR.aff` do Chromium); o `README_pt_BR.txt` conta a origem do dicionário anterior em que ele se baseia (o br.ispell de Ricardo Ueda Karpischek e as mudanças de Augusto Tavares Rosa Marcacini, sob a GNU GPL 2);
+  - inglês dos Estados Unidos: o do SCOWL, "Copyright 2000-2018 by Kevin Atkinson", sob a licença dele, livre e permissiva (o texto está no `README_en_US.txt`);
+  - espanhol: o de Jesús Carretero, Santiago Rodríguez e Richard Holt, sob a GNU GPL (o texto está no `README_es_ES.txt`).
+- Os dicionários vão como arquivos de dados separados, que o Chromium lê; o restante do Retro Computer continua MIT.
+
 ## Mapa do globo: Natural Earth
 
 - **Origem:** <https://www.naturalearthdata.com/> (o contorno das terras na escala 1:110m, `ne_110m_land`).

@@ -190,6 +190,7 @@ export class Janela {
       area().append(this.el);
     }
     lista.push(this);
+    if (this.dialogo) empilharDialogos();
     acompanharArea();
     if (o.maximizada) this.maximizar();
     if (daAreaAtual(this)) this.focar();
@@ -258,7 +259,7 @@ export class Janela {
     if (!daAreaAtual(this)) irParaArea(this.area, { focar: false });
     if (this.minimizada) this.restaurarDoMinimizado();
     if (ativa === this) {
-      this.el.style.zIndex = this.dialogo ? 800001 + lista.indexOf(this) : this.el.style.zIndex;
+      if (this.dialogo) empilharDialogos();
       return;
     }
     if (ativa && ativa !== this) {
@@ -272,7 +273,8 @@ export class Janela {
       recentes.push(this);
     }
     this.el.classList.add('ativa');
-    if (!this.dialogo) this.el.style.zIndex = ++zTopo;
+    if (this.dialogo) empilharDialogos();
+    else this.el.style.zIndex = ++zTopo;
     this.ev.emit('ativada');
     eventos.emit('mudou');
   }
@@ -536,6 +538,21 @@ window.addEventListener('blur', () => {
     }
   }, 0);
 });
+
+/*
+ * As caixas ficam umas sobre as outras na ordem em que abriram, cada uma com o fundo que bloqueia
+ * logo abaixo dela (a mesma camada, antes no documento): a aberta de dentro de outra (um aviso de
+ * erro, por exemplo) fica sempre por cima, mesmo que a de baixo tenha recebido um clique antes.
+ */
+function empilharDialogos() {
+  let z = 0;
+  for (const j of lista) {
+    if (!j.dialogo || j.fechada) continue;
+    z += 1;
+    j.el.style.zIndex = String(z);
+    if (j.bloqueio) j.bloqueio.style.zIndex = String(z);
+  }
+}
 
 /*
  * Com uma caixa modal aberta, o foco fica nela. Um programa por baixo que pega o foco de volta um

@@ -22,6 +22,11 @@ const PADRAO = {
   esquema: 'padrao',
   // A troca à noite para outro esquema: do pôr ao nascer do sol do fuso horário ('sol') ou das de às ate horas ('horas').
   esquemaNoite: { ligado: false, esquema: 'noite', quando: 'sol', de: 19, ate: 7 },
+  // A Agenda: os lembretes já descartados e os calendários da internet ({ id, url, nome, lembretes,
+  // ligado, ultima, erro }; a lista só muda por calendarios.js, e a área de trabalho não vê o url).
+  agenda: { vistos: [], calendarios: [] },
+  // O corretor ortográfico (ortografia.js): ligado, com os idiomas escolhidos (vazio: o da interface).
+  ortografia: { ligada: true, idiomas: [] },
   sons: true,
   volume: 0.5,
   inicioRapido: true, // a área de trabalho direto; o BIOS e a marca, em Painel › Aparência › Configurações

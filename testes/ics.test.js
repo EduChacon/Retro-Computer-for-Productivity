@@ -116,3 +116,17 @@ test('ics: o que não é um calendário não quebra nada', async () => {
   const todoDia = { inicio: '2000-01-01T08:00', repetir: { freq: 'diaria', intervalo: 1 } };
   assert.ok(ocorrencias([todoDia], new Date(2000, 0, 1), new Date(2100, 0, 1)).length <= 5001);
 });
+
+test('ics: nos calendários da internet, a hora com fuso (TZID) vem para a hora daqui', async () => {
+  const { horaDoFuso, lerIcs } = await modulo();
+  // O instante não depende do fuso de quem roda o teste.
+  assert.equal(horaDoFuso(2026, 7, 4, 9, 0, 'America/New_York').toISOString(), '2026-07-04T13:00:00.000Z'); // horário de verão
+  assert.equal(horaDoFuso(2026, 1, 4, 9, 0, 'America/New_York').toISOString(), '2026-01-04T14:00:00.000Z');
+  assert.equal(horaDoFuso(2026, 10, 17, 9, 0, '/mozilla.org/20050126_1/Europe/Lisbon').toISOString(), '2026-10-17T08:00:00.000Z');
+  assert.equal(horaDoFuso(2026, 10, 17, 9, 0, 'E. South America Standard Time'), null, 'o nome do Windows não é um fuso da IANA');
+  const ics = ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:a', 'DTSTART;TZID=America/New_York:20260704T090000', 'DTEND;TZID=America/New_York:20260704T100000', 'SUMMARY:x', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  assert.equal(lerIcs(ics).eventos[0].inicio, '2026-07-04T09:00', 'a Agenda volta como foi escrita');
+  const local = new Date(Date.UTC(2026, 6, 4, 13, 0));
+  const esperado = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}T${String(local.getHours()).padStart(2, '0')}:${String(local.getMinutes()).padStart(2, '0')}`;
+  assert.equal(lerIcs(ics, { fusos: true }).eventos[0].inicio, esperado);
+});

@@ -28,7 +28,7 @@ const { LojaWinget, LojaBrew, LojaWingetFalsa, LojaBrewFalsa } = require('./loja
 const { PapeisDeParede } = require('./papel');
 const monitoresMod = require('./monitores');
 const sistemaLinux = require('./sistema-linux');
-const { Bloqueio, semSegredos, confere: confereSenha, confereLinux } = require('./bloqueio');
+const { Bloqueio, semSegredos: semSenha, confere: confereSenha, confereLinux } = require('./bloqueio');
 const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
 const { Discos, DiscosFalsos } = require('./discos');
 const { servirArquivo, miniatura } = require('./servir');
@@ -69,6 +69,10 @@ const { paraHttps, Subidos } = require('./https');
 const { Perfis, PRINCIPAL } = require('./perfis');
 const { ehExecutavel } = require('./executaveis');
 const { modoAcentos, gravarCompose } = require('./teclado');
+const ortografia = require('./ortografia');
+const { Calendarios, semEnderecos, buscarNaRede, buscarFalso } = require('./calendarios');
+// As configurações como a área de trabalho (e o Claude) as veem: sem a senha e sem os endereços dos calendários.
+const semSegredos = (c) => semEnderecos(semSenha(c));
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -125,6 +129,11 @@ const PERFIL = INICIO.perfil;
 if (PERFIL !== PRINCIPAL) {
   fs.mkdirSync(perfis.pastaDados(PERFIL), { recursive: true });
   app.setPath('userData', perfis.pastaDados(PERFIL));
+}
+// Os dicionários do corretor vão para a pasta do Chromium antes de existir qualquer sessão: senão,
+// na primeira abertura, ele não os acha e tenta baixá-los (ortografia.js).
+if (process.platform !== 'darwin') {
+  try { ortografia.prepararDicionarios(app.getPath('userData')); } catch (e) { console.error('dicionários:', e.message); }
 }
 
 // Os acentos no Linux como no Windows (teclado.js): no EUA internacional, a tabela com as regras do
@@ -224,6 +233,7 @@ let diario = null; // o Diário de trabalho (diario.js)
 let copia = null; // a cópia de segurança do disco C: (copia.js)
 let firefox = null; // o Firefox com o visual do Retro Computer (firefox.js)
 let historico = null; // o histórico da área de transferência (transferencia.js)
+let calendarios = null; // os calendários da internet da Agenda (calendarios.js)
 let pararObservar = () => { };
 
 function enviar(canal, ...args) {
@@ -438,7 +448,7 @@ function criarJanela() {
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
-      spellcheck: false,
+      spellcheck: true, // o corretor ortográfico (ortografia.js), com os dicionários sem internet
       webviewTag: true, // o Navegador (ver "O Navegador" abaixo)
     },
   });
@@ -495,6 +505,18 @@ function criarJanela() {
       e.preventDefault();
       enviar('sistema:tecla', 'monitor');
     }
+  });
+  // O botão direito num campo de texto (da área de trabalho ou de um programa Craft): o menu do
+  // Retro Computer, com as sugestões do corretor. O que a página já tratou (preventDefault) não chega aqui.
+  wc.on('context-menu', (_e, p) => {
+    if (!p.isEditable) return;
+    const f = p.editFlags || {};
+    enviar('ortografia:menu', {
+      x: p.x, y: p.y, quadro: !!(p.frame && wc.mainFrame && p.frame !== wc.mainFrame),
+      palavra: String(p.misspelledWord || '').slice(0, 64), sugestoes: (p.dictionarySuggestions || []).slice(0, 8).map(String),
+      senha: p.formControlType === 'input-password',
+      pode: { desfazer: !!f.canUndo, recortar: !!f.canCut, copiar: !!f.canCopy, colar: !!f.canPaste, excluir: !!f.canDelete, tudo: !!f.canSelectAll },
+    });
   });
   janela.on('enter-full-screen', () => enviar('sistema:telaCheia', true));
   janela.on('leave-full-screen', () => enviar('sistema:telaCheia', false));
@@ -1291,6 +1313,9 @@ function registrarPonte() {
       }
       if (Object.keys(novas).length) parte.pastas = novas;
     }
+    // Os calendários da internet só mudam pelas rotas calendarios:* (que conferem o endereço).
+    if (parte.agenda && typeof parte.agenda === 'object' && !Array.isArray(parte.agenda)) delete parte.agenda.calendarios;
+    else if ('agenda' in parte) delete parte.agenda;
     // A senha da tela de bloqueio só muda por bloqueio:definir (conferindo a atual).
     if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
     else if ('bloqueio' in parte) delete parte.bloqueio;
@@ -1304,7 +1329,14 @@ function registrarPonte() {
       const ok = a && typeof a === 'object' && !Array.isArray(a) && Object.entries(a).every(([ext, v]) => /^[a-z0-9_-]{1,12}$/.test(ext) && (v === null || (typeof v === 'string' && /^[a-z0-9:_-]{1,80}$/i.test(v))));
       if (!ok) delete parte.abrirCom;
     }
+    // O corretor: ligado ou não e os idiomas (só os que têm dicionário).
+    if ('ortografia' in parte) {
+      const o = parte.ortografia;
+      if (o && typeof o === 'object' && !Array.isArray(o)) parte.ortografia = { ligada: o.ligada !== false, idiomas: ortografia.idiomasDe({ idiomas: o.idiomas }, '').filter((i) => (o.idiomas || []).includes(i)) };
+      else delete parte.ortografia;
+    }
     const r = config.definir(parte);
+    if (parte.ortografia) ortografia.aplicarOrtografia(session.defaultSession, r.ortografia, idioma.idioma());
     if (parte.transferencia && historico) historico.ligar(r.transferencia.historico !== false);
     if (parte.busca && indice) indice.ligar((r.busca || {}).conteudo !== false).catch(() => { });
     if (parte.papel && MODO_SISTEMA) fundoDaRaiz();
@@ -1717,6 +1749,49 @@ function registrarPonte() {
   tratar('transferencia:escrever', async (texto) => { await clipboard.writeText(String(texto).slice(0, 1e6)); return true; });
   tratar('transferencia:apagar', (id) => historico.apagar(id));
   tratar('transferencia:fixar', (id, v) => historico.fixar(id, !!v));
+  // Os calendários da internet da Agenda: a área de trabalho só vê o id, o nome e o site.
+  const listaCalendarios = () => semSegredos(config.obter()).agenda.calendarios || [];
+  const erroCalendario = (e) => {
+    const c = e && e.codigo;
+    const textos = {
+      endereco: tr('O endereço do calendário precisa começar com https:// ou webcal://.'),
+      credenciais: tr('O endereço do calendário não pode ter nome de usuário e senha.'),
+      muitos: tr('A Agenda assina no máximo {n} calendários da internet.', { n: e && e.n }),
+      repetido: tr('Este calendário já está na Agenda.'),
+      inseguro: tr('O servidor mandou o calendário para um endereço sem segurança (http://), e ele não foi baixado.'),
+      http: tr('O servidor do calendário respondeu com o erro {n}.', { n: e && e.status }),
+      grande: tr('O calendário passa de 5 MB e não foi baixado.'),
+      tempo: tr('O servidor do calendário demorou demais para responder.'),
+      formato: tr('O endereço não devolveu um calendário (.ics).'),
+      rede: tr('Não foi possível baixar o calendário. Confira a internet e o endereço.'),
+      desconhecido: tr('Este calendário não está mais na Agenda.'),
+    };
+    // Nunca a mensagem de baixo (ela poderia trazer o endereço).
+    return new Error(textos[c] || textos.rede);
+  };
+  const comErro = (f) => async (...a) => { try { return await f(...a); } catch (e) { throw erroCalendario(e); } };
+  tratar('calendarios:adicionar', comErro(async (p) => {
+    const o = p && typeof p === 'object' ? p : {};
+    const id = await calendarios.adicionar({ endereco: o.endereco, nome: o.nome, lembretes: o.lembretes === true });
+    return { id, lista: listaCalendarios() };
+  }));
+  tratar('calendarios:atualizar', comErro(async (id) => { await calendarios.atualizar(String(id)); return listaCalendarios(); }));
+  tratar('calendarios:ler', comErro((id) => calendarios.ler(String(id))));
+  tratar('calendarios:mudar', comErro((id, parte) => { calendarios.mudar(String(id), parte && typeof parte === 'object' ? parte : {}); return listaCalendarios(); }));
+  tratar('calendarios:remover', comErro((id) => { calendarios.remover(String(id)); return listaCalendarios(); }));
+  tratar('ortografia:trocar', (s) => {
+    if (!ortografia.trocaValida(s) || !janela) throw new Error(tr('Texto inválido.'));
+    janela.webContents.replaceMisspelling(s);
+  });
+  tratar('ortografia:adicionar', (p) => {
+    if (!ortografia.palavraValida(p)) throw new Error(tr('Texto inválido.'));
+    return session.defaultSession.addWordToSpellCheckerDictionary(p);
+  });
+  tratar('ortografia:editar', (acao) => {
+    const acoes = { desfazer: 'undo', recortar: 'cut', copiar: 'copy', colar: 'paste', excluir: 'delete', tudo: 'selectAll' };
+    if (!Object.prototype.hasOwnProperty.call(acoes, acao) || !janela) throw new Error(tr('Texto inválido.'));
+    janela.webContents[acoes[acao]]();
+  });
   tratar('transferencia:limpar', () => historico.limpar());
   tratar('transferencia:colar', async (id, nativa) => {
     if (!(await historico.usar(id))) return false;
@@ -2309,6 +2384,10 @@ app.on('second-instance', (_e, argv) => {
 
 app.whenReady().then(async () => {
   config = new Config(app.getPath('userData'), safeStorage);
+  calendarios = new Calendarios({
+    pasta: path.join(app.getPath('userData'), 'calendarios'), config,
+    buscar: process.env.RETRO_CALENDARIOS_FALSOS ? buscarFalso(process.env.RETRO_CALENDARIOS_FALSOS) : buscarNaRede,
+  });
   idioma.definir(idioma.resolver(idiomaEscolhido, app.getLocale()));
   programas = new Programas(path.join(BASE_DADOS, 'programas'), (url, o) => net.fetch(url, o));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
@@ -2411,6 +2490,8 @@ app.whenReady().then(async () => {
   mouse = new (process.env.RETRO_MOUSE_FALSO ? MouseFalso : Mouse)({ sistema: MODO_SISTEMA });
   if (config.obter().mouse) mouse.aplicar(config.obter().mouse).catch(() => { });
   mouse.vigiar(() => config.obter().mouse);
+  // O corretor ortográfico, com os dicionários já na pasta do Chromium (copiados no começo, abaixo do perfil).
+  ortografia.aplicarOrtografia(session.defaultSession, config.obter().ortografia, idioma.idioma());
   criarJanela();
   if (janelasLinux) janela.webContents.once('did-finish-load', () => janelasLinux.vigiar());
 });

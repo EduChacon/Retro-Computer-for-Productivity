@@ -151,6 +151,21 @@ contextBridge.exposeInMainWorld('retro', {
     aplicar: (escolhas) => chamar('mouse:aplicar', escolhas),
     configuracoesDoSistema: () => chamar('mouse:configuracoesDoSistema'),
   },
+  // O corretor ortográfico: o menu do botão direito dos campos (campos.js) e as ações dele.
+  ortografia: {
+    aoPedirMenu: ouvir('ortografia:menu'),
+    trocar: (s) => chamar('ortografia:trocar', s),
+    adicionar: (palavra) => chamar('ortografia:adicionar', palavra),
+    editar: (acao) => chamar('ortografia:editar', acao),
+  },
+  // Os calendários da internet da Agenda (calendarios.js): a área de trabalho não vê os endereços.
+  calendarios: {
+    adicionar: (dados) => chamar('calendarios:adicionar', dados),
+    atualizar: (id) => chamar('calendarios:atualizar', id),
+    ler: (id) => chamar('calendarios:ler', id),
+    mudar: (id, parte) => chamar('calendarios:mudar', id, parte),
+    remover: (id) => chamar('calendarios:remover', id),
+  },
   // O histórico da área de transferência (só na memória do processo principal).
   transferencia: {
     listar: () => chamar('transferencia:listar'),

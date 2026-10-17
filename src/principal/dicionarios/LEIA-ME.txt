@@ -1,0 +1,16 @@
+Os dicionários do corretor ortográfico do Retro Computer
+
+São os dicionários do Hunspell que o Chromium distribui (https://chromium.googlesource.com/chromium/deps/hunspell_dictionaries),
+no formato dele (.bdic), sem modificação. O Retro Computer os copia para a pasta dos dicionários do Chromium
+(<a pasta de dados do usuário>/Dictionaries) e não baixa nada da internet.
+
+- pt-BR-3-0.bdic: o VERO, o verificador ortográfico do português do Brasil, "Copyright (C) 2006 - 2010 por Raimundo
+  Santos Moura" e colaboradores, sob a GNU Lesser General Public License (LGPL) versão 2.1 (o aviso está no pt_BR.aff
+  do Chromium). O README_pt_BR.txt é o que acompanha o dicionário no Chromium.
+- en-US-10-1.bdic: o dicionário do inglês dos Estados Unidos do SCOWL, "Copyright 2000-2018 by Kevin Atkinson", sob a
+  licença dele, livre e permissiva (o texto está no README_en_US.txt).
+- es-ES-3-0.bdic: o dicionário do espanhol de Jesús Carretero, Santiago Rodríguez e Richard Holt, sob a GNU General
+  Public License (o texto está no README_es_ES.txt).
+
+O arquivo LICENSE é o das licenças do repositório dos dicionários do Chromium, com os textos completos da LGPL 2.1,
+da GPL 3, da MPL, da Apache 2.0 e da MIT.

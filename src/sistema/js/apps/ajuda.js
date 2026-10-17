@@ -252,6 +252,9 @@ const TOPICOS = [
 <p>O calendário do relógio marca os dias com eventos e mostra os de hoje; um clique num dia abre a Agenda nele. No Prompt, o Claude também vê e marca compromissos na Agenda.</p>
 <h2>Os lembretes</h2>
 <p>Na hora do lembrete, mesmo com a Agenda fechada, aparece a janela dos lembretes, com um som: <b>Adiar</b> (de 5 minutos a 1 hora) ou <b>Descartar</b>. Com o "Não perturbe" ligado, o lembrete fica só no sino da bandeja.</p>
+<h2>Os calendários da internet</h2>
+<p>Em <b>Arquivo › Calendários da internet</b>, <b>Adicionar</b> assina um calendário pelo endereço dele no formato iCal (.ics, começando com https:// ou webcal://): o do Google Agenda (nas configurações do calendário, o "Endereço secreto no formato iCal"), o do Outlook (Publicar o calendário), o dos feriados, o da escola. Os eventos dele aparecem na Agenda e no calendário do relógio com um globo, só para ler: dois cliques mostram os detalhes e <b>Copiar para a Agenda</b>, que faz uma cópia sua. A Agenda baixa o calendário de novo a cada hora e guarda uma cópia, que vale sem internet.</p>
+<p>Na mesma janela, cada calendário pode <b>Mostrar os lembretes</b> (desligado, de início), ficar escondido (<b>Mostrar na Agenda</b>), ser renomeado, atualizado na hora ou removido. O endereço fica guardado só neste computador e não aparece na tela: quem tiver o endereço secreto do Google Agenda vê a sua agenda.</p>
 <h2>As notas autoadesivas</h2>
 <p><b>Iniciar › Programas › Acessórios › Notas autoadesivas</b> (ou o botão direito na área de trabalho › <b>Nova nota autoadesiva</b>) põe um papel amarelo na área de trabalho. Escreva nele: a nota grava sozinha. O <b>+</b> cria outra, o <b>…</b> muda a cor e abre a nota no Bloco de notas, e o <b>×</b> manda a nota para a Lixeira. Arraste pela faixa de cima e mude o tamanho pelo canto.</p>
 <p>As notas ficam atrás das janelas; pelo Iniciar, elas vêm para a frente até o próximo clique fora delas (ou o <b>Esc</b>). Cada nota é um arquivo de texto em <b>Meus documentos › Notas autoadesivas</b>.</p>`],
@@ -262,6 +265,9 @@ const TOPICOS = [
 <p>The clock's calendar marks the days with events and shows today's; clicking a day opens the Calendar on it. In the Command Prompt, Claude can also see and add appointments to the Calendar.</p>
 <h2>Reminders</h2>
 <p>At the reminder's time, even with the Calendar closed, the reminders window appears, with a sound: <b>Snooze</b> (from 5 minutes to 1 hour) or <b>Dismiss</b>. With "Do not disturb" on, the reminder stays only in the tray's bell.</p>
+<h2>Internet calendars</h2>
+<p>In <b>File › Internet calendars</b>, <b>Add</b> subscribes to a calendar by its address in iCal format (.ics, starting with https:// or webcal://): Google Calendar's (in the calendar's settings, the "Secret address in iCal format"), Outlook's (Publish a calendar), the holidays, the school's. Its events appear in the Calendar and in the clock's calendar with a globe, read-only: a double-click shows the details and <b>Copy to the Calendar</b>, which makes a copy of your own. The Calendar downloads it again every hour and keeps a copy, which works without the internet.</p>
+<p>In the same window, each calendar can <b>Show reminders</b> (off at first), be hidden (<b>Show in the Calendar</b>), renamed, updated right away or removed. The address is kept only on this computer and does not appear on the screen: anyone with Google Calendar's secret address can see your calendar.</p>
 <h2>Sticky notes</h2>
 <p><b>Start › Programs › Accessories › Sticky Notes</b> (or right-clicking the desktop › <b>New sticky note</b>) puts a yellow paper on the desktop. Write on it: the note saves itself. The <b>+</b> creates another, the <b>…</b> changes the color and opens the note in Notepad, and the <b>×</b> sends the note to the Trash. Drag it by the top strip and resize it by the corner.</p>
 <p>The notes stay behind the windows; from Start, they come to the front until the next click outside them (or <b>Esc</b>). Each note is a text file in <b>Documents › Sticky Notes</b>.</p>`],
@@ -272,6 +278,9 @@ const TOPICOS = [
 <p>El calendario del reloj marca los días con eventos y muestra los de hoy; un clic en un día abre la Agenda en él. En la Línea de comandos, Claude también ve y anota citas en la Agenda.</p>
 <h2>Los recordatorios</h2>
 <p>A la hora del recordatorio, aun con la Agenda cerrada, aparece la ventana de los recordatorios, con un sonido: <b>Posponer</b> (de 5 minutos a 1 hora) o <b>Descartar</b>. Con "No molestar" activado, el recordatorio queda solo en la campana de la bandeja.</p>
+<h2>Los calendarios de internet</h2>
+<p>En <b>Archivo › Calendarios de internet</b>, <b>Agregar</b> te suscribe a un calendario por su dirección en formato iCal (.ics, que empieza con https:// o webcal://): el de Google Calendar (en la configuración del calendario, la "Dirección secreta en formato iCal"), el de Outlook (Publicar un calendario), el de los feriados, el de la escuela. Sus eventos aparecen en la Agenda y en el calendario del reloj con un globo, solo para leer: el doble clic muestra los detalles y <b>Copiar a la Agenda</b>, que hace una copia tuya. La Agenda descarga el calendario de nuevo cada hora y guarda una copia, que vale sin internet.</p>
+<p>En la misma ventana, cada calendario puede <b>Mostrar los recordatorios</b> (desactivado al principio), quedar oculto (<b>Mostrar en la Agenda</b>), cambiar de nombre, actualizarse en el momento o quitarse. La dirección se guarda solo en esta computadora y no aparece en la pantalla: quien tenga la dirección secreta de Google Calendar ve tu agenda.</p>
 <h2>Las notas adhesivas</h2>
 <p><b>Inicio › Programas › Accesorios › Notas adhesivas</b> (o el clic derecho en el escritorio › <b>Nueva nota adhesiva</b>) pone un papel amarillo en el escritorio. Escribe en él: la nota se guarda sola. El <b>+</b> crea otra, el <b>…</b> cambia el color y abre la nota en el Bloc de notas, y la <b>×</b> manda la nota a la Papelera. Arrástrala por la franja de arriba y cambia el tamaño por la esquina.</p>
 <p>Las notas quedan detrás de las ventanas; desde Inicio, vienen al frente hasta el próximo clic fuera de ellas (o <b>Esc</b>). Cada nota es un archivo de texto en <b>Mis documentos › Notas adhesivas</b>.</p>`],
@@ -650,7 +659,7 @@ const TOPICOS = [
 <p><b>Disco C:</b>: a pasta do disco no computador principal, o espaço livre e a troca de pasta.</p>
 <p><b>Claude</b>: a instalação do Claude Code e a chave de API.</p>
 <p><b>Internet</b>: o e-mail, a pesquisa, em qual navegador os links abrem, as permissões dos sites e os programas da internet.</p>
-<p><b>Idioma</b>: português, inglês ou espanhol (o Retro Computer reinicia para trocar).</p>
+<p><b>Idioma</b>: português, inglês ou espanhol (o Retro Computer reinicia para trocar). Na aba <b>Ortografia</b>, o corretor dos campos de texto: as palavras erradas ficam sublinhadas em vermelho, e o botão direito nelas mostra as sugestões e o <b>Adicionar ao dicionário</b>. Ele começa no idioma da interface; marque outros para escrever em mais de um. Os dicionários vão junto com o Retro Computer, sem internet (no Mac, o corretor é o do próprio Mac).</p>
 <p><b>Segurança</b>: o estado das proteções (a senha, o firewall, as atualizações, a chave do Claude) e a privacidade (só conexões seguras no Navegador, apagar os dados de navegação ao fechar, o histórico da área de transferência).</p>
 <p><b>Senhas</b>: a senha da tela de bloqueio e quando pedi-la.</p>
 <p><b>Usuários</b>: as pessoas que usam este computador, cada uma com a área de trabalho, as configurações e o disco C: próprios.</p>
@@ -670,7 +679,7 @@ const TOPICOS = [
 <p><b>Drive C:</b>: the disk folder on the main computer, the free space and changing the folder.</p>
 <p><b>Claude</b>: installing Claude Code and the API key.</p>
 <p><b>Internet</b>: e-mail, search, where links open, site permissions and the internet programs.</p>
-<p><b>Language</b>: Portuguese, English or Spanish (Retro Computer restarts to switch).</p>
+<p><b>Language</b>: Portuguese, English or Spanish (Retro Computer restarts to switch). On the <b>Spelling</b> tab, the spell checker of the text fields: misspelled words are underlined in red, and a right-click on them shows the suggestions and <b>Add to dictionary</b>. It starts in the language of the interface; check others to write in more than one. The dictionaries come with Retro Computer, without the internet (on the Mac, the spell checker is the Mac's own).</p>
 <p><b>Security</b>: the status of the protections (the password, the firewall, the updates, the Claude key) and privacy (secure connections only in the Browser, deleting the browsing data on closing, the clipboard history).</p>
 <p><b>Passwords</b>: the lock screen password and when to ask for it.</p>
 <p><b>Users</b>: the people who use this computer, each with their own desktop, settings and C: drive.</p>
@@ -690,7 +699,7 @@ const TOPICOS = [
 <p><b>Disco C:</b>: la carpeta del disco en la computadora principal, el espacio libre y el cambio de carpeta.</p>
 <p><b>Claude</b>: la instalación de Claude Code y la clave de API.</p>
 <p><b>Internet</b>: el correo, la búsqueda, dónde abrir los enlaces, los permisos de los sitios y los programas de internet.</p>
-<p><b>Idioma</b>: portugués, inglés o español (Retro Computer se reinicia para cambiarlo).</p>
+<p><b>Idioma</b>: portugués, inglés o español (Retro Computer se reinicia para cambiarlo). En la pestaña <b>Ortografía</b>, el corrector de los campos de texto: las palabras mal escritas quedan subrayadas en rojo, y el clic derecho en ellas muestra las sugerencias y <b>Agregar al diccionario</b>. Empieza en el idioma de la interfaz; marca otros para escribir en más de uno. Los diccionarios vienen con Retro Computer, sin internet (en Mac, el corrector es el de la propia Mac).</p>
 <p><b>Seguridad</b>: el estado de las protecciones (la contraseña, el firewall, las actualizaciones, la clave de Claude) y la privacidad (solo conexiones seguras en el Navegador, borrar los datos de navegación al cerrar, el historial del portapapeles).</p>
 <p><b>Contraseñas</b>: la contraseña de la pantalla de bloqueo y cuándo pedirla.</p>
 <p><b>Usuarios</b>: las personas que usan esta computadora, cada una con su propio escritorio, su configuración y su disco C:.</p>

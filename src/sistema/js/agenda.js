@@ -3,6 +3,10 @@
  * Agenda.ics), que o Google Agenda, o Outlook e o Calendário do Mac também abrem. Este módulo lê o
  * arquivo, grava cada mudança (a versão anterior fica em Versões anteriores), acompanha o arquivo
  * quando ele muda por fora e mostra os lembretes, mesmo com a janela da Agenda fechada.
+ *
+ * Os calendários da internet (calendarios.js, no processo principal) entram junto, só para ler:
+ * a cópia guardada de cada um é lida ao abrir e baixada de novo a cada hora; os eventos deles
+ * levam _fonte (o id do calendário) e os lembretes só valem com a opção do calendário.
  */
 import { h, img, rotulo, caminhoTela, Eventos } from './util.js';
 import { estado, pastaDocs, definirConfig, naoPerturbeAgora, avisar, eventos as evSistema, abrir } from './sistema.js';
@@ -20,6 +24,10 @@ const MIN = 60000;
 let dados = { eventos: [], nome: '', modificado: null, rel: '' };
 let carregado = null;
 let numero = 0;
+// Os calendários da internet já lidos: id → { eventos, nome }; e os que estão baixando agora.
+const externos = new Map();
+const baixando = new Set();
+const HORA = 60 * 60000;
 
 /** O caminho do .ics da Agenda (o nome fica guardado: trocar de idioma não cria outro). */
 export function arquivoAgenda() {
@@ -72,8 +80,102 @@ export async function alterarAgenda(mudar) {
   return dados;
 }
 
-/** As ocorrências entre duas datas, com os dados já carregados. */
-export const ocorrenciasEntre = (de, ate) => ocorrencias(dados.eventos, de, ate);
+/* ---------- Os calendários da internet ---------- */
+
+/** Os calendários assinados, como a área de trabalho os vê (sem o endereço: o id, o nome e o site). */
+export const calendariosAgora = () => ((estado.config.agenda && estado.config.agenda.calendarios) || []);
+
+const ligados = () => calendariosAgora().filter((c) => c.ligado !== false);
+
+function guardarLista(lista) {
+  estado.config = { ...estado.config, agenda: { ...(estado.config.agenda || {}), calendarios: lista } };
+  for (const id of [...externos.keys()]) if (!lista.some((c) => c.id === id)) externos.delete(id);
+  evAgenda.emit('calendarios', lista);
+  evAgenda.emit('mudou', dados);
+}
+
+/** Lê a cópia guardada de um calendário (os horários com fuso vêm para a hora daqui). */
+async function lerCalendario(id) {
+  const texto = await retro.calendarios.ler(id).catch(() => '');
+  const { eventos, nome } = texto ? lerIcs(texto, { fusos: true }) : { eventos: [], nome: '' };
+  externos.set(id, { eventos: eventos.map((e) => comId({ ...e, _fonte: id })), nome });
+}
+
+/** Lê as cópias de todos (sem internet) e redesenha. */
+export async function carregarCalendarios() {
+  await Promise.all(calendariosAgora().map((c) => lerCalendario(c.id)));
+  evAgenda.emit('mudou', dados);
+}
+
+/** Quantos eventos o calendário da internet tem (na cópia lida) e se ele está baixando agora. */
+export const eventosDoCalendario = (id) => (externos.get(id) || { eventos: [] }).eventos.length;
+export const baixandoCalendario = (id) => baixando.has(id);
+
+/** Baixa de novo um calendário; o erro fica anotado na lista (a cópia de antes continua valendo). */
+export async function atualizarCalendario(id) {
+  baixando.add(id);
+  evAgenda.emit('calendarios', calendariosAgora());
+  try {
+    guardarLista(await retro.calendarios.atualizar(id));
+    await lerCalendario(id);
+    evAgenda.emit('mudou', dados);
+    conferirLembretes();
+  } catch (e) {
+    // A lista nova traz o erro anotado.
+    guardarLista(await retro.config.obter().then((c) => (c.agenda && c.agenda.calendarios) || []).catch(() => calendariosAgora()));
+    throw e;
+  } finally {
+    baixando.delete(id);
+    evAgenda.emit('calendarios', calendariosAgora());
+  }
+}
+
+/** Os que passaram de uma hora sem baixar (os com erro, de quinze em quinze minutos). */
+export function atualizarVencidos(agora = Date.now()) {
+  for (const c of ligados()) {
+    const ultima = Math.max(c.ultima || 0, c.erro ? (c.tentativa || 0) - HORA + 15 * MIN : 0);
+    if (agora - ultima >= HORA) atualizarCalendario(c.id).catch(() => { });
+  }
+}
+
+/** Assina um calendário (o processo principal confere o endereço e baixa uma vez). */
+export async function adicionarCalendario(dadosNovos) {
+  const r = await retro.calendarios.adicionar(dadosNovos);
+  guardarLista(r.lista);
+  await lerCalendario(r.id);
+  evAgenda.emit('mudou', dados);
+  conferirLembretes();
+  return r.id;
+}
+
+export async function mudarCalendario(id, parte) {
+  guardarLista(await retro.calendarios.mudar(id, parte));
+  conferirLembretes();
+}
+
+export async function removerCalendario(id) {
+  guardarLista(await retro.calendarios.remover(id));
+}
+
+/** O calendário de um evento da internet (ou null, o da Agenda). */
+export const calendarioDe = (evento) => (evento && evento._fonte ? calendariosAgora().find((c) => c.id === evento._fonte) || null : null);
+
+/** As listas de eventos que aparecem: a da Agenda e a de cada calendário da internet ligado. */
+function fontes({ soComLembretes = false } = {}) {
+  const r = [dados.eventos];
+  for (const c of ligados()) {
+    if (soComLembretes && !c.lembretes) continue;
+    const x = externos.get(c.id);
+    if (x && x.eventos.length) r.push(x.eventos);
+  }
+  return r;
+}
+
+/** As ocorrências de várias listas (cada uma com as repetições dela), em ordem. */
+const ocorrenciasDe = (listas, de, ate) => (listas.length === 1 ? ocorrencias(listas[0], de, ate) : listas.flatMap((l) => ocorrencias(l, de, ate)).sort((a, b) => a.inicio - b.inicio));
+
+/** As ocorrências entre duas datas, com os dados já carregados (a Agenda e os calendários da internet). */
+export const ocorrenciasEntre = (de, ate) => ocorrenciasDe(fontes(), de, ate);
 
 /** Os dias (AAAA-MM-DD) com algum evento entre duas datas: o calendário marca esses. */
 export function diasComEvento(de, ate) {
@@ -104,7 +206,7 @@ export function horarioDe(o, dia) {
 
 /* ---------- Os lembretes ---------- */
 
-const chave = (o) => `${o.evento.uid}|${o.evento.diaTodo ? dataTexto(o.inicio) : dataHoraTexto(o.inicio)}`;
+const chave = (o) => `${o.evento._fonte ? o.evento._fonte + '/' : ''}${o.evento.uid}|${o.evento.diaTodo ? dataTexto(o.inicio) : dataHoraTexto(o.inicio)}`;
 const adiados = new Map(); // chave → hora (ms) em que volta
 const noSino = new Set(); // os já avisados no sino durante o "Não perturbe"
 let janela = null;
@@ -115,7 +217,7 @@ function devidos(agora = Date.now()) {
   const vistos = new Set((estado.config.agenda && estado.config.agenda.vistos) || []);
   const de = new Date(agora - 2 * 24 * 60 * MIN);
   const ate = new Date(agora + 8 * 24 * 60 * MIN);
-  return ocorrencias(dados.eventos.filter((e) => e.lembrete != null), de, ate).filter((o) => {
+  return ocorrenciasDe(fontes({ soComLembretes: true }).map((l) => l.filter((e) => e.lembrete != null)), de, ate).filter((o) => {
     const k = chave(o);
     if (vistos.has(k)) return false;
     if (adiados.has(k)) return adiados.get(k) <= agora && o.fim > agora;
@@ -225,6 +327,10 @@ export function conferirLembretes() {
 /** Liga os lembretes: lê a Agenda (sem atrasar a abertura) e acompanha o arquivo. */
 export function iniciarAgenda() {
   setTimeout(() => carregarAgenda().then(conferirLembretes).catch(() => { }), 4000);
+  // Os da internet: a cópia guardada logo; baixar de novo, depois da abertura e a cada dez minutos (os vencidos).
+  setTimeout(() => carregarCalendarios().then(conferirLembretes).catch(() => { }), 4500);
+  setTimeout(() => atualizarVencidos(), 15000);
+  setInterval(() => atualizarVencidos(), 10 * MIN);
   clearInterval(relogio);
   relogio = setInterval(conferirLembretes, 20000);
   retro.disco.aoMudar((pastas) => {
