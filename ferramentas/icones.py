@@ -449,6 +449,61 @@ CELULAR_16 = [
     "................",
 ]
 
+# O painel de emojis: um rosto sorrindo, com a luz no alto à esquerda e a sombra embaixo à direita.
+EMOJI_16 = [
+    "................",
+    "......KKKK......",
+    "....KKeeYYKK....",
+    "...KeeYYYYYYK...",
+    "..KeYYYYYYYYYK..",
+    "..KeYYKYYKYYYK..",
+    ".KeYYYKYYKYYYYK.",
+    ".KYYYYYYYYYYYyK.",
+    ".KYYKYYYYYYKYyK.",
+    ".KYYYKYYYYKYYyK.",
+    "..KYYYKKKKYYyK..",
+    "..KYYYYYYYYyyK..",
+    "...KYYYYYYyyK...",
+    "....KKYYyyKK....",
+    "......KKKK......",
+    "................",
+]
+
+EMOJI_32 = [
+    "................................",
+    "..............KKKK..............",
+    "..........KKKKeYYYKKKK..........",
+    "........KKeeeeeYYYYYYYKK........",
+    ".......KeeeeeeeYYYYYYYYYK.......",
+    "......KeeeeeYYYYYYYYYYYYYK......",
+    ".....KeeeeYYYYYYYYYYYYYYYYK.....",
+    "....KeeeYYYYYYYYYYYYYYYYYYYK....",
+    "...KeeeYYYYYYYYYYYYYYYYYYYYYK...",
+    "...KeeeYYYYKKYYYYYYKKYYYYYYYK...",
+    "..KeeeYYYYYKKYYYYYYKKYYYYYYYYK..",
+    "..KeeeYYYYYKKYYYYYYKKYYYYYYYYK..",
+    "..KeeYYYYYYKKYYYYYYKKYYYYYYYYK..",
+    "..KeeYYYYYYKKYYYYYYKKYYYYYYYYK..",
+    ".KeeeYYYYYYYYYYYYYYYYYYYYYYYYYK.",
+    ".KYYYYYYYYYYYYYYYYYYYYYYYYYYYYK.",
+    ".KYYYYYYYYYYYYYYYYYYYYYYYYYYYYK.",
+    ".KYYYYYYYYYYYYYYYYYYYYYYYYYyyyK.",
+    "..KYYYYYYYYYYYYYYYYYYYYYYYYyyK..",
+    "..KYYYYYKYYYYYYYYYYYYYYKYYYyyK..",
+    "..KYYYYYKYYYYYYYYYYYYYYKYYyyyK..",
+    "..KYYYYYKKYYYYYYYYYYYYKKYYyyyK..",
+    "...KYYYYKKKYYYYYYYYYYKKKYyyyK...",
+    "...KYYYYYKKKYYYYYYYYKKKYYyyyK...",
+    "....KYYYYYKKKKKKKKKKKKYYyyyK....",
+    ".....KYYYYYYKKKKKKKKYYyyyyK.....",
+    "......KYYYYYYYYYYYYYyyyyyK......",
+    ".......KYYYYYYYYYyyyyyyyK.......",
+    "........KKYYYYYYYyyyyyKK........",
+    "..........KKKKYYYyKKKK..........",
+    "..............KKKK..............",
+    "................................",
+]
+
 BLUETOOTH_16 = [
     "................",
     "................",
@@ -1583,6 +1638,8 @@ def gerar(serenity):
     feitos[16]['notas'] = grade(NOTAS_16)
     feitos[32]['celular'] = grade(CELULAR_32)
     feitos[16]['celular'] = grade(CELULAR_16)
+    feitos[32]['emoji'] = grade(EMOJI_32)
+    feitos[16]['emoji'] = grade(EMOJI_16)
     feitos[16]['bluetooth'] = grade(BLUETOOTH_16)
     feitos[32]['bluetooth'] = grade(BLUETOOTH_16).resize((32, 32), Image.NEAREST)
 

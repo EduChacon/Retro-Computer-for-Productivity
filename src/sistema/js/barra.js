@@ -633,6 +633,7 @@ async function itensProgramas() {
         prog('scanner', tr('Digitalizar'), 'scanner'),
         prog('discos', tr('Discos'), 'discos'),
         prog('dos', tr('DOS'), 'dos'),
+        prog('emojis', tr('Emojis'), 'emoji'),
         prog('foco', tr('Foco (Pomodoro)'), 'foco'),
         prog('pdf', tr('Ferramentas de PDF'), 'pdf'),
         prog('mac', tr('Mac Plus'), 'mac'),

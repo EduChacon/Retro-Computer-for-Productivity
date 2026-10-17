@@ -1788,6 +1788,15 @@ function registrarPonte() {
     else if (janela) { config.definir({ telaCheia: !!v }); await definirTelaCheia(!!v); }
     return emTelaCheia();
   });
+  // O painel de emojis: o caractere vai para o campo com o foco (na área de trabalho ou num programa;
+  // a página do Navegador é outro webContents, e a área de trabalho o põe lá pelo próprio webview).
+  // Só um emoji: curto e sem caracteres de controle (nada de Enter, Tab ou Esc).
+  tratar('sistema:inserirTexto', async (texto) => {
+    const t = String(texto == null ? '' : texto);
+    if (!t || t.length > 32 || /[\u0000-\u001f\u007f-\u009f]/.test(t)) throw new Error(tr('Texto inválido.'));
+    if (janela && !janela.isDestroyed()) await janela.webContents.insertText(t);
+    return true;
+  });
   tratar('sistema:abrirLink', (url) => {
     if (!/^https?:\/\//i.test(String(url))) throw new Error(tr('Endereço inválido.'));
     return shell.openExternal(url);

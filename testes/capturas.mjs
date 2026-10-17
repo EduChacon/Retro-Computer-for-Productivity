@@ -4143,6 +4143,67 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('padrão de volta:', JSON.stringify(await estadoEsq()));
   },
 
+  // O painel de emojis (Logotipo+.): a grade, um clique que põe o emoji no Bloco de notas, a busca
+  // (também sem os acentos), os usados há pouco, o painel aberto pelo Iniciar (o emoji vai para o
+  // último campo usado) e, sem campo nenhum, a área de transferência.
+  async emojis() {
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(400);
+    await pagina.keyboard.type('Bom dia ');
+    const texto = () => pagina.inputValue('.janela.bloco textarea').catch(() => pagina.evaluate(() => (document.querySelector('.janela.ativa textarea') || {}).value));
+    await tecla('emojis');
+    await pagina.waitForSelector('#painel-emojis .emo', { timeout: 10000 });
+    await pagina.waitForTimeout(300);
+    await foto('emojis-painel');
+    await pagina.click('#painel-emojis .emo >> nth=0');
+    await pagina.waitForTimeout(300);
+    console.log('no Bloco:', JSON.stringify(await texto()));
+    await pagina.click('#painel-emojis input[type=search]');
+    await pagina.keyboard.type(T('Procurar um emoji') === 'Procurar um emoji' ? 'gato' : (T('Procurar um emoji').startsWith('Search') ? 'cat' : 'gato'));
+    await pagina.waitForTimeout(300);
+    await foto('emojis-busca');
+    console.log('achados (gato):', await pagina.locator('#painel-emojis .emo').count());
+    await pagina.click('#painel-emojis .emo >> nth=0');
+    await pagina.waitForTimeout(300);
+    await pagina.fill('#painel-emojis input[type=search]', 'coracao vermelho');
+    await pagina.waitForTimeout(300);
+    console.log('sem acento (coracao vermelho):', await pagina.$$eval('#painel-emojis .emo', (es) => es.slice(0, 3).map((e) => e.title)));
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(300);
+    console.log('no Bloco:', JSON.stringify(await texto()));
+    await pagina.keyboard.press('Escape');
+    await pagina.waitForTimeout(200);
+    console.log('fechado pelo Esc:', !(await pagina.$('#painel-emojis')));
+    // De novo: os usados há pouco primeiro.
+    await tecla('emojis');
+    await pagina.waitForSelector('#painel-emojis .emo', { timeout: 5000 });
+    await pagina.waitForTimeout(300);
+    console.log('usados há pouco:', await pagina.locator('#painel-emojis .emo').count());
+    await foto('emojis-recentes');
+    await tecla('emojis');
+    await pagina.waitForTimeout(200);
+    // Pelo Iniciar: o emoji vai para o Bloco de notas (o último campo usado).
+    await pagina.click('.janela.ativa textarea');
+    await pagina.keyboard.press('End');
+    await pagina.evaluate(() => window.__retro.abrir('emojis'));
+    await pagina.waitForSelector('#painel-emojis .emo', { timeout: 5000 });
+    await pagina.click('#painel-emojis .emo >> nth=1');
+    await pagina.waitForTimeout(300);
+    console.log('pelo Iniciar, no Bloco:', JSON.stringify(await texto()));
+    await pagina.keyboard.press('Escape');
+    // Sem campo nenhum: vai para a área de transferência.
+    await fecharTudo();
+    await pagina.mouse.click(600, 400);
+    await tecla('emojis');
+    await pagina.waitForSelector('#painel-emojis .emo', { timeout: 5000 });
+    await pagina.click('#painel-emojis .emo >> nth=0');
+    await pagina.waitForTimeout(400);
+    console.log('sem campo:', await pagina.textContent('#painel-emojis .emo-nome'), '| área de transferência:', JSON.stringify(await app.evaluate(async ({ clipboard }) => clipboard.readText())));
+    await foto('emojis-sem-campo');
+    await pagina.keyboard.press('Escape');
+  },
+
   async notas() {
     await fecharTudo();
     await abrir('explorador', { pasta: DOCS });

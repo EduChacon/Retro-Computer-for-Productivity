@@ -757,6 +757,22 @@ html.varias-telas #barra { left: var(--tela-x); right: auto; width: var(--tela-w
 .vt-nova { width: 130px; min-height: 140px; white-space: normal; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .vt-mais { font-size: 20px; line-height: 20px; font-weight: bold; }
 .vt-dica { padding: 0 10px 8px; color: var(--texto-fraco); line-height: 13px; max-width: 760px; }
+/* O painel de emojis (logotipo+.): a busca, as categorias, a grade e o nome do emoji sob o ponteiro. */
+#painel-emojis { position: absolute; z-index: 700002; width: 300px; background: var(--face); box-shadow: var(--relevo-janela); padding: 3px; }
+.emo-corpo { display: flex; flex-direction: column; gap: 4px; padding: 6px 6px 4px; }
+.emo-corpo input[type=search] { width: 100%; }
+.emo-abas { display: flex; gap: 1px; }
+.emo-aba { min-width: 0; flex: 1; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; }
+.emo-aba.apertado { background: var(--face) var(--xadrez); }
+.emo-titulo { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.emo-grade { height: 208px; overflow-y: auto; background: var(--janela); box-shadow: var(--campo); padding: 2px; display: grid;
+  grid-template-columns: repeat(auto-fill, 28px); grid-auto-rows: 28px; justify-content: start; align-content: start; outline: none; }
+.emo { min-width: 0; min-height: 0; width: 28px; height: 28px; padding: 0; box-shadow: none; background: transparent; display: flex; align-items: center; justify-content: center; }
+.emo:hover, .emo:focus-visible { box-shadow: var(--raso-alto); background: var(--face); }
+.emo:active { box-shadow: var(--raso); }
+.emo:focus-visible::after { inset: 1px; }
+.emo-nome { height: 13px; color: var(--texto-fraco); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+span.emoji { display: inline-block; flex: none; background-image: url('emojis/emojis.png'); background-repeat: no-repeat; image-rendering: pixelated; }
 /* O nome da área ao trocar (logotipo+Ctrl+← e →), no meio do alto da tela, por um instante. */
 .aviso-area { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); z-index: 700001; pointer-events: none;
   padding: 8px 16px; font-weight: bold; background: var(--face); box-shadow: var(--relevo-janela); }

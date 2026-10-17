@@ -59,6 +59,7 @@ registrarPreguicoso({ pdf: { nome: 'Ferramentas de PDF', icone: 'pdf' } }, () =>
 registrarPreguicoso({ ocr: { nome: 'Copiar o texto', icone: 'texto' } }, () => import('./apps/ocr.js'));
 registrarPreguicoso({ scanner: { nome: 'Digitalizar', icone: 'scanner' } }, () => import('./apps/scanner.js'));
 registrarPreguicoso({ receber: { nome: 'Receber do celular', icone: 'celular' } }, () => import('./apps/receber.js'));
+registrarPreguicoso({ emojis: { nome: 'Emojis', icone: 'emoji' } }, () => import('./emojis.js'));
 registrarPreguicoso({ captura: { nome: 'Captura de tela', icone: 'captura' } }, () => import('./apps/captura.js'));
 registrarPreguicoso({ monitor: { nome: 'Monitor do sistema', icone: 'monitor' } }, () => import('./apps/monitor.js'));
 registrarPreguicoso({ transferencia: { nome: 'Área de transferência', icone: 'transferencia' } }, () => import('./apps/transferencia.js'));

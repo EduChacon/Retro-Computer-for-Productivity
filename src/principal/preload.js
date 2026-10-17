@@ -280,6 +280,7 @@ contextBridge.exposeInMainWorld('retro', {
   },
   sistema: {
     telaCheia: (v) => chamar('sistema:telaCheia', v),
+    inserirTexto: (t) => chamar('sistema:inserirTexto', t),
     abrirLink: (url) => chamar('sistema:abrirLink', url),
     desligar: () => chamar('sistema:desligar'),
     reiniciar: () => chamar('sistema:reiniciar'),

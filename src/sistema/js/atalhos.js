@@ -154,6 +154,15 @@ retro.sistema.aoTecla((acao) => {
   return null;
 });
 
+/* ---------- O último campo com o foco ---------- */
+
+// O painel de emojis aberto pelo Iniciar (o foco foi para o menu) põe o emoji no último campo usado.
+let ultimoCampo = null;
+document.addEventListener('focusin', (e) => {
+  if (!e.target.closest('#painel-emojis, .menu, #barra, #barra-mac, #busca-barra')) ultimoCampo = e.target;
+}, true);
+export const campoRecente = () => (ultimoCampo && ultimoCampo.isConnected ? ultimoCampo : null);
+
 /* ---------- Os cantos magnéticos seguem a configuração ---------- */
 
 // Lido na hora de cada arrasto (a configuração carrega depois deste módulo).

@@ -151,6 +151,8 @@ html.tema-mac .janela {
   padding: 1px 6px 6px;
 }
 html.tema-mac .janela.maximizada { box-shadow: var(--relevo-janela); padding: 1px 6px 6px; }
+/* O painel de emojis e a Visão das tarefas: a mesma moldura das janelas (o título passa 5 pontos para os lados). */
+html.tema-mac #painel-emojis, html.tema-mac .vt-caixa { padding: 1px 6px 6px; }
 /* Atrás das outras, a moldura fica lisa, sem o relevo. */
 html.tema-mac .janela:not(.ativa):not(.dialogo) { box-shadow: inset 0 0 0 1px #777; }
 
