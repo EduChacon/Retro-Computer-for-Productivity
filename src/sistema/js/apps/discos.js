@@ -327,11 +327,12 @@ class JanelaDiscos {
     if (!d || this.gravacao) return;
     const montados = d.volumes.filter((v) => v.id && v.raiz);
     // No Linux, cada partição montada sai (e o pendrive é desligado); nos outros, uma basta (o disco sai todo).
-    const lista = estado.config.plataforma === 'linux' ? (montados.length ? montados : d.volumes.filter((v) => v.id).slice(0, 1)) : (montados.length ? montados : d.volumes.filter((v) => v.id)).slice(0, 1);
-    for (const [i, v] of lista.entries()) {
+    const comId = d.volumes.filter((v) => v.id);
+    const lista = estado.config.plataforma === 'linux' ? (montados.length ? montados : comId.slice(0, 1)) : (montados.length ? montados : comId).slice(0, 1);
+    for (const v of lista) {
       const r = await retro.unidades.ejetar(v.id).catch((e) => ({ ok: false, erro: e.message }));
-      if (r.ok || (i > 0 && /unidade/.test(r.erro || ''))) continue;
-      if (!lista.length || /unidade/.test(r.erro || '')) break;
+      // "unidade": a partição já saiu da lista (o disco saiu todo com a de antes).
+      if (r.ok || /unidade/.test(r.erro || '')) continue;
       return erro(r.ocupado
         ? tr('{unidade} ainda está em uso. Feche os arquivos e as janelas dele e tente de novo.', { unidade: nomeDoVolume(v) })
         : tr('Não foi possível remover {unidade}: {erro}', { unidade: nomeDoVolume(v), erro: r.erro || '?' }), tr('Discos'));
