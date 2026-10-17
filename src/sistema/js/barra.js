@@ -28,6 +28,25 @@ let fixadosEl;
 let sepFixados;
 let relogio;
 let pecasBandeja = null; // o que vai na bandeja, na ordem (para o tema Mac separar o relógio e devolver)
+
+/** Os ícones da bandeja que o usuário pode esconder (Painel › Barra de tarefas), na ordem das caixas de lá. */
+export const ICONES_BANDEJA = [
+  { id: 'rede', rotulo: marcar('Rede') },
+  { id: 'som', rotulo: marcar('Volume') },
+  { id: 'bateria', rotulo: marcar('Bateria') },
+  { id: 'bluetooth', rotulo: marcar('Bluetooth') },
+  { id: 'notificacoes', rotulo: marcar('Notificações') },
+];
+
+/** Esconde os ícones desmarcados (a classe não briga com o hidden de cada um, que diz se o aparelho existe). */
+function aplicarOcultos() {
+  if (!pecasBandeja) return;
+  const ocultos = new Set((estado.config.barra && estado.config.barra.ocultos) || []);
+  for (const { id } of ICONES_BANDEJA) {
+    const el = pecasBandeja.porNome[id];
+    if (el) el.classList.toggle('escondido', ocultos.has(id));
+  }
+}
 let focoEl;
 let busca;
 const mostrarBusca = () => !(estado.config.barra && estado.config.barra.busca === false);
@@ -60,7 +79,8 @@ export function montarBarra() {
   relogio.addEventListener('mousedown', (e) => { if (e.button === 0) { e.preventDefault(); alternarCalendario(relogio); } });
   relogio.style.cursor = 'pointer';
   const itens = montarBandeja();
-  pecasBandeja = { foco: [focoIco, focoEl], antes: itens.antes, depois: itens.depois };
+  pecasBandeja = { foco: [focoIco, focoEl], antes: itens.antes, depois: itens.depois, porNome: itens.porNome || {} };
+  aplicarOcultos();
   const bandeja = h('div#bandeja', focoIco, focoEl, ...itens.antes, relogio, ...itens.depois);
   busca = montarBusca();
   busca.hidden = !mostrarBusca();
@@ -75,6 +95,7 @@ export function montarBarra() {
   evSistema.on('config', () => {
     tique();
     busca.hidden = !mostrarBusca();
+    aplicarOcultos();
     if (querOutras() !== ligadaNasOutras) { montarOutras(); reajustarJanelas(); }
     desenharTarefas();
   });

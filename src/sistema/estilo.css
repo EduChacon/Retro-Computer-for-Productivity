@@ -723,6 +723,8 @@ html.varias-telas #barra { left: var(--tela-x); right: auto; width: var(--tela-w
 /* Com a data: duas linhas apertadas na altura da bandeja. */
 #bandeja .relogio.com-data, .barra-tela .bandeja .relogio.com-data { display: flex; flex-direction: column; align-items: flex-end; line-height: 12px; padding-top: 0; }
 #bandeja .bandeja-ico, .barra-tela .bandeja .bandeja-ico { flex: none; }
+/* Escondido pelo usuário (Painel › Barra de tarefas): vale mesmo com o aparelho presente. */
+.bandeja-ico.escondido { display: none !important; }
 #bandeja .sino, .barra-tela .bandeja .sino { position: relative; display: flex; width: 16px; height: 16px; }
 #bandeja .sino.nao-perturbe img, .barra-tela .bandeja .sino.nao-perturbe img { opacity: 0.45; }
 #bandeja .sino-num, .barra-tela .bandeja .sino-num {

@@ -164,7 +164,7 @@ const TOPICOS = [
 <p>O botão direito em qualquer programa do Iniciar › <b>Fixar no menu Iniciar</b> põe o programa no alto do menu. Em <b>Configurações › Barra de tarefas e menu Iniciar</b> (ou no botão direito no Iniciar › <b>Propriedades</b>), você muda a ordem dos fixados, escolhe os itens à vista (a Loja, os Documentos, o Localizar…), liga os <b>ícones pequenos</b> e limpa ou desliga a lista dos documentos recentes. O botão direito num item do menu › <b>Não mostrar no menu Iniciar</b> também o esconde.</p>
 <h2>A bandeja, à direita</h2>
 <p><b>Rede</b>: as redes Wi-Fi, conectar e desconectar (no Linux). <b>Volume</b>: o som do computador e, com mais de uma saída (os alto-falantes, um fone, a tela pela HDMI), a escolha dela; o microfone fica em Painel de controle › Sons › Áudio. <b>Bateria</b>: a carga, o brilho da tela, o modo de energia (economia, equilibrado ou desempenho, no Linux) e a bateria do mouse e do teclado sem fio, com o aviso de bateria fraca. <b>Bluetooth</b>: os aparelhos sem fio (no Linux). <b>Sino</b>: as notificações e o <b>Não perturbe</b>.</p>
-<p>Um clique no <b>relógio</b> abre o calendário; o botão direito nele › <b>Mostrar a data</b> põe a data embaixo da hora.</p>
+<p>Um clique no <b>relógio</b> abre o calendário; o botão direito nele › <b>Mostrar a data</b> põe a data embaixo da hora. Em <b>Configurações › Barra de tarefas e menu Iniciar</b> › <b>Ícones da bandeja</b>, você escolhe quais ícones ficam à vista.</p>
 <h2>Com dois monitores</h2>
 <p>Com <b>Usar as duas telas na tela cheia</b> (Painel de controle › Aparência › Configurações, no Windows e no Mac), a área de trabalho cobre os dois monitores, e cada tela tem a sua barra de tarefas: a da tela principal mostra todas as janelas, os fixados, a busca e a bandeja; a da outra tem o Iniciar, os botões das janelas que estão nela e o relógio. Para ter a barra só na principal, desmarque <b>Mostrar a barra de tarefas em todas as telas</b> em <b>Configurações › Barra de tarefas e menu Iniciar</b> (ou no botão direito na barra).</p>`],
     en: ['The taskbar', `
@@ -176,7 +176,7 @@ const TOPICOS = [
 <p>Right-click any program in Start › <b>Pin to Start</b> to put it at the top of the menu. In <b>Settings › Taskbar and Start Menu</b> (or right-click Start › <b>Properties</b>), you change the order of the pinned programs, choose the items you see (the Store, Documents, Find…), turn on <b>small icons</b> and clear or turn off the list of recent documents. Right-clicking an item of the menu › <b>Don't Show in the Start Menu</b> also hides it.</p>
 <h2>The tray, on the right</h2>
 <p><b>Network</b>: the Wi-Fi networks, connecting and disconnecting (on Linux). <b>Volume</b>: the computer's sound and, with more than one output (the speakers, headphones, the screen through HDMI), the choice of it; the microphone is in Control Panel › Sounds › Audio. <b>Battery</b>: the charge, the screen brightness, the power mode (power saver, balanced or performance, on Linux) and the battery of a wireless mouse or keyboard, with the low battery notice. <b>Bluetooth</b>: the wireless devices (on Linux). <b>Bell</b>: the notifications and <b>Do not disturb</b>.</p>
-<p>A click on the <b>clock</b> opens the calendar; right-click it › <b>Show the date</b> to put the date under the time.</p>
+<p>A click on the <b>clock</b> opens the calendar; right-click it › <b>Show the date</b> to put the date under the time. In <b>Settings › Taskbar and Start Menu</b> › <b>Tray icons</b>, you choose which icons stay in view.</p>
 <h2>With two monitors</h2>
 <p>With <b>Use both screens in full screen</b> (Control Panel › Appearance › Settings, on Windows and Mac), the desktop covers both monitors, and each screen has its own taskbar: the one on the main screen shows every window, the pinned programs, the search and the tray; the one on the other has Start, the buttons of the windows on it and the clock. To have the taskbar only on the main screen, uncheck <b>Show the taskbar on all screens</b> in <b>Settings › Taskbar and Start Menu</b> (or right-click the taskbar).</p>`],
     es: ['La barra de tareas', `
@@ -188,7 +188,7 @@ const TOPICOS = [
 <p>El clic derecho en cualquier programa de Inicio › <b>Anclar a Inicio</b> pone el programa arriba del menú. En <b>Configuración › Barra de tareas y menú Inicio</b> (o con el clic derecho en Inicio › <b>Propiedades</b>), cambias el orden de los anclados, eliges los elementos a la vista (la Tienda, los Documentos, Buscar…), activas los <b>íconos pequeños</b> y vacías o desactivas la lista de los documentos recientes. El clic derecho en un elemento del menú › <b>No mostrar en el menú Inicio</b> también lo oculta.</p>
 <h2>La bandeja, a la derecha</h2>
 <p><b>Red</b>: las redes Wi-Fi, conectar y desconectar (en Linux). <b>Volumen</b>: el sonido de la computadora y, con más de una salida (los altavoces, unos auriculares, la pantalla por HDMI), la elección de ella; el micrófono está en Panel de control › Sonidos › Audio. <b>Batería</b>: la carga, el brillo de la pantalla, el modo de energía (ahorro, equilibrado o rendimiento, en Linux) y la batería del mouse y del teclado inalámbricos, con el aviso de batería baja. <b>Bluetooth</b>: los dispositivos inalámbricos (en Linux). <b>Campana</b>: las notificaciones y el <b>No molestar</b>.</p>
-<p>Un clic en el <b>reloj</b> abre el calendario; el clic derecho en él › <b>Mostrar la fecha</b> pone la fecha debajo de la hora.</p>
+<p>Un clic en el <b>reloj</b> abre el calendario; el clic derecho en él › <b>Mostrar la fecha</b> pone la fecha debajo de la hora. En <b>Configuración › Barra de tareas y menú Inicio</b> › <b>Iconos de la bandeja</b>, eliges qué iconos quedan a la vista.</p>
 <h2>Con dos monitores</h2>
 <p>Con <b>Usar las dos pantallas en pantalla completa</b> (Panel de control › Apariencia › Configuración, en Windows y en Mac), el escritorio cubre los dos monitores, y cada pantalla tiene su barra de tareas: la de la pantalla principal muestra todas las ventanas, los anclados, la búsqueda y la bandeja; la de la otra tiene Inicio, los botones de las ventanas que están en ella y el reloj. Para tener la barra solo en la principal, desmarca <b>Mostrar la barra de tareas en todas las pantallas</b> en <b>Configuración › Barra de tareas y menú Inicio</b> (o con el clic derecho en la barra).</p>`],
   },
@@ -202,7 +202,7 @@ const TOPICOS = [
 <h2>As janelas</h2>
 <p>A caixa da esquerda do título fecha a janela; as da direita aumentam a janela e a <b>recolhem</b>, deixando só a barra de título à vista. O duplo clique no título também recolhe e abre de novo.</p>
 <h2>A Faixa de controle</h2>
-<p>No canto de baixo, à esquerda, ficam os programas fixados na barra de tarefas (Painel de controle › Barra de tarefas e menu Iniciar), a <b>lupa da busca</b> (um clique abre o campo) e os ícones da bandeja: a rede, o volume, a bateria e as notificações. A ponta da faixa a recolhe e a abre de novo.</p>
+<p>No canto de baixo, à esquerda, ficam os programas fixados na barra de tarefas (Painel de controle › Barra de tarefas e menu Iniciar), a <b>lupa da busca</b> (um clique abre o campo) e os ícones da bandeja: a rede, o volume, a bateria e as notificações. Como no Mac da época, ela começa recolhida, só com a ponta à vista: um clique na ponta a abre, e outro a recolhe. Em Painel de controle › Barra de tarefas e menu Iniciar, você a deixa aberta e escolhe os ícones dela.</p>
 <h2>A área de trabalho</h2>
 <p>Os ícones começam do canto de cima, à direita, e a Lixeira fica no canto de baixo; as posições de cada tema ficam guardadas à parte. Os ícones do tema são desenhos próprios do Retro Computer, no estilo da época.</p>`],
     en: ['The Classic Mac theme', `
@@ -213,7 +213,7 @@ const TOPICOS = [
 <h2>The windows</h2>
 <p>The box on the left of the title closes the window; the ones on the right enlarge the window and <b>collapse</b> it, leaving only the title bar in view. A double-click on the title also collapses it and opens it again.</p>
 <h2>The Control Strip</h2>
-<p>In the bottom left corner are the programs pinned to the taskbar (Control Panel › Taskbar and Start Menu), the <b>search magnifier</b> (a click opens the box) and the tray icons: the network, the volume, the battery and the notifications. The end of the strip collapses it and opens it again.</p>
+<p>In the bottom left corner are the programs pinned to the taskbar (Control Panel › Taskbar and Start Menu), the <b>search magnifier</b> (a click opens the box) and the tray icons: the network, the volume, the battery and the notifications. As on the Mac of the time, it starts collapsed, with only its end in view: a click on the end opens it, and another collapses it. In Control Panel › Taskbar and Start Menu, you keep it open and choose its icons.</p>
 <h2>The desktop</h2>
 <p>The icons start from the top right corner, and the Trash stays in the bottom corner; each theme's positions are kept separately. The theme's icons are Retro Computer's own drawings, in the style of the time.</p>`],
     es: ['El tema Mac clásico', `
@@ -224,7 +224,7 @@ const TOPICOS = [
 <h2>Las ventanas</h2>
 <p>La casilla de la izquierda del título cierra la ventana; las de la derecha agrandan la ventana y la <b>contraen</b>, dejando solo la barra de título a la vista. El doble clic en el título también la contrae y la abre de nuevo.</p>
 <h2>La Tira de control</h2>
-<p>En la esquina de abajo a la izquierda están los programas anclados a la barra de tareas (Panel de control › Barra de tareas y menú Inicio), la <b>lupa de la búsqueda</b> (un clic abre el campo) y los iconos de la bandeja: la red, el volumen, la batería y las notificaciones. El extremo de la tira la contrae y la abre de nuevo.</p>
+<p>En la esquina de abajo a la izquierda están los programas anclados a la barra de tareas (Panel de control › Barra de tareas y menú Inicio), la <b>lupa de la búsqueda</b> (un clic abre el campo) y los iconos de la bandeja: la red, el volumen, la batería y las notificaciones. Como en la Mac de la época, empieza contraída, solo con el extremo a la vista: un clic en el extremo la abre, y otro la contrae. En Panel de control › Barra de tareas y menú Inicio, la dejas abierta y eliges sus iconos.</p>
 <h2>El escritorio</h2>
 <p>Los iconos empiezan desde la esquina de arriba a la derecha, y la Papelera queda en la esquina de abajo; las posiciones de cada tema se guardan por separado. Los iconos del tema son dibujos propios de Retro Computer, al estilo de la época.</p>`],
   },

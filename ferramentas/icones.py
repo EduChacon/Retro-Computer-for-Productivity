@@ -809,7 +809,9 @@ COMPUTADOR_16 = [
 ]
 
 # Desligar: o mesmo computador, com a tela apagada, o símbolo de desligar e as luzes vermelhas (o
-# "shutdown" do SerenityOS é um notebook; em 16 pontos, só o monitor, para o símbolo caber).
+# "shutdown" do SerenityOS é um notebook; em 16 pontos, só o monitor, para o símbolo caber). O vidro
+# é todo preto e de medidas pares (14 × 10 e 10 × 10), e o símbolo, de 8 × 8 com a haste de 2
+# pontos, fica exatamente no meio dele.
 DESLIGAR_32 = [
     "................................",
     "................................",
@@ -817,16 +819,16 @@ DESLIGAR_32 = [
     ".....KWWWWWWWWWWWWWWWWWWWGK.....",
     ".....KWLLLLLLLLLLLLLLLLLLGK.....",
     ".....KWLGGGGGGGGGGGGGGGLLGK.....",
-    ".....KWLGSSSSSSSSSSSSSSWLGK.....",
-    ".....KWLGSGGKKKKKKKKKKKWLGK.....",
-    ".....KWLGSGKKKKKWKKKKKKWLGK.....",
-    ".....KWLGSKKKKWKWKWKKKKWLGK.....",
-    ".....KWLGSKKKWKKWKKWKKKWLGK.....",
-    ".....KWLGSKKKWKKKKKWKKKWLGK.....",
-    ".....KWLGSKKKWKKKKKWKKKWLGK.....",
-    ".....KWLGSKKKKWKKKWKKKKWLGK.....",
-    ".....KWLGSKKKKKWWWKKKKKWLGK.....",
-    ".....KWLGSKKKKKKKKKKKKKWLGK.....",
+    ".....KWLGDDKKKKKKKKKKKKWLGK.....",
+    ".....KWLGDKKKKKWWKKKKKKWLGK.....",
+    ".....KWLGKKKKWKWWKWKKKKWLGK.....",
+    ".....KWLGKKKWKKWWKKWKKKWLGK.....",
+    ".....KWLGKKKWKKWWKKWKKKWLGK.....",
+    ".....KWLGKKKWKKKKKKWKKKWLGK.....",
+    ".....KWLGKKKWKKKKKKWKKKWLGK.....",
+    ".....KWLGKKKKWKKKKWKKKKWLGK.....",
+    ".....KWLGKKKKKWWWWKKKKKWLGK.....",
+    ".....KWLGKKKKKKKKKKKKKKWLGK.....",
     ".....KWLGWWWWWWWWWWWWWWWLGK.....",
     ".....KWLLLLLLLLLLLLLLLLGRGK.....",
     ".....KWGGGGGGGGGGGGGGGGGGGK.....",
@@ -846,19 +848,19 @@ DESLIGAR_32 = [
 ]
 
 DESLIGAR_16 = [
-    "................",
     ".KKKKKKKKKKKKKK.",
     ".KWWWWWWWWWWWGK.",
-    ".KWSSSSSSSSSSGK.",
-    ".KWSGKKKWKKKKGK.",
-    ".KWSKKWKWKWKKGK.",
-    ".KWSKWKKWKKWKGK.",
-    ".KWSKWKKKKKWKGK.",
-    ".KWSKWKKKKKWKGK.",
-    ".KWSKKWKKKWKKGK.",
-    ".KWSKKKWWWKKKGK.",
+    ".KWDDKKKKKKKKGK.",
+    ".KWDKKKWWKKKKGK.",
+    ".KWKKWKWWKWKKGK.",
+    ".KWKWKKWWKKWKGK.",
+    ".KWKWKKWWKKWKGK.",
+    ".KWKWKKKKKKWKGK.",
+    ".KWKWKKKKKKWKGK.",
+    ".KWKKWKKKKWKKGK.",
+    ".KWKKKWWWWKKKGK.",
+    ".KWKKKKKKKKKKGK.",
     ".KWLLLLLLLLLRGK.",
-    ".KGGGGGGGGGGGGK.",
     ".KKKKKKKKKKKKKK.",
     ".....KWLLGK.....",
     "...KKKKKKKKKK...",

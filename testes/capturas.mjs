@@ -169,7 +169,8 @@ if (process.env.RETRO_BOOT) {
 }
 await pagina.waitForSelector('#iniciar', { timeout: 30000 });
 // RETRO_TEMA=mac: qualquer roteiro no tema Mac clássico.
-if (process.env.RETRO_TEMA) await pagina.evaluate((tema) => window.__retro.definirConfig({ tema }), process.env.RETRO_TEMA);
+// (No tema Mac, a Faixa de controle começa recolhida: os roteiros a abrem, para achar a busca e a bandeja.)
+if (process.env.RETRO_TEMA) await pagina.evaluate((tema) => window.__retro.definirConfig({ tema, ...(tema === 'mac' ? { barra: { faixaAberta: true } } : {}) }), process.env.RETRO_TEMA);
 temaMacLigado = process.env.RETRO_TEMA === 'mac';
 await pagina.waitForTimeout(800);
 
@@ -1316,6 +1317,12 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.waitForTimeout(1200);
     console.log('no tema Mac:', JSON.stringify(await estadoTema()), '| fundo:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.papel)));
     await foto('tema-mac-mesa');
+    // A Faixa de controle começa recolhida (só a ponta); um clique na ponta a abre.
+    const faixaVista = () => pagina.evaluate(() => ({ largura: Math.round(document.getElementById('faixa-controle').getBoundingClientRect().width), aberta: !document.querySelector('#faixa-controle .fc-modulos').hidden }));
+    console.log('faixa recolhida:', JSON.stringify(await faixaVista()));
+    await pagina.click('#faixa-controle .fc-ponta');
+    await pagina.waitForTimeout(400);
+    console.log('faixa aberta pela ponta:', JSON.stringify(await faixaVista()));
     // Duas janelas: o Explorador na frente, com os menus dele no alto.
     await abrir('bloco');
     await pagina.waitForTimeout(400);
@@ -1363,6 +1370,16 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.waitForTimeout(300);
     await foto('tema-mac-painel-config');
     await pagina.locator('.janela.ativa button', { hasText: T('Cancelar') }).first().click();
+    await pagina.waitForTimeout(300);
+    // As opções da Faixa de controle: aberta ou não e os ícones dela, um a um (o Volume desmarcado some).
+    await abrir('painel', { secao: 'barra' });
+    await pagina.waitForTimeout(600);
+    await pagina.locator('.janela.ativa label', { hasText: T('Volume') }).first().click();
+    await foto('tema-mac-painel-barra');
+    await pagina.locator('.janela.ativa button', { hasText: T('OK') }).first().click();
+    await pagina.waitForTimeout(400);
+    console.log('sem o volume:', JSON.stringify(await pagina.evaluate(() => ({ ocultos: window.__retro.estado.config.barra.ocultos, visiveis: [...document.querySelectorAll('#faixa-controle #bandeja > .bandeja-ico')].filter((e) => getComputedStyle(e).display !== 'none').map((e) => e.getAttribute('src') || e.className) }))));
+    await pagina.evaluate(() => window.__retro.definirConfig({ barra: { ocultos: [] } }));
     await pagina.waitForTimeout(300);
     await pagina.evaluate(() => import('./js/dialogos.js').then((m) => { m.confirmar('Esvaziar a Lixeira? Os 3 itens são apagados de vez.', { titulo: 'Lixeira' }); }));
     await pagina.waitForTimeout(400);

@@ -213,7 +213,8 @@ async function menuDosProgramas() {
 
 /* ---------- A Faixa de controle (os programas fixados, a busca e a bandeja) ---------- */
 
-const faixaAberta = () => !(estado.config.barra && estado.config.barra.faixaAberta === false);
+// Como no Mac da época, a faixa começa recolhida (só a ponta à vista); a ponta e o Painel a abrem.
+export const faixaAberta = () => !!(estado.config.barra && estado.config.barra.faixaAberta);
 
 function desenharFaixa() {
   if (!faixa || !estado.config) return;

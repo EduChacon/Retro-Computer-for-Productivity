@@ -10,7 +10,7 @@ import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abr
 import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada, caixaArquivo } from '../dialogos.js';
 import { deslizante } from '../controles.js';
 import { CORES, PADROES, FUNDO_INICIO, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS, fundoParaTema } from '../aparencia.js';
-import { TEMAS } from '../tema.js';
+import { TEMAS, temaMac } from '../tema.js';
 import { tocar } from '../sons.js';
 import { esvaziarLixeira, ICONES_SISTEMA, ICONES_PADRAO, naMesa, definirIconesSistema } from '../mesa.js';
 import { tr, marcar, IDIOMAS, localidade } from '../idioma.js';
@@ -18,7 +18,7 @@ import { BUSCAS, CORREIOS, paraEndereco, conferirFirefox } from './navegador.js'
 import { aoMudar as aoMudarAtualizacao, reiniciarParaAtualizar } from '../atualizacao.js';
 import { comSenhaAdmin } from '../admin.js';
 import { aplicarLuzNoturna } from '../luz-noturna.js';
-import { programaDe, programasFixaveis, ITENS_INICIAR } from '../barra.js';
+import { programaDe, programasFixaveis, ITENS_INICIAR, ICONES_BANDEJA } from '../barra.js';
 import { perfisInfo, atualizarPerfis, nomeDoPerfil } from '../perfis.js';
 import { escolherPrograma } from '../arquivos.js';
 
@@ -201,14 +201,26 @@ function dialogoBarra(args = {}) {
   const radNomes = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes !== 'icones' });
   const radIcones = h('input', { type: 'radio', name: 'botoes-barra', checked: b.botoes === 'icones' });
   const fixBarra = listaDeProgramas(b.fixados || [], tr('Nenhum programa fixado. Clique com o botão direito num programa do Iniciar para fixá-lo.'));
+  // Os ícones da bandeja, um a um (no tema Mac, os da Faixa de controle, que pode começar aberta).
+  const mac = temaMac();
+  const ocultosBandeja = new Set(b.ocultos || []);
+  const chksBandeja = ICONES_BANDEJA.map((it) => ({ id: it.id, el: h('input', { type: 'checkbox', checked: !ocultosBandeja.has(it.id) }), rotulo: tr(it.rotulo) }));
+  const chkFaixa = h('input', { type: 'checkbox', checked: !!b.faixaAberta });
+  const botoesJanelas = mac ? [] : [
+    h('div', { style: { margin: '6px 0 2px' } }, tr('Os botões das janelas:')),
+    h('div', { style: { marginLeft: '12px' } }, h('label', radNomes, h('span', tr('Com o nome')))),
+    h('div', { style: { marginLeft: '12px' } }, h('label', radIcones, h('span', tr('Só os ícones, agrupados por programa')))),
+  ];
   const abaBarra = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Opções da barra')),
-      h('label', chkBusca, h('span', tr('Mostrar a caixa de busca ao lado do Iniciar'))),
-      h('label', chkData, h('span', tr('Mostrar a data embaixo da hora'))),
+      mac ? h('label', chkFaixa, h('span', tr('Deixar a Faixa de controle aberta'))) : null,
+      h('label', chkBusca, h('span', mac ? tr('Mostrar a lupa da busca na Faixa de controle') : tr('Mostrar a caixa de busca ao lado do Iniciar'))),
+      h('label', chkData, h('span', mac ? tr('Mostrar a data ao lado da hora') : tr('Mostrar a data embaixo da hora'))),
       linhaTodas,
-      h('div', { style: { margin: '6px 0 2px' } }, tr('Os botões das janelas:')),
-      h('div', { style: { marginLeft: '12px' } }, h('label', radNomes, h('span', tr('Com o nome')))),
-      h('div', { style: { marginLeft: '12px' } }, h('label', radIcones, h('span', tr('Só os ícones, agrupados por programa'))))),
+      ...botoesJanelas),
+    h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', mac ? tr('Ícones da Faixa de controle') : tr('Ícones da bandeja')),
+      h('div.lp-itens', ...chksBandeja.map((x) => h('label', x.el, h('span', x.rotulo)))),
+      h('div', { style: { color: '#404040', marginTop: '4px' } }, tr('O Bluetooth e a bateria só aparecem quando o computador os tem.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Fixados na barra de tarefas')), fixBarra.el));
   // A aba Menu Iniciar: os fixados no alto, os itens à vista, os ícones pequenos e os recentes.
   const fixIni = listaDeProgramas(ini.fixados || [], tr('Nenhum programa fixado. Clique com o botão direito num programa do Iniciar e escolha "Fixar no menu Iniciar".'));
@@ -230,7 +242,10 @@ function dialogoBarra(args = {}) {
     titulo: tr('Propriedades da Barra de tarefas e do menu Iniciar'), icone: 'barra-tarefas', larg: 400, aba: args.aba || 0,
     abas: [{ titulo: tr('Barra de tarefas'), conteudo: abaBarra }, { titulo: tr('Menu Iniciar'), conteudo: abaIniciar }],
     aoAplicar: () => definirConfig({
-      barra: { busca: chkBusca.checked, data: chkData.checked, todasTelas: chkTodas.checked, botoes: radIcones.checked ? 'icones' : 'nomes', fixados: fixBarra.valor() },
+      barra: {
+        busca: chkBusca.checked, data: chkData.checked, todasTelas: chkTodas.checked, botoes: radIcones.checked ? 'icones' : 'nomes', fixados: fixBarra.valor(),
+        ocultos: chksBandeja.filter((x) => !x.el.checked).map((x) => x.id), ...(mac ? { faixaAberta: chkFaixa.checked } : {}),
+      },
       iniciar: { fixados: fixIni.valor(), ocultos: chks.filter((x) => !x.el.checked).map((x) => x.id), pequenos: chkPequenos.checked, recentes: chkRecentes.checked },
     }),
   });

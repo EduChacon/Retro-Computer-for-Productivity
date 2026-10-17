@@ -527,5 +527,7 @@ export function montarBandeja() {
     else if (acao === 'monitor') abrir('monitor');
     else if (acao.startsWith('captura')) import('./apps/captura.js').then((m) => m.capturaRapida(acao === 'captura-janela' ? 'janela' : acao === 'captura-regiao' ? 'regiao' : 'tela'));
   });
-  return { antes: [iconeBluetooth(), redeIco, somIco, batIco], depois: [sino] };
+  const bt = iconeBluetooth();
+  // porNome: o que o Painel › Barra de tarefas deixa esconder, um a um (barra.js, ICONES_BANDEJA).
+  return { antes: [bt, redeIco, somIco, batIco], depois: [sino], porNome: { bluetooth: bt, rede: redeIco, som: somIco, bateria: batIco, notificacoes: sino } };
 }

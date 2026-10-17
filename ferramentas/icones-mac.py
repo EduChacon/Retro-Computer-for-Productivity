@@ -1149,34 +1149,36 @@ def desligar(t):
         s.contorno()
         s.elipse(15, 15, 11, 11, C1)
         s.elipse(16, 16, 11, 11, C3)
+        # O anel de 14 pontos, no meio da largura, e a haste de 2 pontos acima dele: o conjunto, da
+        # ponta da haste ao pé do anel (das linhas 8 a 23), fica no meio do botão.
         anel = Tela(32)
-        anel.elipse(16, 17, 8, 8, K)
-        anel.elipse(16, 17, 5.5, 5.5, (0, 0, 0, 0))
-        for y in range(6, 15):
-            for x in range(12, 21):
-                anel.ponto(x, y, (0, 0, 0, 0) if y > 7 else anel.pega(x, y))
-        anel.ret(15, 6, 17, 16, K)
+        anel.elipse(16, 17, 7, 7, K)
+        anel.elipse(16, 17, 4.5, 4.5, (0, 0, 0, 0))
+        for y in range(10, 15):
+            for x in range(12, 20):
+                anel.ponto(x, y, (0, 0, 0, 0))
+        anel.ret(15, 8, 16, 16, K)
         s.colar(anel, 0, 0)
     else:
-        # Em 16 pontos, o círculo de 15 desenhado à mão (a elipse ficava oitavada), com a luz em cima,
-        # à esquerda, a sombra embaixo, à direita, e o símbolo bem no meio.
+        # Em 16 pontos, o círculo de 16 desenhado à mão (a elipse ficava oitavada), com a luz em cima,
+        # à esquerda, a sombra embaixo, à direita, e o símbolo de 8 × 8 (a haste de 2 pontos) bem no meio.
         s.grade(0, 0, [
-            ".....KKKKK......",
-            "...KKBBBBBKK....",
-            "..KBBcccccBBK...",
-            ".KBcccccccccsK..",
-            ".KBccccKccccsK..",
-            "KBcccKcKcKcccsK.",
-            "KBccKccKccKccsK.",
-            "KBccKcccccKccsK.",
-            "KBccKcccccKccsK.",
-            "KBcccKcccKcccsK.",
-            ".KBcccKKKcccsK..",
-            ".KBcccccccccsK..",
-            "..KsscccccssK...",
-            "...KKsssssKK....",
-            ".....KKKKK......",
-            "................",
+            ".....KKKKKK.....",
+            "...KKBBBBBBKK...",
+            "..KBBccccccBBK..",
+            ".KBccccccccccsK.",
+            ".KBccccKKccccsK.",
+            "KBcccKcKKcKcccsK",
+            "KBccKccKKccKccsK",
+            "KBccKccKKccKccsK",
+            "KBccKccccccKccsK",
+            "KBccKccccccKccsK",
+            "KBcccKccccKcccsK",
+            ".KBcccKKKKcccsK.",
+            ".KBccccccccccsK.",
+            "..KssccccccssK..",
+            "...KKssssssKK...",
+            ".....KKKKKK.....",
         ], {'K': K, 'B': BR, 'c': C3, 's': C5})
     return s
 
