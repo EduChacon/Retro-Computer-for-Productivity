@@ -11,6 +11,7 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
+const path = require('node:path');
 const { spawn, execFile } = require('node:child_process');
 
 const VOLTAS = 210000;
@@ -174,7 +175,7 @@ function lerTampa(texto) {
 function arquivoDaTampa(raiz = '/proc/acpi/button/lid') {
   try {
     const d = fs.readdirSync(raiz).sort()[0];
-    return d ? `${raiz}/${d}/state` : null;
+    return d ? path.join(raiz, d, 'state') : null;
   } catch {
     return null;
   }
