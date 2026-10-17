@@ -4,11 +4,14 @@
  * a área de trabalho nunca recebe o resumo, só pergunta se a senha digitada confere.
  * No Linux, a senha de entrada do Linux também desbloqueia (o unix_chkpwd do PAM, que
  * confere a senha do próprio usuário sem precisar de administrador): é o jeito de
- * voltar se a senha do Retro Computer for esquecida.
+ * voltar se a senha do Retro Computer for esquecida. No modo sistema, ela basta para
+ * bloquear (ao fechar a tampa, ao suspender), como num computador comum, desde que a
+ * conta do Linux tenha uma senha (o passwd -S diz; sem ela, ninguém ficaria preso fora).
  */
 const crypto = require('node:crypto');
+const fs = require('node:fs');
 const os = require('node:os');
-const { spawn } = require('node:child_process');
+const { spawn, execFile } = require('node:child_process');
 
 const VOLTAS = 210000;
 
@@ -44,14 +47,43 @@ function confereLinux(senha, plataforma = process.platform) {
   });
 }
 
+/** "passwd -S" (do próprio usuário): "nome P …" com senha; "NP" sem senha; "L" travada. */
+function lerPasswdS(texto) {
+  const m = /^\S+\s+(\S+)/.exec(String(texto || '').trim());
+  return m ? m[1].toUpperCase() : null;
+}
+
+/** A conta do Linux tem uma senha que o unix_chkpwd confere? (Sem certeza, não.) */
+function linuxTemSenha(plataforma = process.platform) {
+  if (plataforma !== 'linux' || !['/usr/sbin/unix_chkpwd', '/sbin/unix_chkpwd'].some((c) => fs.existsSync(c))) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    execFile('passwd', ['-S'], { timeout: 4000, env: { ...process.env, LC_ALL: 'C' } }, (erro, saida) => resolve(!erro && lerPasswdS(saida) === 'P'));
+  });
+}
+
 /**
  * O controle da senha: as tentativas erradas seguidas atrasam a próxima resposta
  * (1 s, 2 s, 4 s… até 30 s), para ninguém ficar tentando senhas.
  */
 class Bloqueio {
-  constructor(config) {
+  /** falsaLinux: a senha do Linux de mentira (RETRO_SENHA_LINUX_FALSA, para os testes e as capturas). */
+  constructor(config, { falsaLinux = null } = {}) {
     this.config = config;
     this.erros = 0;
+    this.falsaLinux = falsaLinux;
+    this.linux = !!falsaLinux; // a senha do Linux basta para bloquear (o modo sistema, com a conta com senha)
+  }
+
+  /** No modo sistema, confere se a senha de entrada do Linux pode bloquear sozinha. */
+  async prepararLinux(modoSistema) {
+    if (this.falsaLinux) return this.linux;
+    this.linux = !!modoSistema && (await linuxTemSenha());
+    return this.linux;
+  }
+
+  /** Há uma senha que desbloqueia (a do Retro Computer ou, no modo sistema, a do Linux)? */
+  podeBloquear() {
+    return this.temSenha() || this.linux;
   }
 
   guardada() {
@@ -63,7 +95,8 @@ class Bloqueio {
   }
 
   async conferir(senha) {
-    const ok = (await confere(senha, this.guardada())) || (await confereLinux(senha));
+    const linux = this.falsaLinux ? !!senha && senha === this.falsaLinux : await confereLinux(senha);
+    const ok = (await confere(senha, this.guardada())) || linux;
     if (ok) {
       this.erros = 0;
       return true;
@@ -86,11 +119,65 @@ class Bloqueio {
   }
 }
 
-/** As configurações como a área de trabalho as vê: sem o resumo da senha, só se há uma. */
-function semSegredos(c) {
+/**
+ * As configurações como a área de trabalho as vê: sem o resumo da senha, só se há uma (e se a
+ * senha do Linux também bloqueia).
+ */
+function semSegredos(c, { senhaLinux = false } = {}) {
   const b = c.bloqueio || {};
   const { senha, ...resto } = b;
-  return { ...c, bloqueio: { ...resto, temSenha: !!senha } };
+  return { ...c, bloqueio: { ...resto, temSenha: !!senha, senhaLinux: !!senhaLinux } };
 }
 
-module.exports = { Bloqueio, resumir, confere, confereLinux, semSegredos };
+/**
+ * Segura a suspensão por um instante (a trava "delay" do logind, pelo systemd-inhibit): o
+ * computador só dorme depois de a tela de bloqueio aparecer; sem ela, ao abrir a tampa, a
+ * área de trabalho aparecia por um momento antes da senha.
+ */
+class TravaDoSono {
+  constructor({ existe = (c) => ['/usr/bin/', '/bin/'].some((p) => fs.existsSync(p + c)) } = {}) {
+    this.existe = existe;
+    this.filho = null;
+    process.once('exit', () => this.soltar());
+  }
+
+  pegar() {
+    if (this.filho || !this.existe('systemd-inhibit')) return false;
+    try {
+      // O "cat" lê a entrada até o fim: se o Retro Computer cair, o cano fecha e a trava sai junto
+      // (com o "sleep infinity", ela ficaria segurando cada suspensão pelos segundos do logind).
+      const f = spawn('systemd-inhibit', ['--what=sleep', '--mode=delay', '--who=Retro Computer', '--why=Bloquear a tela antes de suspender', 'cat'], { stdio: ['pipe', 'ignore', 'ignore'] });
+      f.on('error', () => { if (this.filho === f) this.filho = null; });
+      f.on('exit', () => { if (this.filho === f) this.filho = null; });
+      f.stdin.on('error', () => { });
+      this.filho = f;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  soltar() {
+    if (!this.filho) return;
+    try { this.filho.kill(); } catch { }
+    this.filho = null;
+  }
+}
+
+/** /proc/acpi/button/lid/…/state: "state:      closed" → true; "open" → false; sem o arquivo, null. */
+function lerTampa(texto) {
+  const m = /state:\s*(\w+)/i.exec(String(texto || ''));
+  return m ? m[1].toLowerCase() === 'closed' : null;
+}
+
+/** O arquivo da tampa do notebook (o primeiro de /proc/acpi/button/lid), ou null. */
+function arquivoDaTampa(raiz = '/proc/acpi/button/lid') {
+  try {
+    const d = fs.readdirSync(raiz).sort()[0];
+    return d ? `${raiz}/${d}/state` : null;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { Bloqueio, resumir, confere, confereLinux, semSegredos, lerPasswdS, linuxTemSenha, TravaDoSono, lerTampa, arquivoDaTampa };

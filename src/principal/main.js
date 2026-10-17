@@ -28,7 +28,7 @@ const { LojaWinget, LojaBrew, LojaWingetFalsa, LojaBrewFalsa } = require('./loja
 const { PapeisDeParede } = require('./papel');
 const monitoresMod = require('./monitores');
 const sistemaLinux = require('./sistema-linux');
-const { Bloqueio, semSegredos: semSenha, confere: confereSenha, confereLinux } = require('./bloqueio');
+const { Bloqueio, semSegredos: semSenha, confere: confereSenha, confereLinux, TravaDoSono, lerTampa: lerEstadoTampa, arquivoDaTampa } = require('./bloqueio');
 const { Unidades, UnidadesFalsas, PastasDoComputador, noDisco, caminhosDaLinha } = require('./unidades');
 const { Discos, DiscosFalsos } = require('./discos');
 const { servirArquivo, miniatura } = require('./servir');
@@ -73,7 +73,7 @@ const ortografia = require('./ortografia');
 const { Calendarios, semEnderecos, buscarNaRede, buscarFalso } = require('./calendarios');
 const { Nuvens } = require('./nuvem');
 // As configurações como a área de trabalho (e o Claude) as veem: sem a senha e sem os endereços dos calendários.
-const semSegredos = (c) => semEnderecos(semSenha(c));
+const semSegredos = (c) => semEnderecos(semSenha(c, { senhaLinux: !!(bloqueio && bloqueio.linux) }));
 
 // O modo sistema: a sessão "Retro Computer" do Linux (sem a área de trabalho do Linux por baixo).
 const MODO_SISTEMA = sistemaLinux.ehModoSistema();
@@ -1337,7 +1337,7 @@ function registrarPonte() {
     if (parte.agenda && typeof parte.agenda === 'object' && !Array.isArray(parte.agenda)) delete parte.agenda.calendarios;
     else if ('agenda' in parte) delete parte.agenda;
     // A senha da tela de bloqueio só muda por bloqueio:definir (conferindo a atual).
-    if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; }
+    if (parte.bloqueio && typeof parte.bloqueio === 'object') { delete parte.bloqueio.senha; delete parte.bloqueio.temSenha; delete parte.bloqueio.senhaLinux; }
     else if ('bloqueio' in parte) delete parte.bloqueio;
     // As permissões dos programas só mudam pela pergunta (ou pelo Painel, que as tira com null).
     if (parte.permissoesProgramas && typeof parte.permissoesProgramas !== 'object') delete parte.permissoesProgramas;
@@ -2472,15 +2472,40 @@ app.whenReady().then(async () => {
       areaPadrao: () => { const a = screen.getPrimaryDisplay().workArea; return { x: a.x, y: a.y, w: a.width, h: a.height }; },
     });
   }
-  bloqueio = new Bloqueio(config);
-  // A tela bloqueia antes de o computador dormir (e quando o próprio sistema bloqueia):
-  // na volta, a senha é pedida.
+  bloqueio = new Bloqueio(config, { falsaLinux: process.env.RETRO_SENHA_LINUX_FALSA || null });
+  // No modo sistema, a senha de entrada do Linux basta para bloquear (antes de a tela pedir as configurações).
+  await Promise.race([bloqueio.prepararLinux(MODO_SISTEMA).catch(() => false), new Promise((r) => setTimeout(r, 2000))]);
+  // A tela bloqueia antes de o computador dormir (e quando o próprio sistema bloqueia, e ao fechar
+  // a tampa): na volta, a senha é pedida. No modo sistema, a suspensão espera a tela de bloqueio
+  // aparecer (até 2 segundos), para a área de trabalho não aparecer por um instante ao abrir a tampa.
+  const deveBloquear = () => bloqueio.podeBloquear() && (config.obter().bloqueio || {}).aoVoltar !== false;
+  const sono = MODO_SISTEMA && process.platform === 'linux' ? new TravaDoSono() : null;
+  let esperaBloqueio = null;
   const bloquear = () => {
-    const b = config.obter().bloqueio || {};
-    if (bloqueio.temSenha() && b.aoVoltar !== false) enviar('bloqueio:bloquear');
+    if (!deveBloquear()) { if (sono) sono.soltar(); return; }
+    enviar('bloqueio:bloquear');
+    if (!sono) return;
+    clearTimeout(esperaBloqueio);
+    esperaBloqueio = setTimeout(() => sono.soltar(), 2000);
   };
+  tratar('bloqueio:pronto', () => { if (sono && esperaBloqueio) { clearTimeout(esperaBloqueio); esperaBloqueio = null; sono.soltar(); } });
   powerMonitor.on('suspend', bloquear);
   powerMonitor.on('lock-screen', bloquear);
+  // Na volta, a trava do sono vem de novo; e, se a suspensão chegou sem aviso, a tela bloqueia agora.
+  powerMonitor.on('resume', () => { if (sono && deveBloquear()) sono.pegar(); if (deveBloquear()) enviar('bloqueio:bloquear'); });
+  if (sono && deveBloquear()) sono.pegar();
+  // A tampa fechada bloqueia também quando ela não suspende (Opções de energia › "Não fazer nada").
+  const tampa = MODO_SISTEMA && process.platform === 'linux' ? arquivoDaTampa() : null;
+  if (tampa) {
+    let fechada = false;
+    setInterval(() => {
+      fs.promises.readFile(tampa, 'utf8').then((s) => {
+        const agora = lerEstadoTampa(s);
+        if (agora && !fechada && deveBloquear()) enviar('bloqueio:bloquear');
+        fechada = !!agora;
+      }).catch(() => { });
+    }, 1500).unref();
+  }
   loja = criarLoja();
   atualizador = new Atualizador({ app, enviar, antesDeSair: () => { terminais.fecharTodos(); if (janela) janela.__podeFechar = true; } });
   if (process.env.RETRO_BANDEJA_FALSA) {

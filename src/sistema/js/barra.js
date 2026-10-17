@@ -13,7 +13,7 @@ import { tr, marcar, localidade } from './idioma.js';
 import { noMenu, nomeNativo, iconeNativoJa, abrirNativo, iconeNativo } from './nativos.js';
 import { alternarCalendario, montarBusca } from './barra-extras.js';
 import { montarBandeja } from './bandeja.js';
-import { bloquear, temSenha } from './bloqueio.js';
+import { bloquear, podeBloquear } from './bloqueio.js';
 import { variosPerfis, perfilAtual, nomeDoPerfil } from './perfis.js';
 import { usaFirefox as firefoxPadrao } from './apps/navegador.js';
 import { naMesa, adicionarAtalho, removerAtalho } from './mesa.js';
@@ -743,7 +743,7 @@ export async function abrirIniciar(bt = btIniciar) {
     ...se('executar', { rotulo: tr('&Executar…'), icone: 'executar', acao: () => abrir('executar') }),
     { separador: true },
     // Sem senha ainda, o item leva ao Painel de controle › Senhas para criar uma.
-    ...se('bloquear', { rotulo: tr('&Bloquear o computador'), icone: 'chave', acao: () => (temSenha() ? bloquear() : abrir('painel', { secao: 'senhas' })) }),
+    ...se('bloquear', { rotulo: tr('&Bloquear o computador'), icone: 'chave', acao: () => (podeBloquear() ? bloquear() : abrir('painel', { secao: 'senhas' })) }),
     // Com mais de um usuário, o logoff (com o nome de quem está usando, como na época).
     ...(variosPerfis() ? [{ rotulo: tr('Fazer l&ogoff de {nome}…', { nome: nomeDoPerfil(perfilAtual()).replace(/&/g, '&&') }), icone: 'usuario', acao: () => abrir('logoff') }] : []),
     // O D é dos Documentos: o Desligar fica com o G.

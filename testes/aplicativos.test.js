@@ -46,7 +46,7 @@ test('a 0.3.0 põe o Navegador e o E-mail na área de trabalho de quem já usava
   const antigo = mesclar(PADRAO, { versao: 1, mesa: { atalhos: ['meu-computador', 'lixeira', 'craft:wordcraft'] } });
   const d = migrar(antigo);
   assert.deepEqual(d.mesa.atalhos, ['meu-computador', 'lixeira', 'navegador', 'correio', 'craft:wordcraft']);
-  assert.equal(d.versao, 4);
+  assert.equal(d.versao, 5);
   // Quem já está na versão 3 não muda (nem se tirou os ícones).
   assert.deepEqual(migrar({ ...d, mesa: { atalhos: ['lixeira'] } }).mesa.atalhos, ['lixeira']);
 });
@@ -57,17 +57,27 @@ test('a 1.0.0 tira o Prompt de comando da área de trabalho só de quem tinha a 
   // Quem mudou a lista (pôs ou tirou um ícone) fica com o Prompt.
   const mudada = [...padraoAntigo, 'craft:wordcraft'];
   assert.deepEqual(migrar({ versao: 2, mesa: { atalhos: mudada } }).mesa.atalhos, mudada);
-  assert.equal(migrar({ versao: 2, mesa: { atalhos: mudada } }).versao, 4);
+  assert.equal(migrar({ versao: 2, mesa: { atalhos: mudada } }).versao, 5);
   assert.ok(!PADRAO.mesa.atalhos.includes('prompt'));
 });
 
 test('a 1.1.0 pede a senha ao abrir (quem tem senha não abria mais pedindo, a não ser marcando a opção)', () => {
   const antigo = migrar(mesclar(PADRAO, { versao: 3, bloqueio: { aoVoltar: true, aoAbrir: false, naProtecao: false } }));
   assert.equal(antigo.bloqueio.aoAbrir, true);
-  assert.equal(antigo.versao, 4);
+  assert.equal(antigo.versao, 5);
   // Depois da migração, desligar no Painel fica desligado.
   assert.equal(migrar({ ...antigo, bloqueio: { ...antigo.bloqueio, aoAbrir: false } }).bloqueio.aoAbrir, false);
   assert.equal(PADRAO.bloqueio.aoAbrir, true);
+});
+
+test('a 2.0.0 deixa a proteção de tela pedir a senha no modo sistema (o falso guardado só pelo padrão sai)', () => {
+  const antigo = migrar(mesclar(PADRAO, { versao: 4, bloqueio: { aoVoltar: true, aoAbrir: true, naProtecao: false } }));
+  assert.ok(!('naProtecao' in antigo.bloqueio));
+  assert.equal(antigo.versao, 5);
+  assert.ok(!('naProtecao' in PADRAO.bloqueio));
+  // Marcado continua marcado; e, depois da 2.0.0, a escolha do Painel fica como está.
+  assert.equal(migrar(mesclar(PADRAO, { versao: 4, bloqueio: { naProtecao: true } })).bloqueio.naProtecao, true);
+  assert.equal(migrar({ ...antigo, bloqueio: { ...antigo.bloqueio, naProtecao: false } }).bloqueio.naProtecao, false);
 });
 
 test('o ícone de um atalho do Windows vem do programa para onde ele aponta (não o genérico da extensão)', () => {

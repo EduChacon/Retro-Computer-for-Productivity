@@ -3244,6 +3244,44 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   },
 
   // A tela de bloqueio: criar a senha no Painel, bloquear pelo Iniciar, errar e acertar.
+  // O bloqueio do modo sistema sem a senha do Retro Computer (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1
+  // e RETRO_SENHA_LINUX_FALSA=certa, a senha de entrada do Linux de mentira): a suspensão (o fechar
+  // da tampa) bloqueia, a senha errada não abre e a certa abre; a proteção de tela pede a senha; e a
+  // aba Senhas e a Central de segurança dizem que vale a senha do Linux.
+  async bloqueioSistema() {
+    await fecharTudo();
+    await abrir('bloco');
+    await pagina.waitForTimeout(500);
+    console.log('config:', JSON.stringify(await pagina.evaluate(() => window.__retro.estado.config.bloqueio)));
+    await app.evaluate(({ powerMonitor }) => powerMonitor.emit('suspend'));
+    await pagina.waitForSelector('#bloqueio input[type=password]', { timeout: 5000 });
+    await pagina.waitForTimeout(400);
+    console.log('texto:', await pagina.textContent('#bloqueio .bloq-texto'));
+    await foto('bloqueio-linux');
+    await pagina.keyboard.type('errada');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2200);
+    console.log('errada:', await pagina.textContent('#bloqueio .bloq-aviso'), '| ainda bloqueado:', await pagina.locator('#bloqueio').count());
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2500);
+    console.log('certa: bloqueado?', await pagina.locator('#bloqueio').count());
+    // A volta da proteção de tela também pede a senha (o padrão do modo sistema).
+    await pagina.evaluate(() => document.dispatchEvent(new Event('retro-protecao-saiu')));
+    await pagina.waitForTimeout(500);
+    console.log('depois da proteção de tela: bloqueado?', await pagina.locator('#bloqueio').count());
+    await pagina.keyboard.type('certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(1500);
+    await abrir('painel', { secao: 'senhas' });
+    await pagina.waitForTimeout(600);
+    await foto('bloqueio-linux-painel');
+    await fecharTudo();
+    await abrir('painel', { secao: 'seguranca' });
+    await pagina.waitForTimeout(1200);
+    await foto('bloqueio-linux-central');
+  },
+
   async bloqueio() {
     await fecharTudo();
     await abrir('painel', { secao: 'senhas' });

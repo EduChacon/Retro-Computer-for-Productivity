@@ -444,6 +444,7 @@ contextBridge.exposeInMainWorld('retro', {
     conferir: (senha) => chamar('bloqueio:conferir', senha),
     definir: (atual, nova) => chamar('bloqueio:definir', atual, nova),
     aoBloquear: ouvir('bloqueio:bloquear'),
+    pronto: () => chamar('bloqueio:pronto'),
   },
   // A bandeja: o volume, o brilho e a rede do computador.
   bandeja: {

@@ -784,13 +784,19 @@ function dialogoSenhas() {
   const btTirar = h('button', { type: 'button' }, tr('Tirar a senha…'));
   const chkVoltar = h('input', { type: 'checkbox', checked: b().aoVoltar !== false });
   const chkAbrir = h('input', { type: 'checkbox', checked: b().aoAbrir !== false });
-  const chkProtecao = h('input', { type: 'checkbox', checked: !!b().naProtecao });
+  // No modo sistema, a proteção de tela pede a senha, a não ser que se tenha escolhido outra coisa.
+  const chkProtecao = h('input', { type: 'checkbox', checked: 'naProtecao' in b() ? !!b().naProtecao : !!estado.config.modoSistema });
   const desenhar = () => {
     const tem = !!b().temSenha;
-    estadoEl.textContent = tem ? tr('Há uma senha para desbloquear o computador.') : tr('Ainda não há senha: a tela de bloqueio fica desligada.');
+    const linux = !!b().senhaLinux;
+    estadoEl.textContent = tem ? tr('Há uma senha para desbloquear o computador.')
+      : linux ? tr('Sem uma senha própria, a senha de entrada do Linux bloqueia e desbloqueia o computador.')
+        : tr('Ainda não há senha: a tela de bloqueio fica desligada.');
     btCriar.textContent = tem ? tr('Trocar a senha…') : tr('Criar a senha…');
     btTirar.disabled = !tem;
-    for (const c of [chkVoltar, chkAbrir, chkProtecao]) c.disabled = !tem;
+    for (const c of [chkVoltar, chkProtecao]) c.disabled = !tem && !linux;
+    // Ao abrir, só com a senha do Retro Computer (a do Linux acabou de ser pedida na tela de entrada).
+    chkAbrir.disabled = !tem;
   };
   btCriar.addEventListener('click', () => mudarSenha(false).then(desenhar));
   btTirar.addEventListener('click', () => mudarSenha(true).then(desenhar));
@@ -1170,11 +1176,13 @@ function dialogoSeguranca() {
 
   async function ler() {
     const b = estado.config.bloqueio || {};
-    if (!b.temSenha) bloq.definir(false, tr('Sem senha'), tr('Qualquer pessoa perto do computador usa os seus arquivos e as suas contas.'));
-    else if (b.aoVoltar !== false && b.naProtecao) bloq.definir(true, tr('Com senha'), tr('A senha é pedida ao voltar da suspensão e ao sair da proteção de tela.'));
-    else if (b.aoVoltar !== false) bloq.definir(true, tr('Com senha'), tr('A senha é pedida ao voltar da suspensão, mas não ao sair da proteção de tela.'));
-    else if (b.naProtecao) bloq.definir(true, tr('Com senha'), tr('A senha é pedida ao sair da proteção de tela, mas não ao voltar da suspensão.'));
-    else bloq.definir(true, tr('Com senha'), tr('A senha só é pedida quando você bloqueia: Iniciar › Bloquear o computador.'));
+    const com = b.temSenha ? tr('Com senha') : tr('Com a senha do Linux');
+    const naProtecao = 'naProtecao' in b ? !!b.naProtecao : !!estado.config.modoSistema;
+    if (!b.temSenha && !b.senhaLinux) bloq.definir(false, tr('Sem senha'), tr('Qualquer pessoa perto do computador usa os seus arquivos e as suas contas.'));
+    else if (b.aoVoltar !== false && naProtecao) bloq.definir(true, com, tr('A senha é pedida ao voltar da suspensão e ao sair da proteção de tela.'));
+    else if (b.aoVoltar !== false) bloq.definir(true, com, tr('A senha é pedida ao voltar da suspensão, mas não ao sair da proteção de tela.'));
+    else if (naProtecao) bloq.definir(true, com, tr('A senha é pedida ao sair da proteção de tela, mas não ao voltar da suspensão.'));
+    else bloq.definir(true, com, tr('A senha só é pedida quando você bloqueia: Iniciar › Bloquear o computador.'));
     if (fw) {
       const e = await retro.firewall.estado().catch(() => null);
       if (!e || !e.disponivel) fw.definir(false, tr('Indisponível'), tr('O firewall deste computador é configurado pelo próprio sistema.'));

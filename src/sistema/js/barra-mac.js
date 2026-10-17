@@ -18,7 +18,7 @@ import { temaMac, aoMudarTema } from './tema.js';
 import { abrirIniciar, programaDe, desafixar, pecasDaBarra, devolverPecas } from './barra.js';
 import { esvaziarLixeira, organizarMesa, atualizar as atualizarMesa } from './mesa.js';
 import { novaPasta, novoTexto, colar, transferencia } from './arquivos.js';
-import { bloquear, temSenha } from './bloqueio.js';
+import { bloquear, podeBloquear } from './bloqueio.js';
 import { variosPerfis } from './perfis.js';
 import { erro } from './dialogos.js';
 
@@ -169,7 +169,7 @@ function definicaoMesa() {
       rotulo: tr('E&special'), itens: () => [
         { rotulo: tr('&Esvaziar a Lixeira…'), icone: 'lixeira', acao: () => esvaziarLixeira() },
         { separador: true },
-        { rotulo: tr('&Bloquear o computador'), icone: 'chave', acao: () => (temSenha() ? bloquear() : abrir('painel', { secao: 'senhas' })) },
+        { rotulo: tr('&Bloquear o computador'), icone: 'chave', acao: () => (podeBloquear() ? bloquear() : abrir('painel', { secao: 'senhas' })) },
         ...(variosPerfis() ? [{ rotulo: tr('Fazer l&ogoff…'), icone: 'usuario', acao: () => abrir('logoff') }] : []),
         { rotulo: tr('Desli&gar…'), icone: 'desligar', acao: () => abrir('desligar') },
       ],

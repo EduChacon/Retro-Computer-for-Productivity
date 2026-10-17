@@ -1,7 +1,9 @@
 /*
  * A tela de bloqueio: cobre tudo e pede a senha (a do Retro Computer ou, no Linux, a de
  * entrada). Bloqueia pelo Iniciar, pela tecla do logotipo + L (modo sistema), antes de o
- * computador suspender e, se escolhido, ao abrir e ao sair da proteção de tela.
+ * computador suspender, ao fechar a tampa e, se escolhido, ao abrir e ao sair da proteção de
+ * tela. No modo sistema, sem a senha do Retro Computer, vale a de entrada do Linux (se a conta
+ * tiver uma): o computador bloqueia como qualquer outro.
  * Quem confere a senha é o processo principal (bloqueio.js de lá).
  */
 import { h, img } from './util.js';
@@ -15,11 +17,16 @@ let tela = null;
 
 export const estaBloqueado = () => !!tela;
 export const temSenha = () => !!(estado.config && estado.config.bloqueio && estado.config.bloqueio.temSenha);
+/** A senha de entrada do Linux basta para bloquear (o modo sistema, com a conta com senha). */
+export const senhaLinux = () => !!(estado.config && estado.config.bloqueio && estado.config.bloqueio.senhaLinux);
+export const podeBloquear = () => temSenha() || senhaLinux();
 const opcao = (k, padrao) => { const b = (estado.config && estado.config.bloqueio) || {}; return k in b ? !!b[k] : padrao; };
+/** Pedir a senha ao sair da proteção de tela: no modo sistema, sim, a não ser que se tenha escolhido outra coisa. */
+export const pedirNaProtecao = () => opcao('naProtecao', !!(estado.config && estado.config.modoSistema));
 
-/** Bloqueia (só com uma senha definida). */
+/** Bloqueia (só com uma senha que desbloqueie). */
 export function bloquear() {
-  if (tela || !temSenha()) return false;
+  if (tela || !podeBloquear()) return false;
   fecharMenus();
   // As janelas dos programas do Linux saem da frente (senão ficariam por cima da tela de bloqueio).
   minimizarNativas();
@@ -35,7 +42,7 @@ export function bloquear() {
     h('div.bloq-corpo',
       img('chave', 32),
       h('div',
-        h('div.bloq-texto', tr('Este computador está bloqueado. Digite a senha para continuar.')),
+        h('div.bloq-texto', temSenha() ? tr('Este computador está bloqueado. Digite a senha para continuar.') : tr('Este computador está bloqueado. Digite a senha de entrada do Linux para continuar.')),
         h('div.bloq-linha', h('span', tr('Senha:')), campo),
         aviso,
         h('div.acoes.direita', ok))));
@@ -94,10 +101,17 @@ export function bloquear() {
 }
 
 /* Os momentos de bloquear. */
-retro.bloqueio.aoBloquear(() => bloquear());
-document.addEventListener('retro-protecao-saiu', () => { if (opcao('naProtecao', false)) bloquear(); });
+// Antes de suspender: depois de a tela de bloqueio aparecer de fato (dois quadros), o computador pode dormir.
+retro.bloqueio.aoBloquear(() => {
+  bloquear();
+  requestAnimationFrame(() => requestAnimationFrame(() => retro.bloqueio.pronto().catch(() => { })));
+});
+document.addEventListener('retro-protecao-saiu', () => { if (pedirNaProtecao()) bloquear(); });
 
-/** Na abertura: com "pedir a senha ao abrir" (o padrão desde a 1.1), já começa bloqueado. */
+/**
+ * Na abertura: com "pedir a senha ao abrir" (o padrão desde a 1.1), já começa bloqueado. Só com a
+ * senha do Retro Computer: a do Linux acabou de ser pedida na tela de entrada.
+ */
 export function bloquearAoAbrir() {
-  if (opcao('aoAbrir', true)) bloquear();
+  if (temSenha() && opcao('aoAbrir', true)) bloquear();
 }
