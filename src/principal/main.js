@@ -37,6 +37,7 @@ const { Monitor } = require('./monitor');
 const { Impressoras, ImpressorasFalsas, papelDoPais } = require('./impressoras');
 const { Trabalhos } = require('./trabalho');
 const { FerramentasPdf } = require('./pdf');
+const { Ocr } = require('./ocr');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
@@ -201,7 +202,7 @@ let terminais = null;
 let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
-let trabalhos = null; // o processo de trabalho (trabalho.js): as ferramentas de PDF
+let trabalhos = null; // o processo de trabalho (trabalho.js): as ferramentas de PDF e o OCR
 let cheiaPeloSite = false; // a janela entrou em tela cheia por um site do Navegador
 let loja = null; // a loja de programas: o Flathub no Linux (loja.js), o winget no Windows e o Homebrew no Mac (lojas.js)
 let bloqueio = null; // a senha da tela de bloqueio (bloqueio.js)
@@ -1868,6 +1869,9 @@ function registrarPonte() {
   tratar('pdf:extrair', (rel, intervalo, destino) => ferramentasPdf.extrair(rel, intervalo, destino));
   tratar('pdf:separar', (rel) => ferramentasPdf.separar(rel));
   tratar('pdf:girar', (rel, graus) => ferramentasPdf.girar(rel, graus));
+  // O texto das imagens e das páginas digitalizadas (OCR), também no processo de trabalho.
+  const ocr = new Ocr({ disco, trabalhos, pasta: path.join(BASE_DADOS, 'ocr') });
+  tratar('ocr:imagem', (item, idioma) => ocr.imagem(item, String(idioma || '')));
   // O Bluetooth (no Linux, pelo bluetoothctl; no Windows e no macOS, as configurações do sistema).
   const bluetooth = new (process.env.RETRO_BLUETOOTH_FALSO ? BluetoothFalso : Bluetooth)({ aoPergunta: (p) => enviar('bluetooth:pergunta', p) });
   tratar('bluetooth:estado', () => bluetooth.estado());

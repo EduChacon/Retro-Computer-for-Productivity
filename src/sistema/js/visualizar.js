@@ -29,6 +29,20 @@ async function carregarPdfjs() {
   return pdfjs;
 }
 
+/** Um PDF do disco C: aberto pelo pdf.js (sem eval, com as fontes e os mapas locais): a tarefa de carregar. */
+export async function abrirPdfDoDisco(rel) {
+  const lib = await carregarPdfjs();
+  const base = new URL('../vendor/pdfjs/', import.meta.url).href;
+  return lib.getDocument({
+    url: new URL(urlDoDisco(rel), location.href).href,
+    isEvalSupported: false,
+    standardFontDataUrl: base + 'standard_fonts/',
+    cMapUrl: base + 'cmaps/',
+    wasmUrl: base + 'wasm/',
+    iccUrl: base + 'iccs/',
+  });
+}
+
 /** Uma moldura sem scripts (o sandbox sem permissões) para um documento ou uma página salva. */
 function moldura(html, estilo = '') {
   const doc = `<!doctype html><html><head><meta charset="utf-8"><style>
@@ -195,16 +209,7 @@ export class PainelVisualizacao {
 
   /** As páginas do PDF, desenhadas à medida que aparecem (as primeiras na hora). */
   async pdf(it, corpo, vez) {
-    const lib = await carregarPdfjs();
-    const base = new URL('../vendor/pdfjs/', import.meta.url).href;
-    const tarefa = lib.getDocument({
-      url: new URL(urlDoDisco(it.rel), location.href).href,
-      isEvalSupported: false,
-      standardFontDataUrl: base + 'standard_fonts/',
-      cMapUrl: base + 'cmaps/',
-      wasmUrl: base + 'wasm/',
-      iccUrl: base + 'iccs/',
-    });
+    const tarefa = await abrirPdfDoDisco(it.rel);
     if (vez !== this.vez) { tarefa.destroy(); return; }
     this.tarefaPdf = tarefa;
     const doc = await tarefa.promise;

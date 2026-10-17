@@ -216,6 +216,10 @@ contextBridge.exposeInMainWorld('retro', {
     separar: (rel) => chamar('pdf:separar', rel),
     girar: (rel, graus) => chamar('pdf:girar', rel, graus),
   },
+  // O texto de uma imagem do disco ({ rel }) ou desenhada pela tela ({ png }), sem internet.
+  ocr: {
+    imagem: (item, idioma) => chamar('ocr:imagem', item, idioma),
+  },
   monitor: {
     amostra: () => chamar('monitor:amostra'),
     processos: () => chamar('monitor:processos'),

@@ -106,6 +106,7 @@ class Visualizador {
       {
         rotulo: tr('&Editar'), itens: () => [
           { rotulo: tr('&Copiar'), atalho: 'Ctrl+C', desativado: !this.natural.w, acao: () => this.copiar() },
+          { rotulo: tr('Copiar o &texto (OCR)…'), desativado: !this.rel || !this.natural.w, acao: () => abrir('ocr', { arquivo: this.rel }) },
         ],
       },
       {

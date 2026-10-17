@@ -1736,6 +1736,10 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 .pdf-item.sel .pdf-pag { color: inherit; }
 .pdf-vazio { padding: 12px 8px; color: #606060; text-align: center; white-space: normal; }
 .pdf-um { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 4px 8px 8px; }
+/* Copiar o texto (OCR): o idioma no alto, o texto e os botões. */
+.ocr-corpo { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.ocr-topo { display: flex; align-items: center; gap: 6px; }
+.ocr-texto { flex: 1 1 auto; min-height: 80px; resize: none; white-space: pre-wrap; user-select: text; }
 .av-linha { display: grid; grid-template-columns: 16px 1fr auto; gap: 6px; align-items: center; padding: 1px 2px; }
 .av-linha.sel { background: var(--selecao); color: var(--selecao-texto); }
 .av-arquivo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

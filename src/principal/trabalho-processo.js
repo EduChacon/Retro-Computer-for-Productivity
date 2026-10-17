@@ -1,6 +1,6 @@
 /*
  * O processo de trabalho (o utilityProcess do Electron): o que lê arquivos de fora, que podem vir
- * malfeitos de propósito, e o que demora (as ferramentas de PDF), longe do processo principal e da
+ * malfeitos de propósito, e o que demora (as ferramentas de PDF e o OCR), longe do processo principal e da
  * janela. Ele não tem a ponte nem o disco: recebe os bytes e devolve os bytes. Se travar ou passar da
  * memória, só ele cai (trabalho.js o encerra e abre outro na vez seguinte).
  */
@@ -12,6 +12,7 @@ const TAREFAS = {
   'pdf:extrair': (d) => require('./pdf-ops').extrair(d.bytes, d.intervalo),
   'pdf:separar': (d) => require('./pdf-ops').separar(d.bytes),
   'pdf:girar': (d) => require('./pdf-ops').girar(d.bytes, d.graus),
+  'ocr:reconhecer': (d) => require('./ocr-ops').reconhecer(d.bytes, d.idioma, d.langPath),
 };
 
 process.parentPort.on('message', async (e) => {

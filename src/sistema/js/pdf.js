@@ -13,6 +13,8 @@ export const EXTS_DIRETAS = ['pdf', 'jpg', 'jpeg', 'png'];
 export const EXTS_DESENHADAS = ['gif', 'webp', 'bmp', 'avif'];
 export const entraNoPdf = (nome) => EXTS_DIRETAS.includes(extensao(nome)) || EXTS_DESENHADAS.includes(extensao(nome));
 export const ehPdf = (nome) => extensao(nome) === 'pdf';
+/** O que o Copiar o texto (OCR) lê: as fotos, as digitalizações e os PDFs. */
+export const EXTS_OCR = ['png', 'jpg', 'jpeg', 'bmp', 'gif', 'webp', 'avif', 'pdf'];
 
 /** Um nome de arquivo a partir de um texto qualquer (sem os caracteres que um nome não aceita). */
 export const limparNome = (s) => String(s || '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
@@ -28,7 +30,7 @@ export async function escolherDestino(titulo, pasta, nome) {
 }
 
 /** Os bytes em PNG de uma imagem que o PDF não aceita direto (GIF, WebP, BMP, AVIF): o primeiro quadro. */
-async function pngDe(rel) {
+export async function pngDe(rel) {
   const r = await fetch(urlDoDisco(rel));
   if (!r.ok) throw new Error(tr('A imagem "{nome}" não pôde ser lida.', { nome: nomeDe(rel) }));
   let bmp;

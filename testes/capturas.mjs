@@ -3700,6 +3700,42 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await conferirPdf('Tudo junto.pdf');
     await pagina.waitForTimeout(800);
     await foto('pdf-janela-combinado');
+
+    // Copiar o texto (OCR): uma foto de um texto (desenhada na hora), a mesma foto num PDF digitalizado
+    // (só a imagem, sem texto) e um PDF com texto, que não passa pelo OCR.
+    const imagemTexto = await pagina.evaluate(() => {
+      const c = document.createElement('canvas');
+      c.width = 1400; c.height = 360;
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      g.fillStyle = '#111'; g.font = '44px sans-serif';
+      ['Ação de cobrança: o réu foi citado em São Paulo.', 'Valor da causa: R$ 12.345,67 (doze mil reais).', 'Prazo de 15 dias úteis, conforme o art. 335.']
+        .forEach((l, i) => g.fillText(l, 50, 90 + i * 90));
+      return c.toDataURL('image/png').split(',')[1];
+    });
+    fs.writeFileSync(path.join(pdfs, 'Foto do ofício.png'), Buffer.from(imagemTexto, 'base64'));
+    const digitalizado = await PDFDocument.create();
+    const png = await digitalizado.embedPng(Buffer.from(imagemTexto, 'base64'));
+    digitalizado.addPage([595, 153]).drawImage(png, { x: 0, y: 0, width: 595, height: 153 });
+    fs.writeFileSync(path.join(pdfs, 'Ofício digitalizado.pdf'), await digitalizado.save());
+    const lerTexto = async (nome, fotografar) => {
+      await fecharTudo();
+      await abrir('ocr', { arquivo: `${DOCS}/${nome}` });
+      await pagina.waitForFunction(() => { const t = document.querySelector('.janela.ativa .ocr-texto'); return t && !t.closest('.janela').querySelector('select').disabled; }, null, { timeout: 120000 }).catch(() => { });
+      await pagina.waitForTimeout(400);
+      console.log('texto de', nome + ':', JSON.stringify(await pagina.inputValue('.janela.ativa .ocr-texto')), '|', await pagina.textContent('.janela.ativa .status'));
+      if (fotografar) await foto(fotografar);
+    };
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(1200);
+    await pagina.click(item('Foto do ofício.png'), { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await foto('ocr-menu');
+    await pagina.keyboard.press('Escape');
+    await lerTexto('Foto do ofício.png', 'ocr-imagem');
+    await lerTexto('Ofício digitalizado.pdf', 'ocr-pdf-digitalizado');
+    await lerTexto('Contrato.pdf', 'ocr-pdf-texto');
   },
 
   // O Bluetooth (com RETRO_BLUETOOTH_FALSO=1): a bandeja, o Painel, procurar e parear um teclado.
