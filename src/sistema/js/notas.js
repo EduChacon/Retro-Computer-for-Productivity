@@ -212,8 +212,7 @@ const aoClicarFora = (e) => { if (!e.target.closest('.nota, .menu, #camada-menus
 function trazerParaFrente() {
   if (naFrente) return;
   naFrente = true;
-  // A camada vai para depois das janelas (e antes da barra e dos menus): sem z-index, que as passaria por cima de tudo.
-  document.getElementById('janelas').after(camada);
+  // As janelas sobem pelo z-index (janelas.js); a classe põe a camada acima delas e abaixo da barra e dos menus.
   camada.classList.add('na-frente');
   setTimeout(() => document.addEventListener('pointerdown', aoClicarFora, true), 0);
 }
@@ -223,7 +222,6 @@ function voltarParaTras() {
   naFrente = false;
   document.removeEventListener('pointerdown', aoClicarFora, true);
   camada.classList.remove('na-frente');
-  document.getElementById('mesa').after(camada);
 }
 
 /** Iniciar › Notas autoadesivas: as notas vêm para a frente das janelas; sem nenhuma, uma nova. */

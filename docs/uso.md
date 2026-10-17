@@ -9,8 +9,9 @@ Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnic
 - Fala português, inglês e espanhol (Painel de controle › Idioma).
 - O disco C: é uma pasta do computador principal (por padrão, `Documentos/Retro Computer`). Tudo o que se salva fica nela, visível também fora do programa.
 - Os programas de trabalho (os Craft: WordCraft, GridCraft, DeckCraft, PdfCraft e outros) são instalados pela Loja de programas (no alto do menu Iniciar; no Painel de controle, "Adicionar ou remover programas") e rodam em janelas da área de trabalho. A mesma janela tem a loja do computador: o Flathub no Linux, o winget no Windows e o Homebrew no Mac.
-- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Ferramentas de PDF, Digitalizar (o scanner), o Copiar o texto (OCR), Prompt de comando, DOS, Mac Plus e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
+- Vêm prontos: Navegador, E-mail, Visualizador de imagens, Reprodutor de mídia, Captura de tela, Monitor do sistema, Calculadora, Bloco de notas, Área de transferência (o histórico), Mapa de caracteres, Diário de trabalho, Foco (Pomodoro, cronômetro e temporizador), Ferramentas de PDF, Digitalizar (o scanner), o Copiar o texto (OCR), Agenda, Notas autoadesivas, Receber do celular, Prompt de comando, DOS, Mac Plus e cinco jogos (Paciência, Campo Minado, Breakout, Damas e Xadrez).
 - A busca da barra de tarefas e o Localizar acham também pelo texto de dentro dos documentos (seção 2, "O Explorador").
+- A Agenda guarda os compromissos num `.ics` do disco C:, com lembretes; as notas autoadesivas ficam na área de trabalho; as fotos do celular chegam pela rede local; e as janelas abertas voltam ao ligar de novo (seção 2, "Agenda, notas e celular").
 - As janelas se encaixam nas bordas e nos cantos da tela, e os atalhos do Windows (Alt+Tab, a tecla do logotipo com uma letra) funcionam no Retro Computer como sistema.
 - Painel de controle › Segurança mostra num lugar só a senha, o firewall, as atualizações e a privacidade.
 - Várias pessoas podem dividir o mesmo Retro Computer, cada uma com a área de trabalho, a senha e o disco C: próprios (Painel de controle › Usuários).
@@ -50,8 +51,11 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 | Recuperar um arquivo excluído | Lixeira › botão direito › Restaurar |
 | Concentrar-se | Iniciar › Programas › Acessórios › Foco (o "Pomodoro"), com a tela cheia (F11) |
 | Imprimir | Arquivo › Imprimir (Ctrl+P) no Bloco de notas, no Visualizador de imagens e no Navegador |
+| Marcar um compromisso | Iniciar › Programas › Acessórios › Agenda › Novo evento (ou um clique num dia do calendário do relógio) |
+| Anotar algo rápido | Botão direito na área de trabalho › Nova nota autoadesiva |
+| Passar fotos do celular | Iniciar › Programas › Acessórios › Receber do celular, e a câmera do celular no código QR |
 | Sair de perto | Iniciar › Bloquear o computador (com uma senha em Painel de controle › Senhas) |
-| Sair | Iniciar › Desligar (cada programa pergunta se há algo por salvar) |
+| Sair | Iniciar › Desligar (cada programa pergunta se há algo por salvar; as janelas abertas voltam na próxima vez) |
 
 ### A área de trabalho
 
@@ -107,6 +111,15 @@ Iniciar › Programas › Acessórios › Discos (ou Painel de controle › Disc
 - **Digitalizar** (Acessórios): o scanner, a cor (colorido, tons de cinza, preto e branco) e a resolução; uma página por vez, e as páginas vão juntas para um PDF ou como imagens, com o OCR em seguida, se marcado. No Linux, pelo SANE (os scanners de rede pelo eSCL: os pacotes `sane-utils` e `sane-airscan`); no Windows, pelo WIA; no Mac, o botão abre a Captura de Imagem do sistema.
 - O que lê arquivos de fora (o pdf-lib, o Tesseract, o pdf.js da busca) roda num processo separado, com tempo e memória limitados: um arquivo malfeito não trava a área de trabalho.
 
+### Agenda, notas e celular
+
+- **Agenda** (Acessórios): o mês à esquerda e os eventos do dia (ou dos próximos 30 dias) à direita. Cada evento tem o título, o local, o começo e o fim (ou o dia todo), a repetição (todo dia, toda semana, todo mês ou todo ano, até uma data), o lembrete e as anotações; num evento que se repete, mudar ou excluir pergunta se é só esta ocorrência ou todas. As setas passam o dia, Page Up e Page Down o mês, Home volta a hoje.
+- **O arquivo**: `Meus documentos/Agenda.ics` (em inglês, `Documents/Calendar.ics`), o formato do Google Agenda, do Outlook e do Calendário do Mac; cada mudança guarda a versão anterior, e o arquivo mudado por outro programa é lido de novo antes de gravar. Abrir outro `.ics` importa os eventos dele (os do mesmo evento são atualizados; o arquivo de origem não muda). As repetições finas que a Agenda não sabe abrir (a última sexta-feira do mês, por exemplo) voltam no arquivo como vieram.
+- **Os lembretes** aparecem mesmo com a Agenda fechada, numa janela com Adiar (de 5 minutos a 1 hora) e Descartar, e com o som do sino; com o "Não perturbe", só no sino da bandeja. O calendário do relógio marca os dias com eventos e mostra os de hoje; um clique num dia abre a Agenda nele. O Claude do Prompt vê e marca compromissos (agenda_ver e agenda_marcar).
+- **Notas autoadesivas** (Acessórios, ou o botão direito na área de trabalho): papeizinhos entre os ícones e as janelas. Cada nota é um `.txt` em `Meus documentos/Notas autoadesivas`, que grava sozinho enquanto se escreve (a versão anterior fica, no máximo uma a cada dez minutos); o + cria outra, o … muda a cor (amarela, verde, azul, rosa, lilás ou branca) e abre no Bloco de notas, e o × manda a nota para a Lixeira. Pelo Iniciar, as notas vêm para a frente das janelas até o próximo clique fora delas ou o Esc.
+- **Receber do celular** (Acessórios): o código QR (e o endereço) para o celular abrir, no mesmo Wi-Fi. O computador pergunta se aceita cada aparelho novo; aceito, as fotos e os arquivos entram em `Meus documentos/Recebidos`, sem gravar por cima de nada. O servidor só existe com a janela aberta, só na rede local, com um código novo a cada vez; desliga depois de 15 minutos sem uso ou de 20 tentativas com o código errado; não lê nada do computador; e aceita até 4 GB por arquivo e 20 GB por vez. No Linux com o firewall ligado, o celular pode não chegar.
+- **Reabrir ao ligar**: as janelas abertas voltam na abertura seguinte, no mesmo lugar e do mesmo tamanho (o Explorador na pasta, o Bloco de notas, o Visualizador e o Reprodutor com o arquivo, o Navegador no endereço da aba; com "apagar os dados ao fechar", na página inicial). O Prompt, o Claude, o DOS e o Mac Plus ficam de fora. Painel de controle › Aparência › Configurações › "Reabrir as janelas que estavam abertas" desliga.
+
 ### O Explorador e as pastas compactadas
 
 As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a Área de trabalho, o DOS e, em Meus documentos, Recebidos, o Diário de trabalho e as Capturas de tela; e as pastas de imagens, músicas, vídeos e downloads (pelo nome, nos três idiomas: "Imagens", "Músicas", "Vídeos", "Downloads"…), em Meus documentos ou no C:.
@@ -144,6 +157,9 @@ As pastas especiais têm o próprio ícone, como no Windows: Meus documentos, a 
 | Área de transferência (logotipo + V) | Os últimos 25 textos copiados em qualquer programa: Enter cola o escolhido na posição do cursor; o "…" fixa ou exclui. Fica só na memória (nada vai para o disco), sem o que os gerenciadores de senhas marcam como secreto |
 | Ferramentas de PDF | Combinar PDFs e imagens na ordem escolhida; com um PDF escolhido, separar, extrair páginas e girar (mais na seção "PDF, digitalização e OCR") |
 | Digitalizar | O scanner de mesa ou o multifuncional: as páginas, uma por vez, num PDF ou como imagens, com o OCR em seguida |
+| Agenda | Os compromissos, com a repetição e os lembretes, num `.ics` do disco C: (mais na seção "Agenda, notas e celular") |
+| Notas autoadesivas | Os papeizinhos da área de trabalho, cada um num `.txt` |
+| Receber do celular | As fotos e os arquivos do celular pela rede local, com o código QR |
 | Calculadora, Bloco de notas, Prompt de comando | Os de sempre |
 | DOS | O DOSBox (do js-dos), sem internet: a unidade C: é a pasta C:\DOS do disco; dois cliques num .com, .bat ou .exe do DOS o abrem; o que mudar volta ao disco ao fechar (com a versão anterior guardada e os apagados na Lixeira) |
 | Mac Plus | O PCE.js, um emulador do Macintosh da época, em preto e branco e sem internet, para jogos como o SimAnt. Nada da Apple vem junto: a pasta C:\Mac recebe a ROM do Mac do usuário (o arquivo .rom de 128 KB do Mac Plus, de 256 KB do Mac SE ou de 512 KB do Mac Classic), o disquete do Sistema (o System 6 ou o 7) e os dos jogos (.dsk, .img ou .image, do Disk Copy 4.2). O disco com System, Sistema ou Boot no nome vai na primeira unidade; dois cliques num .dsk ou .image abrem o Mac com ele. A tecla Alt é a Command, e a Ctrl, a Option. O que o Mac gravar volta ao disco ao fechar (a versão de antes de ligar o Mac fica guardada) |

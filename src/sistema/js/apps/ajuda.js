@@ -244,6 +244,60 @@ const TOPICOS = [
 <p>La <b>barra espaciadora</b> en un archivo del Explorador abre la vista rápida, grande: fotos, PDF, textos, Word, hojas de cálculo, música y videos. Las flechas pasan al archivo de al lado, <b>Enter</b> lo abre en su programa, y la barra espaciadora o <b>Esc</b> la cierran.</p>`],
   },
   {
+    id: 'agenda', icone: 'calendario',
+    'pt-BR': ['Agenda e notas autoadesivas', `
+<h2>A Agenda</h2>
+<p><b>Iniciar › Programas › Acessórios › Agenda</b> mostra o mês à esquerda e os eventos do dia à direita (ou os dos próximos 30 dias). <b>Novo evento</b> (ou dois cliques num dia) pede o título, o local, o começo e o fim (ou o dia todo), a repetição (todo dia, toda semana, todo mês ou todo ano, até uma data), o lembrete e as anotações. Num evento que se repete, mudar ou excluir pergunta se é <b>só esta ocorrência</b> ou todas.</p>
+<p>Os eventos ficam em <b>Meus documentos › Agenda.ics</b>, o mesmo formato do Google Agenda, do Outlook e do Calendário do Mac. Cada mudança guarda a versão anterior. Abrir outro arquivo .ics (de um convite, por exemplo) importa os eventos dele para a Agenda, sem mudar o arquivo de origem.</p>
+<p>O calendário do relógio marca os dias com eventos e mostra os de hoje; um clique num dia abre a Agenda nele. No Prompt, o Claude também vê e marca compromissos na Agenda.</p>
+<h2>Os lembretes</h2>
+<p>Na hora do lembrete, mesmo com a Agenda fechada, aparece a janela dos lembretes, com um som: <b>Adiar</b> (de 5 minutos a 1 hora) ou <b>Descartar</b>. Com o "Não perturbe" ligado, o lembrete fica só no sino da bandeja.</p>
+<h2>As notas autoadesivas</h2>
+<p><b>Iniciar › Programas › Acessórios › Notas autoadesivas</b> (ou o botão direito na área de trabalho › <b>Nova nota autoadesiva</b>) põe um papel amarelo na área de trabalho. Escreva nele: a nota grava sozinha. O <b>+</b> cria outra, o <b>…</b> muda a cor e abre a nota no Bloco de notas, e o <b>×</b> manda a nota para a Lixeira. Arraste pela faixa de cima e mude o tamanho pelo canto.</p>
+<p>As notas ficam atrás das janelas; pelo Iniciar, elas vêm para a frente até o próximo clique fora delas (ou o <b>Esc</b>). Cada nota é um arquivo de texto em <b>Meus documentos › Notas autoadesivas</b>.</p>`],
+    en: ['Calendar and sticky notes', `
+<h2>The Calendar</h2>
+<p><b>Start › Programs › Accessories › Calendar</b> shows the month on the left and the day's events on the right (or those of the next 30 days). <b>New event</b> (or double-clicking a day) asks for the title, the location, the start and the end (or all day), the repetition (every day, week, month or year, until a date), the reminder and the notes. On an event that repeats, changing or deleting it asks whether it is <b>only this occurrence</b> or all of them.</p>
+<p>The events are kept in <b>Documents › Calendar.ics</b>, the same format as Google Calendar, Outlook and the Mac Calendar. Each change keeps the previous version. Opening another .ics file (from an invitation, for example) imports its events into the Calendar, without changing the original file.</p>
+<p>The clock's calendar marks the days with events and shows today's; clicking a day opens the Calendar on it. In the Command Prompt, Claude can also see and add appointments to the Calendar.</p>
+<h2>Reminders</h2>
+<p>At the reminder's time, even with the Calendar closed, the reminders window appears, with a sound: <b>Snooze</b> (from 5 minutes to 1 hour) or <b>Dismiss</b>. With "Do not disturb" on, the reminder stays only in the tray's bell.</p>
+<h2>Sticky notes</h2>
+<p><b>Start › Programs › Accessories › Sticky Notes</b> (or right-clicking the desktop › <b>New sticky note</b>) puts a yellow paper on the desktop. Write on it: the note saves itself. The <b>+</b> creates another, the <b>…</b> changes the color and opens the note in Notepad, and the <b>×</b> sends the note to the Trash. Drag it by the top strip and resize it by the corner.</p>
+<p>The notes stay behind the windows; from Start, they come to the front until the next click outside them (or <b>Esc</b>). Each note is a text file in <b>Documents › Sticky Notes</b>.</p>`],
+    es: ['Agenda y notas adhesivas', `
+<h2>La Agenda</h2>
+<p><b>Inicio › Programas › Accesorios › Agenda</b> muestra el mes a la izquierda y los eventos del día a la derecha (o los de los próximos 30 días). <b>Nuevo evento</b> (o doble clic en un día) pide el título, el lugar, el comienzo y el fin (o todo el día), la repetición (todos los días, semanas, meses o años, hasta una fecha), el recordatorio y las notas. En un evento que se repite, cambiar o eliminar pregunta si es <b>solo esta vez</b> o todas.</p>
+<p>Los eventos quedan en <b>Mis documentos › Agenda.ics</b>, el mismo formato de Google Calendar, Outlook y el Calendario del Mac. Cada cambio guarda la versión anterior. Abrir otro archivo .ics (de una invitación, por ejemplo) importa sus eventos a la Agenda, sin cambiar el archivo de origen.</p>
+<p>El calendario del reloj marca los días con eventos y muestra los de hoy; un clic en un día abre la Agenda en él. En la Línea de comandos, Claude también ve y anota citas en la Agenda.</p>
+<h2>Los recordatorios</h2>
+<p>A la hora del recordatorio, aun con la Agenda cerrada, aparece la ventana de los recordatorios, con un sonido: <b>Posponer</b> (de 5 minutos a 1 hora) o <b>Descartar</b>. Con "No molestar" activado, el recordatorio queda solo en la campana de la bandeja.</p>
+<h2>Las notas adhesivas</h2>
+<p><b>Inicio › Programas › Accesorios › Notas adhesivas</b> (o el clic derecho en el escritorio › <b>Nueva nota adhesiva</b>) pone un papel amarillo en el escritorio. Escribe en él: la nota se guarda sola. El <b>+</b> crea otra, el <b>…</b> cambia el color y abre la nota en el Bloc de notas, y la <b>×</b> manda la nota a la Papelera. Arrástrala por la franja de arriba y cambia el tamaño por la esquina.</p>
+<p>Las notas quedan detrás de las ventanas; desde Inicio, vienen al frente hasta el próximo clic fuera de ellas (o <b>Esc</b>). Cada nota es un archivo de texto en <b>Mis documentos › Notas adhesivas</b>.</p>`],
+  },
+  {
+    id: 'celular', icone: 'celular',
+    'pt-BR': ['Receber do celular', `
+<h2>Mandar fotos e arquivos do celular</h2>
+<p><b>Iniciar › Programas › Acessórios › Receber do celular</b> mostra um código QR. Com o celular na mesma rede Wi-Fi do computador, aponte a câmera do celular para o código (ou digite o endereço no navegador dele). O computador pergunta se aceita aquele aparelho; aceito, o celular escolhe as fotos e os arquivos, e eles chegam em <b>Meus documentos › Recebidos</b>, sem gravar por cima de nada.</p>
+<h2>A segurança</h2>
+<p>Nada sai do computador: o celular só manda. O endereço tem um código que muda a cada vez, só funciona na rede local e só enquanto a janela está aberta (ela desliga sozinha depois de 15 minutos sem uso). Um aparelho só manda depois de aceito, e muitas tentativas com o código errado desligam tudo. Aceite só o seu celular, ou o de alguém que você conhece.</p>
+<p>No Windows e no Mac, o sistema pode perguntar, na primeira vez, se o Retro Computer pode receber conexões da rede: permita só nas redes particulares. No Linux com o firewall ligado, o celular pode não chegar.</p>`],
+    en: ['Receive from Phone', `
+<h2>Sending photos and files from the phone</h2>
+<p><b>Start › Programs › Accessories › Receive from Phone</b> shows a QR code. With the phone on the same Wi-Fi network as the computer, point the phone's camera at the code (or type the address in its browser). The computer asks whether to accept that device; once accepted, the phone chooses the photos and files, and they arrive in <b>Documents › Received</b>, without overwriting anything.</p>
+<h2>Security</h2>
+<p>Nothing leaves the computer: the phone only sends. The address has a code that changes every time, works only on the local network and only while the window is open (it turns itself off after 15 minutes without use). A device sends only after it is accepted, and many attempts with the wrong code turn everything off. Accept only your phone, or that of someone you know.</p>
+<p>On Windows and on the Mac, the system may ask, the first time, whether Retro Computer can receive network connections: allow it only on private networks. On Linux with the firewall on, the phone may not reach it.</p>`],
+    es: ['Recibir del celular', `
+<h2>Mandar fotos y archivos del celular</h2>
+<p><b>Inicio › Programas › Accesorios › Recibir del celular</b> muestra un código QR. Con el celular en la misma red Wi-Fi de la computadora, apunta la cámara del celular al código (o escribe la dirección en su navegador). La computadora pregunta si acepta ese aparato; aceptado, el celular elige las fotos y los archivos, y llegan a <b>Mis documentos › Recibidos</b>, sin sobrescribir nada.</p>
+<h2>La seguridad</h2>
+<p>Nada sale de la computadora: el celular solo manda. La dirección tiene un código que cambia cada vez, solo funciona en la red local y solo mientras la ventana está abierta (se apaga sola tras 15 minutos sin uso). Un aparato solo manda después de aceptado, y muchos intentos con el código equivocado apagan todo. Acepta solo tu celular, o el de alguien que conoces.</p>
+<p>En Windows y en el Mac, el sistema puede preguntar, la primera vez, si Retro Computer puede recibir conexiones de la red: permítelo solo en las redes privadas. En Linux con el firewall encendido, el celular puede no llegar.</p>`],
+  },
+  {
     id: 'barra', icone: 'relogio',
     'pt-BR': ['A barra de tarefas', `
 <h2>À esquerda</h2>
@@ -791,21 +845,27 @@ const TOPICOS = [
 <p><b>Reiniciar</b> recarrega a área de trabalho. <b>Sair da tela cheia</b> mostra o Retro Computer numa janela do computador principal.</p>
 <p>No Retro Computer como sistema do Linux, as opções são desligar, reiniciar e suspender o computador e sair da sessão.</p>
 <p>Com mais de um usuário (Painel de controle › Usuários), a caixa também oferece <b>Fechar todos os programas e entrar como outro usuário</b>.</p>
-<p>Para sair de perto sem fechar nada, use <b>Iniciar › Bloquear o computador</b>.</p>`],
+<p>Para sair de perto sem fechar nada, use <b>Iniciar › Bloquear o computador</b>.</p>
+<h2>Ao ligar de novo</h2>
+<p>As janelas que estavam abertas voltam, no mesmo lugar: o Explorador na mesma pasta, o Bloco de notas com o mesmo arquivo, o Navegador no mesmo endereço. Para abrir sempre com a área de trabalho limpa, desmarque <b>Painel de controle › Aparência › Configurações › Reabrir as janelas que estavam abertas</b>.</p>`],
     en: ['Shut Down', `
 <h2>Shutting down the computer</h2>
 <p><b>Start › Shut Down</b> closes the programs (each one asks if there is anything to save) and quits Retro Computer. The files stay on drive C:.</p>
 <p><b>Restart</b> reloads the desktop. <b>Leave full screen</b> shows Retro Computer in a window of the main computer.</p>
 <p>With Retro Computer as the Linux system, the options are to turn off, restart and suspend the computer, and to sign out.</p>
 <p>With more than one user (Control Panel › Users), the box also offers <b>Close all programs and log on as a different user</b>.</p>
-<p>To step away without closing anything, use <b>Start › Lock the Computer</b>.</p>`],
+<p>To step away without closing anything, use <b>Start › Lock the Computer</b>.</p>
+<h2>When you turn it on again</h2>
+<p>The windows that were open come back, in the same place: Explorer in the same folder, Notepad with the same file, the Browser at the same address. To always start with a clean desktop, uncheck <b>Control Panel › Appearance › Settings › Reopen the windows that were open</b>.</p>`],
     es: ['Apagar', `
 <h2>Apagar la computadora</h2>
 <p><b>Inicio › Apagar</b> cierra los programas (cada uno pregunta si hay algo por guardar) y sale de Retro Computer. Los archivos quedan en el disco C:.</p>
 <p><b>Reiniciar</b> recarga el escritorio. <b>Salir de la pantalla completa</b> muestra Retro Computer en una ventana de la computadora principal.</p>
 <p>Con Retro Computer como sistema de Linux, las opciones son apagar, reiniciar y suspender la computadora, y cerrar la sesión.</p>
 <p>Con más de un usuario (Panel de control › Usuarios), el cuadro también ofrece <b>Cerrar todos los programas y entrar como otro usuario</b>.</p>
-<p>Para alejarte sin cerrar nada, usa <b>Inicio › Bloquear la computadora</b>.</p>`],
+<p>Para alejarte sin cerrar nada, usa <b>Inicio › Bloquear la computadora</b>.</p>
+<h2>Al encender de nuevo</h2>
+<p>Las ventanas que estaban abiertas vuelven, en el mismo lugar: el Explorador en la misma carpeta, el Bloc de notas con el mismo archivo, el Navegador en la misma dirección. Para empezar siempre con el escritorio limpio, desmarca <b>Panel de control › Apariencia › Configuración › Volver a abrir las ventanas que estaban abiertas</b>.</p>`],
   },
 ];
 

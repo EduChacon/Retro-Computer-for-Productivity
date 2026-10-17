@@ -1837,7 +1837,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   async ajuda() {
     // Os tópicos da Ajuda, um por captura (o texto rolado até o fim mostra se cabe).
     await fecharTudo();
-    for (const topico of ['inicio', 'pendrives', 'pdf', 'busca', 'barra', 'internet', 'acessorios', 'painel', 'seguranca', 'linux', 'atalhos']) {
+    for (const topico of ['inicio', 'pendrives', 'pdf', 'busca', 'agenda', 'celular', 'barra', 'internet', 'acessorios', 'painel', 'seguranca', 'linux', 'atalhos']) {
       await abrir('ajuda', { topico });
       await pagina.waitForTimeout(300);
       await foto('ajuda-' + topico);
@@ -4015,6 +4015,18 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.keyboard.type('Ligar para o cartório até as 17h.\nLevar a certidão.');
     await pagina.waitForTimeout(1200);
     await foto('notas-nova');
+    // Pelo Iniciar, a nota fica na frente da janela (no tema Mac, as duas se cobrem).
+    const naFrente = () => pagina.evaluate(() => {
+      const r = document.querySelector('#notas .nota').getBoundingClientRect();
+      return !!document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2).closest('.nota');
+    });
+    const cobre = await pagina.evaluate(() => {
+      const a = document.querySelector('#notas .nota').getBoundingClientRect();
+      const b = document.querySelector('.janela').getBoundingClientRect();
+      const x = a.x + a.width / 2, y = a.y + a.height / 2;
+      return x > b.left && x < b.right && y > b.top && y < b.bottom;
+    });
+    console.log('nota na frente:', await naFrente(), '| a janela passa por ela:', cobre);
     await pagina.click('#notas .nota >> nth=0 >> .nota-mais');
     await pagina.waitForFunction(() => document.querySelectorAll('#notas .nota').length === 2, null, { timeout: 5000 });
     await pagina.keyboard.type('Comprar papel A4');
@@ -4036,6 +4048,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.keyboard.press('Escape');
     await pagina.click('.janela .titulo');
     await pagina.waitForTimeout(400);
+    console.log('depois do Esc, na frente:', cobre ? await naFrente() : '(a janela não passa por ela)');
     await foto('notas-atras');
     // Um programa de fora muda a nota (o .txt): ela muda na tela.
     const primeira = fs.readdirSync(pasta).sort()[0];

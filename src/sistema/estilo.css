@@ -87,6 +87,8 @@ u.atalho { text-decoration: underline; text-decoration-skip-ink: none; text-unde
 }
 #janelas, #notas { position: absolute; inset: 0 0 var(--altura-barra) 0; pointer-events: none; }
 #janelas > *, #notas > * { pointer-events: auto; }
+/* Pelo Iniciar, as notas ficam acima das janelas (o z-index delas só cresce a partir de 11) e abaixo da barra (600000). */
+#notas.na-frente { z-index: 500000; }
 /* As duas telas em tela cheia (telas.js): os ícones, as janelas novas e a barra de tarefas na tela
    principal (--tela-*), e o papel de parede inteiro em cada tela (.fundo-tela). As janelas andam
    pelas duas; o vão entre monitores de tamanhos diferentes fica preto (ninguém o vê). */
