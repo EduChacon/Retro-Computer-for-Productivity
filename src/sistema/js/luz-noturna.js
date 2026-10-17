@@ -3,6 +3,8 @@
  * tela ficam mais quentes, com menos azul, para cansar menos a vista. No Retro Computer como
  * sistema do Linux, pela correção de gama do xrandr (vale também para os programas do Linux);
  * fora dele, um filtro por cima da área de trabalho. Configura-se em Painel › Aparência › Efeitos.
+ * O filtro fica na camada de cima do Chromium (como um popover): o vídeo em tela cheia também vai
+ * para ela, acima de qualquer z-index, e o filtro sobe de novo por cima dele (luzPorCima).
  */
 import { h } from './util.js';
 import { estado, eventos } from './sistema.js';
@@ -47,15 +49,31 @@ export async function aplicarLuzNoturna(previa) {
   }
   if (!filtro) {
     filtro = h('div#luz-noturna', { 'aria-hidden': 'true' });
+    filtro.setAttribute('popover', 'manual');
     document.body.append(filtro);
   }
   filtro.style.background = corDoFiltro(k);
   filtro.hidden = k === 0;
+  luzPorCima();
+}
+
+/**
+ * Põe o filtro por cima de tudo o que está na camada de cima: na camada, o último que entra fica
+ * acima. Chamada quando algo entra nela (a tela cheia de um site, de um vídeo, de um programa).
+ */
+export function luzPorCima() {
+  if (!filtro || filtro.hidden) return;
+  try {
+    if (filtro.matches(':popover-open')) filtro.hidePopover();
+    filtro.showPopover();
+  } catch { }
 }
 
 export function iniciarLuzNoturna() {
   aplicarLuzNoturna();
   eventos.on('config', () => aplicarLuzNoturna());
+  // A tela cheia de um elemento (o webview de um site, o quadro de um programa) o leva para a camada de cima.
+  document.addEventListener('fullscreenchange', () => setTimeout(luzPorCima, 0));
   // A virada da hora (às 20h liga, às 7h desliga): uma olhada por minuto basta.
   setInterval(() => aplicarLuzNoturna(), 60 * 1000);
 }

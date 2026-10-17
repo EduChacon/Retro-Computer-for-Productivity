@@ -14,7 +14,9 @@ import { registrarApp, estado, definirConfig, avisar, eventos, abrir } from '../
 import { entrada, confirmar, mensagem, ajustarAoConteudo } from '../dialogos.js';
 import { tocar } from '../sons.js';
 import { tr, marcar, idiomaAtual } from '../idioma.js';
+import { luzPorCima } from '../luz-noturna.js';
 import { reorganizavel, arrastando } from '../reorganizar.js';
+import { ehPasta, itensDe, todosFavoritos, favoritoEm, lugarDe, semFavorito, comFavorito, moverFavorito, comPasta, semPasta, reordenada, reordenadaNaPasta, comIcone } from '../favoritos.js';
 
 const SESSAO = 'persist:navegador';
 
@@ -106,8 +108,7 @@ const origemDe = (url) => { try { return new URL(url).origin; } catch { return '
 // Os favoritos sem ícone: o /favicon.ico do site é procurado uma vez por abertura do Retro Computer.
 const procurados = new Set();
 function completarIcones() {
-  const lista = favoritos();
-  const faltam = lista.filter((f) => !f.icone && origemDe(f.url) && !procurados.has(origemDe(f.url)));
+  const faltam = todosFavoritos(favoritos()).map((x) => x.f).filter((f) => !f.icone && origemDe(f.url) && !procurados.has(origemDe(f.url)));
   for (const f of faltam) {
     const origem = origemDe(f.url);
     procurados.add(origem);
@@ -118,9 +119,12 @@ function completarIcones() {
 /** Guarda o ícone nos favoritos do site que ainda não têm um. */
 function guardarIcone(origem, icone) {
   const lista = favoritos();
-  if (!lista.some((f) => !f.icone && origemDe(f.url) === origem)) return;
-  salvarFavoritos(lista.map((f) => (!f.icone && origemDe(f.url) === origem ? { ...f, icone } : f))).catch(() => { });
+  if (!todosFavoritos(lista).some((x) => !x.f.icone && origemDe(x.f.url) === origem)) return;
+  salvarFavoritos(comIcone(lista, (url) => origemDe(url) === origem, icone)).catch(() => { });
 }
+
+/** O nome de um favorito num menu (o & não vira a letra sublinhada). */
+const rotuloMenu = (nome) => String(nome || '').replace(/&/g, '&&');
 
 /** Os favoritos mudaram (por aqui, por outra janela ou pelo Claude): a barra e a página inicial de todas as janelas. */
 eventos.on('config', (_c, parte) => {
@@ -199,6 +203,7 @@ class Navegador {
       status: [tr('Pronto'), ''],
     });
     abertos.add(this);
+    this.j.navegador = this; // para os roteiros de capturas (testes/capturas.mjs)
     this.j.ev.on('fechada', () => { abertos.delete(this); if (this.cheia) this.sairTelaCheia(this.cheia); });
     // Os botões laterais do mouse sobre a moldura (sobre a página, quem avisa é o navegador-preload.js).
     this.j.el.addEventListener('mouseup', (e) => {
@@ -218,7 +223,7 @@ class Navegador {
     this.btVoltar = bt('voltar', tr('Voltar (Alt+Esquerda)'), () => this.voltar());
     this.btAvancar = bt('avancar', tr('Avançar (Alt+Direita)'), () => this.avancar());
     this.btAtualizar = bt('atualizar', tr('Atualizar (F5)'), () => (this.carregando ? this.wv && this.wv.stop() : this.atualizar()));
-    this.btInicio = bt('inicio', tr('Página inicial (Alt+Home)'), () => this.mostrarInicio());
+    this.btInicio = bt('inicio', tr('Página inicial (Alt+Home)'), () => { if (this.aba) this.aba.pastaInicio = null; this.mostrarInicio(); });
     this.campo = h('input.nav-endereco', { type: 'text', spellcheck: false, placeholder: tr('Digite um endereço ou o que quer pesquisar') });
     this.campo.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); this.ir(this.campo.value); }
@@ -244,10 +249,11 @@ class Navegador {
     this.btMaisLinks = h('button.ferramenta.nav-mais', { type: 'button', title: tr('Mais favoritos'), hidden: true }, '»');
     this.btMaisLinks.addEventListener('click', () => {
       const r = this.btMaisLinks.getBoundingClientRect();
-      abrirMenu(this.escondidos.map((f) => ({ rotulo: f.nome.replace(/&/g, '&&'), icone: f.icone || iconeDe(f.url), acao: () => this.ir(f.url) })), { x: r.left, y: r.bottom });
+      abrirMenu(this.itensDoMenu(favoritos()).filter((_, i) => this.escondidos.includes(i)), { x: r.left, y: r.bottom });
     });
     this.escondidos = [];
     this.barraLinks = h('div.nav-barra-links', this.links, this.btMaisLinks);
+    this.barraLinks.addEventListener('contextmenu', (e) => { if (!e.target.closest('button')) { e.preventDefault(); this.menuDoFundoFavoritos(e); } });
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.ajustarLinks()).observe(this.barraLinks);
 
     this.area = h('div.nav-area');
@@ -306,9 +312,17 @@ class Navegador {
         { rotulo: tr('&Reabrir a aba fechada'), desativado: !this.fechadas.length, acao: () => this.reabrirAba() },
       ], { x: e.clientX, y: e.clientY });
     });
+    // Arrastar muda a ordem das abas (o clique de soltar não troca de aba nem a fecha).
+    reorganizavel(el, this.listaAbas, (els) => this.reordenarAbas(els), { seletor: '.nav-aba' });
     aba.nomeEl = nome;
     aba.iconeEl = icone;
     return el;
+  }
+
+  /** A ordem nova das abas, depois de arrastar uma (vale para o Ctrl+Tab e o Ctrl+1 a 9). */
+  reordenarAbas(els) {
+    const nova = els.map((el) => this.abas.find((a) => a.botao === el)).filter(Boolean);
+    if (nova.length === this.abas.length) this.abas = nova;
   }
 
   /** O nome e o ícone da aba (e o título da janela, se for a da frente). */
@@ -670,6 +684,7 @@ class Navegador {
       this.cheia = wv;
       wv.classList.add('nav-tela-cheia');
       try { wv.popover = 'manual'; wv.showPopover(); } catch { }
+      luzPorCima();
       retro.navegador.telaCheia(true).catch(() => { });
     }, 150);
   }
@@ -882,31 +897,65 @@ class Navegador {
     const lista = favoritos();
     return [
       { rotulo: tr('&Adicionar aos favoritos…'), atalho: 'Ctrl+D', desativado: !this.visivel(), acao: () => this.adicionarFavorito() },
-      { rotulo: tr('&Organizar favoritos'), sub: () => lista.length ? lista.map((f, i) => ({ rotulo: tr('Remover "{nome}"', { nome: f.nome }), acao: () => this.removerFavorito(i) })) : [{ rotulo: tr('(Vazio)'), desativado: true }] },
+      { rotulo: tr('Nova &pasta…'), acao: () => this.novaPasta() },
+      { rotulo: tr('&Organizar favoritos'), sub: () => this.itensOrganizar() },
       { rotulo: tr('Barra de &favoritos'), marcado: barraLinksLigada(), acao: () => alternarBarraLinks() },
       { separador: true },
-      ...lista.map((f) => ({ rotulo: f.nome.replace(/&/g, '&&'), icone: f.icone || iconeDe(f.url), acao: () => this.ir(f.url) })),
+      ...this.itensDoMenu(lista),
     ];
   }
 
-  /** O endereço da aba da frente está nos favoritos? (o índice, ou -1) */
-  indiceFavorito() {
-    if (!this.url || !this.aba || !this.aba.inicio.hidden) return -1;
-    return favoritos().findIndex((f) => f.url === this.url);
+  /** Os favoritos num menu: as pastas viram submenus. */
+  itensDoMenu(lista) {
+    return lista.map((f, i) => (ehPasta(f)
+      ? { rotulo: rotuloMenu(f.nome), icone: 'pasta', sub: () => this.itensDaPasta(i) }
+      : { rotulo: rotuloMenu(f.nome), icone: f.icone || iconeDe(f.url), acao: () => this.ir(f.url) }));
+  }
+
+  /** O menu de uma pasta: os favoritos dela e "Abrir tudo em abas". */
+  itensDaPasta(i) {
+    const itens = itensDe(favoritos()[i]);
+    if (!itens.length) return [{ rotulo: tr('(Vazio)'), desativado: true }];
+    return [
+      ...itens.map((g) => ({ rotulo: rotuloMenu(g.nome), icone: g.icone || iconeDe(g.url), acao: () => this.ir(g.url) })),
+      { separador: true },
+      { rotulo: tr('Abrir &tudo em abas'), acao: () => this.abrirPasta(i) },
+    ];
+  }
+
+  /** Favoritos › Organizar: tirar um favorito ou uma pasta. */
+  itensOrganizar() {
+    const lista = favoritos();
+    if (!lista.length) return [{ rotulo: tr('(Vazio)'), desativado: true }];
+    return lista.map((f, i) => (ehPasta(f)
+      ? {
+        rotulo: rotuloMenu(f.nome), icone: 'pasta', sub: () => [
+          ...itensDe(f).map((g, j) => ({ rotulo: tr('Remover "{nome}"', { nome: rotuloMenu(g.nome) }), acao: () => this.removerFavorito([i, j]) })),
+          ...(itensDe(f).length ? [{ separador: true }] : []),
+          { rotulo: tr('&Excluir a pasta…'), acao: () => this.excluirPasta(i) },
+        ],
+      }
+      : { rotulo: tr('Remover "{nome}"', { nome: rotuloMenu(f.nome) }), acao: () => this.removerFavorito([i]) }));
+  }
+
+  /** O endereço da aba da frente está nos favoritos (também numa pasta)? O lugar dele, ou null. */
+  lugarFavorito() {
+    if (!this.url || !this.aba || !this.aba.inicio.hidden) return null;
+    return lugarDe(favoritos(), this.url);
   }
 
   atualizarEstrela() {
     if (!this.btEstrela) return;
-    const i = this.indiceFavorito();
-    this.btEstrela.classList.toggle('apertado', i >= 0);
-    this.btEstrela.title = i >= 0 ? tr('Esta página está nos favoritos (clique para tirar)') : tr('Adicionar aos favoritos (Ctrl+D)');
-    this.btEstrela.disabled = !this.visivel() && i < 0;
+    const c = this.lugarFavorito();
+    this.btEstrela.classList.toggle('apertado', !!c);
+    this.btEstrela.title = c ? tr('Esta página está nos favoritos (clique para tirar)') : tr('Adicionar aos favoritos (Ctrl+D)');
+    this.btEstrela.disabled = !this.visivel() && !c;
   }
 
   /** A estrela do endereço: guarda a página nos favoritos ou a tira deles. */
   alternarFavorito() {
-    const i = this.indiceFavorito();
-    if (i >= 0) return this.removerFavorito(i);
+    const c = this.lugarFavorito();
+    if (c) return this.removerFavorito(c);
     return this.adicionarFavorito();
   }
 
@@ -920,31 +969,94 @@ class Navegador {
     avisar(tr('Favorito adicionado'), nome, { icone: 'navegador', som: null, guardar: false });
   }
 
-  async removerFavorito(i) {
+  async removerFavorito(c) {
     const lista = favoritos();
-    if (!lista[i]) return;
-    if (!(await confirmar(tr('Remover "{nome}" dos favoritos?', { nome: lista[i].nome }), { titulo: tr('Favoritos') }))) return;
-    await salvarFavoritos(lista.filter((_, k) => k !== i));
+    const f = favoritoEm(lista, c);
+    if (!f || ehPasta(f)) return;
+    if (!(await confirmar(tr('Remover "{nome}" dos favoritos?', { nome: f.nome }), { titulo: tr('Favoritos') }))) return;
+    await salvarFavoritos(semFavorito(favoritos(), c));
   }
 
-  async renomearFavorito(i) {
-    const lista = favoritos();
-    if (!lista[i]) return;
-    const nome = await entrada({ titulo: tr('Renomear o favorito'), texto: tr('Nome do favorito:'), valor: lista[i].nome, icone: 'navegador' });
+  /** Renomeia um favorito ou uma pasta. */
+  async renomearFavorito(c) {
+    const f = favoritoEm(favoritos(), c);
+    if (!f) return;
+    const pasta = ehPasta(f);
+    const nome = await entrada({ titulo: pasta ? tr('Renomear a pasta') : tr('Renomear o favorito'), texto: pasta ? tr('Nome da pasta:') : tr('Nome do favorito:'), valor: f.nome, icone: pasta ? 'pasta' : 'navegador' });
     if (!nome || !nome.trim()) return;
-    await salvarFavoritos(lista.map((f, k) => (k === i ? { ...f, nome: nome.trim() } : f)));
+    await salvarFavoritos(comFavorito(favoritos(), c, (x) => ({ ...x, nome: nome.trim() })));
   }
 
-  /** O menu de um favorito (na barra e na página inicial). */
-  menuFavorito(f, i, e) {
+  /** Uma pasta nova no fim da barra; com c, o favorito desse lugar já entra nela. */
+  async novaPasta(c = null) {
+    const nome = await entrada({ titulo: tr('Nova pasta'), texto: tr('Nome da pasta:'), valor: tr('Nova pasta'), icone: 'pasta' });
+    if (!nome || !nome.trim()) return;
+    const lista = comPasta(favoritos(), nome.trim());
+    await salvarFavoritos(c ? moverFavorito(lista, c, lista.length - 1) : lista);
+  }
+
+  /** Tira a pasta; os favoritos dela ficam na barra, no lugar dela. */
+  async excluirPasta(i) {
+    const p = favoritos()[i];
+    if (!ehPasta(p)) return;
+    const texto = itensDe(p).length
+      ? tr('Excluir a pasta "{nome}"? Os favoritos dela ficam na barra de favoritos.', { nome: p.nome })
+      : tr('Excluir a pasta "{nome}"?', { nome: p.nome });
+    if (!(await confirmar(texto, { titulo: tr('Favoritos') }))) return;
+    await salvarFavoritos(semPasta(favoritos(), i));
+  }
+
+  /** Os favoritos da pasta, cada um numa aba (a primeira fica na frente). */
+  abrirPasta(i) {
+    itensDe(favoritos()[i]).forEach((g, k) => this.novaAba(g.url, { frente: k === 0 }));
+  }
+
+  /** Leva o favorito do lugar c para a pasta p (ou, com p null, para a barra). */
+  moverPara(c, p) {
+    const lista = favoritos();
+    const nova = moverFavorito(lista, c, p);
+    if (nova === lista) { this.desenharLinks(); return Promise.resolve(); }
+    return salvarFavoritos(nova).catch(() => this.desenharLinks());
+  }
+
+  /** Os destinos de "Mover para": a barra (para o que está numa pasta), as outras pastas e uma pasta nova. */
+  destinosDe(c) {
+    const lista = favoritos();
+    const r = [];
+    if (c.length === 2) r.push({ rotulo: tr('Barra de favoritos'), icone: 'favoritos', acao: () => this.moverPara(c, null) });
+    lista.forEach((p, i) => { if (ehPasta(p) && !(c.length === 2 && c[0] === i)) r.push({ rotulo: rotuloMenu(p.nome), icone: 'pasta', acao: () => this.moverPara(c, i) }); });
+    if (r.length) r.push({ separador: true });
+    r.push({ rotulo: tr('Nova &pasta…'), acao: () => this.novaPasta(c) });
+    return r;
+  }
+
+  /** O menu de um favorito (na barra, na página inicial e dentro de uma pasta dela). */
+  menuFavorito(f, c, e) {
     abrirMenu([
       { rotulo: tr('&Abrir'), negrito: true, acao: () => this.ir(f.url) },
       { rotulo: tr('Abrir em nova a&ba'), acao: () => this.novaAba(f.url) },
       { rotulo: tr('Abrir em &nova janela'), acao: () => abrirNavegador({ url: f.url }) },
       { separador: true },
-      { rotulo: tr('&Renomear…'), acao: () => this.renomearFavorito(i) },
-      { rotulo: tr('Re&mover dos favoritos'), acao: () => this.removerFavorito(i) },
+      { rotulo: tr('Mo&ver para'), sub: () => this.destinosDe(c) },
+      { rotulo: tr('&Renomear…'), acao: () => this.renomearFavorito(c) },
+      { rotulo: tr('Re&mover dos favoritos'), acao: () => this.removerFavorito(c) },
     ], { x: e.clientX, y: e.clientY });
+  }
+
+  /** O menu de uma pasta (na barra e na página inicial). */
+  menuPasta(i, e) {
+    abrirMenu([
+      { rotulo: tr('&Abrir'), negrito: true, acao: () => this.mostrarPastaNoInicio(i) },
+      { rotulo: tr('Abrir &tudo em abas'), desativado: !itensDe(favoritos()[i]).length, acao: () => this.abrirPasta(i) },
+      { separador: true },
+      { rotulo: tr('&Renomear…'), acao: () => this.renomearFavorito([i]) },
+      { rotulo: tr('&Excluir a pasta…'), acao: () => this.excluirPasta(i) },
+    ], { x: e.clientX, y: e.clientY });
+  }
+
+  /** O menu do fundo da barra de favoritos e da página inicial. */
+  menuDoFundoFavoritos(e) {
+    abrirMenu([{ rotulo: tr('Nova &pasta…'), acao: () => this.novaPasta() }], { x: e.clientX, y: e.clientY });
   }
 
   /* ---------- A barra de favoritos ---------- */
@@ -969,20 +1081,31 @@ class Navegador {
   }
 
   desenharLinks() {
-    // No meio de um arrasto, a barra só é refeita depois de soltar (o botão arrastado sumiria).
-    if (arrastando()) { this.linksDepois = true; return; }
+    // No meio de um arrasto na barra, ela só é refeita depois de soltar (o botão arrastado sumiria).
+    if (arrastando(this.links)) { this.linksDepois = true; return; }
     const lista = favoritos();
     this.links.replaceChildren(...(lista.length ? lista.map((f, i) => {
-      const el = h('button.ferramenta.nav-link', { type: 'button', title: `${f.nome}\n${f.url}` }, imgFavorito(f), h('span', f.nome));
-      el.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) this.novaAba(f.url, { frente: false }); else this.ir(f.url); });
-      // O botão do meio abre numa aba nova, por trás (como nos navegadores).
-      el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.novaAba(f.url, { frente: false }); } });
-      el.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
-      el.addEventListener('contextmenu', (e) => { e.preventDefault(); this.menuFavorito(f, i, e); });
+      let el;
+      if (ehPasta(f)) {
+        // A pasta abre o menu com os favoritos dela, logo abaixo, como as da barra de Links da época.
+        el = h('button.ferramenta.nav-link.nav-pasta', { type: 'button', title: f.nome }, img('pasta', 16), h('span', f.nome));
+        el.addEventListener('click', () => { const r = el.getBoundingClientRect(); abrirMenu(this.itensDaPasta(i), { x: r.left, y: r.bottom }); });
+        el.addEventListener('contextmenu', (e) => { e.preventDefault(); this.menuPasta(i, e); });
+      } else {
+        el = h('button.ferramenta.nav-link', { type: 'button', title: `${f.nome}\n${f.url}` }, imgFavorito(f), h('span', f.nome));
+        el.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) this.novaAba(f.url, { frente: false }); else this.ir(f.url); });
+        // O botão do meio abre numa aba nova, por trás (como nos navegadores).
+        el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.novaAba(f.url, { frente: false }); } });
+        el.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+        el.addEventListener('contextmenu', (e) => { e.preventDefault(); this.menuFavorito(f, [i], e); });
+      }
       el.dataset.i = i;
-      // Arrastar muda a ordem (os que estão no », por não caberem, continuam no fim).
+      // Arrastar muda a ordem (os que estão no », por não caberem, continuam no fim); solto no
+      // miolo de uma pasta, o favorito entra nela.
       reorganizavel(el, this.links, (bs) => this.reordenarFavoritos(bs.map((b) => Number(b.dataset.i))), {
-        depois: () => { if (this.linksDepois) { this.linksDepois = false; this.desenharLinks(); } },
+        dentro: (alvo, peca) => alvo.classList.contains('nav-pasta') && !peca.classList.contains('nav-pasta'),
+        aoEntrar: (peca, alvo) => this.moverPara([Number(peca.dataset.i)], Number(alvo.dataset.i)),
+        depois: (soltou) => { if (this.linksDepois || !soltou) { this.linksDepois = false; this.desenharLinks(); } },
       });
       return el;
     }) : [h('span.nav-links-vazio', tr('Para pôr uma página aqui, clique na estrela do endereço.'))]));
@@ -993,8 +1116,8 @@ class Navegador {
   /** A ordem nova dos favoritos, pelos índices dos botões à vista; os do » ficam no fim, na ordem deles. */
   reordenarFavoritos(ordem) {
     const lista = favoritos();
-    const nova = [...ordem, ...lista.map((_, i) => i).filter((i) => !ordem.includes(i))].map((i) => lista[i]).filter(Boolean);
-    if (nova.length !== lista.length || nova.every((f, i) => f === lista[i])) return this.desenharLinks();
+    const nova = reordenada(lista, ordem);
+    if (nova.every((f, i) => f === lista[i])) return this.desenharLinks();
     salvarFavoritos(nova).catch(() => this.desenharLinks());
   }
 
@@ -1008,10 +1131,9 @@ class Navegador {
     if (!largura || this.links.scrollWidth <= this.links.clientWidth + 1) { this.escondidos = []; return; }
     this.btMaisLinks.hidden = false;
     const limite = this.links.getBoundingClientRect().right;
-    const lista = favoritos();
     this.escondidos = [];
     for (const b of botoes) {
-      if (b.getBoundingClientRect().right > limite + 0.5) { b.hidden = true; this.escondidos.push(lista[Number(b.dataset.i)]); }
+      if (b.getBoundingClientRect().right > limite + 0.5) { b.hidden = true; this.escondidos.push(Number(b.dataset.i)); }
     }
   }
 
@@ -1019,21 +1141,71 @@ class Navegador {
 
   desenharInicio(aba) {
     pintarFundo(aba);
+    // No meio de um arrasto entre os ícones, a página só é refeita depois de soltar.
+    if (aba.gradeInicio && arrastando(aba.gradeInicio)) { aba.inicioDepois = true; return; }
     const campoBusca = h('input', { type: 'text', spellcheck: false, placeholder: tr('Pesquisar na internet') });
     const pesquisar = () => { if (campoBusca.value.trim()) this.ir(busca().url + encodeURIComponent(campoBusca.value.trim()), aba); };
     campoBusca.addEventListener('keydown', (e) => { if (e.key === 'Enter') pesquisar(); });
-    const grade = h('div.nav-favoritos', favoritos().map((f, i) => {
-      const el = h('button.nav-fav', { title: f.url, on: { click: () => this.ir(f.url, aba) } },
-        f.icone ? h('img', { src: f.icone, width: 32, height: 32, alt: '', className: 'nav-fav-site' }) : img(iconeDe(f.url), 32), h('span', f.nome));
-      el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.novaAba(f.url, { frente: false }); } });
-      el.addEventListener('contextmenu', (e) => { e.preventDefault(); this.menuFavorito(f, i, e); });
+    const lista = favoritos();
+    // Uma pasta aberta na página inicial mostra os favoritos dela, com o ícone de voltar no começo.
+    if (aba.pastaInicio != null && !ehPasta(lista[aba.pastaInicio])) aba.pastaInicio = null;
+    const p = aba.pastaInicio;
+    const itens = p != null ? itensDe(lista[p]) : lista;
+    const grade = h('div.nav-favoritos');
+    aba.gradeInicio = grade;
+    const lugar = (k) => (p != null ? [p, k] : [k]);
+    const pecas = itens.map((f, k) => {
+      let el;
+      if (ehPasta(f)) {
+        el = h('button.nav-fav.nav-fav-pasta', { title: f.nome, on: { click: () => { aba.pastaInicio = k; this.desenharInicio(aba); } } }, img('pasta', 32), h('span', f.nome));
+        el.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); this.menuPasta(k, e); });
+      } else {
+        el = h('button.nav-fav', { title: f.url, on: { click: () => this.ir(f.url, aba) } },
+          f.icone ? h('img', { src: f.icone, width: 32, height: 32, alt: '', className: 'nav-fav-site' }) : img(iconeDe(f.url), 32), h('span', f.nome));
+        el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); this.novaAba(f.url, { frente: false }); } });
+        el.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); this.menuFavorito(f, lugar(k), e); });
+      }
+      el.dataset.i = k;
+      // Arrastar muda a ordem (a mesma da barra); solto no miolo de uma pasta, o favorito entra
+      // nela, e solto no ícone de voltar, sai da pasta para a barra.
+      reorganizavel(el, grade, (bs) => this.reordenarNoInicio(p, bs.filter((b) => b.dataset.i != null).map((b) => Number(b.dataset.i))), {
+        seletor: 'button.nav-fav',
+        grade: true,
+        dentro: (alvo, peca) => alvo.classList.contains('nav-fav-voltar') || (alvo.classList.contains('nav-fav-pasta') && !peca.classList.contains('nav-fav-pasta')),
+        aoEntrar: (peca, alvo) => this.moverPara(lugar(Number(peca.dataset.i)), alvo.classList.contains('nav-fav-voltar') ? null : Number(alvo.dataset.i)),
+        depois: (soltou) => { if (aba.inicioDepois || !soltou) { aba.inicioDepois = false; this.desenharInicio(aba); } },
+      });
       return el;
-    }));
+    });
+    if (p != null) {
+      const voltar = h('button.nav-fav.nav-fav-voltar', { title: tr('Voltar aos favoritos'), on: { click: () => { aba.pastaInicio = null; this.desenharInicio(aba); } } }, img('pasta-aberta', 32), h('span', tr('Voltar')));
+      grade.append(voltar);
+    }
+    grade.append(...pecas);
+    if (!itens.length) grade.append(h('div.nav-favoritos-vazio', p != null ? tr('Esta pasta está vazia. Arraste um favorito para ela, ou use o botão direito nele › Mover para.') : tr('Para guardar uma página, clique na estrela do endereço (ou Ctrl+D).')));
+    const legenda = p != null ? `${tr('Favoritos')} › ${lista[p].nome}` : tr('Favoritos');
+    const quadro = h('fieldset', h('legend', legenda), grade);
+    quadro.addEventListener('contextmenu', (e) => { if (!e.target.closest('button')) { e.preventDefault(); this.menuDoFundoFavoritos(e); } });
     aba.inicio.replaceChildren(
       h('div.nav-inicio-caixa',
         h('div.nav-inicio-titulo', img('navegador', 32), h('div', h('b', tr('Página inicial')), h('div', tr('Os seus favoritos e a pesquisa. Para guardar uma página, clique na estrela do endereço (ou Ctrl+D).')))),
         h('fieldset', h('legend', tr('Pesquisar')), h('div.linha', campoBusca, h('button', { on: { click: pesquisar } }, tr('Pesquisar')))),
-        h('fieldset', h('legend', tr('Favoritos')), grade)));
+        quadro));
+  }
+
+  /** A pasta i aberta na página inicial da aba da frente (o "Abrir" do menu de uma pasta). */
+  mostrarPastaNoInicio(i) {
+    if (!this.aba || this.app) return;
+    this.aba.pastaInicio = i;
+    this.mostrarInicio(this.aba);
+  }
+
+  /** A ordem nova dos ícones da página inicial (na barra ou dentro da pasta p). */
+  reordenarNoInicio(p, ordem) {
+    const lista = favoritos();
+    const nova = p != null ? reordenadaNaPasta(lista, p, ordem) : reordenada(lista, ordem);
+    if (JSON.stringify(nova) === JSON.stringify(lista)) { for (const a of this.abas) this.desenharInicio(a); return; }
+    salvarFavoritos(nova).catch(() => { for (const a of this.abas) this.desenharInicio(a); });
   }
 
   /* ---------- O menu do botão direito na página ---------- */

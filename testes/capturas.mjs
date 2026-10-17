@@ -162,6 +162,7 @@ async function foto(nome) {
   const arq = path.join(SAIDA, `${String(n).padStart(2, '0')}-${nome}.png`);
   await pagina.screenshot({ path: arq });
   console.log('captura:', arq);
+  return arq;
 }
 const abrir = (id, args) => pagina.evaluate(([i, a]) => window.__retro.abrir(i, a), [id, args || {}]);
 // Uma tecla do sistema como o processo principal a manda (sistema:tecla).
@@ -2432,6 +2433,129 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await arrastar('.janela.ativa .nav-link >> nth=1', ultimo.x + ultimo.width - 2);
     console.log('de novo:', await nomes(), '| guardados:', await guardados());
     await foto('favoritos-reorganizados');
+  },
+
+  // A luz noturna (o filtro, fora do modo sistema) continua na tela cheia: a da página inteira e a de
+  // um vídeo num quadro de outro site. A cor do meio da tela é lida na captura (o branco fica alaranjado).
+  async luzTelaCheia() {
+    const branco = '<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff"><div id="v" style="width:100%;height:100%;background:#fff"></div>';
+    const servidor = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(req.url.startsWith('/quadro') ? branco : `<!doctype html><meta charset="utf-8"><title>Aula</title><body style="margin:0;background:#fff"><iframe src="http://localhost:${servidor.address().port}/quadro" allowfullscreen style="width:640px;height:360px;border:0"></iframe>`);
+    });
+    await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ luzNoturna: { ligada: true, quando: 'sempre', intensidade: 100 } })));
+    await fecharTudo();
+    await abrir('navegador', { url: `http://127.0.0.1:${servidor.address().port}/`, interno: true });
+    await pagina.waitForTimeout(3000);
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const corNo = async (rotulo, x, y) => {
+      const arq = await foto(rotulo);
+      const px = execFileSync('convert', [arq, '-crop', `1x1+${x}+${y}`, '-depth', '8', 'txt:-']).toString().split('\n')[1] || '';
+      console.log(`${rotulo}: ${(px.match(/#[0-9A-F]{6}/i) || ['?'])[0]} | tela cheia: ${await pagina.evaluate(() => (document.fullscreenElement ? document.fullscreenElement.tagName : 'não'))} | filtro aberto: ${await pagina.evaluate(() => { const f = document.getElementById('luz-noturna'); return !!f && f.matches(':popover-open'); })} | o clique vai para: ${await pagina.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e ? e.tagName + (e.id ? '#' + e.id : '') : '-'; }, [x, y])}`);
+    };
+    const meio = await pagina.locator(wv).boundingBox();
+    await corNo('luz-pagina', Math.round(meio.x + 100), Math.round(meio.y + 100));
+    await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('document.documentElement.requestFullscreen().then(() => "ok", (e) => String(e))', true), wv);
+    await pagina.waitForTimeout(1500);
+    await corNo('luz-pagina-cheia', 400, 300);
+    await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('document.exitFullscreen()', true), wv).catch(() => { });
+    await pagina.waitForTimeout(1200);
+    await app.evaluate(async ({ webContents }) => {
+      const g = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && /127\.0\.0\.1/.test(w.getURL()));
+      const f = g && g.mainFrame.frames.find((x) => /\/quadro/.test(x.url));
+      return f && f.executeJavaScript('document.getElementById("v").requestFullscreen().then(() => "ok", (e) => String(e))', true);
+    });
+    await pagina.waitForTimeout(1500);
+    await corNo('luz-quadro-cheio', 400, 300);
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ luzNoturna: { ligada: false } })));
+    servidor.close();
+  },
+
+  // As abas arrastadas (a ordem vale para o Ctrl+Tab), as pastas de favoritos (na barra, no menu, na
+  // página inicial, arrastar para dentro e para fora, excluir a pasta) e os ícones grandes da página
+  // inicial arrastados em grade.
+  async pastasFavoritos() {
+    const servidor = http.createServer((req, res) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(`<!doctype html><meta charset="utf-8"><title>${decodeURIComponent(req.url.slice(1))}</title><h1>${decodeURIComponent(req.url.slice(1))}</h1>`); });
+    await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+    const base = `http://127.0.0.1:${servidor.address().port}/`;
+    await fecharTudo();
+    await pagina.evaluate((b) => retro.config.definir({ navegador: { favoritos: [
+      { nome: 'Gmail', url: 'https://mail.google.com/' }, { nome: 'Wikipédia', url: 'https://pt.wikipedia.org/' },
+      { nome: 'Trabalho', pasta: true, itens: [{ nome: 'Tribunal', url: b + 'Tribunal' }, { nome: 'Agenda', url: b + 'Agenda' }] },
+      { nome: 'YouTube', url: 'https://www.youtube.com/' }, { nome: 'Curso', url: b + 'Curso' },
+    ] } }), base);
+    await pagina.evaluate(async () => { const s = await import('./js/sistema.js'); await s.definirConfig({}); });
+    await abrir('navegador', { url: base + 'Um', interno: true });
+    await pagina.waitForTimeout(1500);
+    await pagina.evaluate(() => { const j = window.__retro.janelas.janelaAtiva(); j.ret = { x: 10, y: 10, w: 760, h: 520 }; j.aplicarRet(); });
+    const nav = () => pagina.evaluate(() => { const n = window.__retro.janelas.janelaAtiva().navegador; return n ? `abas: ${n.abas.map((a) => a.nome()).join(', ')} | na tela: ${[...document.querySelectorAll('.janela.ativa .nav-aba-nome')].map((s) => s.textContent).join(', ')} | da frente: ${n.aba.nome()}` : '?'; });
+    await pagina.evaluate((b) => { const n = window.__retro.janelas.janelaAtiva().navegador; n.novaAba(b + 'Dois'); n.novaAba(b + 'Tres'); }, base);
+    await pagina.waitForTimeout(1500);
+    const centro = async (sel) => { const r = await pagina.locator(sel).boundingBox(); return [r.x + r.width / 2, r.y + r.height / 2, r]; };
+    const arrastar = async (sel, x, y, foto1) => {
+      const [x0, y0] = await centro(sel);
+      await pagina.mouse.move(x0, y0);
+      await pagina.mouse.down();
+      for (let i = 1; i <= 14; i++) { await pagina.mouse.move(x0 + ((x - x0) * i) / 14, y0 + ((y - y0) * i) / 14); await pagina.waitForTimeout(30); }
+      if (foto1) await foto(foto1);
+      await pagina.mouse.up();
+      await pagina.waitForTimeout(900);
+    };
+    const favs = () => pagina.evaluate(() => JSON.stringify(window.__retro.estado.config.navegador.favoritos.map((f) => (f.pasta ? { [f.nome]: f.itens.map((g) => g.nome) } : f.nome))));
+    // 1) As abas: a terceira vai para o começo.
+    console.log('abas antes:', await nav());
+    const [, , primeira] = await centro('.janela.ativa .nav-aba >> nth=0');
+    await arrastar('.janela.ativa .nav-aba >> nth=2', primeira.x + 4, primeira.y + primeira.height / 2, 'abas-arrastando');
+    console.log('abas depois:', await nav());
+    await pagina.evaluate(() => window.__retro.janelas.janelaAtiva().navegador.passarAba(1));
+    console.log('Ctrl+Tab:', await nav());
+    await foto('abas-reorganizadas');
+    // 2) A pasta na barra: o menu dela e um favorito arrastado para dentro.
+    await pagina.click('.janela.ativa .nav-link.nav-pasta');
+    await pagina.waitForTimeout(400);
+    await foto('pasta-menu');
+    await pagina.keyboard.press('Escape');
+    const [px, py] = await centro('.janela.ativa .nav-link.nav-pasta');
+    await arrastar('.janela.ativa .nav-link:has-text("Curso")', px, py, 'pasta-recebendo');
+    console.log('Curso na pasta:', await favs());
+    // O Mover para do botão direito: o YouTube para a pasta.
+    await pagina.click('.janela.ativa .nav-link:has-text("YouTube")', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.hover(`.menu .opcao:has-text("${T('Mo&ver para').replace('&', '')}")`);
+    await pagina.waitForTimeout(400);
+    await foto('pasta-mover-para');
+    await pagina.click('.menu .opcao:has-text("Trabalho")');
+    await pagina.waitForTimeout(800);
+    console.log('YouTube na pasta:', await favs());
+    // 3) A página inicial: a pasta, a grade arrastada e a pasta aberta.
+    await pagina.click('.janela.ativa .nav-aba-nova');
+    await pagina.waitForTimeout(800);
+    await foto('inicio-com-pasta');
+    const [wx, wy] = await centro('.janela.ativa .nav-conteudo:not(.escondida) .nav-fav >> nth=0');
+    await arrastar('.janela.ativa .nav-conteudo:not(.escondida) .nav-fav:has-text("Trabalho")', wx - 30, wy, 'inicio-arrastando');
+    console.log('Trabalho no começo:', await favs());
+    await pagina.click('.janela.ativa .nav-conteudo:not(.escondida) .nav-fav.nav-fav-pasta');
+    await pagina.waitForTimeout(600);
+    await foto('inicio-pasta-aberta');
+    const [vx, vy] = await centro('.janela.ativa .nav-conteudo:not(.escondida) .nav-fav-voltar');
+    await arrastar('.janela.ativa .nav-conteudo:not(.escondida) .nav-fav:has-text("Agenda")', vx, vy, 'inicio-saindo-da-pasta');
+    console.log('Agenda fora da pasta:', await favs());
+    // A estrela do endereço reconhece a página que está dentro da pasta.
+    await pagina.evaluate((b) => window.__retro.janelas.janelaAtiva().navegador.ir(b + 'Tribunal'), base);
+    await pagina.waitForTimeout(1500);
+    console.log('estrela acesa na página da pasta:', await pagina.evaluate(() => document.querySelector('.janela.ativa .nav-estrela').classList.contains('apertado')));
+    // 4) Excluir a pasta: os favoritos dela ficam na barra.
+    await pagina.click('.janela.ativa .nav-link.nav-pasta', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.click(`.menu .opcao:has-text("${T('&Excluir a pasta…').replace('&', '')}")`);
+    await pagina.waitForTimeout(400);
+    await foto('pasta-excluir');
+    await pagina.click(`.janela.ativa button >> text=${T('&Sim').replace('&', '')}`);
+    await pagina.waitForTimeout(800);
+    console.log('sem a pasta:', await favs());
+    await foto('pasta-excluida');
+    servidor.close();
   },
 
   // Os tamanhos dos pixels do Painel › Aparência › Configurações (os inteiros e os do meio, com a área de cada um).
