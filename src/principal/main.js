@@ -195,6 +195,12 @@ if (process.env.RETRO_MIDIA_FALSA) app.commandLine.appendSwitch('use-fake-device
 if (MODO_SISTEMA && !app.commandLine.hasSwitch('password-store') && fs.existsSync('/usr/bin/gnome-keyring-daemon')) {
   app.commandLine.appendSwitch('password-store', 'gnome-libsecret');
 }
+// O ponteiro do Retro Computer também nos programas do Linux que ele abre (o Firefox, o LibreOffice): a
+// janela dele usa o tema Adwaita do GTK, e eles pegavam o do sistema (o do Mint). A sessão já exporta
+// (sessao.sh); aqui vale também antes de a sessão nova entrar, depois da atualização.
+if (MODO_SISTEMA && process.platform === 'linux' && fs.existsSync('/usr/share/icons/Adwaita/cursors')) {
+  process.env.XCURSOR_THEME = 'Adwaita';
+}
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'sistema', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
@@ -2615,7 +2621,7 @@ app.whenReady().then(async () => {
   historico = new HistoricoTransferencia({ clipboard, parado: () => powerMonitor.getSystemIdleTime(), aoMudar: () => enviar('transferencia:mudou') });
   historico.ligar((config.obter().transferencia || {}).historico !== false);
   copia = new CopiaSeguranca({ origem: () => disco.raiz });
-  firefox = new Firefox({ dados: app.getPath('userData'), fontes: path.join(RAIZ_APP, 'src', 'sistema', 'fontes') });
+  firefox = new Firefox({ dados: app.getPath('userData'), fontes: path.join(RAIZ_APP, 'src', 'sistema', 'fontes'), icones: path.join(RAIZ_APP, 'src', 'sistema', 'icones') });
   agendarCopia();
   diario = new Diario({
     disco: () => disco, pasta: pastaDiario, ligado: () => !!(config.obter().diario || {}).ligado,

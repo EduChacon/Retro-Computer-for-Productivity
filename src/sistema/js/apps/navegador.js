@@ -1424,7 +1424,9 @@ export function usaFirefox() {
 const inicioFirefox = () => { try { return new URL(busca().url).origin + '/'; } catch { return ''; } };
 
 export async function abrirNoFirefox(url = '') {
-  const escala = Math.round(zoomInterface() * (window.devicePixelRatio || 1));
+  // O tamanho dos pixels, exato: o devicePixelRatio da área de trabalho já leva o zoom dela (multiplicar os
+  // dois e arredondar dava 2 no tamanho 1,25 e 4 no tamanho 2, e o Firefox ficava gigante).
+  const escala = Math.round((window.devicePixelRatio || 1) * 100) / 100;
   const r = await retro.firefox.abrir(url, { inicio: inicioFirefox(), escala }).catch(() => null);
   if (r && r.ok) return true;
   if (r && r.erro === 'semFirefox') firefoxInstalado = false;

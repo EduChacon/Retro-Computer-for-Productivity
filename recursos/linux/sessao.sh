@@ -35,6 +35,13 @@ if command -v xinput >/dev/null 2>&1; then
   done
 fi
 
+# O ponteiro do Retro Computer também nos programas do Linux (o Firefox, o LibreOffice) e nas molduras do
+# Openbox: a janela do Retro Computer usa o tema Adwaita (o do GTK, que o Chromium lê sozinho), e os outros
+# pegavam o tema do sistema (o do Mint). O Adwaita vem com o GTK, uma dependência do pacote.
+if [ -d /usr/share/icons/Adwaita/cursors ]; then
+  export XCURSOR_THEME=Adwaita
+fi
+
 # A tela não apaga sozinha (o Retro Computer tem a proteção de tela própria);
 # o monitor ainda economiza energia depois de 15 minutos parado.
 if command -v xset >/dev/null 2>&1; then
