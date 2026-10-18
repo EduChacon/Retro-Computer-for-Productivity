@@ -57,6 +57,14 @@ test('janelas do Linux: as margens do Openbox seguem a barra (só os números mu
   const os = require('node:os');
   const path = require('node:path');
   const rc = fs.readFileSync(path.join(__dirname, '..', 'recursos', 'linux', 'openbox', 'rc.xml'), 'utf8');
+  // O Retro Computer sem moldura e sem a tela cheia: com ela e o foco, ele ficaria por cima até das
+  // janelas sempre visíveis (o vídeo em janela flutuante).
+  assert.match(rc, /<application class="Retro Computer"><decor>no<\/decor><\/application>/);
+  assert.ok(!/<fullscreen>yes/.test(rc));
+  // A cópia da sessão de antes (com a regra) perde a regra na primeira edição; as regras de outros programas ficam.
+  const antiga = '<applications>\n<application class="Retro Computer"><decor>no</decor><fullscreen>yes</fullscreen></application>\n<application class="retro-computer"><decor>no</decor><fullscreen>yes</fullscreen></application>\n<application class="mpv"><fullscreen>yes</fullscreen></application>\n</applications>';
+  assert.strictEqual(jl.semTelaCheia(antiga), '<applications>\n<application class="Retro Computer"><decor>no</decor></application>\n<application class="retro-computer"><decor>no</decor></application>\n<application class="mpv"><fullscreen>yes</fullscreen></application>\n</applications>');
+  assert.strictEqual(jl.semTelaCheia(rc), rc);
   const novo = jl.trocarMargens(rc, { cima: 20, baixo: 34 });
   assert.match(novo, /<margins><top>20<\/top><bottom>34<\/bottom><left>0<\/left><right>0<\/right><\/margins>/);
   assert.strictEqual(novo.replace(/<margins>[\s\S]*?<\/margins>/, ''), rc.replace(/<margins>[\s\S]*?<\/margins>/, ''));

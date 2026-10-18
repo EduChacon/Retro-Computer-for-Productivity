@@ -63,4 +63,14 @@ function spacesJuntos(saida) {
   return String(saida || '').trim() === '1';
 }
 
-module.exports = { uniao, telasNaJanela, monitoresFalsos, spacesJuntos };
+/**
+ * No modo sistema, o lugar da janela do Retro Computer: a tela principal inteira e um ponto a mais na
+ * largura, para o lado que não tem outra tela (sem moldura e do tamanho exato do monitor, o Openbox a
+ * trataria como tela cheia). Só a largura muda: as margens de cima e de baixo (as barras) continuam certas.
+ */
+function lugarNoModoSistema(b, outras = []) {
+  const aoLado = (direita) => outras.some((o) => o.y < b.y + b.height && o.y + o.height > b.y && (direita ? o.x === b.x + b.width : o.x + o.width === b.x));
+  return { x: aoLado(true) && !aoLado(false) ? b.x - 1 : b.x, y: b.y, width: b.width + 1, height: b.height };
+}
+
+module.exports = { uniao, telasNaJanela, monitoresFalsos, spacesJuntos, lugarNoModoSistema };

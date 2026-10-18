@@ -10,6 +10,7 @@ import { h, img, rotulo, barraAdaptavel } from '../util.js';
 import { zoomInterface, fundoCss, FUNDO_INICIO } from '../aparencia.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
+import { abrirEmojisNo } from '../campos.js';
 import { registrarApp, estado, definirConfig, avisar, eventos, abrir } from '../sistema.js';
 import { entrada, confirmar, mensagem, ajustarAoConteudo, erro } from '../dialogos.js';
 import { tocar } from '../sons.js';
@@ -1293,6 +1294,8 @@ class Navegador {
         { rotulo: tr('C&olar'), desativado: !p.editFlags.canPaste, acao: () => this.wv.paste() },
         { separador: true },
         { rotulo: tr('Selecionar &tudo'), acao: () => this.wv.selectAll() },
+        // O painel de emojis põe o escolhido na página (pelo próprio webview).
+        ...(p.formControlType === 'input-password' ? [] : [{ separador: true }, { rotulo: tr('E&mojis…'), atalho: tr('Logotipo+.'), acao: () => abrirEmojisNo(this.wv) }]),
       );
     } else if (p.selectionText) {
       itens.push(

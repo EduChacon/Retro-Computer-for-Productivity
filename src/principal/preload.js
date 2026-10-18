@@ -445,6 +445,7 @@ contextBridge.exposeInMainWorld('retro', {
     definir: (atual, nova) => chamar('bloqueio:definir', atual, nova),
     aoBloquear: ouvir('bloqueio:bloquear'),
     pronto: () => chamar('bloqueio:pronto'),
+    naFrente: (v) => chamar('bloqueio:naFrente', !!v),
   },
   // O chaveiro do Linux trancado (o modo sistema): a senha vai direto para o processo principal.
   chaveiro: {

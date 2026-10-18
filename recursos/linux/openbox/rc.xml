@@ -55,8 +55,9 @@
     <context name="Root"></context>
   </mouse>
   <applications>
-    <!-- O próprio Retro Computer: sem moldura, em tela cheia. -->
-    <application class="Retro Computer"><decor>no</decor><fullscreen>yes</fullscreen></application>
-    <application class="retro-computer"><decor>no</decor><fullscreen>yes</fullscreen></application>
+    <!-- O próprio Retro Computer: sem moldura. Ele mesmo cobre a tela, sem a tela cheia: com ela e o
+         foco, a janela ficaria por cima até das janelas sempre visíveis (o vídeo em janela flutuante). -->
+    <application class="Retro Computer"><decor>no</decor></application>
+    <application class="retro-computer"><decor>no</decor></application>
   </applications>
 </openbox_config>

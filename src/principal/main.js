@@ -45,6 +45,7 @@ const qrcode = require('qrcode-generator');
 const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
+const { CantosLinux } = require('./cantos-linux');
 const { acaoDaTecla, trazORetro, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atalhos');
 const { FilaDeTeclas, TravaDoBotao, Midia, MidiaFalsa } = require('./teclas-linux');
 const { Tela, TelaFalsa } = require('./tela');
@@ -242,6 +243,7 @@ let unidades = null; // os pendrives e cartões (unidades.js)
 let pastasFora = null; // as pastas do computador principal no Meu computador (unidades.js)
 let discos = null; // os discos externos inteiros: formatar e gravar imagens (discos.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
+let cantosLinux = null; // os cantos magnéticos das janelas do Linux (modo sistema)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
 let diario = null; // o Diário de trabalho (diario.js)
@@ -467,14 +469,13 @@ function criarJanela() {
   const area = monitor.workArea;
   const largura = Math.min(1280, area.width);
   const altura = Math.min(800, area.height);
+  // No modo sistema, a janela já nasce cobrindo a tela (sem a tela cheia: veja lugarNaTela).
+  const lugar = MODO_SISTEMA ? lugarNaTela() : { x: area.x + Math.round((area.width - largura) / 2), y: area.y + Math.round((area.height - altura) / 2), width: largura, height: altura };
   janela = new BrowserWindow({
-    x: area.x + Math.round((area.width - largura) / 2),
-    y: area.y + Math.round((area.height - altura) / 2),
-    width: largura,
-    height: altura,
+    ...lugar,
     minWidth: 640,
     minHeight: 480,
-    fullscreen: MODO_SISTEMA || (!!c.telaCheia && !process.env.RETRO_JANELA && !(espalharAoAbrir && process.platform === 'darwin')),
+    fullscreen: !MODO_SISTEMA && !!c.telaCheia && !process.env.RETRO_JANELA && !(espalharAoAbrir && process.platform === 'darwin'),
     enableLargerThanScreen: process.platform === 'darwin', // no Mac, para a janela poder cobrir dois monitores
     backgroundColor: '#000000',
     title: 'Retro Computer',
@@ -493,10 +494,10 @@ function criarJanela() {
   janela.once('ready-to-show', () => {
     janela.show();
     if (espalharAoAbrir) setTimeout(() => espalhar().catch(() => { }), 300);
-    // No modo sistema, a conferência de que a janela cobre a tela (sem o Openbox, ela não cobria).
-    if (MODO_SISTEMA) for (const ms of [1000, 4000]) setTimeout(ajustarNaPrincipal, ms);
+    // No modo sistema, a conferência de que a janela cobre a tela (o Openbox pode encolhê-la ao abrir).
+    if (MODO_SISTEMA) for (const ms of [1000, 4000]) setTimeout(cobrirATela, ms);
   });
-  if (MODO_SISTEMA) for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(ajustarNaPrincipal, 300));
+  if (MODO_SISTEMA) for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(cobrirATela, 300));
   else for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(monitoresMudaram, 400));
   // A área de trabalho fica sabendo onde está cada tela dentro da janela.
   let esperaTelas = null;
@@ -509,8 +510,14 @@ function criarJanela() {
     janela.on('focus', () => { if (espalhada && !cheiaDoVideo) janela.setAlwaysOnTop(true, 'screen-saver'); });
     janela.on('blur', () => { if (janela.isAlwaysOnTop()) janela.setAlwaysOnTop(false); });
   }
-  // No modo sistema, o Retro Computer é a tela inteira: não há para onde sair.
-  if (MODO_SISTEMA) janela.on('leave-full-screen', () => setImmediate(() => janela && !janela.isDestroyed() && janela.setFullScreen(true)));
+  // No modo sistema, o Retro Computer é a tela inteira: não há para onde sair. Ao entrar ou sair da
+  // tela cheia (a tela de bloqueio, um vídeo) e depois de o Openbox mover a janela (o Alt e arrastar),
+  // ela volta a cobrir a tela.
+  if (MODO_SISTEMA) {
+    for (const ev of ['enter-full-screen', 'leave-full-screen']) janela.on(ev, () => setImmediate(cobrirATela));
+    let espera = null;
+    for (const ev of ['move', 'resize']) janela.on(ev, () => { clearTimeout(espera); espera = setTimeout(cobrirATela, 400); });
+  }
   janela.loadURL('sistema://retro/index.html' + (process.env.RETRO_RAPIDO ? '?rapido' : ''));
 
   const wc = janela.webContents;
@@ -565,6 +572,11 @@ function criarJanela() {
   janela.on('leave-full-screen', () => enviar('sistema:telaCheia', false));
   // Um vídeo em tela cheia, com as duas telas: ele fica no monitor do ponteiro (e não partido entre
   // os dois); ao sair, a janela volta a cobrir os monitores.
+  // No modo sistema, a tela cheia de uma página (um vídeo) fica enquanto ela quiser (cobrirATela).
+  if (MODO_SISTEMA) {
+    wc.on('enter-html-full-screen', () => { cheiaHtml = true; });
+    wc.on('leave-html-full-screen', () => { cheiaHtml = false; setImmediate(cobrirATela); });
+  }
   wc.on('enter-html-full-screen', () => {
     if (!espalhada) return;
     cheiaDoVideo = true;
@@ -582,7 +594,12 @@ function criarJanela() {
       enviar('sistema:pedidoDesligar');
     }
   });
-  janela.on('closed', () => { janela = null; });
+  janela.on('closed', () => {
+    janela = null;
+    // O contorno dos cantos magnéticos sai junto (senão o aplicativo não sabe que as janelas fecharam).
+    if (cantosLinux) cantosLinux.parar();
+    if (previaJanela && !previaJanela.isDestroyed()) previaJanela.destroy();
+  });
 }
 
 /** Leva a janela para um monitor (na tela cheia, ela sai e volta nele). */
@@ -711,25 +728,78 @@ function avisarTelas(motivo = '') {
   enviar('sistema:telas', { ...telasDaJanela(), motivo });
 }
 
-/** No modo sistema, a janela fica sempre na tela principal, inteira (também depois de uma troca de telas). */
+let naFrenteDeTudo = false; // a tela de bloqueio do modo sistema: a janela por cima de tudo
+let previaJanela = null; // o contorno do encaixe de uma janela do Linux (cantos-linux.js)
+
 /**
- * No modo sistema, a janela cobre a tela principal. Com o Openbox, a tela cheia faz isso; sem um
- * gerenciador de janelas (o Openbox ainda abrindo, ou não instalado), o X não aplica a tela cheia,
- * e a janela ficava no tamanho de abertura (1280 × 800), no meio da tela. Aí ela mesma toma a tela:
- * fora da tela cheia, o Chromium não deixa a janela com o tamanho exato da tela (fica um ponto
- * menor), por isso um ponto a mais em cada direção.
+ * O contorno quadriculado de onde a janela do Linux arrastada vai encaixar, como o das janelas do
+ * Retro Computer: uma janela sempre visível, sem foco e sem JavaScript, recortada em moldura (o
+ * Openbox não tem transparência). ret em pontos da tela; null esconde.
  */
-function ajustarNaPrincipal() {
+function previaDoEncaixe(ret) {
+  if (!ret) { if (previaJanela && !previaJanela.isDestroyed()) previaJanela.hide(); return; }
+  if (!previaJanela || previaJanela.isDestroyed()) {
+    previaJanela = new BrowserWindow({
+      show: false, frame: false, focusable: false, skipTaskbar: true, alwaysOnTop: true, resizable: false, hasShadow: false,
+      backgroundColor: '#c0c0c0', title: 'Retro Computer',
+      webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, javascript: false, spellcheck: false },
+    });
+    previaJanela.webContents.on('will-navigate', (e) => e.preventDefault());
+    previaJanela.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    previaJanela.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent('<!doctype html><html style="height:100%;margin:0;background:repeating-conic-gradient(#000 0 25%,#c0c0c0 0 50%) 0 0/2px 2px"></html>'));
+  }
+  const k = screen.getPrimaryDisplay().scaleFactor || 1;
+  const b = { x: Math.round(ret.x / k), y: Math.round(ret.y / k), width: Math.max(16, Math.round(ret.w / k)), height: Math.max(16, Math.round(ret.h / k)) };
+  // A espessura do contorno das janelas do Retro Computer (4 pontos no tamanho dos pixels).
+  const e = Math.max(2, Math.round((4 * ((janelasLinux && janelasLinux.escala) || 1)) / k));
+  previaJanela.setBounds(b);
+  previaJanela.setShape([
+    { x: 0, y: 0, width: b.width, height: e }, { x: 0, y: b.height - e, width: b.width, height: e },
+    { x: 0, y: 0, width: e, height: b.height }, { x: b.width - e, y: 0, width: e, height: b.height },
+  ]);
+  if (!previaJanela.isVisible()) previaJanela.showInactive();
+}
+let cheiaHtml = false; // uma página do Retro Computer pediu a tela cheia (o modo sistema)
+let destravadas = 0; // as vezes que a janela saiu da tela cheia posta pelo Openbox (cobrirATela)
+
+/**
+ * No modo sistema, o lugar da janela (lugarNoModoSistema): a tela principal e um ponto a mais na largura.
+ * Sem moldura e do tamanho exato da tela, o Openbox a trataria como tela cheia, e a janela em tela cheia
+ * com o foco fica por cima até das janelas "sempre visíveis" (o vídeo em janela flutuante sumia ao
+ * clicar na área de trabalho). O Chromium também não deixa uma janela fora da tela cheia com o tamanho
+ * exato da tela (ela fica um ponto menor).
+ */
+function lugarNaTela() {
+  const d = screen.getPrimaryDisplay();
+  return monitoresMod.lugarNoModoSistema(d.bounds, screen.getAllDisplays().filter((o) => o.id !== d.id).map((o) => o.bounds));
+}
+
+/**
+ * No modo sistema, a janela fica sempre na tela principal, inteira (também depois de uma troca de
+ * telas ou de o Openbox movê-la). A tela cheia só enquanto a tela de bloqueio estiver à vista (ela
+ * precisa ficar por cima de tudo) ou uma página a pedir (um vídeo).
+ */
+function cobrirATela() {
   if (!janela || janela.isDestroyed()) return;
-  const b = screen.getPrimaryDisplay().bounds;
-  const cobre = (j) => j.x <= b.x && j.y <= b.y && j.x + j.width >= b.x + b.width && j.y + j.height >= b.y + b.height;
-  if (cobre(janela.getBounds())) return;
-  janela.setFullScreen(false);
-  janela.setBounds(b);
-  janela.setFullScreen(true);
+  const querCheia = naFrenteDeTudo || cheiaPeloSite || cheiaHtml;
+  if (janela.isFullScreen() !== querCheia) { janela.setFullScreen(querCheia); return; }
+  if (querCheia) return;
+  const alvo = lugarNaTela();
+  const j = janela.getBounds();
+  if (j.x === alvo.x && j.y === alvo.y && j.width === alvo.width && j.height === alvo.height) return;
+  janela.setBounds(alvo);
+  // Com a cópia do rc.xml de antes (a regra da tela cheia, até sair da sessão), o Openbox põe a janela em
+  // tela cheia sem o Electron saber, e ela não muda de tamanho: do tamanho exato do monitor, ela sai da
+  // tela cheia pelo Electron (entrar e sair), e o leave-full-screen a põe no lugar. No máximo três vezes:
+  // um gerenciador de janelas que force a tela cheia não vira um vaivém.
   setTimeout(() => {
-    if (!janela || janela.isDestroyed() || cobre(janela.getBounds())) return;
-    janela.setBounds({ x: b.x, y: b.y, width: b.width + 1, height: b.height + 1 });
+    if (!janela || janela.isDestroyed() || janela.isFullScreen() || naFrenteDeTudo || cheiaPeloSite || cheiaHtml || destravadas >= 3) return;
+    const b = janela.getBounds();
+    const d = screen.getPrimaryDisplay().bounds;
+    if (b.x !== d.x || b.y !== d.y || b.width !== d.width || b.height !== d.height) return;
+    destravadas++;
+    janela.setFullScreen(true);
+    setTimeout(() => { if (janela && !janela.isDestroyed() && !naFrenteDeTudo && !cheiaPeloSite && !cheiaHtml) janela.setFullScreen(false); }, 300);
   }, 500);
 }
 
@@ -1376,7 +1446,7 @@ function registrarPonte() {
     temChave: config.temChave(),
     cofre: config.cofreDisponivel(),
     chaveiroTrancado: !!chaveiroTrancado,
-    telaCheiaAgora: emTelaCheia(),
+    telaCheiaAgora: MODO_SISTEMA || emTelaCheia(), // no modo sistema, a janela cobre a tela sem a tela cheia
     idiomaEfetivo: idioma.idioma(),
     idiomaSistema: app.getLocale(),
     // O arrastar do sistema (para soltar fora do Retro Computer). No Linux sem um idioma UTF-8, o
@@ -1508,6 +1578,13 @@ function registrarPonte() {
     // A senha que desbloqueou também abre o chaveiro trancado (em geral, é a mesma da entrada do Linux).
     if (ok && chaveiroTrancado) await abrirChaveiro(s, { silencioso: true }).catch(() => { });
     return ok;
+  });
+  // A tela de bloqueio apareceu ou saiu: no modo sistema, enquanto ela estiver à vista, a janela fica
+  // em tela cheia, por cima de tudo (também das janelas "sempre visíveis" dos programas do Linux).
+  tratar('bloqueio:naFrente', (v) => {
+    naFrenteDeTudo = !!v;
+    if (MODO_SISTEMA) cobrirATela();
+    return true;
   });
   tratar('chaveiro:estado', () => ({ trancado: !!chaveiroTrancado }));
   tratar('chaveiro:abrir', (senha) => abrirChaveiro(String(senha || '')));
@@ -1974,7 +2051,7 @@ function registrarPonte() {
   tratar('navegador:telaCheia', (v) => {
     if (!janela || janela.isDestroyed()) return false;
     if (v && !janela.isFullScreen()) { cheiaPeloSite = true; janela.setFullScreen(true); }
-    else if (!v && cheiaPeloSite) { cheiaPeloSite = false; janela.setFullScreen(false); }
+    else if (!v && cheiaPeloSite) { cheiaPeloSite = false; if (MODO_SISTEMA) cobrirATela(); else janela.setFullScreen(false); }
     return true;
   });
   // A página que não abriu era a versão segura de um http:// (ou um http:// recusado)? Devolve o endereço sem segurança.
@@ -2684,6 +2761,19 @@ app.whenReady().then(async () => {
   ortografia.aplicarOrtografia(session.defaultSession, config.obter().ortografia, idioma.idioma());
   criarJanela();
   if (janelasLinux) janela.webContents.once('did-finish-load', () => janelasLinux.vigiar());
+  // Os cantos magnéticos também nas janelas do Linux (o Openbox não os tem): a mesma opção do Painel.
+  if (janelasLinux && MODO_SISTEMA && !process.env.RETRO_JANELAS_FALSAS) {
+    cantosLinux = new CantosLinux({
+      janelas: janelasLinux,
+      ligado: () => (config.obter().janelas || {}).encaixe !== false,
+      telas: () => {
+        const k = screen.getPrimaryDisplay().scaleFactor || 1;
+        return screen.getAllDisplays().map((d) => ({ x: Math.round(d.bounds.x * k), y: Math.round(d.bounds.y * k), w: Math.round(d.bounds.width * k), h: Math.round(d.bounds.height * k) }));
+      },
+      previa: previaDoEncaixe,
+    });
+    cantosLinux.iniciar();
+  }
 });
 
 // "Apagar os dados de navegação ao fechar" (Painel › Segurança): antes de sair, com um prazo.

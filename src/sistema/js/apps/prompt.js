@@ -5,6 +5,7 @@
 import { h, img, caminhoTela } from '../util.js';
 import { Janela } from '../janelas.js';
 import { abrirMenu } from '../menus.js';
+import { abrirEmojisNo } from '../campos.js';
 import { registrarApp, estado, definirConfig, abrir, pastaDocs } from '../sistema.js';
 import { mensagem, erro, ajustarAoConteudo } from '../dialogos.js';
 import { tr } from '../idioma.js';
@@ -140,6 +141,9 @@ class Prompt {
         { separador: true },
         { rotulo: tr('Selecionar &tudo'), acao: () => this.term.selectAll() },
         { rotulo: tr('&Limpar a tela'), acao: () => this.term.clear() },
+        { separador: true },
+        // O emoji entra como se fosse digitado (o campo escondido do terminal).
+        { rotulo: tr('E&mojis…'), atalho: tr('Logotipo+.'), acao: () => abrirEmojisNo(this.term.textarea) },
       ], { x: e.clientX, y: e.clientY });
     });
     new ResizeObserver(() => this.ajustar()).observe(this.areaTerm);

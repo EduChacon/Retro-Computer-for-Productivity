@@ -28,8 +28,10 @@ export const pedirNaProtecao = () => opcao('naProtecao', !!(estado.config && est
 export function bloquear() {
   if (tela || !podeBloquear()) return false;
   fecharMenus();
-  // As janelas dos programas do Linux saem da frente (senão ficariam por cima da tela de bloqueio).
+  // As janelas dos programas do Linux saem da frente (senão ficariam por cima da tela de bloqueio), e a
+  // do Retro Computer fica por cima de tudo, também das "sempre visíveis" (o vídeo em janela flutuante).
   minimizarNativas();
+  retro.bloqueio.naFrente(true).catch(() => { });
   // O foco sai de onde estava (uma página do Navegador, um programa): o teclado vem para a senha.
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   const campo = h('input', { type: 'password', autocomplete: 'off', spellcheck: false, 'aria-label': tr('Senha:') });
@@ -73,6 +75,7 @@ export function bloquear() {
       window.removeEventListener('keydown', prender, true);
       tela.remove();
       tela = null;
+      retro.bloqueio.naFrente(false).catch(() => { });
       document.dispatchEvent(new Event('retro-desbloqueado'));
       return;
     }

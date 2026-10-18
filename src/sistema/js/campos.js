@@ -4,6 +4,7 @@
  * (e "Adicionar ao dicionário"). Vale para os campos da área de trabalho e para os dos programas
  * Craft: quem avisa é o processo principal (o "context-menu" do Chromium, que traz a palavra, as
  * sugestões e o que dá para fazer); a página só o recebe quando ninguém tratou o botão direito antes.
+ * No fim, o painel de emojis.
  */
 import { abrirMenu } from './menus.js';
 import { zoomInterface } from './aparencia.js';
@@ -57,7 +58,15 @@ export function itensDoCampo(p, alvo) {
     { separador: true },
     { rotulo: tr('&Selecionar tudo'), atalho: 'Ctrl+A', desativado: !pode.tudo, acao: () => editar(alvo, 'tudo') },
   );
+  // O painel de emojis, para o campo (num de senha, não).
+  if (!p.senha) itens.push({ separador: true }, { rotulo: tr('E&mojis…'), atalho: tr('Logotipo+.'), acao: () => abrirEmojisNo(alvo) });
   return itens;
+}
+
+/** Abre o painel de emojis com o foco no campo (ou no quadro do programa, ou na página do Navegador). */
+export function abrirEmojisNo(alvo) {
+  focar(alvo);
+  return import('./emojis.js').then((m) => m.abrirEmojis()).catch(() => { });
 }
 
 retro.ortografia.aoPedirMenu((p) => {

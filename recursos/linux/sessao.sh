@@ -76,8 +76,8 @@ if command -v openbox >/dev/null 2>&1; then
     export RETRO_OPENBOX_RC="$RC"
   fi
   XDG_DATA_DIRS="$AQUI/openbox:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" openbox --config-file "$RC" &
-  # Espera o Openbox ficar pronto (até 5 segundos): aberta antes dele, a janela do Retro Computer
-  # não recebe a tela cheia.
+  # Espera o Openbox ficar pronto (até 5 segundos), para a janela do Retro Computer já abrir com as
+  # regras dele (sem moldura).
   if command -v xprop >/dev/null 2>&1; then
     i=0
     while [ "$i" -lt 50 ] && ! xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q "window id"; do

@@ -151,6 +151,20 @@ async function fecharApp() {
   await app.evaluate(({ app: a }) => { setTimeout(() => a.exit(0), 50); }).catch(() => { });
   await Promise.race([fechou, new Promise((r) => setTimeout(r, 15000))]);
 }
+/** No modo sistema, espera a janela cobrir a tela sozinha (um ponto mais larga que ela, sem a tela cheia). */
+async function cobrindoATela() {
+  for (let i = 0; i < 40; i++) {
+    const ok = await app.evaluate(({ BrowserWindow, screen }) => {
+      const w = BrowserWindow.getAllWindows()[0];
+      const b = w.getBounds();
+      const t = screen.getPrimaryDisplay().bounds;
+      return !w.isFullScreen() && b.width === t.width + 1 && b.height === t.height;
+    });
+    if (ok) return true;
+    await pagina.waitForTimeout(250);
+  }
+  return false;
+}
 /** Espera o Retro Computer fechar sozinho (a troca de usuário, o logoff) e o abre de novo. */
 async function abrirDeNovo() {
   const fechou = new Promise((r) => app.process().once('exit', (codigo) => r(codigo)));
@@ -4826,6 +4840,46 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.waitForTimeout(300);
     console.log('pelo Iniciar, no Bloco:', JSON.stringify(await texto()));
     await pagina.keyboard.press('Escape');
+    // Pelo botão direito no campo: o item Emojis… do menu.
+    await pagina.click('.janela.ativa textarea', { button: 'right' });
+    await pagina.waitForSelector('.menu.menu-campo', { timeout: 5000 });
+    await foto('emojis-botao-direito');
+    await pagina.locator('.menu.menu-campo .opcao', { hasText: T('E&mojis…') }).click();
+    await pagina.waitForSelector('#painel-emojis .emo', { timeout: 5000 });
+    await pagina.click('#painel-emojis .emo >> nth=2');
+    await pagina.waitForTimeout(300);
+    console.log('pelo botão direito, no Bloco:', JSON.stringify(await texto()));
+    await pagina.keyboard.press('Escape');
+    // No Prompt: o emoji entra como se fosse digitado.
+    await abrir('prompt');
+    await pagina.waitForSelector('.janela.ativa .xterm', { timeout: 15000 });
+    await pagina.waitForTimeout(1500);
+    await pagina.click('.janela.ativa .xterm-screen', { button: 'right' });
+    await pagina.waitForTimeout(300);
+    await pagina.locator('.menu .opcao', { hasText: T('E&mojis…') }).click();
+    await pagina.waitForSelector('#painel-emojis .emo', { timeout: 5000 });
+    await pagina.click('#painel-emojis .emo >> nth=0');
+    await pagina.waitForTimeout(800);
+    // (O terminal desenha pelo WebGL, sem as linhas no HTML: a captura mostra o emoji na linha de comando.)
+    await foto('emojis-prompt');
+    await pagina.keyboard.press('Escape');
+    // Num campo de uma página do Navegador: o webview põe o emoji na página.
+    const servidor = http.createServer((req, res) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end('<!doctype html><meta charset="utf-8"><body style="margin:20px"><input id="c" style="font-size:20px;width:300px" value="Olá "></body>'); });
+    await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+    await abrir('navegador', { url: `http://127.0.0.1:${servidor.address().port}/`, interno: true });
+    await pagina.waitForTimeout(3000);
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const r = await pagina.evaluate((s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x, y: b.y }; }, wv);
+    await pagina.mouse.click(r.x + 120, r.y + 34, { button: 'right' });
+    await pagina.waitForSelector('.menu .opcao', { timeout: 5000 });
+    await foto('emojis-navegador-menu');
+    await pagina.locator('.menu .opcao', { hasText: T('E&mojis…') }).click();
+    await pagina.waitForSelector('#painel-emojis .emo', { timeout: 5000 });
+    await pagina.click('#painel-emojis .emo >> nth=1');
+    await pagina.waitForTimeout(600);
+    console.log('pelo botão direito, na página do Navegador:', JSON.stringify(await pagina.evaluate((s) => document.querySelector(s).executeJavaScript('document.getElementById("c").value'), wv)));
+    await pagina.keyboard.press('Escape');
+    servidor.close();
     // Sem campo nenhum: vai para a área de transferência.
     await fecharTudo();
     await pagina.mouse.click(600, 400);
@@ -5017,8 +5071,8 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   async margens() {
     if (!process.env.RETRO_OPENBOX_RC) throw new Error('rode com RETRO_OPENBOX_RC e o openbox');
     await fecharTudo();
-    // A janela do Retro Computer cobre a tela, como na sessão (o roteiro abre numa de 1024 × 700).
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
+    // A janela do Retro Computer cobre a tela sozinha, como na sessão (o roteiro abre numa de 1024 × 700).
+    await cobrindoATela();
     const xlogo = spawn('xlogo', ['-geometry', '300x200+100+100'], { stdio: 'ignore' });
     await pagina.waitForTimeout(2500);
     const conferir = async (nome) => {
@@ -5046,6 +5100,115 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ barra: { ...window.__retro.estado.config.barra, data: false } })));
     xlogo.kill();
   },
+  // A janela "sempre visível" (o vídeo em janela flutuante) e o Retro Computer, no modo sistema (com
+  // RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1, RETRO_SENHA_LINUX_FALSA=certa e o openbox rodando com a cópia
+  // do rc.xml em RETRO_OPENBOX_RC): ela continua por cima depois do clique na área de trabalho; a tela de
+  // bloqueio fica por cima dela e, ao desbloquear, ela volta; e o Alt e arrastar não tira a área de
+  // trabalho do lugar. O xlogo com o nome "electron" faz o papel da janela flutuante do Navegador (ela é
+  // do Retro Computer e não sai da frente com as janelas do Linux ao bloquear).
+  async flutuante() {
+    if (!process.env.RETRO_OPENBOX_RC) throw new Error('rode com RETRO_OPENBOX_RC e o openbox');
+    await fecharTudo();
+    console.log('a janela cobre a tela sozinha:', await cobrindoATela());
+    const xlogo = spawn('xlogo', ['-name', 'electron-flutuante', '-geometry', '300x200+600+300'], { stdio: 'ignore' });
+    await pagina.waitForTimeout(1500);
+    try { execFileSync('wmctrl', ['-r', 'electron-flutuante', '-b', 'add,above']); } catch (e) { console.log('wmctrl:', e.message); }
+    await pagina.waitForTimeout(800);
+    // Quem está por cima de tudo: a última da pilha do Openbox.
+    const topo = () => {
+      const ids = execFileSync('xprop', ['-root', '_NET_CLIENT_LIST_STACKING']).toString().match(/0x[0-9a-f]+/g) || [];
+      const classe = execFileSync('xprop', ['-id', ids[ids.length - 1], 'WM_CLASS']).toString();
+      return /XLogo/.test(classe) ? 'a janela flutuante' : /retro/i.test(classe) ? 'o Retro Computer' : classe.trim();
+    };
+    const janela = () => app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; return JSON.stringify({ ...w.getBounds(), cheia: w.isFullScreen() }); });
+    const tela = (nome) => {
+      const arq = path.join(SAIDA, `${String(++n).padStart(2, '0')}-flutuante-${nome}.png`);
+      try { execFileSync('import', ['-window', 'root', arq]); console.log('captura:', arq); } catch { }
+    };
+    execFileSync('xdotool', ['mousemove', '200', '200', 'click', '1']);
+    await pagina.waitForTimeout(1200);
+    console.log('depois do clique na área de trabalho, por cima:', topo(), '; a janela:', await janela());
+    tela('clique');
+    await pagina.evaluate(() => import('./js/bloqueio.js').then((m) => m.bloquear()));
+    await pagina.waitForTimeout(2000);
+    execFileSync('xdotool', ['mousemove', '640', '400', 'click', '1']);
+    await pagina.waitForTimeout(1000);
+    console.log('bloqueado, por cima:', topo(), '; a janela:', await janela());
+    tela('bloqueio');
+    await pagina.fill('#bloqueio input', 'certa');
+    await pagina.keyboard.press('Enter');
+    await pagina.waitForTimeout(2500);
+    execFileSync('xdotool', ['mousemove', '200', '200', 'click', '1']);
+    await pagina.waitForTimeout(1000);
+    console.log('desbloqueado, por cima:', topo(), '; a janela:', await janela());
+    tela('desbloqueado');
+    // O Alt e arrastar do Openbox move a janela; ela volta sozinha.
+    const x = (...a) => execFileSync('xdotool', a);
+    x('mousemove', '300', '300'); await pagina.waitForTimeout(200);
+    x('keydown', 'alt'); await pagina.waitForTimeout(200);
+    x('mousedown', '1'); await pagina.waitForTimeout(200);
+    for (let i = 1; i <= 10; i++) { x('mousemove', String(300 + i * 15), String(300 + i * 12)); await pagina.waitForTimeout(60); }
+    x('mouseup', '1'); await pagina.waitForTimeout(200);
+    x('keyup', 'alt');
+    console.log('logo depois do Alt e arrastar:', await janela());
+    await pagina.waitForTimeout(1500);
+    console.log('um instante depois:', await janela());
+    xlogo.kill();
+  },
+  // Os cantos magnéticos das janelas do Linux (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e o openbox
+  // com a cópia do rc.xml em RETRO_OPENBOX_RC): o xlogo arrastado pelo título com o mouse de verdade
+  // (o xdotool) mostra o contorno na borda e, solto, encaixa na metade, no alto (maximizado) e no
+  // canto; arrastado para fora do encaixe, volta ao tamanho de antes; com a opção desligada, não encaixa.
+  async cantosLinux() {
+    if (!process.env.RETRO_OPENBOX_RC) throw new Error('rode com RETRO_OPENBOX_RC e o openbox');
+    await fecharTudo();
+    await cobrindoATela();
+    const xlogo = spawn('xlogo', ['-geometry', '400x300+300+200'], { stdio: 'ignore' });
+    await pagina.waitForTimeout(2500);
+    const x = (...a) => execFileSync('xdotool', a);
+    const id = execFileSync('xdotool', ['search', '--name', '^xlogo$']).toString().trim().split('\n')[0];
+    // A moldura inteira do xlogo (o xwininfo dá a de dentro; o _NET_FRAME_EXTENTS, a moldura).
+    const geo = () => {
+      const s = execFileSync('xwininfo', ['-id', id]).toString();
+      const v = (k) => Number(new RegExp(k + ':\\s+(-?\\d+)').exec(s)[1]);
+      const m = (/=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)/.exec(execFileSync('xprop', ['-id', id, '_NET_FRAME_EXTENTS']).toString()) || [0, 0, 0, 0, 0]).slice(1).map(Number);
+      return { x: v('Absolute upper-left X') - m[0], y: v('Absolute upper-left Y') - m[2], w: v('Width') + m[0] + m[1], h: v('Height') + m[2] + m[3], titulo: m[2] };
+    };
+    const area = (/=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)/.exec(execFileSync('xprop', ['-root', '_NET_WORKAREA']).toString()) || [0, 0, 0, 0, 0]).slice(1).map(Number);
+    console.log('a área útil:', area.join(','), '; o xlogo:', JSON.stringify(geo()));
+    const contorno = () => app.evaluate(({ BrowserWindow }) => {
+      const p = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().startsWith('data:') && w.isVisible());
+      return p ? JSON.stringify(p.getBounds()) : 'nenhum';
+    });
+    const arrastar = async (nome, ax, ay) => {
+      const g = geo();
+      const ix = g.x + 150;
+      const iy = g.y + Math.max(4, Math.round(g.titulo / 2));
+      x('mousemove', String(ix), String(iy)); await pagina.waitForTimeout(250);
+      x('mousedown', '1'); await pagina.waitForTimeout(250);
+      for (let i = 1; i <= 16; i++) { x('mousemove', String(Math.round(ix + (ax - ix) * i / 16)), String(Math.round(iy + (ay - iy) * i / 16))); await pagina.waitForTimeout(50); }
+      await pagina.waitForTimeout(600);
+      const c = await contorno();
+      const arq = path.join(SAIDA, `${String(++n).padStart(2, '0')}-cantos-${nome}.png`);
+      try { execFileSync('import', ['-window', 'root', arq]); console.log('captura:', arq); } catch { }
+      x('mouseup', '1');
+      await pagina.waitForTimeout(1200);
+      const estado = execFileSync('xprop', ['-id', id, '_NET_WM_STATE']).toString().includes('MAXIMIZED_HORZ') ? ' (maximizado)' : '';
+      console.log(`${nome}: o contorno no arrasto: ${c}; solto: ${JSON.stringify(geo())}${estado}`);
+    };
+    await arrastar('esquerda', 0, 300);
+    await arrastar('para-fora', 640, 400);
+    await arrastar('alto', 640, 0);
+    execFileSync('wmctrl', ['-ir', id, '-b', 'remove,maximized_vert,maximized_horz']);
+    await pagina.waitForTimeout(800);
+    await arrastar('canto', 0, 0);
+    await arrastar('para-fora-do-canto', 500, 400);
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ janelas: { encaixe: false } })));
+    await pagina.waitForTimeout(500);
+    await arrastar('desligado', area[0] + area[2] - 1, 400);
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ janelas: { encaixe: true } })));
+    xlogo.kill();
+  },
   // As teclas de função do computador portátil (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1,
   // RETRO_BANDEJA_FALSA=1, o openbox rodando com a cópia do rc.xml em RETRO_OPENBOX_RC e um
   // XDG_RUNTIME_DIR só do teste): os atalhos entram no rc.xml, e cada tecla, com o xlogo na frente,
@@ -5053,7 +5216,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   async teclas() {
     if (!process.env.RETRO_OPENBOX_RC) throw new Error('rode com RETRO_OPENBOX_RC e o openbox');
     await fecharTudo();
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
+    await cobrindoATela();
     for (let i = 0; i < 40 && !fs.readFileSync(process.env.RETRO_OPENBOX_RC, 'utf8').includes('XF86KbdBrightnessUp'); i++) await pagina.waitForTimeout(250);
     console.log('atalhos no rc.xml:', fs.readFileSync(process.env.RETRO_OPENBOX_RC, 'utf8').includes('key="XF86PowerOff"'));
     const xlogo = spawn('xlogo', ['-geometry', '300x200+100+100'], { stdio: 'ignore' });

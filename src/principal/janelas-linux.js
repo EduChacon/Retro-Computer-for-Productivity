@@ -9,6 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFile, spawn } = require('node:child_process');
 const { trocarTeclas } = require('./teclas-linux');
+const { retDaZona } = require('./cantos-linux');
 
 function rodar(cmd, args, { timeout = 4000 } = {}) {
   return new Promise((resolve, reject) => {
@@ -47,6 +48,21 @@ function lerAreaUtil(texto) {
 function lerMoldura(texto) {
   const m = /=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)/.exec(String(texto));
   return m ? { e: Number(m[1]), d: Number(m[2]), c: Number(m[3]), b: Number(m[4]) } : { e: 0, d: 0, c: 0, b: 0 };
+}
+
+/**
+ * A cópia do rc.xml sem a regra da tela cheia do próprio Retro Computer (a das versões até a 2.0.4,
+ * que fica na cópia da sessão até sair dela): com ela, a janela ficava por cima até das sempre visíveis.
+ */
+function semTelaCheia(xml) {
+  return String(xml).replace(/(<application class="(?:Retro Computer|retro-computer)">(?:(?!<\/application>)[\s\S])*?)<fullscreen>yes<\/fullscreen>/g, (_, antes) => antes);
+}
+
+/** xwininfo -id … → o tamanho de dentro da janela { w, h } (sem a moldura), ou null. */
+function lerTamanho(texto) {
+  const w = /^\s*Width:\s*(\d+)/m.exec(String(texto));
+  const h = /^\s*Height:\s*(\d+)/m.exec(String(texto));
+  return w && h ? { w: Number(w[1]), h: Number(h[1]) } : null;
 }
 
 /**
@@ -142,6 +158,8 @@ class JanelasLinux {
     this.aoMudar = aoMudar;
     this.assinatura = '';
     this.lista = [];
+    this.escala = 1; // o tamanho dos pixels do Retro Computer (as margens o trazem)
+    this.antesDoEncaixe = new Map(); // o tamanho de cada janela antes de encaixar (para voltar a ele)
   }
 
   disponivel() {
@@ -202,15 +220,43 @@ class JanelasLinux {
       else await this.minimizar(id);
       return true;
     }
-    const area = lerAreaUtil(await rodar('xprop', ['-root', '_NET_WORKAREA']).catch(() => '')) || this.areaPadrao();
-    if (!area) return false;
+    return this.encaixarNaArea(id, seta === 'ArrowLeft' ? 'esq' : 'dir', await this.lerAreaUtil());
+  }
+
+  /** A área útil da tela (sem as barras do Retro Computer), em pontos da tela. */
+  async lerAreaUtil() {
+    return lerAreaUtil(await rodar('xprop', ['-root', '_NET_WORKAREA']).catch(() => '')) || this.areaPadrao();
+  }
+
+  /**
+   * Encaixa uma janela do Linux numa área { x, y, w, h } da tela: 'esq' e 'dir' (as metades), 'no',
+   * 'ne', 'so' e 'se' (os quartos) ou 'max'. A moldura entra na conta. O tamanho de antes fica
+   * guardado: arrastada para fora do encaixe, a janela volta a ele (cantos-linux.js).
+   */
+  async encaixarNaArea(id, zona, area) {
+    if (!idValido(id) || !area) return false;
+    if (zona === 'max') { await rodar('wmctrl', ['-ir', id, '-b', 'add,maximized_vert,maximized_horz']).catch(() => { }); return true; }
+    const r = retDaZona(zona, area);
+    if (!r) return false;
+    const chave = normalizar(id);
+    if (!this.antesDoEncaixe.has(chave)) {
+      const t = lerTamanho(await rodar('xwininfo', ['-id', id]).catch(() => ''));
+      if (t) this.antesDoEncaixe.set(chave, t);
+      if (this.antesDoEncaixe.size > 100) this.antesDoEncaixe.delete(this.antesDoEncaixe.keys().next().value);
+    }
     const mold = lerMoldura(await rodar('xprop', ['-id', id, '_NET_FRAME_EXTENTS']).catch(() => ''));
-    const metade = Math.floor(area.w / 2);
-    const x = seta === 'ArrowLeft' ? area.x : area.x + metade;
-    const w = (seta === 'ArrowLeft' ? metade : area.w - metade) - mold.e - mold.d;
-    const h = area.h - mold.c - mold.b;
-    await rodar('wmctrl', tirarMax).catch(() => { });
-    await rodar('wmctrl', ['-ir', id, '-e', `0,${x},${area.y},${Math.max(100, w)},${Math.max(100, h)}`]).catch(() => { });
+    await rodar('wmctrl', ['-ir', id, '-b', 'remove,maximized_vert,maximized_horz']).catch(() => { });
+    await rodar('wmctrl', ['-ir', id, '-e', `0,${r.x},${r.y},${Math.max(100, r.w - mold.e - mold.d)},${Math.max(100, r.h - mold.c - mold.b)}`]).catch(() => { });
+    return true;
+  }
+
+  /** A janela encaixada sai do encaixe (arrastada): volta ao tamanho de antes, no lugar em que está. */
+  async voltarDoEncaixe(id) {
+    const chave = normalizar(id);
+    const t = this.antesDoEncaixe.get(chave);
+    if (!idValido(id) || !t) return false;
+    this.antesDoEncaixe.delete(chave);
+    await rodar('wmctrl', ['-ir', id, '-e', `0,-1,-1,${t.w},${t.h}`]).catch(() => { });
     return true;
   }
 
@@ -223,6 +269,7 @@ class JanelasLinux {
     if (!this.rcOpenbox || !existe('openbox')) return false;
     // Com o tamanho dos pixels, a moldura das janelas do Linux também cresce (a barra de título e os botões).
     const m = escala ? medidasDoTema(escala) : null;
+    if (m) this.escala = m.s;
     const chave = `${Math.round(cima)},${Math.round(baixo)},${m ? m.s : ''}`;
     if (chave === this.margemAtual) return true;
     const pasta = m ? await this.temaDoTamanho(m).catch(() => null) : null;
@@ -260,7 +307,7 @@ class JanelasLinux {
     const vez = this.editando.then(async () => {
       let xml;
       try { xml = await fs.promises.readFile(this.rcOpenbox, 'utf8'); } catch { return false; }
-      const novo = mudar(xml);
+      const novo = semTelaCheia(mudar(xml));
       if (novo !== xml) {
         const tmp = `${this.rcOpenbox}.${process.pid}.tmp`;
         await fs.promises.writeFile(tmp, novo, { mode: 0o600 });
@@ -355,10 +402,11 @@ class JanelasFalsas extends JanelasLinux {
   async minimizar(id) { const j = this.falsas.find((x) => x.id === id); if (j) j.ativa = false; this.avisar(); return true; }
   async fechar(id) { this.falsas = this.falsas.filter((j) => j.id !== id); this.avisar(); return true; }
   async encaixar(id, seta) { (this.encaixes = this.encaixes || []).push([id, seta]); return true; }
+  async encaixarNaArea(id, zona) { (this.encaixes = this.encaixes || []).push([id, zona]); return true; }
   async colar() { this.colados = (this.colados || 0) + 1; return true; }
   async margens(m) { this.margensPedidas = m; return true; }
   async teclas(fila) { this.filaDasTeclas = fila; return !this.rcOpenbox || super.teclas(fila); }
   avisar() { this.listar().then((r) => this.aoMudar(r)); }
 }
 
-module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar, lerAreaUtil, lerMoldura, trocarMargens, GLIFOS, xbm, glifosXbm, medidasDoTema, themercDoTamanho, trocarTema };
+module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar, lerAreaUtil, lerMoldura, lerTamanho, semTelaCheia, trocarMargens, GLIFOS, xbm, glifosXbm, medidasDoTema, themercDoTamanho, trocarTema };

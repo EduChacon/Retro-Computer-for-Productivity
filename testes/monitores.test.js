@@ -47,3 +47,16 @@ test('os monitores de mentira e os Spaces do Mac', () => {
   assert.equal(spacesJuntos('0'), false);
   assert.equal(spacesJuntos(''), false);
 });
+
+test('no modo sistema, a janela cobre a tela com um ponto a mais na largura, para o lado sem outra tela', () => {
+  const { lugarNoModoSistema } = require('../src/principal/monitores.js');
+  const t = { x: 0, y: 0, width: 1366, height: 768 };
+  assert.deepEqual(lugarNoModoSistema(t), { x: 0, y: 0, width: 1367, height: 768 });
+  // Um monitor à direita (a HDMI estendida): o ponto a mais vai para a esquerda.
+  assert.deepEqual(lugarNoModoSistema(t, [{ x: 1366, y: 0, width: 1920, height: 1080 }]), { x: -1, y: 0, width: 1367, height: 768 });
+  // À esquerda, ou acima (sem encostar no lado): à direita, como sem outra tela.
+  assert.deepEqual(lugarNoModoSistema(t, [{ x: -1920, y: 0, width: 1920, height: 1080 }]), { x: 0, y: 0, width: 1367, height: 768 });
+  assert.deepEqual(lugarNoModoSistema(t, [{ x: 0, y: -1080, width: 1920, height: 1080 }]), { x: 0, y: 0, width: 1367, height: 768 });
+  // A altura nunca muda: as margens das barras (as de cima e as de baixo) continuam certas.
+  assert.equal(lugarNoModoSistema({ x: 1920, y: 200, width: 1280, height: 800 }, [{ x: 0, y: 0, width: 1920, height: 1080 }, { x: 3200, y: 200, width: 1280, height: 1024 }]).height, 800);
+});
