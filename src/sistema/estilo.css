@@ -1311,6 +1311,11 @@ button.cm-rosto:active { padding: 1px 0 0 1px; }
 .dos-moldura { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; background: #000; box-shadow: var(--afundado); }
 iframe.dos-quadro { display: block; border: none; background: #000; }
 .dos-aviso { position: absolute; inset: 0; display: grid; place-items: center; color: #c0c0c0; font-family: 'Csilla', monospace; background: #000; }
+/* O DOS no DOSBox do Linux: o aviso e os botões, no lugar da tela. */
+.dos-moldura.nativo { display: block; background: var(--face); box-shadow: none; }
+.dos-nativo { display: flex; gap: 12px; align-items: flex-start; padding: 16px; color: var(--texto); }
+.dos-nativo > div { width: 340px; }
+.dos-nativo p { margin: 6px 0 10px; }
 
 /* Damas e Xadrez: o tabuleiro com as coordenadas e o painel dos lances */
 .jogo-tabuleiro .corpo { padding: 0; }

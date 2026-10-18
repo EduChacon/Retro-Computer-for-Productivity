@@ -61,7 +61,7 @@ const { DataHora, DataHoraFalsa } = require('./datahora');
 const { AcessibilidadeLinux } = require('./acessibilidade');
 const { Antivirus } = require('./antivirus');
 const { Wine } = require('./wine');
-const { Dos, servirEmulador } = require('./dos');
+const { Dos, DosNativo, servirEmulador } = require('./dos');
 const { Mac, servirEmulador: servirEmuladorMac } = require('./macintosh');
 const { ServidorMcp, filtrarConfig } = require('./mcp');
 const { dentro: dentroDaUnidade } = require('./unidades');
@@ -244,6 +244,7 @@ let pastasFora = null; // as pastas do computador principal no Meu computador (u
 let discos = null; // os discos externos inteiros: formatar e gravar imagens (discos.js)
 let janelasLinux = null; // as janelas dos programas do Linux na barra de tarefas (modo sistema)
 let cantosLinux = null; // os cantos magnéticos das janelas do Linux (modo sistema)
+let dosNativo = null; // o DOSBox do Linux (dos.js)
 let tela = null; // a resolução da tela (modo sistema, pelo xrandr)
 let mouse = null; // o mouse e o touchpad (modo sistema, pelo xinput)
 let diario = null; // o Diário de trabalho (diario.js)
@@ -1542,6 +1543,13 @@ function registrarPonte() {
   tratar('dos:abrir', (rel) => dos.abrir(String(rel || '')));
   tratar('dos:guardar', (pasta, foto, arquivos, pastas) => dos.guardar(String(pasta || ''), foto, arquivos, pastas));
   tratar('dos:tipo', (rel) => dos.tipo(String(rel || '')));
+  // No Linux, o DOSBox do sistema (o do apt ou o do Flathub), quando instalado: bem mais rápido que o de dentro.
+  dosNativo = new DosNativo({ dos, aoSair: (r) => enviar('dos:nativoSaiu', r) });
+  tratar('dos:nativo', (procurar) => { const a = procurar ? dosNativo.procurar() : dosNativo.disponivel(); return a ? { nome: a.nome } : null; });
+  tratar('dos:ligarNativo', (rel) => dosNativo.ligar(String(rel || '')));
+  tratar('dos:guardarNativo', () => dosNativo.guardar());
+  tratar('dos:pararNativo', () => dosNativo.parar());
+  tratar('dos:mostrarNativo', () => dosNativo.mostrar());
   // O Mac Plus: a ROM e os discos da pasta C:\Mac vão para o emulador; os discos que mudaram voltam.
   const mac = new Mac({ disco });
   tratar('mac:abrir', (rel) => mac.abrir(String(rel || '')));
@@ -2787,6 +2795,7 @@ app.on('will-quit', (e) => {
 
 app.on('window-all-closed', () => {
   pararObservar();
+  if (dosNativo) dosNativo.encerrar();
   if (nuvens) nuvens.encerrar();
   if (trabalhos) trabalhos.encerrar();
   if (receber) receber.parar('fechado');

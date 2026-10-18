@@ -5,10 +5,16 @@
  * pasta C:\DOS do disco do Retro Computer (ou a pasta do programa aberto com dois cliques): os
  * arquivos vão para o emulador ao abrir e voltam para o disco ao guardar. Nada se perde: o que
  * mudou é gravado com a versão anterior guardada, e o que o DOS apagou vai para a Lixeira.
+ *
+ * No Linux, com o DOSBox do sistema instalado (o do apt ou o do Flathub), o DOS roda nele, bem
+ * mais rápido (DosNativo): numa cópia da pasta, que volta para o disco do mesmo jeito.
  */
+const fs = require('node:fs');
 const fsp = require('node:fs/promises');
+const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { spawn, execFile } = require('node:child_process');
 
 const PASTA_DOS = 'DOS';
 // O DOS cabe em pouco: uma pasta maior que isso não vai inteira para a memória do emulador.
@@ -66,6 +72,7 @@ function configuracao(comandos = []) {
 /** Os arquivos de uma pasta (com as subpastas), sem os ocultos e as versões. */
 async function lerPasta(raiz, { limite = LIMITE } = {}) {
   const arquivos = [];
+  const pastas = [];
   const foto = {};
   let total = 0;
   const andar = async (real, rel) => {
@@ -75,7 +82,7 @@ async function lerPasta(raiz, { limite = LIMITE } = {}) {
       if (e.name.startsWith('.') || e.isSymbolicLink()) continue;
       const r = rel ? rel + '/' + e.name : e.name;
       const cheio = path.join(real, e.name);
-      if (e.isDirectory()) { await andar(cheio, r); continue; }
+      if (e.isDirectory()) { pastas.push(r); await andar(cheio, r); continue; }
       if (!e.isFile()) continue;
       const st = await fsp.stat(cheio);
       total += st.size;
@@ -86,7 +93,7 @@ async function lerPasta(raiz, { limite = LIMITE } = {}) {
     }
   };
   await andar(raiz, '');
-  return { arquivos, foto, total };
+  return { arquivos, pastas, foto, total };
 }
 
 /**
@@ -133,8 +140,9 @@ class Dos {
     const real = this.disco.real(pasta);
     if (pasta === PASTA_DOS) await fsp.mkdir(real, { recursive: true });
     try {
-      const { arquivos, foto, total } = await lerPasta(real);
-      return { ok: true, pasta, conf: configuracao(comandosPara(dentro)), arquivos, foto, total };
+      const { arquivos, pastas, foto, total } = await lerPasta(real);
+      const comandos = comandosPara(dentro);
+      return { ok: true, pasta, conf: configuracao(comandos), comandos, arquivos, pastas, foto, total };
     } catch (e) {
       if (e.grande) return { ok: false, grande: true, pasta, limite: LIMITE };
       throw e;
@@ -183,6 +191,173 @@ class Dos {
   }
 }
 
+/* ---------- O DOSBox do Linux ---------- */
+
+// Os DOSBox do Linux, do mais novo ao mais antigo: os do sistema (o apt) e os do Flathub.
+const DO_SISTEMA = [
+  { nome: 'DOSBox Staging', cmd: 'dosbox-staging' },
+  { nome: 'DOSBox-X', cmd: 'dosbox-x' },
+  { nome: 'DOSBox', cmd: 'dosbox' },
+];
+const DO_FLATHUB = [
+  { nome: 'DOSBox Staging', app: 'io.github.dosbox-staging' },
+  { nome: 'DOSBox-X', app: 'com.dosbox_x.DOSBox-X' },
+];
+const PASTAS_BIN = ['/usr/bin', '/usr/local/bin', '/usr/games', '/usr/local/games'];
+
+/**
+ * O DOSBox do Linux instalado: { nome, cmd } (o do sistema) ou { nome, app } (o do Flathub), ou
+ * null. casa é a pasta do usuário; existe(caminho) diz se o arquivo existe (os testes trocam).
+ */
+function acharDosbox({ casa = os.homedir(), existe = fs.existsSync } = {}) {
+  for (const d of DO_SISTEMA) {
+    const cheio = PASTAS_BIN.map((p) => path.join(p, d.cmd)).find((c) => existe(c));
+    if (cheio) return { nome: d.nome, cmd: cheio };
+  }
+  if (PASTAS_BIN.some((p) => existe(path.join(p, 'flatpak')))) {
+    for (const d of DO_FLATHUB) {
+      const dentro = [path.join(casa, '.local', 'share', 'flatpak', 'app', d.app), path.join('/var', 'lib', 'flatpak', 'app', d.app)];
+      if (dentro.some((c) => existe(c))) return { nome: d.nome, app: d.app };
+    }
+  }
+  return null;
+}
+
+/**
+ * O dosbox.conf do DOSBox do Linux: o mesmo DOS de dentro, a unidade C: na cópia da pasta e, logo
+ * depois de montá-la, o modo seguro (config -securemode): sem ele, um .bat poderia montar outras
+ * pastas do computador e apagar arquivos sem passar pela Lixeira. Sem rede (o IPX e as portas seriais).
+ * O preparo não aparece na tela (o @echo off e o > nul); os comandos do programa, sim.
+ */
+function configuracaoNativa(unidade, comandos = []) {
+  if (!path.isAbsolute(unidade) || /["\r\n]/.test(unidade)) throw new Error('pasta');
+  return [
+    '[sdl]', 'autolock=false', '',
+    '[dosbox]', 'machine=svga_s3', 'memsize=16', '',
+    '[cpu]', 'core=auto', 'cputype=auto', 'cycles=auto', '',
+    '[mixer]', 'rate=44100', '',
+    '[sblaster]', 'sbtype=sb16', '',
+    '[ipx]', 'ipx=false', '',
+    '[serial]', 'serial1=disabled', 'serial2=disabled', 'serial3=disabled', 'serial4=disabled', '',
+    '[autoexec]', '@echo off', `mount c "${unidade}" > nul`, 'c:', 'config -securemode > nul', '@echo on', ...comandos, '',
+  ].join('\n');
+}
+
+/** O comando que liga o DOSBox achado, com o dosbox.conf. */
+function comandoDosbox(achado, conf) {
+  if (achado.app) return { arquivo: 'flatpak', args: ['run', achado.app, '-conf', conf] };
+  return { arquivo: achado.cmd, args: ['-conf', conf] };
+}
+
+/**
+ * O DOS no DOSBox do Linux: a pasta (C:\DOS ou a do programa) é copiada para uma pasta de trabalho
+ * só do usuário (a do Flathub fica dentro da pasta do próprio programa, que ele enxerga), o DOSBox
+ * abre numa janela dele e, ao fechar (e em Guardar no disco), o que mudou volta pelo Dos.guardar:
+ * com a versão anterior guardada e o que foi apagado na Lixeira. Um de cada vez.
+ */
+class DosNativo {
+  constructor({ dos, aoSair = () => { }, achar = acharDosbox } = {}) {
+    this.dos = dos;
+    this.aoSair = aoSair;
+    this.achar = achar;
+    this.sessao = null;
+    this.fila = Promise.resolve();
+  }
+
+  disponivel() {
+    if (process.platform !== 'linux') return null;
+    if (this.achado === undefined) this.achado = this.achar();
+    return this.achado;
+  }
+
+  /** Procura de novo (depois de instalar pela Loja). */
+  procurar() {
+    this.achado = undefined;
+    return this.disponivel();
+  }
+
+  async ligar(arquivo = '') {
+    const achado = this.disponivel();
+    if (!achado) return { ok: false, erro: 'sem' };
+    if (this.sessao) await this.parar();
+    const u = await this.dos.abrir(arquivo);
+    if (!u.ok) return u;
+    const base = achado.app ? path.join(os.homedir(), '.var', 'app', achado.app, 'retro-computer-dos') : os.tmpdir();
+    await fsp.mkdir(base, { recursive: true, mode: 0o700 });
+    const raiz = await fsp.mkdtemp(path.join(base, 'retro-dos-'));
+    const unidade = path.join(raiz, 'c');
+    for (const p of ['', ...(u.pastas || [])]) await fsp.mkdir(path.join(unidade, ...p.split('/')), { recursive: true });
+    for (const a of u.arquivos) await fsp.writeFile(path.join(unidade, ...a.caminho.split('/')), a.conteudo);
+    const conf = path.join(raiz, 'dosbox.conf');
+    await fsp.writeFile(conf, configuracaoNativa(unidade, u.comandos), { mode: 0o600 });
+    const c = comandoDosbox(achado, conf);
+    const proc = spawn(c.arquivo, c.args, { cwd: raiz, stdio: 'ignore' });
+    const id = crypto.randomBytes(8).toString('hex');
+    const s = { id, proc, raiz, unidade, pasta: u.pasta, foto: u.foto, nome: achado.nome };
+    this.sessao = s;
+    proc.on('error', () => this.terminou(s));
+    proc.on('exit', () => this.terminou(s));
+    return { ok: true, id, pasta: u.pasta, nome: achado.nome };
+  }
+
+  /** Traz para o disco o que mudou na cópia (um de cada vez: o relógio, o botão e o fim). */
+  guardar(s = this.sessao) {
+    const vez = this.fila.then(async () => {
+      if (!s) return { gravados: 0, lixeira: 0 };
+      const { arquivos, pastas } = await lerPasta(s.unidade, { limite: LIMITE * 2 });
+      const r = await this.dos.guardar(s.pasta, s.foto, arquivos, pastas);
+      s.foto = r.foto;
+      return { gravados: r.gravados, lixeira: r.lixeira };
+    });
+    this.fila = vez.catch(() => { });
+    return vez;
+  }
+
+  /** Fecha o DOSBox (o que mudou volta antes). */
+  async parar() {
+    const s = this.sessao;
+    if (!s) return { gravados: 0, lixeira: 0 };
+    const r = await this.guardar(s).catch((e) => ({ erro: e.message }));
+    s.parando = true;
+    const saiu = new Promise((ok) => { s.proc.once('exit', ok); setTimeout(ok, 4000); });
+    try { s.proc.kill('SIGTERM'); } catch { }
+    await saiu;
+    return r;
+  }
+
+  /** O DOSBox fechou (o EXIT, a janela dele ou o Parar): guarda e apaga a cópia (só se guardou). */
+  async terminou(s) {
+    if (s.terminado) return;
+    s.terminado = true;
+    if (this.sessao === s) this.sessao = null;
+    let r;
+    try {
+      r = await this.guardar(s);
+      await fsp.rm(s.raiz, { recursive: true, force: true });
+    } catch (e) {
+      // Sem guardar, a cópia fica: nada se perde, e o aviso diz onde ela está.
+      r = { erro: e.message, copia: s.unidade };
+    }
+    this.aoSair({ id: s.id, parando: !!s.parando, ...r });
+  }
+
+  /** A janela do DOSBox vem para a frente (no Linux, pelo wmctrl). */
+  mostrar() {
+    return new Promise((ok) => {
+      execFile('wmctrl', ['-lx'], { timeout: 3000 }, (erro, saida) => {
+        const linha = !erro && String(saida).split('\n').find((l) => /dosbox/i.test(l.split(/\s+/)[2] || ''));
+        if (!linha) return ok(false);
+        execFile('wmctrl', ['-ia', linha.split(/\s+/)[0]], { timeout: 3000 }, () => ok(true));
+      });
+    });
+  }
+
+  encerrar() {
+    const s = this.sessao;
+    if (s) { try { s.proc.kill('SIGTERM'); } catch { } }
+  }
+}
+
 /* ---------- O emulador em dos://emulador ---------- */
 
 // O js-dos avalia o próprio código com eval: ele roda numa origem só dele (dos://emulador), num
@@ -228,4 +403,4 @@ async function servirEmulador(pedido, raizApp) {
   });
 }
 
-module.exports = { Dos, tipoExecutavel, nomeDos, comandosPara, configuracao, lerPasta, diferencas, arquivoDoEmulador, servirEmulador, CSP_EMULADOR, PASTA_DOS, LIMITE };
+module.exports = { Dos, DosNativo, acharDosbox, configuracaoNativa, comandoDosbox, tipoExecutavel, nomeDos, comandosPara, configuracao, lerPasta, diferencas, arquivoDoEmulador, servirEmulador, CSP_EMULADOR, PASTA_DOS, LIMITE };

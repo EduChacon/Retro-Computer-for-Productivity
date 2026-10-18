@@ -5155,6 +5155,55 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('um instante depois:', await janela());
     xlogo.kill();
   },
+  // O DOS no DOSBox do Linux (precisa do dosbox instalado, como o do apt): a janela do Retro Computer
+  // com o aviso e os botões, a do DOSBox ao lado; Guardar no disco sem mudanças; Fechar o DOS pelo
+  // Retro Computer; e um .BAT que grava um arquivo, apaga outro, tenta montar a raiz do computador
+  // (o modo seguro não deixa) e sai com o EXIT: o que mudou volta ao disco, e o apagado vai para a Lixeira.
+  async dosNativo() {
+    await fecharTudo();
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ dos: { nativo: true } })));
+    const achado = await pagina.evaluate(() => retro.dos.nativo(true));
+    console.log('o DOSBox do Linux:', JSON.stringify(achado));
+    if (!achado) throw new Error('instale o dosbox (sudo apt install dosbox)');
+    const bat = '@echo off\r\nmount d / > MONTAR.TXT\r\necho ok > SAIDA.TXT\r\ndel APAGAR.TXT\r\nexit\r\n';
+    await pagina.evaluate((b) => Promise.all([retro.disco.gravar('DOS/TESTE.BAT', new TextEncoder().encode(b)), retro.disco.gravar('DOS/APAGAR.TXT', new TextEncoder().encode('tchau'))]), bat);
+    await abrir('dos');
+    await pagina.waitForSelector('.janela.dos .dos-nativo', { timeout: 30000 });
+    await pagina.waitForTimeout(3000);
+    console.log('o aviso:', await pagina.textContent('.janela.dos .dos-nativo b'));
+    const tela = (nome) => {
+      const arq2 = path.join(SAIDA, `${String(++n).padStart(2, '0')}-dos-nativo-${nome}.png`);
+      try { execFileSync('import', ['-window', 'root', arq2]); console.log('captura:', arq2); } catch { }
+    };
+    tela('janelas');
+    await foto('dos-nativo-aviso');
+    // Com o Retro Computer na frente, o Mostrar o DOS traz a janela do DOSBox (no modo sistema, pelo wmctrl).
+    const ativa = () => { try { const id = /# (0x[0-9a-f]+)/.exec(execFileSync('xprop', ['-root', '_NET_ACTIVE_WINDOW']).toString())[1]; return execFileSync('xprop', ['-id', id, 'WM_CLASS']).toString().replace(/.*= /, '').trim(); } catch { return '?'; } };
+    // Um clique de verdade num canto livre da área de trabalho (a janela do DOSBox cobre a do DOS daqui).
+    execFileSync('xdotool', ['mousemove', '200', '650', 'click', '1']);
+    await pagina.waitForTimeout(800);
+    const antes = ativa();
+    await pagina.locator('.janela.dos .dos-nativo button', { hasText: T('Mostrar o DOS') }).click();
+    await pagina.waitForTimeout(1200);
+    console.log('Mostrar o DOS: a janela ativa era', antes, 'e passou a', ativa());
+    await pagina.locator('.janela.dos .dos-nativo button', { hasText: T('Guardar no disco') }).click();
+    await pagina.waitForSelector('.janela.ativa.dialogo', { timeout: 10000 });
+    console.log('Guardar no disco sem mudanças:', await pagina.textContent('.janela.ativa.dialogo .corpo'));
+    await pagina.keyboard.press('Enter');
+    await pagina.locator('.janela.dos .dos-nativo button', { hasText: T('Fechar o DOS') }).click();
+    await pagina.waitForFunction(() => !document.querySelector('.janela.dos'), null, { timeout: 15000 });
+    console.log('Fechar o DOS: a janela fechou; DOSBox abertos:', execFileSync('sh', ['-c', 'pgrep -x dosbox | wc -l']).toString().trim());
+    // O .BAT sai sozinho: o EXIT fecha o DOSBox e a janela do Retro Computer.
+    await abrir('dos', { arquivo: 'DOS/TESTE.BAT' });
+    await pagina.waitForSelector('.janela.dos .dos-nativo', { timeout: 30000 });
+    await pagina.waitForFunction(() => !document.querySelector('.janela.dos'), null, { timeout: 30000 });
+    const estado = await pagina.evaluate(async () => {
+      const ler = async (r) => { try { return new TextDecoder().decode(await retro.disco.ler(r)).trim(); } catch { return null; } };
+      const lixeira = await retro.disco.lixeira().catch(() => []);
+      return { saida: await ler('DOS/SAIDA.TXT'), montar: await ler('DOS/MONTAR.TXT'), apagado: await ler('DOS/APAGAR.TXT'), naLixeira: lixeira.some((i) => i.nome === 'APAGAR.TXT') };
+    });
+    console.log('depois do EXIT:', JSON.stringify(estado));
+  },
   // Os cantos magnéticos das janelas do Linux (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1 e o openbox
   // com a cópia do rc.xml em RETRO_OPENBOX_RC): o xlogo arrastado pelo título com o mouse de verdade
   // (o xdotool) mostra o contorno na borda e, solto, encaixa na metade, no alto (maximizado) e no
@@ -5482,6 +5531,8 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   // o arquivo criado no DOS de volta ao disco ao fechar a janela.
   async dos() {
     await fecharTudo();
+    // O DOS de dentro do Retro Computer (o js-dos), também onde houver o DOSBox do Linux.
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ dos: { nativo: false } })));
     // mov dx,109h; mov ah,9; int 21h; int 20h; e a frase terminada em "$".
     const com = [0xba, 0x09, 0x01, 0xb4, 0x09, 0xcd, 0x21, 0xcd, 0x20, ...Buffer.from('Ola do Retro Computer!\r\n$', 'latin1')];
     await pagina.evaluate((b) => retro.disco.gravar('DOS/OLA.COM', new Uint8Array(b)), com);

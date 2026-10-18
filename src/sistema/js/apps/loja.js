@@ -115,11 +115,19 @@ export class AbaLoja {
     this.textos = LOJAS[info.loja] || LOJAS.flatpak;
     if (!info.pronta) return this.semLoja();
     this.montar();
+    if (this.buscaInicial) { this.campo.value = this.buscaInicial; this.buscaInicial = null; }
     this.paraDeOuvir = retro.loja.aoAndamento((id, a) => this.andamento(id, a));
     await this.lerInstalados();
     this.carregar();
     // A busca das atualizações pergunta ao Flathub por cada instalado: fica para depois.
     retro.loja.atualizacoes().then((l) => { this.comAtualizacao = new Set(l); this.desenharLista(); this.selecionar(this.sel); }).catch(() => { });
+  }
+
+  /** Pesquisa um termo (outro programa pediu: o DOS, para achar o DOSBox). */
+  pesquisar(termo) {
+    if (!this.campo) { this.buscaInicial = String(termo || ''); return; }
+    this.campo.value = String(termo || '');
+    this.carregar();
   }
 
   fechar() {

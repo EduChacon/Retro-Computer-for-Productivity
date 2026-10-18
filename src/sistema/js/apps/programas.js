@@ -75,6 +75,7 @@ class Programas {
     // As abas: os programas recomendados (os Craft) e a loja do computador (o Flathub no Linux,
     // o winget no Windows, o Homebrew no Mac).
     this.linux = new AbaLoja();
+    if (args.busca) this.linux.pesquisar(args.busca);
     this.abasEl = h('div.abas', { hidden: true });
     this.painelEl = h('div.programas-painel', abaRetro, this.linux.el);
     let abas = [tr('Programas recomendados'), tr('Programas do computador')];
@@ -279,6 +280,7 @@ function abrirProgramas(args = {}) {
     aberta.focar();
     if (args.instalar && aberta.programas) aberta.programas.carregar(args.instalar);
     if ((args.aba === 'loja' || args.aba === 'linux') && aberta.programas && !aberta.programas.abasEl.hidden) aberta.programas.mostrarAba(1);
+    if (args.busca && aberta.programas) aberta.programas.linux.pesquisar(args.busca);
     return aberta.programas;
   }
   const p = new Programas(args);

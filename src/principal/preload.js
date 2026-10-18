@@ -406,6 +406,13 @@ contextBridge.exposeInMainWorld('retro', {
     abrir: (rel) => chamar('dos:abrir', rel),
     guardar: (pasta, foto, arquivos, pastas) => chamar('dos:guardar', pasta, foto, arquivos, pastas),
     tipo: (rel) => chamar('dos:tipo', rel),
+    // O DOSBox do Linux: { nome } ou null; ligar, guardar, parar e mostrar a janela dele.
+    nativo: (procurar) => chamar('dos:nativo', !!procurar),
+    ligarNativo: (rel) => chamar('dos:ligarNativo', rel),
+    guardarNativo: () => chamar('dos:guardarNativo'),
+    pararNativo: () => chamar('dos:pararNativo'),
+    mostrarNativo: () => chamar('dos:mostrarNativo'),
+    aoNativoSair: ouvir('dos:nativoSaiu'),
   },
   mac: {
     abrir: (rel) => chamar('mac:abrir', rel),

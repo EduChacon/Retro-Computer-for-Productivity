@@ -6,16 +6,22 @@
  * emulador ao ligar e voltam ao disco ao fechar a janela (ou em Arquivo › Guardar no disco), pelo
  * processo principal (src/principal/dos.js), com a versão anterior guardada e o que o DOS apagou
  * na Lixeira.
+ *
+ * No Linux, com o DOSBox do sistema instalado, o DOS roda nele (bem mais rápido), numa janela
+ * dele: esta mostra o que está acontecendo e os botões (mostrar, guardar e fechar).
  */
-import { h } from '../util.js';
+import { h, img } from '../util.js';
 import { Janela } from '../janelas.js';
-import { registrarApp, abrir, eventos } from '../sistema.js';
+import { registrarApp, abrir, eventos, estado, definirConfig } from '../sistema.js';
 import { erro, info, ajustarAoConteudo, caixaArquivo } from '../dialogos.js';
 import { tr } from '../idioma.js';
 import { estado as estadoSons } from '../sons.js';
 
 const ORIGEM = 'dos://emulador';
 const caminhoTela = (rel) => 'C:\\' + String(rel || '').replace(/\//g, '\\');
+// O DOSBox do Linux, quando houver: ligado por padrão (Opções › Usar o DOSBox do Linux).
+const querNativo = () => !(estado.config && estado.config.dos && estado.config.dos.nativo === false);
+const noLinux = () => !!(estado.config && estado.config.plataforma === 'linux');
 
 class JanelaDos {
   constructor(arquivo) {
@@ -40,14 +46,18 @@ class JanelaDos {
         },
         {
           rotulo: tr('&Exibir'), itens: () => [
-            { rotulo: tr('&Tamanho real'), radio: true, marcado: this.escala === 1, acao: () => this.mudarEscala(1) },
-            { rotulo: tr('&Dobro do tamanho'), radio: true, marcado: this.escala === 2, acao: () => this.mudarEscala(2) },
-            { rotulo: tr('&Ajustar à janela'), radio: true, marcado: this.escala === 0, acao: () => this.mudarEscala(0) },
+            { rotulo: tr('&Tamanho real'), radio: true, marcado: this.escala === 1, desativado: !!this.nativo, acao: () => this.mudarEscala(1) },
+            { rotulo: tr('&Dobro do tamanho'), radio: true, marcado: this.escala === 2, desativado: !!this.nativo, acao: () => this.mudarEscala(2) },
+            { rotulo: tr('&Ajustar à janela'), radio: true, marcado: this.escala === 0, desativado: !!this.nativo, acao: () => this.mudarEscala(0) },
           ],
+        },
+        {
+          rotulo: tr('&Opções'), itens: () => this.itensOpcoes(),
         },
         {
           rotulo: tr('A&juda'), itens: [
             { rotulo: tr('&Como usar'), acao: () => info(tr('O DOS é o DOSBox, um emulador do computador da época, com o prompt "C:\\>". A unidade C: dele é a pasta C:\\DOS do disco do Retro Computer: ponha lá os seus programas e jogos do DOS (copie-os pelo Explorador) e digite o nome do programa para abri-lo. Dois cliques num programa do DOS (.com, .bat ou um .exe do DOS) também o abrem.\n\nO que mudar lá dentro volta para o disco ao fechar a janela (ou em Arquivo › Guardar no disco): os arquivos regravados guardam a versão anterior, e os apagados vão para a Lixeira.\n\nO teclado é o americano. Clique na tela para o DOS receber as teclas; o comando EXIT fecha a janela. Tudo funciona sem internet.\n\nO DOSBox é do projeto js-dos (GPL-2.0); veja ATRIBUICOES.md.'), tr('DOS')) },
+            ...(noLinux() ? [{ rotulo: tr('O DOSBox do &Linux'), acao: () => info(tr('No Linux, o DOS roda bem mais rápido no DOSBox do próprio Linux, numa janela dele (Alt+Enter deixa em tela cheia). Instale-o pela Loja de programas (o DOSBox Staging) ou pelo Prompt de comando (sudo apt install dosbox): o DOS passa a usá-lo sozinho. Ele trabalha numa cópia da pasta, e o que mudar volta para o disco do mesmo jeito; a unidade C: é a única que ele enxerga (o comando MOUNT fica desligado). Opções › Usar o DOSBox do Linux volta ao DOS de dentro do Retro Computer.'), tr('DOS')) }] : []),
           ],
         },
       ],
@@ -55,6 +65,7 @@ class JanelaDos {
     this.aviso = h('div.dos-aviso', tr('Ligando o DOS…'));
     this.moldura = h('div.dos-moldura', this.aviso);
     this.j.corpo.append(this.moldura);
+    this.painel = null;
     this.ouvir = (e) => this.mensagem(e);
     window.addEventListener('message', this.ouvir);
     this.semConfig = eventos.on('config', () => this.postar({ tipo: 'volume', volume: this.volume() }));
@@ -109,8 +120,55 @@ class JanelaDos {
     }
   }
 
+  /** O menu Opções: o DOSBox do Linux (usar, instalar ou procurar de novo). */
+  itensOpcoes() {
+    if (!noLinux()) return [{ rotulo: tr('(Nenhuma opção neste computador)'), desativado: true }];
+    const achado = this.achado;
+    if (!achado) {
+      return [
+        { rotulo: tr('&Instalar o DOSBox do Linux (mais rápido)…'), acao: () => abrir('programas', { aba: 'linux', busca: 'DOSBox' }) },
+        { rotulo: tr('&Procurar o DOSBox de novo'), acao: () => this.procurarDosbox() },
+      ];
+    }
+    return [{ rotulo: tr('Usar o &DOSBox do Linux ({nome})', { nome: achado.nome }), marcado: querNativo(), acao: () => this.trocarNativo(!querNativo()) }];
+  }
+
+  async procurarDosbox() {
+    this.achado = await retro.dos.nativo(true).catch(() => null);
+    if (!this.achado) { info(tr('O DOSBox do Linux ainda não está neste computador.'), tr('DOS')); return; }
+    if (querNativo()) this.religar(this.arquivo);
+  }
+
+  async trocarNativo(sim) {
+    await definirConfig({ dos: { nativo: sim } });
+    this.religar(this.arquivo);
+  }
+
+  /** Desliga o que estiver ligado (o de dentro ou o do Linux), guardando antes. */
+  async desligarAtual() {
+    if (this.nativo) {
+      const r = this.ligado ? await retro.dos.pararNativo().catch((e) => ({ erro: e.message })) : null;
+      this.nativo = null;
+      this.ligado = false;
+      if (this.painel) { this.painel.remove(); this.painel = null; }
+      this.moldura.classList.remove('nativo');
+      if (r && r.erro) erro(tr('Não foi possível guardar no disco: {erro}', { erro: r.erro }), tr('DOS'));
+    }
+  }
+
   /** Liga (ou religa) o DOS com a unidade C: do programa escolhido (ou C:\DOS). */
   async religar(arquivo) {
+    await this.desligarAtual();
+    this.achado = await retro.dos.nativo().catch(() => null);
+    if (this.achado && querNativo()) {
+      if (this.quadro) {
+        await this.guardar(false);
+        await this.pedir('desligar');
+        this.quadro.remove();
+        this.quadro = null;
+      }
+      return this.religarNativo(arquivo);
+    }
     if (this.quadro) {
       await this.guardar(false);
       await this.pedir('desligar');
@@ -141,6 +199,55 @@ class JanelaDos {
     this.moldura.append(this.quadro);
     this.ajustar();
     if (this.escala) this.encaixar();
+  }
+
+  /** O DOS no DOSBox do Linux: esta janela mostra o aviso e os botões. */
+  async religarNativo(arquivo) {
+    clearInterval(this.timer);
+    this.ligado = false;
+    this.arquivo = arquivo || '';
+    this.nativo = this.achado;
+    this.aviso.hidden = false;
+    this.aviso.textContent = tr('Ligando o {nome}…', { nome: this.nativo.nome });
+    const r = await retro.dos.ligarNativo(this.arquivo).catch((e) => ({ ok: false, erro: e.message }));
+    if (this.j.fechada) { if (r.ok) retro.dos.pararNativo().catch(() => { }); return; }
+    if (!r.ok) {
+      this.aviso.textContent = '';
+      this.nativo = null;
+      if (r.grande) await erro(tr('A pasta {pasta} é grande demais para o DOS (mais de {mb} MB). Ponha o programa numa pasta menor, como C:\\DOS.', { pasta: caminhoTela(r.pasta), mb: Math.round(r.limite / 1048576) }), tr('DOS'));
+      else await erro(tr('Não foi possível ligar o DOS: {erro}', { erro: r.erro || '?' }), tr('DOS'));
+      this.limpar();
+      this.j.fechar(true);
+      return;
+    }
+    this.idNativo = r.id;
+    this.pasta = r.pasta;
+    this.ligado = true;
+    this.aviso.hidden = true;
+    const nome = r.nome || this.nativo.nome;
+    this.painel = h('div.dos-nativo',
+      img('dos', 32),
+      h('div',
+        h('b', tr('O DOS está aberto numa janela do {nome}.', { nome })),
+        h('p', tr('Ele roda direto no Linux, bem mais rápido. O que mudar lá volta para o disco ao fechar o DOS (o comando EXIT ou a janela dele) ou em Guardar no disco.')),
+        h('div.cxb-botoes',
+          h('button.padrao', { on: { click: () => retro.dos.mostrarNativo().catch(() => { }) } }, tr('Mostrar o DOS')),
+          h('button', { on: { click: () => this.guardar(true) } }, tr('Guardar no disco')),
+          h('button', { on: { click: () => this.j.fechar() } }, tr('Fechar o DOS')))));
+    this.moldura.classList.add('nativo');
+    this.moldura.append(this.painel);
+    if (!this.j.maximizada) ajustarAoConteudo(this.j);
+    this.mostrarStatus('');
+    this.timer = setInterval(() => this.guardar(false), 120000);
+  }
+
+  /** O DOSBox do Linux fechou: o EXIT ou a janela dele fecham esta também. */
+  nativoSaiu(r) {
+    if (!this.nativo || r.id !== this.idNativo) return;
+    clearInterval(this.timer);
+    this.ligado = false;
+    if (r.erro) erro(tr('Não foi possível guardar no disco: {erro}. A cópia dos arquivos do DOS ficou em {pasta}.', { erro: r.erro, pasta: r.copia || '?' }), tr('DOS'));
+    if (!r.parando && !this.saindo) this.j.fechar();
   }
 
   mandarArquivos() {
@@ -209,10 +316,15 @@ class JanelaDos {
     if (!this.ligado || this.guardando) return;
     this.guardando = true;
     try {
-      const m = await this.pedir('ler');
-      if (!m || m.erro) throw new Error((m && m.erro) || tr('O DOS não respondeu.'));
-      const r = await retro.dos.guardar(this.pasta, this.foto, m.arquivos.map((a) => ({ caminho: a.caminho, conteudo: new Uint8Array(a.conteudo) })), m.pastas);
-      this.foto = r.foto;
+      let r;
+      if (this.nativo) {
+        r = await retro.dos.guardarNativo();
+      } else {
+        const m = await this.pedir('ler');
+        if (!m || m.erro) throw new Error((m && m.erro) || tr('O DOS não respondeu.'));
+        r = await retro.dos.guardar(this.pasta, this.foto, m.arquivos.map((a) => ({ caminho: a.caminho, conteudo: new Uint8Array(a.conteudo) })), m.pastas);
+        this.foto = r.foto;
+      }
       if (r.gravados || r.lixeira) this.mostrarStatus(tr('Guardado às {hora}', { hora: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }));
       if (avisar) info(r.gravados || r.lixeira ? tr('{n} arquivo(s) guardado(s) no disco; {m} na Lixeira.', { n: r.gravados, m: r.lixeira }) : tr('Nada mudou desde a última vez.'), tr('DOS'));
     } catch (e) {
@@ -227,7 +339,12 @@ class JanelaDos {
     if (this.saindo) return true;
     this.saindo = true;
     clearInterval(this.timer);
-    if (this.ligado) {
+    if (this.nativo) {
+      if (this.painel) this.painel.hidden = true;
+      this.aviso.hidden = false;
+      this.aviso.textContent = tr('Guardando os arquivos…');
+      await this.desligarAtual();
+    } else if (this.ligado) {
       this.aviso.hidden = false;
       this.aviso.textContent = tr('Guardando os arquivos…');
       await this.guardar(false);
@@ -244,6 +361,9 @@ class JanelaDos {
 }
 
 let aberta = null;
+
+// O DOSBox do Linux fechou (o EXIT, a janela dele ou o Retro Computer pediu).
+if (window.retro && retro.dos && retro.dos.aoNativoSair) retro.dos.aoNativoSair((r) => { if (aberta && r) aberta.nativoSaiu(r); });
 
 registrarApp('dos', {
   nome: 'DOS', icone: 'dos',

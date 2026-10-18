@@ -67,6 +67,8 @@ const PADRAO = {
   // Reabrir ao ligar: as janelas abertas (o programa, o que ele mostrava e o lugar), guardadas pela área de trabalho.
   reabrir: { ligado: true, janelas: [] },
   foco: { minutos: 25, pausa: 5 },
+  // O DOS: no Linux, o DOSBox do sistema quando instalado (bem mais rápido que o de dentro).
+  dos: { nativo: true },
   // O Claude do Prompt ajusta o Retro Computer pelo servidor MCP (mcp.js).
   claude: { ajustes: true },
   primeiraVez: true,

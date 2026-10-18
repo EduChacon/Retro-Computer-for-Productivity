@@ -132,3 +132,86 @@ test('dos: o emulador em dos://emulador (só a página e a biblioteca, com o eva
   assert.equal(r.headers.get('content-security-policy'), CSP_EMULADOR);
   assert.equal((await servirEmulador({ url: 'dos://emulador/nada.js' }, raiz)).status, 404);
 });
+
+test('dos: o DOSBox do Linux (o do sistema antes do Flathub) e a configuração com o modo seguro', () => {
+  const { acharDosbox, configuracaoNativa, comandoDosbox } = require('../src/principal/dos.js');
+  const casa = path.join(path.sep, 'casa', 'eu');
+  const com = (...lista) => ({ casa, existe: (c) => lista.includes(c) });
+  assert.deepEqual(acharDosbox(com(path.join('/usr/bin', 'dosbox'), path.join('/usr/bin', 'dosbox-x'))), { nome: 'DOSBox-X', cmd: path.join('/usr/bin', 'dosbox-x') });
+  assert.deepEqual(acharDosbox(com(path.join('/usr/bin', 'flatpak'), path.join(casa, '.local', 'share', 'flatpak', 'app', 'io.github.dosbox-staging'))), { nome: 'DOSBox Staging', app: 'io.github.dosbox-staging' });
+  // O do Flathub só com o flatpak; sem nenhum, null.
+  assert.equal(acharDosbox(com(path.join('/var', 'lib', 'flatpak', 'app', 'io.github.dosbox-staging'))), null);
+  assert.equal(acharDosbox(com()), null);
+  const conf = configuracaoNativa('/tmp/retro-dos-x/c', ['cd \\JOGOS', 'PROG.EXE']);
+  // O modo seguro logo depois de montar a unidade C: (um .bat não monta outras pastas do computador).
+  assert.match(conf, /\[autoexec\]\n@echo off\nmount c "\/tmp\/retro-dos-x\/c" > nul\nc:\nconfig -securemode > nul\n@echo on\ncd \\JOGOS\nPROG\.EXE\n/);
+  assert.match(conf, /\[ipx\]\nipx=false/);
+  assert.match(conf, /serial1=disabled/);
+  assert.throws(() => configuracaoNativa('relativa/c'));
+  assert.throws(() => configuracaoNativa('/tmp/a"b/c'));
+  assert.deepEqual(comandoDosbox({ cmd: '/usr/bin/dosbox' }, '/t/d.conf'), { arquivo: '/usr/bin/dosbox', args: ['-conf', '/t/d.conf'] });
+  assert.deepEqual(comandoDosbox({ app: 'io.github.dosbox-staging' }, '/t/d.conf'), { arquivo: 'flatpak', args: ['run', 'io.github.dosbox-staging', '-conf', '/t/d.conf'] });
+});
+
+// Um DOSBox de mentira (um roteiro do Node): lê o dosbox.conf, muda a cópia da unidade C: e sai (ou espera).
+function dosboxFalso(corpo) {
+  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-dosbox-falso-'));
+  const js = path.join(pasta, 'dosbox.js');
+  fs.writeFileSync(js, `const fs = require('fs'); const path = require('path');
+const conf = fs.readFileSync(process.argv[process.argv.indexOf('-conf') + 1], 'utf8');
+if (!/\\nc:\\nconfig -securemode > nul\\n/.test(conf)) process.exit(3);
+const c = /mount c "([^"]+)"/.exec(conf)[1];
+${corpo}`);
+  const sh = path.join(pasta, 'dosbox');
+  fs.writeFileSync(sh, `#!/bin/sh\nexec "${process.execPath}" "${js}" "$@"\n`, { mode: 0o755 });
+  return { nome: 'DOSBox de teste', cmd: sh };
+}
+
+test('dos: no DOSBox do Linux, o que mudou na cópia volta ao disco (a versão anterior guardada, o apagado na Lixeira)', { skip: process.platform !== 'linux' }, async () => {
+  const { DosNativo } = require('../src/principal/dos.js');
+  const disco = novoDisco();
+  await disco.gravar('DOS/LEIAME.TXT', Buffer.from('ola'));
+  await disco.gravar('DOS/JOGOS/SAVE.DAT', Buffer.from('fase 1'));
+  await disco.gravar('DOS/APAGAR.TXT', Buffer.from('tchau'));
+  let fim = null;
+  const saiu = new Promise((ok) => { fim = ok; });
+  const n = new DosNativo({ dos: new Dos({ disco }), achar: () => dosboxFalso(`
+fs.writeFileSync(path.join(c, 'NOVO.TXT'), 'novo');
+fs.writeFileSync(path.join(c, 'JOGOS', 'SAVE.DAT'), 'fase 2');
+fs.unlinkSync(path.join(c, 'APAGAR.TXT'));
+fs.mkdirSync(path.join(c, 'FOTOS'));`), aoSair: (r) => fim(r) });
+  const r = await n.ligar();
+  assert.equal(r.ok, true);
+  assert.equal(r.pasta, 'DOS');
+  const copia = n.sessao.raiz;
+  const s = await saiu;
+  assert.deepEqual([s.id, s.gravados, s.lixeira, s.parando], [r.id, 2, 1, false]);
+  assert.equal(fs.readFileSync(disco.real('DOS/NOVO.TXT'), 'utf8'), 'novo');
+  assert.equal(fs.readFileSync(disco.real('DOS/JOGOS/SAVE.DAT'), 'utf8'), 'fase 2');
+  assert.ok(fs.existsSync(disco.real('DOS/FOTOS')));
+  assert.equal(fs.existsSync(disco.real('DOS/APAGAR.TXT')), false);
+  assert.ok((await disco.listarLixeira()).some((i) => i.nome === 'APAGAR.TXT'));
+  assert.ok((await disco.versoes('DOS/JOGOS/SAVE.DAT')).length >= 1);
+  // A cópia de trabalho (só do usuário) sai depois de guardada.
+  assert.equal(fs.existsSync(copia), false);
+  assert.equal(n.sessao, null);
+});
+
+test('dos: fechar o DOSBox do Linux pelo Retro Computer guarda antes', { skip: process.platform !== 'linux' }, async () => {
+  const { DosNativo } = require('../src/principal/dos.js');
+  const disco = novoDisco();
+  await disco.gravar('DOS/LEIAME.TXT', Buffer.from('ola'));
+  let fim = null;
+  const saiu = new Promise((ok) => { fim = ok; });
+  const n = new DosNativo({ dos: new Dos({ disco }), achar: () => dosboxFalso(`
+fs.writeFileSync(path.join(c, 'LEIAME.TXT'), 'mudou');
+setInterval(() => { }, 1000);`), aoSair: (r) => fim(r) });
+  assert.equal((await n.ligar()).ok, true);
+  assert.equal(fs.statSync(n.sessao.raiz).mode & 0o777, 0o700);
+  await new Promise((ok) => setTimeout(ok, 600));
+  const r = await n.parar();
+  assert.equal(r.gravados, 1);
+  assert.equal(fs.readFileSync(disco.real('DOS/LEIAME.TXT'), 'utf8'), 'mudou');
+  const s = await saiu;
+  assert.equal(s.parando, true);
+});
