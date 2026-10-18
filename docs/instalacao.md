@@ -78,15 +78,37 @@ Dicas: em **Entrada**, ligue a captura do teclado para os atalhos (Alt+Tab, a te
 
 ### No iPhone e no iPad (o UTM SE)
 
-O [UTM SE](https://docs.getutm.app/installation/ios/), da App Store, também roda o Linux no iPhone e no iPad, mas só emulado: sem o "JIT" (a App Store não o permite), ele usa um interpretador, e a própria documentação do UTM o indica para sistemas pequenos. O Retro Computer roda sobre o Chromium, dentro de um Linux com área de trabalho: funciona, mas devagar (a instalação leva horas, e cada clique pode levar alguns segundos). Serve para experimentar; para o dia a dia, um computador rende muito mais. A virtualização ("hypervisor") no iPad só existe a partir do chip M1; os iPad Pro de 2018 e 2020 (A12X e A12Z) e os iPhone só emulam.
+O [UTM SE](https://docs.getutm.app/installation/ios/), da App Store, também roda o Linux no iPhone e no iPad, mas só emulado: sem o "JIT" (a App Store não o permite), ele usa um interpretador, e a própria documentação do UTM o indica para sistemas pequenos. O Retro Computer roda sobre o Chromium, dentro de um Linux com área de trabalho: funciona, mas devagar. Serve para experimentar; para o dia a dia, um computador rende muito mais.
 
-1. No Safari do aparelho, baixe do [debian.org](https://www.debian.org/distrib/netinst) a imagem do Debian estável para **ARM64** (`debian-…-arm64-netinst.iso`) e guarde-a no app Arquivos. Prefira o ARM64: é o que o UTM recomenda nos aparelhos da Apple, e o x86_64 seria ainda mais lento (por isso o Linux Mint, que só existe para x86_64, não serve aqui).
-2. No UTM SE, **+** › **Emular** › **Linux**, escolha a imagem e ajuste: arquitetura **ARM64 (aarch64)**, memória de 2.048 a 3.072 MB num iPhone com 8 GB (de 1.536 a 2.048 MB num iPad com 4 GB), 2 a 4 núcleos e um disco de 16 a 20 GB.
-3. Instale o Debian. Na escolha dos programas, marque só o **LXDE** (a área de trabalho mais leve da lista) e os utilitários padrão; deixe a senha do "root" em branco, para o seu usuário poder usar o `sudo`.
-4. No Debian, abra o terminal e instale o `.deb`: `wget https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest/download/Retro-Computer-…-linux-arm64.deb` (com o número da versão no lugar dos três pontos; o nome certo está na página de lançamentos) e `sudo apt install ./Retro-Computer-…-linux-arm64.deb`.
-5. Saia da sessão e escolha **Retro Computer** na tela de entrada. No iPad, um teclado e um mouse Bluetooth ajudam muito.
+**A memória da máquina.** O Chromium precisa de pelo menos 1,5 GB, mas o iOS e o iPadOS fecham o UTM quando a máquina pede memória demais. A memória do aparelho não aparece nos Ajustes: veja o nome do modelo em **Ajustes › Geral › Sobre** e procure a memória dele. A capacidade (128 GB, 256 GB…) é o armazenamento, não a memória: o iPhone 16 Pro, por exemplo, tem 8 GB de memória em todas as capacidades, e o iPad Pro de 2018 tem 4 GB (só o de 1 TB tem 6 GB).
 
-O UTM completo, com o "JIT", é bem mais rápido, mas só se instala fora da App Store ("sideload"), com um ativador do "JIT" como o StikDebug, e o caminho muda com cada versão do iOS: confira a [documentação do UTM](https://docs.getutm.app/installation/ios/) antes.
+| Memória do aparelho | Memória da máquina no UTM |
+|---|---|
+| 3 GB ou menos | Não recomendado: sobra pouco para o Chromium |
+| 4 GB | De 1.536 a 2.048 MB (comece com 1.536) |
+| 6 GB | De 2.048 a 3.072 MB |
+| 8 GB ou mais | De 2.048 a 3.072 MB no iPhone; até 4.096 MB num iPad com chip M1 ou mais novo |
+
+Os nomes das telas mudam com o idioma do UTM, e alguns ficam sempre em inglês; abaixo, os que aparecem nele.
+
+1. No Safari do aparelho, abra o [debian.org/distrib/netinst](https://www.debian.org/distrib/netinst) e, na lista das imagens pequenas ("netinst"), toque em **arm64**. O arquivo termina em `-arm64-netinst.iso` e vai para o app Arquivos (em geral, na pasta Downloads). Prefira o ARM64: é o que o UTM recomenda nos aparelhos da Apple, e o x86_64 seria ainda mais lento (por isso o Linux Mint, que só existe para x86_64, não serve aqui).
+2. No UTM SE, toque em **+** › **Emular** › **Linux**.
+3. Na tela da imagem de inicialização, deixe marcado **Boot from ISO image**, toque em **Buscar…** (**Browse…**, em inglês) e escolha o arquivo do passo 1; o nome dele aparece no campo do caminho. Toque em **Continuar**.
+4. Na tela do "hardware":
+   - a arquitetura **ARM64 (aarch64)**: com ela, a máquina passa a ser a máquina virtual ARM ("virt"). Não use a do PC Intel (como a "Intel ICH9 based PC (2009, x86_64)"), que fica ainda mais lenta. Se o campo da arquitetura não estiver à vista, ligue o modo especialista ("Expert Mode") no alto da tela;
+   - a memória da tabela acima (os 512 MB que podem vir marcados não bastam);
+   - de 2 a 4 núcleos (4 nos aparelhos mais novos).
+5. No armazenamento, um disco de 16 a 20 GB (esse espaço precisa estar livre no aparelho). A pasta compartilhada pode ficar vazia. No resumo, dê um nome à máquina (por exemplo, "Retro Computer") e salve.
+6. Ligue a máquina e instale o Debian. Na escolha dos programas, marque só o **LXDE** (a área de trabalho mais leve da lista) e os utilitários padrão; deixe a senha do "root" em branco, para o seu usuário poder usar o `sudo`.
+7. Ao terminar, desligue a máquina e retire a imagem do Debian da unidade de CD (nas opções da máquina, a unidade de CD/DVD › limpar, **Clear** em inglês), para ela passar a iniciar pelo disco.
+8. No Debian, abra o terminal e instale o `.deb`: `wget https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest/download/Retro-Computer-…-linux-arm64.deb` (com o número da versão no lugar dos três pontos; o nome certo está na página de lançamentos) e `sudo apt install ./Retro-Computer-…-linux-arm64.deb`.
+9. Saia da sessão e escolha **Retro Computer** na tela de entrada.
+
+O que esperar:
+
+- **A velocidade.** Com o UTM SE, o iPhone e o iPad só emulam: a instalação do Debian leva horas, e cada clique no Retro Computer, alguns segundos. Os aparelhos com mais memória e processador mais novo vão melhor (um iPhone 16 Pro responde bem mais rápido que um iPad Pro de 2018).
+- **O iPad.** A tela maior, com um teclado e um mouse (ou "trackpad") Bluetooth, deixa o Retro Computer bem mais fácil de usar. Os atalhos (Alt+Tab, a tecla do logotipo) só chegam à máquina se o UTM capturar o teclado.
+- **O UTM completo.** Com o "JIT", ele é bem mais rápido, mas só se instala fora da App Store ("sideload"), com um ativador do "JIT" como o StikDebug, e o caminho muda com cada versão do iOS. A virtualização ("hypervisor") também pede o UTM completo e um iPad com chip M1 ou mais novo; os iPhone e os iPad com o A12X ou o A12Z só emulam, mesmo com ele. Confira a [documentação do UTM](https://docs.getutm.app/installation/ios/) antes.
 
 ## 5. Notebook antigo ou mini PC
 
