@@ -62,6 +62,66 @@ function trocarMargens(xml, { cima = 0, baixo = 0 } = {}) {
   return texto.replace(/<\/openbox_config>/, () => `  ${bloco}\n</openbox_config>`);
 }
 
+/* ---------- O tema do Openbox no tamanho dos pixels (funções puras, testadas em testes/janelas-linux.test.js) ---------- */
+
+// Os desenhos dos botões das janelas do Retro Computer (os de estilo.css), ponto a ponto: o Openbox os pinta
+// na cor do tema. O minimizar fica embaixo, como no Retro Computer (as linhas vazias em cima).
+const GLIFOS = {
+  'close.xbm': ['##....##', '.##..##.', '..####..', '...##...', '..####..', '.##..##.', '##....##'],
+  'iconify.xbm': ['......', '......', '......', '......', '......', '......', '......', '######', '######'],
+  'max.xbm': ['#########', '#########', '#.......#', '#.......#', '#.......#', '#.......#', '#.......#', '#.......#', '#########'],
+  'max_toggled.xbm': ['..######', '..######', '..#....#', '######.#', '######.#', '#....#.#', '#....#..', '#....#..', '######..'],
+};
+
+/** Um desenho ampliado (cada ponto vira um quadrado de f × f) no formato XBM do X. */
+function xbm(linhas, f) {
+  const grandes = linhas.flatMap((l) => Array(f).fill([...l].flatMap((c) => Array(f).fill(c)).join('')));
+  const w = grandes[0].length;
+  const bytes = [];
+  for (const l of grandes) {
+    for (let x = 0; x < w; x += 8) {
+      let b = 0;
+      for (let i = 0; i < 8 && x + i < w; i++) if (l[x + i] === '#') b |= 1 << i;
+      bytes.push('0x' + b.toString(16).padStart(2, '0'));
+    }
+  }
+  return `#define b_width ${w}\n#define b_height ${grandes.length}\nstatic unsigned char b_bits[] = {\n  ${bytes.join(', ')} };\n`;
+}
+
+/** Os desenhos dos botões no fator f (inteiro: cada ponto do desenho, um quadrado de f × f pontos da tela). */
+const glifosXbm = (f) => Object.fromEntries(Object.entries(GLIFOS).map(([nome, linhas]) => [nome, xbm(linhas, f)]));
+
+/**
+ * As medidas da moldura num tamanho dos pixels: a fonte do título de 9 pontos (a barra fica com os 18 pontos
+ * da barra das janelas do Retro Computer) e as bordas e margens, tudo vezes o tamanho; os desenhos dos
+ * botões, num fator inteiro (sem pontos borrados).
+ */
+function medidasDoTema(escala) {
+  const s = Math.round(Math.min(4, Math.max(1, Number(escala) || 1)) * 100) / 100;
+  return {
+    s, fonte: Math.round(9 * s), borda: Math.max(1, Math.round(s)), margem: Math.round(2 * s),
+    alca: Math.round(3 * s), cliente: Math.max(1, Math.round(s)), glifo: Math.max(1, Math.floor(s + 0.25)),
+  };
+}
+
+/** O themerc do tema "Retro" com as medidas de um tamanho (as cores ficam as do arquivo). */
+function themercDoTamanho(base, m) {
+  const valores = {
+    'border.width': m.borda, 'padding.width': m.margem, 'padding.height': m.margem, 'window.handle.width': m.alca,
+    'window.client.padding.width': m.cliente, 'window.client.padding.height': m.cliente, 'menu.border.width': m.borda, 'osd.border.width': m.borda,
+  };
+  return String(base).replace(/^([a-z.]+):[ \t]*\d+[ \t]*$/gm, (linha, chave) => (chave in valores ? `${chave}: ${valores[chave]}` : linha));
+}
+
+const textoXml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** O rc.xml com o tema numa pasta (pelo caminho completo, que o Openbox aceita) e as fontes do tamanho. */
+function trocarTema(xml, pasta, fonte) {
+  let t = String(xml).replace(/(<theme>\s*<name>)[^<]*(<\/name>)/, (_, a, b) => a + textoXml(pasta) + b);
+  t = t.replace(/<theme>[\s\S]*?<\/theme>/, (bloco) => bloco.replace(/<size>\d+<\/size>/g, `<size>${Math.max(6, Math.min(48, Math.round(fonte)))}</size>`));
+  return t;
+}
+
 /** Os ids de janela comparáveis (o wmctrl põe zeros à esquerda: 0x03a00007; o xprop, não). */
 const normalizar = (id) => '0x' + String(id || '').replace(/^0x0*/i, '').toLowerCase();
 
@@ -70,10 +130,11 @@ class JanelasLinux {
    * pidsProprios(): os pids do Retro Computer (as janelas dele não entram);
    * programaDe(janela): o id do .desktop do programa (para o ícone e para fixar), ou null.
    */
-  constructor({ pidsProprios = () => new Set([process.pid]), programaDe = () => null, aoMudar = () => { }, areaPadrao = () => null, rcOpenbox = process.env.RETRO_OPENBOX_RC } = {}) {
+  constructor({ pidsProprios = () => new Set([process.pid]), programaDe = () => null, aoMudar = () => { }, areaPadrao = () => null, rcOpenbox = process.env.RETRO_OPENBOX_RC, temaBase = null } = {}) {
     // A cópia do rc.xml que a sessão deu ao Openbox (sessao.sh), para as margens seguirem a barra.
     this.rcOpenbox = rcOpenbox && path.isAbsolute(rcOpenbox) && /\.xml$/i.test(rcOpenbox) ? rcOpenbox : null;
     this.margemAtual = '';
+    this.temaBase = temaBase; // o themerc do tema "Retro" do pacote, a base dos temas de cada tamanho dos pixels
     this.editando = Promise.resolve(); // as mudanças no rc.xml, uma depois da outra (as margens e as teclas)
     this.pidsProprios = pidsProprios;
     this.areaPadrao = areaPadrao;
@@ -158,13 +219,31 @@ class JanelasLinux {
    * rc.xml da sessão muda, e o Openbox lê de novo (as janelas maximizadas acompanham). Com a margem
    * fixa, a barra de 28 pontos deixava uma fresta embaixo do Firefox.
    */
-  async margens({ cima = 0, baixo = 0 } = {}) {
+  async margens({ cima = 0, baixo = 0, escala = 0 } = {}) {
     if (!this.rcOpenbox || !existe('openbox')) return false;
-    const chave = `${Math.round(cima)},${Math.round(baixo)}`;
+    // Com o tamanho dos pixels, a moldura das janelas do Linux também cresce (a barra de título e os botões).
+    const m = escala ? medidasDoTema(escala) : null;
+    const chave = `${Math.round(cima)},${Math.round(baixo)},${m ? m.s : ''}`;
     if (chave === this.margemAtual) return true;
-    const ok = await this.editarRc((xml) => trocarMargens(xml, { cima, baixo }));
+    const pasta = m ? await this.temaDoTamanho(m).catch(() => null) : null;
+    const ok = await this.editarRc((xml) => {
+      const x = trocarMargens(xml, { cima, baixo });
+      return pasta ? trocarTema(x, pasta, m.fonte) : x;
+    });
     if (ok) this.margemAtual = chave;
     return ok;
+  }
+
+  /** O tema do Openbox num tamanho dos pixels, numa pasta ao lado da cópia do rc.xml (a da sessão, só do usuário). */
+  async temaDoTamanho(m) {
+    if (!this.temaBase) return null;
+    const base = await fs.promises.readFile(this.temaBase, 'utf8');
+    const pasta = path.join(path.dirname(this.rcOpenbox), 'tema-' + String(m.s).replace('.', '_'));
+    const dir = path.join(pasta, 'openbox-3');
+    await fs.promises.mkdir(dir, { recursive: true, mode: 0o700 });
+    const arquivos = { themerc: themercDoTamanho(base, m), ...glifosXbm(m.glifo) };
+    for (const [nome, texto] of Object.entries(arquivos)) await fs.promises.writeFile(path.join(dir, nome), texto, { mode: 0o600 });
+    return pasta;
   }
 
   /**
@@ -282,4 +361,4 @@ class JanelasFalsas extends JanelasLinux {
   avisar() { this.listar().then((r) => this.aoMudar(r)); }
 }
 
-module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar, lerAreaUtil, lerMoldura, trocarMargens };
+module.exports = { JanelasLinux, JanelasFalsas, lerWmctrl, lerAtiva, normalizar, lerAreaUtil, lerMoldura, trocarMargens, GLIFOS, xbm, glifosXbm, medidasDoTema, themercDoTamanho, trocarTema };

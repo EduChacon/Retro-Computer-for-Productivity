@@ -39,7 +39,8 @@ export function faixasDasBarras() {
     else if (r.bottom >= alt - 1) baixo = Math.max(baixo, alt - r.top);
   }
   const k = window.devicePixelRatio || 1;
-  return { cima: Math.round(cima * k), baixo: Math.round(baixo * k) };
+  // O tamanho dos pixels vai junto: a moldura das janelas do Linux (o tema do Openbox) cresce com ele.
+  return { cima: Math.round(cima * k), baixo: Math.round(baixo * k), escala: Math.round(k * 100) / 100 };
 }
 
 /** Manda as faixas de novo quando a barra muda de altura (a data no relógio, o tamanho dos pixels, o tema). */
@@ -50,7 +51,7 @@ function vigiarFaixas() {
     clearTimeout(espera);
     espera = setTimeout(() => {
       const f = faixasDasBarras();
-      const chave = `${f.cima},${f.baixo}`;
+      const chave = `${f.cima},${f.baixo},${f.escala}`;
       if (chave === ultima || (!f.cima && !f.baixo)) return;
       ultima = chave;
       retro.janelasLinux.margens(f).catch(() => { });

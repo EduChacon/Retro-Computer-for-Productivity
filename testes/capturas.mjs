@@ -5001,6 +5001,15 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     try { execFileSync('import', ['-window', 'root', tela]); console.log('captura:', tela); } catch (e) { console.log('sem o import:', e.message); }
     await foto('firefox-barra');
     console.log('na barra:', JSON.stringify(await pagina.evaluate(() => [...document.querySelectorAll('#tarefas button')].map((b) => b.title))));
+    // O E-mail vai para uma janela nova do Firefox (o Google recusa o login no navegador embutido).
+    const janelasFirefox = () => { try { return execFileSync('wmctrl', ['-lx']).toString().split('\n').filter((l) => /RetroNavegador/.test(l)).length; } catch { return -1; } };
+    const antes = janelasFirefox();
+    await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ navegador: { correio: 'https://example.com/correio' } })));
+    await abrir('correio');
+    await pagina.waitForTimeout(8000);
+    console.log('o E-mail no Firefox: janelas do Firefox', antes, '→', janelasFirefox(), '; janelas do E-mail daqui:', await pagina.locator('.janela').count());
+    const tela2 = path.join(SAIDA, `${String(++n).padStart(2, '0')}-firefox-email.png`);
+    try { execFileSync('import', ['-window', 'root', tela2]); console.log('captura:', tela2); } catch { }
   },
   // As margens das janelas do Linux (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1, o openbox rodando com
   // a cópia do rc.xml em RETRO_OPENBOX_RC e o xlogo): a janela maximizada encosta na barra de tarefas,

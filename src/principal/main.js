@@ -1575,7 +1575,7 @@ function registrarPonte() {
     await fsp.mkdir(downloads, { recursive: true }).catch(() => { });
     const endereco = typeof url === 'string' && enderecoDaWeb(url) ? url : '';
     const inicio = typeof o.inicio === 'string' && enderecoDaWeb(o.inicio) ? o.inicio : '';
-    return firefox.abrir(endereco, { downloads, soHttps: n.soHttps !== false, limparAoFechar: !!n.limparAoFechar, idioma: idioma.idioma(), inicio, escala: Number(o.escala) || 1 });
+    return firefox.abrir(endereco, { downloads, soHttps: n.soHttps !== false, limparAoFechar: !!n.limparAoFechar, idioma: idioma.idioma(), inicio, escala: Number(o.escala) || 1, novaJanela: !!o.novaJanela });
   });
   // A cópia de segurança (Painel › Cópia de segurança).
   tratar('copia:escolher', async () => {
@@ -1949,7 +1949,9 @@ function registrarPonte() {
   // As faixas das barras do Retro Computer (em pontos da tela), para as janelas do Linux não as cobrirem.
   tratar('janelasLinux:margens', (m) => {
     const n = (v) => (Number.isFinite(Number(v)) ? Math.max(0, Math.min(500, Math.round(Number(v)))) : 0);
-    return janelasLinux ? janelasLinux.margens({ cima: n(m && m.cima), baixo: n(m && m.baixo) }) : false;
+    const e = Number(m && m.escala);
+    const escala = Number.isFinite(e) && e >= 0.5 && e <= 4 ? e : 0;
+    return janelasLinux ? janelasLinux.margens({ cima: n(m && m.cima), baixo: n(m && m.baixo), escala }) : false;
   });
   tratar('janelasLinux:minimizarTodas', async () => {
     const n = janelasLinux ? await janelasLinux.minimizarTodas() : 0;
@@ -2545,6 +2547,9 @@ app.whenReady().then(async () => {
       // As janelas do Firefox do Retro Computer são as do Navegador (o mesmo botão e o mesmo ícone).
       programaDe: (j) => { if (j.classe === CLASSE_FIREFOX) return 'retro:navegador'; try { return aplicativos.idPorJanela(j); } catch { return null; } },
       aoMudar: (r) => enviar('janelasLinux:mudou', r),
+      // O tema "Retro" do Openbox (recursos/linux, que o instalador põe em resources/linux): a base da moldura
+      // das janelas do Linux em cada tamanho dos pixels.
+      temaBase: path.join(app.isPackaged ? path.join(process.resourcesPath, 'linux') : path.join(RAIZ_APP, 'recursos', 'linux'), 'openbox', 'themes', 'Retro', 'openbox-3', 'themerc'),
       // Sem o _NET_WORKAREA, a área da tela do Electron (já sem a barra de tarefas do Openbox).
       areaPadrao: () => { const a = screen.getPrimaryDisplay().workArea; return { x: a.x, y: a.y, w: a.width, h: a.height }; },
     });

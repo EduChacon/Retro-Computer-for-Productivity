@@ -165,7 +165,9 @@ export async function removerWebapp(id) {
 export async function abrirWebapp(id) {
   const wa = webappDe(id);
   if (!wa) return null;
-  const { abrirNavegador } = await import('./apps/navegador.js');
+  const { abrirNavegador, usaFirefox, abrirNoFirefox } = await import('./apps/navegador.js');
+  // Com o Firefox como navegador padrão, o programa abre numa janela dele, com os logins de lá.
+  if (usaFirefox() && await abrirNoFirefox(wa.url, { novaJanela: true })) return null;
   // A janela é do programa (a barra de tarefas agrupa e fixa por ele), não do Navegador.
   return comPrograma(chaveWebapp(id), () => abrirNavegador({ url: wa.url, app: wa }));
 }

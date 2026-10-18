@@ -56,6 +56,10 @@ test('firefox: a barra de menus à vista, sem desfazer a escolha de quem a escon
 test('firefox: o visual não usa @namespace (com ele, o Firefox 158 ignora o arquivo inteiro)', () => {
   assert.ok(!/@namespace/.test(USER_CHROME));
   assert.match(USER_CHROME, /font-family: "Katica"/);
+  // A largura das abas pelas variáveis do Firefox: um max-width na aba impedia a animação de fechar, e a aba
+  // fechada ficava como um espaço vazio entre as outras.
+  assert.match(USER_CHROME, /#tabbrowser-tabs\[orient="horizontal"\] \{ --tab-min-width: 52px !important; --tab-max-width: 190px !important; \}/);
+  assert.ok(!/\.tabbrowser-tab[^{]*\{[^}]*max-width/.test(USER_CHROME));
   // Na tela cheia (a do vídeo e a do F11), a moldura da página sai: senão ficava uma borda branca em volta.
   assert.match(USER_CHROME, /:root\[inFullscreen\] #tabbrowser-tabbox, :root\[inDOMFullscreen\] #tabbrowser-tabbox \{ padding: 0 !important; margin: 0 !important; box-shadow: none !important; \}/);
   // Os ícones do Navegador: cada um que o visual usa é copiado para o perfil.
@@ -78,6 +82,9 @@ test('firefox: o comando, com a classe da janela no Linux, e o perfil preparado'
   const f = new Firefox({ plataforma: 'linux', dados, fontes: path.join(__dirname, '..', 'src', 'sistema', 'fontes'), icones: path.join(__dirname, '..', 'src', 'sistema', 'icones') });
   assert.deepStrictEqual(f.comando('/usr/bin/firefox', '/p', 'https://a.b/'), { arquivo: '/usr/bin/firefox', args: ['--profile', '/p', '--class', 'RetroNavegador', '--name', 'RetroNavegador', 'https://a.b/'] });
   assert.deepStrictEqual(f.comando('flatpak', '/p', '').args.slice(0, 2), ['run', 'org.mozilla.firefox']);
+  // O E-mail e os sites instalados como programas: uma janela nova (sem ela, uma aba da janela aberta).
+  assert.deepStrictEqual(f.comando('/usr/bin/firefox', '/p', 'https://mail.google.com/', { novaJanela: true }).args.slice(-2), ['--new-window', 'https://mail.google.com/']);
+  assert.ok(!f.comando('/usr/bin/firefox', '/p', '', { novaJanela: true }).args.includes('--new-window'));
   assert.deepStrictEqual(new Firefox({ plataforma: 'win32', dados }).comando('C:\\ff.exe', 'C:\\p', '').args, ['--profile', 'C:\\p']);
   const perfil = await f.preparar('/usr/bin/firefox', { downloads: '/x' });
   assert.ok(fs.existsSync(path.join(perfil, 'user.js')));

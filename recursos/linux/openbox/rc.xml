@@ -6,16 +6,18 @@
   <resistance><strength>10</strength><screen_edge_strength>20</screen_edge_strength></resistance>
   <focus><focusNew>yes</focusNew><followMouse>no</followMouse></focus>
   <placement><policy>Smart</policy><center>yes</center></placement>
+  <!-- O tema e as fontes de 9 pontos (a barra de título com os 18 pontos das janelas do Retro Computer):
+       o Retro Computer troca os dois na cópia da sessão por um tema do tamanho dos pixels (janelas-linux.js). -->
   <theme>
     <name>Retro</name>
     <titleLayout>NLIMC</titleLayout>
     <keepBorder>yes</keepBorder>
     <animateIconify>no</animateIconify>
-    <font place="ActiveWindow"><name>DejaVu Sans</name><size>8</size><weight>bold</weight></font>
-    <font place="InactiveWindow"><name>DejaVu Sans</name><size>8</size><weight>bold</weight></font>
-    <font place="MenuHeader"><name>DejaVu Sans</name><size>8</size></font>
-    <font place="MenuItem"><name>DejaVu Sans</name><size>8</size></font>
-    <font place="OnScreenDisplay"><name>DejaVu Sans</name><size>8</size></font>
+    <font place="ActiveWindow"><name>DejaVu Sans</name><size>9</size><weight>bold</weight></font>
+    <font place="InactiveWindow"><name>DejaVu Sans</name><size>9</size><weight>bold</weight></font>
+    <font place="MenuHeader"><name>DejaVu Sans</name><size>9</size></font>
+    <font place="MenuItem"><name>DejaVu Sans</name><size>9</size></font>
+    <font place="OnScreenDisplay"><name>DejaVu Sans</name><size>9</size></font>
   </theme>
   <desktops><number>1</number></desktops>
   <!-- A altura da barra de tarefas do Retro Computer: o Retro Computer muda estes números na cópia

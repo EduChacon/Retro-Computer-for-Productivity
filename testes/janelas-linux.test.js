@@ -92,3 +92,43 @@ test('tela: os modos do xrandr da tela principal', async () => {
   assert.deepStrictEqual(await t.modos(), { disponivel: false });
   assert.deepStrictEqual(await t.definir('eDP-1; reboot', '800x600'), { ok: false, erro: 'modo' });
 });
+
+test('janelas do Linux: a moldura do Openbox no tamanho dos pixels', async () => {
+  const { medidasDoTema, themercDoTamanho, trocarTema, xbm, GLIFOS, JanelasLinux } = require('../src/principal/janelas-linux.js');
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  // No tamanho 1, a barra de título com os 18 pontos das janelas do Retro Computer (a fonte de 9); no 2, tudo em dobro.
+  assert.deepStrictEqual(medidasDoTema(1), { s: 1, fonte: 9, borda: 1, margem: 2, alca: 3, cliente: 1, glifo: 1 });
+  assert.deepStrictEqual(medidasDoTema(2), { s: 2, fonte: 18, borda: 2, margem: 4, alca: 6, cliente: 2, glifo: 2 });
+  // Os desenhos dos botões só em fatores inteiros (sem pontos borrados): 1,25 e 1,5 ficam com os de 1.
+  assert.strictEqual(medidasDoTema(1.25).glifo, 1);
+  assert.strictEqual(medidasDoTema(1.5).glifo, 1);
+  assert.strictEqual(medidasDoTema(2.5).glifo, 2);
+  assert.strictEqual(medidasDoTema(99).s, 4);
+  // O × de 8 × 7 no formato XBM (o bit menos significativo é o ponto da esquerda).
+  assert.match(xbm(GLIFOS['close.xbm'], 1), /b_width 8\n#define b_height 7\n[\s\S]*0xc3, 0x66, 0x3c, 0x18, 0x3c, 0x66, 0xc3 \}/);
+  assert.match(xbm(GLIFOS['close.xbm'], 2), /b_width 16\n#define b_height 14/);
+  // O themerc do pacote: só as medidas mudam, as cores ficam.
+  const base = fs.readFileSync(path.join(__dirname, '..', 'recursos', 'linux', 'openbox', 'themes', 'Retro', 'openbox-3', 'themerc'), 'utf8');
+  const t2 = themercDoTamanho(base, medidasDoTema(2));
+  assert.match(t2, /^border\.width: 2$/m);
+  assert.match(t2, /^padding\.height: 4$/m);
+  assert.match(t2, /^window\.handle\.width: 6$/m);
+  assert.match(t2, /^window\.active\.title\.bg\.color: #000080$/m);
+  assert.strictEqual(t2.split('\n').length, base.split('\n').length);
+  // O rc.xml com o tema pelo caminho completo e as fontes do tamanho, sem mexer nas margens.
+  const rc = fs.readFileSync(path.join(__dirname, '..', 'recursos', 'linux', 'openbox', 'rc.xml'), 'utf8');
+  const novo = trocarTema(rc, '/run/user/1000/retro-computer/tema-2', 18);
+  assert.match(novo, /<theme>\s*<name>\/run\/user\/1000\/retro-computer\/tema-2<\/name>/);
+  assert.strictEqual((novo.match(/<size>18<\/size>/g) || []).length, 5);
+  assert.match(novo, /<name>DejaVu Sans<\/name>/);
+  assert.match(novo, /<margins><top>0<\/top><bottom>28<\/bottom>/);
+  // O tema gravado ao lado da cópia do rc.xml: o themerc e os quatro desenhos.
+  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-tema-'));
+  const j = new JanelasLinux({ rcOpenbox: path.join(pasta, 'openbox-rc.xml'), temaBase: path.join(__dirname, '..', 'recursos', 'linux', 'openbox', 'themes', 'Retro', 'openbox-3', 'themerc') });
+  const tema = await j.temaDoTamanho(medidasDoTema(1.25));
+  assert.strictEqual(tema, path.join(pasta, 'tema-1_25'));
+  assert.deepStrictEqual(fs.readdirSync(path.join(tema, 'openbox-3')).sort(), ['close.xbm', 'iconify.xbm', 'max.xbm', 'max_toggled.xbm', 'themerc']);
+  assert.match(fs.readFileSync(path.join(tema, 'openbox-3', 'themerc'), 'utf8'), /^padding\.width: 3$/m);
+});

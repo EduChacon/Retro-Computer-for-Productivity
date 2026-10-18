@@ -1397,6 +1397,8 @@ export async function abrirCorreio() {
     if (!url) return null;
     await definirConfig({ navegador: { correio: url } });
   }
+  // Com o Firefox como navegador padrão, o E-mail abre nele (o Google recusa o login no navegador embutido).
+  if (usaFirefox() && await abrirNoFirefox(url, { novaJanela: true })) return null;
   const aberto = [...abertos].find((n) => n.correio && !n.j.fechada);
   if (aberto) { aberto.j.focar(); return aberto; }
   return new Navegador({ url, correio: true });
@@ -1405,8 +1407,9 @@ export async function abrirCorreio() {
 /* ---------- O Firefox como navegador padrão ---------- */
 
 // O Firefox do computador, aberto com o visual do Retro Computer (firefox.js do processo principal):
-// o padrão quando instalado (Painel › Internet), porque toca os vídeos com proteção. O Navegador
-// daqui continua para os sites instalados como programas, o E-mail e quando não há Firefox.
+// o padrão quando instalado (Painel › Internet), porque toca os vídeos com proteção e o Google aceita o
+// login nele. O E-mail e os sites instalados como programas também vão para ele, numa janela só deles;
+// o Navegador daqui fica para quando não há Firefox (e para o Iniciar › Internet › Navegador do Retro Computer).
 let firefoxInstalado = false;
 export async function conferirFirefox() {
   firefoxInstalado = !!(await retro.firefox.estado().catch(() => ({}))).instalado;
@@ -1423,11 +1426,11 @@ export function usaFirefox() {
 /** A página inicial do Firefox: a do serviço de pesquisa escolhido. */
 const inicioFirefox = () => { try { return new URL(busca().url).origin + '/'; } catch { return ''; } };
 
-export async function abrirNoFirefox(url = '') {
+export async function abrirNoFirefox(url = '', { novaJanela = false } = {}) {
   // O tamanho dos pixels, exato: o devicePixelRatio da área de trabalho já leva o zoom dela (multiplicar os
   // dois e arredondar dava 2 no tamanho 1,25 e 4 no tamanho 2, e o Firefox ficava gigante).
   const escala = Math.round((window.devicePixelRatio || 1) * 100) / 100;
-  const r = await retro.firefox.abrir(url, { inicio: inicioFirefox(), escala }).catch(() => null);
+  const r = await retro.firefox.abrir(url, { inicio: inicioFirefox(), escala, novaJanela }).catch(() => null);
   if (r && r.ok) return true;
   if (r && r.erro === 'semFirefox') firefoxInstalado = false;
   return false;

@@ -193,8 +193,10 @@ image, .toolbarbutton-icon, .tab-icon-image, .bookmark-item > .toolbarbutton-ico
 #TabsToolbar { padding-inline: 6px 4px !important; }
 #TabsToolbar-customization-target { min-height: 24px !important; align-items: flex-end !important; }
 #tabbrowser-tabs { border-inline-start: none !important; min-height: 24px !important; --tab-min-height: 21px !important; }
+/* A largura pelas variáveis do Firefox, não pelo max-width da aba: ao fechar, ele encolhe a aba até 0,1 ponto
+   antes de tirá-la, e um max-width por cima deixava a aba fechada invisível, mas com a largura inteira. */
+#tabbrowser-tabs[orient="horizontal"] { --tab-min-width: 52px !important; --tab-max-width: 190px !important; }
 .tabbrowser-tab { padding: 0 !important; margin-inline-end: -1px !important; }
-.tabbrowser-tab:not([pinned]) { max-width: 190px !important; min-width: 52px !important; }
 .tabbrowser-tab .tab-stack { min-height: 21px !important; }
 .tab-background {
   border-radius: 3px 3px 0 0 !important; margin-block: 3px 0 !important; outline: none !important;
@@ -345,10 +347,12 @@ class Firefox {
   }
 
   /** Os argumentos de cada jeito de abrir (o flatpak também precisa ver a pasta dos downloads). */
-  comando(caminho, perfil, url) {
+  comando(caminho, perfil, url, { novaJanela = false } = {}) {
     const args = ['--profile', perfil];
     if (this.plataforma === 'linux') args.push('--class', CLASSE, '--name', CLASSE);
-    if (url) args.push(url);
+    // O E-mail e os sites instalados como programas numa janela só deles (sem ela, uma aba da janela aberta).
+    if (url && novaJanela) args.push('--new-window', url);
+    else if (url) args.push(url);
     if (caminho === 'flatpak') return { arquivo: 'flatpak', args: ['run', FLATPAK, ...args] };
     return { arquivo: caminho, args };
   }
@@ -362,7 +366,7 @@ class Firefox {
       // O flatpak só grava fora da pasta dele com a permissão (dada só para a pasta dos downloads).
       await new Promise((ok) => execFile('flatpak', ['override', '--user', `--filesystem=${opcoes.downloads}`, FLATPAK], { timeout: 8000 }, () => ok()));
     }
-    const { arquivo, args } = this.comando(caminho, perfil, url);
+    const { arquivo, args } = this.comando(caminho, perfil, url, { novaJanela: !!opcoes.novaJanela });
     const p = spawn(arquivo, args, { detached: true, stdio: 'ignore', env: { ...process.env, MOZ_CRASHREPORTER_DISABLE: '1' } });
     p.on('error', () => { });
     p.unref();
