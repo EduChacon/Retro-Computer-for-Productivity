@@ -143,9 +143,14 @@ const ACOES = {
   'area:direita': () => irParaArea(areaAtual() + 1),
   'area:fechar': () => fecharArea(),
   emojis: () => import('./emojis.js').then((m) => m.abrirEmojis()).catch(() => { }),
+  // O botão de ligar do computador (modo sistema, teclas-linux.js): a caixa Desligar, como na época.
+  ligar: () => abrir('desligar'),
 };
 
 retro.sistema.aoTecla((acao) => {
+  // O botão de ligar com a tela bloqueada suspende o computador, como no Mac (a caixa Desligar não abre
+  // por cima do bloqueio, e a volta pede a senha de novo).
+  if (acao === 'ligar' && estaBloqueado()) return retro.sistema.energia('suspender').catch(() => { });
   // Com a tela bloqueada, nada se mexe por trás dela.
   if (estaBloqueado()) return;
   if (ACOES[acao]) return ACOES[acao]();

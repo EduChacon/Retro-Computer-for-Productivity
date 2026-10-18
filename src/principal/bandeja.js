@@ -7,6 +7,7 @@
  *            macOS pelo osascript.
  *   Brilho:  Linux pelo /sys/class/backlight (e o logind ou o brightnessctl para mudar);
  *            Windows pelo WMI (só a tela do próprio computador portátil).
+ *   Luz do teclado: Linux pelo /sys/class/leds/*::kbd_backlight (o mesmo jeito de mudar do brilho).
  *   Energia: Linux pelo power-profiles-daemon (powerprofilesctl): economia, equilibrado, desempenho.
  *   Rede:    Linux pelo NetworkManager (nmcli): as redes Wi-Fi, conectar, desconectar;
  *            Windows pelo netsh (só o nome e o sinal da rede; conectar fica com o Windows).
@@ -411,6 +412,53 @@ class Brilho {
   }
 }
 
+/* ---------- A luz do teclado ---------- */
+
+/**
+ * A luz do teclado do computador portátil (o smc::kbd_backlight do MacBook, o tpacpi:: do ThinkPad,
+ * o dell::, o asus::…): o primeiro *::kbd_backlight com o máximo maior que zero.
+ */
+function escolherLuzTeclado(raiz = '/sys/class/leds') {
+  let nomes = [];
+  try { nomes = fs.readdirSync(raiz); } catch { return null; }
+  for (const nome of nomes.filter((n) => /::kbd_backlight$/.test(n)).sort()) {
+    const ler = (a) => { try { return Number(fs.readFileSync(path.join(raiz, nome, a), 'utf8').trim()) || 0; } catch { return 0; } };
+    const max = ler('max_brightness');
+    if (max > 0) return { nome, max, atual: ler('brightness') };
+  }
+  return null;
+}
+
+class LuzTeclado {
+  constructor({ plataforma = process.platform, raiz = '/sys/class/leds' } = {}) {
+    this.plataforma = plataforma;
+    this.raiz = raiz;
+  }
+
+  /** { disponivel, nivel (0 a 100) } */
+  async ler() {
+    const l = this.plataforma === 'linux' ? escolherLuzTeclado(this.raiz) : null;
+    return l ? { disponivel: true, nivel: Math.round((l.atual / l.max) * 100) } : { disponivel: false };
+  }
+
+  /** Muda a luz (0 apaga). O logind deixa a sessão aberta mudar sem senha, como no brilho da tela. */
+  async definir(nivel) {
+    const l = this.plataforma === 'linux' ? escolherLuzTeclado(this.raiz) : null;
+    if (!l) return { disponivel: false };
+    const n = Math.max(0, Math.min(100, Math.round(Number(nivel) || 0)));
+    const v = String(Math.round((n / 100) * l.max));
+    const jeitos = [
+      () => rodar('busctl', ['call', 'org.freedesktop.login1', '/org/freedesktop/login1/session/auto', 'org.freedesktop.login1.Session', 'SetBrightness', 'ssu', 'leds', l.nome, v], { timeout: 3000 }),
+      () => rodar('brightnessctl', ['-q', '-d', l.nome, 'set', v], { timeout: 3000 }),
+      () => fs.promises.writeFile(path.join(this.raiz, l.nome, 'brightness'), v),
+    ];
+    for (const j of jeitos) {
+      try { await j(); break; } catch { }
+    }
+    return this.ler();
+  }
+}
+
 /* ---------- A bateria ---------- */
 
 /**
@@ -644,6 +692,7 @@ class Rede {
 function bandejaFalsa() {
   let vol = { disponivel: true, como: 'teste', nivel: 60, mudo: false };
   let luz = { disponivel: true, nivel: 70 };
+  let luzTeclado = { disponivel: true, nivel: 0 };
   let perfil = { disponivel: true, atual: 'balanced', perfis: [...PERFIS] };
   let ligado = true;
   let atual = 'Casa';
@@ -660,6 +709,7 @@ function bandejaFalsa() {
     aparelhos: async () => [{ nome: 'MX Master 3S', nivel: 80, carregando: false }],
     volume: { ler: async () => vol, definir: async (o) => { vol = { ...vol, ...(o.nivel != null ? { nivel: Math.round(o.nivel) } : {}), ...(o.mudo != null ? { mudo: !!o.mudo } : {}) }; return vol; }, fechar() { } },
     brilho: { ler: async () => luz, definir: async (n) => { luz = { disponivel: true, nivel: Math.max(5, Math.min(100, Math.round(n))) }; return luz; } },
+    luzTeclado: { ler: async () => luzTeclado, definir: async (n) => { luzTeclado = { disponivel: true, nivel: Math.max(0, Math.min(100, Math.round(n))) }; return luzTeclado; } },
     perfil: { ler: async () => perfil, definir: async (p) => { if (PERFIS.includes(p)) perfil = { ...perfil, atual: p }; return perfil; } },
     rede: {
       estado: async () => estado(),
@@ -680,4 +730,4 @@ function bandejaFalsa() {
   };
 }
 
-module.exports = { Volume, Brilho, Rede, PerfilEnergia, lerPerfis, PERFIS, temBateria, lerAparelhos, bandejaFalsa, escolherLuz, lerWpctl, lerPactl, lerAmixer, lerMac, camposNmcli, lerDispositivos, lerRedesWifi, lerNetsh, erroCurto, VOLUME_WINDOWS, VolumeWindows };
+module.exports = { Volume, Brilho, LuzTeclado, escolherLuzTeclado, Rede, PerfilEnergia, lerPerfis, PERFIS, temBateria, lerAparelhos, bandejaFalsa, escolherLuz, lerWpctl, lerPactl, lerAmixer, lerMac, camposNmcli, lerDispositivos, lerRedesWifi, lerNetsh, erroCurto, VOLUME_WINDOWS, VolumeWindows };

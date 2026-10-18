@@ -56,6 +56,8 @@ test('firefox: a barra de menus à vista, sem desfazer a escolha de quem a escon
 test('firefox: o visual não usa @namespace (com ele, o Firefox 158 ignora o arquivo inteiro)', () => {
   assert.ok(!/@namespace/.test(USER_CHROME));
   assert.match(USER_CHROME, /font-family: "Katica"/);
+  // Na tela cheia (a do vídeo e a do F11), a moldura da página sai: senão ficava uma borda branca em volta.
+  assert.match(USER_CHROME, /:root\[inFullscreen\] #tabbrowser-tabbox, :root\[inDOMFullscreen\] #tabbrowser-tabbox \{ padding: 0 !important; margin: 0 !important; box-shadow: none !important; \}/);
   // Os ícones do Navegador: cada um que o visual usa é copiado para o perfil.
   for (const [, nome] of USER_CHROME.matchAll(/url\("([a-z-]+)\.png"\)/g)) assert.ok(ICONES.includes(nome), nome);
   for (const nome of ICONES) assert.ok(fs.existsSync(path.join(__dirname, '..', 'src', 'sistema', 'icones', '16', nome + '.png')), nome);

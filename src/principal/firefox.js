@@ -267,6 +267,9 @@ toolbar .toolbarbutton-1[disabled] > .toolbarbutton-icon { opacity: .4 !importan
 /* A página numa moldura afundada, como a área do Navegador. */
 #tabbrowser-tabbox { background: var(--retro-face) !important; padding: 2px !important; margin: 0 2px 2px !important; box-shadow: var(--retro-campo) !important; }
 #tabbrowser-tabpanels { background: #fff !important; }
+/* Na tela cheia (a do vídeo e a do F11), a página vai até a borda da tela, sem a moldura. */
+:root[inFullscreen] #tabbrowser-tabbox, :root[inDOMFullscreen] #tabbrowser-tabbox { padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
+:root[inDOMFullscreen] #tabbrowser-tabpanels { background: #000 !important; }
 
 /* Os menus e os painéis: cinza, com a borda em relevo e a escolha em azul-marinho. */
 menupopup, panel { --panel-padding: 2px !important; }

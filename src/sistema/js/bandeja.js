@@ -260,6 +260,19 @@ export async function mudarBrilho(passo) {
   mostrarIndicador('brilho', tr('Brilho: {n}%', { n: r.nivel }), r.nivel);
 }
 
+const pedirLuzTeclado = emFila((n) => retro.bandeja.definirLuzTeclado(n));
+let luzAntes = 50; // a luz de antes de apagar, para a tecla de ligar e desligar
+
+/** Sobe ou desce a luz do teclado (as teclas do computador portátil); sem passo, apaga ou acende. */
+export async function mudarLuzTeclado(passo) {
+  const l = await retro.bandeja.luzTeclado().catch(() => ({ disponivel: false }));
+  if (!l.disponivel) return mostrarIndicador('teclado', tr('Este teclado não tem luz'));
+  if (l.nivel > 0) luzAntes = l.nivel;
+  const alvo = passo == null ? (l.nivel > 0 ? 0 : luzAntes) : l.nivel + passo;
+  const r = await retro.bandeja.definirLuzTeclado(alvo);
+  mostrarIndicador('teclado', r.nivel > 0 ? tr('Luz do teclado: {n}%', { n: r.nivel }) : tr('Luz do teclado apagada'), r.nivel);
+}
+
 function caixaBateria() {
   const corpo = caixa('bateria', cabecalho(tr('Bateria')));
   if (bat) {
@@ -276,8 +289,9 @@ function caixaBateria() {
   }
   if (!bat) return corpo;
   const lugarBrilho = h('div');
+  const lugarLuz = h('div');
   const lugarPerfil = h('div');
-  corpo.append(lugarBrilho, lugarPerfil);
+  corpo.append(lugarBrilho, lugarLuz, lugarPerfil);
   // O modo de energia (o power-profiles-daemon do Linux, como no Zorin OS e no GNOME).
   retro.bandeja.perfil().then((p) => {
     if (!p || !p.disponivel || !p.perfis || p.perfis.length < 2) return;
@@ -300,6 +314,13 @@ function caixaBateria() {
     const numero = h('span.vol-numero', b.nivel + '%');
     const d = deslizante({ valor: b.nivel, min: 5, max: 100, tamanho: 120, rotulo: tr('Brilho da tela'), aoMudar: (n) => { numero.textContent = n + '%'; pedirBrilho(n); } });
     lugarBrilho.replaceChildren(h('hr.sulco'), h('div.cxb-linha', img('brilho', 16), h('span', tr('Brilho da tela'))), h('div.cxb-linha', d.el, numero));
+  }).catch(() => { });
+  // A luz do teclado, nos computadores que a têm (o MacBook, o ThinkPad…).
+  retro.bandeja.luzTeclado().then((l) => {
+    if (!l || !l.disponivel) return;
+    const numero = h('span.vol-numero', l.nivel + '%');
+    const d = deslizante({ valor: l.nivel, min: 0, max: 100, tamanho: 120, rotulo: tr('Luz do teclado'), aoMudar: (n) => { numero.textContent = n + '%'; pedirLuzTeclado(n); } });
+    lugarLuz.replaceChildren(h('div.cxb-linha', img('teclado', 16), h('span', tr('Luz do teclado'))), h('div.cxb-linha', d.el, numero));
   }).catch(() => { });
   return corpo;
 }
@@ -521,6 +542,10 @@ export function montarBandeja() {
     else if (acao === 'mudo') mudarVolume(0);
     else if (acao === 'brilho+') mudarBrilho(10);
     else if (acao === 'brilho-') mudarBrilho(-10);
+    else if (acao === 'luz-teclado+') mudarLuzTeclado(10);
+    else if (acao === 'luz-teclado-') mudarLuzTeclado(-10);
+    else if (acao === 'luz-teclado') mudarLuzTeclado();
+    else if (acao === 'midia-nada') mostrarIndicador('tocar', tr('Nenhum programa tocando agora'));
     else if (acao === 'iniciar') import('./barra.js').then((m) => m.alternarIniciar());
     else if (acao === 'calculadora') abrir('calculadora');
     else if (acao === 'bloquear') import('./bloqueio.js').then((m) => m.bloquear());

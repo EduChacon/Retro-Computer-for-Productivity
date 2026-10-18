@@ -460,6 +460,8 @@ contextBridge.exposeInMainWorld('retro', {
     definirVolume: (o) => chamar('bandeja:definirVolume', o),
     brilho: () => chamar('bandeja:brilho'),
     definirBrilho: (n) => chamar('bandeja:definirBrilho', n),
+    luzTeclado: () => chamar('bandeja:luzTeclado'),
+    definirLuzTeclado: (n) => chamar('bandeja:definirLuzTeclado', n),
     perfil: () => chamar('bandeja:perfil'),
     definirPerfil: (p) => chamar('bandeja:definirPerfil', p),
     rede: () => chamar('bandeja:rede'),

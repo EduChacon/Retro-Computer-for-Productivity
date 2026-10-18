@@ -8,6 +8,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFile, spawn } = require('node:child_process');
+const { trocarTeclas } = require('./teclas-linux');
 
 function rodar(cmd, args, { timeout = 4000 } = {}) {
   return new Promise((resolve, reject) => {
@@ -73,6 +74,7 @@ class JanelasLinux {
     // A cópia do rc.xml que a sessão deu ao Openbox (sessao.sh), para as margens seguirem a barra.
     this.rcOpenbox = rcOpenbox && path.isAbsolute(rcOpenbox) && /\.xml$/i.test(rcOpenbox) ? rcOpenbox : null;
     this.margemAtual = '';
+    this.editando = Promise.resolve(); // as mudanças no rc.xml, uma depois da outra (as margens e as teclas)
     this.pidsProprios = pidsProprios;
     this.areaPadrao = areaPadrao;
     this.programaDe = programaDe;
@@ -160,17 +162,36 @@ class JanelasLinux {
     if (!this.rcOpenbox || !existe('openbox')) return false;
     const chave = `${Math.round(cima)},${Math.round(baixo)}`;
     if (chave === this.margemAtual) return true;
-    let xml;
-    try { xml = await fs.promises.readFile(this.rcOpenbox, 'utf8'); } catch { return false; }
-    const novo = trocarMargens(xml, { cima, baixo });
-    if (novo !== xml) {
-      const tmp = `${this.rcOpenbox}.${process.pid}.tmp`;
-      await fs.promises.writeFile(tmp, novo, { mode: 0o600 });
-      await fs.promises.rename(tmp, this.rcOpenbox);
-      await rodar('openbox', ['--reconfigure']).catch(() => { });
-    }
-    this.margemAtual = chave;
-    return true;
+    const ok = await this.editarRc((xml) => trocarMargens(xml, { cima, baixo }));
+    if (ok) this.margemAtual = chave;
+    return ok;
+  }
+
+  /**
+   * As teclas do computador (teclas-linux.js): os atalhos do Openbox que escrevem na fila do Retro
+   * Computer. Postos na cópia do rc.xml a cada abertura, valem logo depois da atualização, sem sair da sessão.
+   */
+  async teclas(fila) {
+    if (!this.rcOpenbox || !existe('openbox')) return false;
+    return this.editarRc((xml) => trocarTeclas(xml, fila));
+  }
+
+  /** Muda a cópia do rc.xml (gravada por inteiro, por cima) e pede ao Openbox que a leia de novo. */
+  editarRc(mudar) {
+    const vez = this.editando.then(async () => {
+      let xml;
+      try { xml = await fs.promises.readFile(this.rcOpenbox, 'utf8'); } catch { return false; }
+      const novo = mudar(xml);
+      if (novo !== xml) {
+        const tmp = `${this.rcOpenbox}.${process.pid}.tmp`;
+        await fs.promises.writeFile(tmp, novo, { mode: 0o600 });
+        await fs.promises.rename(tmp, this.rcOpenbox);
+        await rodar('openbox', ['--reconfigure']).catch(() => { });
+      }
+      return true;
+    });
+    this.editando = vez.catch(() => false);
+    return vez.catch(() => false);
   }
 
   /** O Ctrl+V na janela da frente (o histórico da área de transferência num programa do Linux). */
@@ -257,6 +278,7 @@ class JanelasFalsas extends JanelasLinux {
   async encaixar(id, seta) { (this.encaixes = this.encaixes || []).push([id, seta]); return true; }
   async colar() { this.colados = (this.colados || 0) + 1; return true; }
   async margens(m) { this.margensPedidas = m; return true; }
+  async teclas(fila) { this.filaDasTeclas = fila; return !this.rcOpenbox || super.teclas(fila); }
   avisar() { this.listar().then((r) => this.aoMudar(r)); }
 }
 

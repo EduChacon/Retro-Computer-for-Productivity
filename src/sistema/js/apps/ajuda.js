@@ -854,6 +854,7 @@ const TOPICOS = [
 <li>Desligar oferece desligar, reiniciar e suspender o computador de verdade, e sair da sessão.</li>
 <li>Os programas do Linux (os da aba Programas do Linux e os outros) aparecem na barra de tarefas, com os do Retro Computer.</li>
 <li>A tecla do logotipo abre o Iniciar; as teclas de volume, de brilho e de calculadora funcionam; Print Screen tira a captura de tela.</li>
+<li>As teclas de função do computador portátil valem com qualquer janela na frente, também a de um programa do Linux: o brilho, a <b>luz do teclado</b> (no MacBook, F5 e F6; também na caixa da bateria), a mídia (voltar, tocar ou pausar e avançar, no programa que está tocando: o Firefox, o Navegador, o Reprodutor), a Visão das tarefas (o F3 do MacBook) e o Iniciar (o F4). O <b>botão de ligar</b> abre a caixa Desligar, sem desligar de uma vez; com a tela bloqueada, ele suspende o computador. Segurar o botão por alguns segundos ainda desliga à força.</li>
 <li>Painel de controle › <b>Atualizações do Linux</b> instala as atualizações (com a senha de administrador) e pode instalar sozinho as de segurança, todo dia.</li>
 <li>Os pendrives são montados sozinhos, e o teclado segue o layout de Painel de controle › Teclado.</li>
 </ul>
@@ -867,6 +868,7 @@ const TOPICOS = [
 <li>Shut Down offers to really turn off, restart and suspend the computer, and to sign out.</li>
 <li>Linux programs (those from the Linux programs tab and the others) show up on the taskbar, next to Retro Computer's.</li>
 <li>The logo key opens Start; the volume, brightness and calculator keys work; Print Screen takes a screenshot.</li>
+<li>The laptop's function keys work with any window in front, also a Linux program's: brightness, the <b>keyboard backlight</b> (F5 and F6 on a MacBook; also in the battery box), media (back, play or pause and forward, in the program that is playing: Firefox, the Browser, the Media Player), Task View (F3 on a MacBook) and Start (F4). The <b>power button</b> opens the Shut Down box instead of turning off at once; with the screen locked, it puts the computer to sleep. Holding the button for a few seconds still forces it off.</li>
 <li>Control Panel › <b>Linux Updates</b> installs the updates (with the administrator password) and can install the security ones automatically every day.</li>
 <li>USB drives are mounted automatically, and the keyboard follows the layout in Control Panel › Keyboard.</li>
 </ul>
@@ -880,6 +882,7 @@ const TOPICOS = [
 <li>Apagar ofrece apagar, reiniciar y suspender la computadora de verdad, y cerrar la sesión.</li>
 <li>Los programas de Linux (los de la pestaña Programas de Linux y los demás) aparecen en la barra de tareas, junto a los de Retro Computer.</li>
 <li>La tecla del logotipo abre Inicio; las teclas de volumen, brillo y calculadora funcionan; Impr Pant toma la captura de pantalla.</li>
+<li>Las teclas de función de la computadora portátil valen con cualquier ventana adelante, también la de un programa de Linux: el brillo, la <b>luz del teclado</b> (en la MacBook, F5 y F6; también en el cuadro de la batería), los medios (atrás, reproducir o pausar y adelante, en el programa que está sonando: Firefox, el Navegador, el Reproductor), la Vista de tareas (el F3 de la MacBook) e Inicio (el F4). El <b>botón de encendido</b> abre el cuadro Apagar, sin apagar de golpe; con la pantalla bloqueada, suspende la computadora. Mantener el botón apretado unos segundos todavía la apaga a la fuerza.</li>
 <li>Panel de control › <b>Actualizaciones de Linux</b> instala las actualizaciones (con la contraseña de administrador) y puede instalar solas las de seguridad, todos los días.</li>
 <li>Las memorias USB se montan solas, y el teclado sigue la distribución de Panel de control › Teclado.</li>
 </ul>

@@ -46,6 +46,7 @@ const { Bluetooth, BluetoothFalso } = require('./bluetooth');
 const { AtualizacoesLinux, AtualizacoesFalsas } = require('./atualizacoes-linux');
 const { JanelasLinux, JanelasFalsas } = require('./janelas-linux');
 const { acaoDaTecla, trazORetro, GLOBAIS: GLOBAIS_DO_WINDOWS } = require('./atalhos');
+const { FilaDeTeclas, TravaDoBotao, Midia, MidiaFalsa } = require('./teclas-linux');
 const { Tela, TelaFalsa } = require('./tela');
 const { Mouse, MouseFalso, limparEscolhas } = require('./mouse');
 const { Diario } = require('./diario');
@@ -223,6 +224,7 @@ let terminais = null;
 let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
+let filaTeclas = null; // as teclas de função do computador portátil, pelo Openbox (teclas-linux.js)
 let trabalhos = null; // o processo de trabalho (trabalho.js): as ferramentas de PDF e o OCR
 let indice = null;
 let receber = null; // receber do celular (receber.js), criado na primeira vez // a busca pelo conteúdo dos arquivos (indice.js)
@@ -1109,6 +1111,36 @@ function teclasDoSistema() {
     });
   });
   app.on('will-quit', () => { globalShortcut.unregisterAll(); if (servidorMcp) servidorMcp.fechar(); if (nuvens) nuvens.encerrar(); });
+  teclasDoOpenbox().catch((e) => console.error('teclas:', e.message));
+}
+
+/**
+ * As teclas de função do computador portátil (teclas-linux.js), com qualquer janela na frente: o
+ * brilho, a luz do teclado, a mídia (para o programa que está tocando), a Visão das tarefas (o F3 do
+ * MacBook), o Iniciar (o F4), a Calculadora e o botão de ligar (a caixa Desligar). O Openbox as pega
+ * e as escreve na fila; as que mostram algo do Retro Computer o trazem para a frente.
+ */
+async function teclasDoOpenbox() {
+  if (process.platform !== 'linux') return;
+  const NA_FRENTE = new Set(['visao-tarefas', 'iniciar', 'calculadora', 'ligar']);
+  const midia = process.env.RETRO_BANDEJA_FALSA ? new MidiaFalsa() : new Midia();
+  if (process.env.RETRO_BANDEJA_FALSA) global.__midiaFalsa = midia; // para o roteiro de capturas
+  filaTeclas = new FilaDeTeclas({
+    aoAcao: async (acao) => {
+      if (acao.startsWith('midia-')) {
+        if (!(await midia.comando(acao).catch(() => false))) enviar('sistema:tecla', 'midia-nada');
+        return;
+      }
+      if (NA_FRENTE.has(acao) && janela && !janela.isDestroyed()) janela.focus();
+      enviar('sistema:tecla', acao);
+    },
+  });
+  if (!(await filaTeclas.abrir()) || !janelasLinux) return;
+  if (!(await janelasLinux.teclas(filaTeclas.caminho))) return;
+  // Com o atalho do botão de ligar no Openbox, o logind deixa o botão para o Retro Computer (sem a
+  // trava, ele desliga o computador na hora). Com a energia de mentira, a trava também é de mentira.
+  if (process.env.RETRO_ENERGIA_FALSA) global.__travaDoBotao = true;
+  else new TravaDoBotao().segurar();
 }
 
 /** O cache das miniaturas do Explorador não cresce sem fim: passando de 3000, saem as 1000 mais antigas. */
@@ -2005,6 +2037,8 @@ function registrarPonte() {
   tratar('bandeja:definirVolume', (o) => sistemaBandeja.volume.definir(o || {}));
   tratar('bandeja:brilho', () => sistemaBandeja.brilho.ler());
   tratar('bandeja:definirBrilho', (n) => sistemaBandeja.brilho.definir(n));
+  tratar('bandeja:luzTeclado', () => sistemaBandeja.luzTeclado.ler());
+  tratar('bandeja:definirLuzTeclado', (n) => sistemaBandeja.luzTeclado.definir(Number(n)));
   tratar('bandeja:perfil', () => sistemaBandeja.perfil.ler());
   tratar('bandeja:definirPerfil', (p) => sistemaBandeja.perfil.definir(String(p)));
   tratar('bandeja:rede', () => sistemaBandeja.rede.estado());
@@ -2563,7 +2597,7 @@ app.whenReady().then(async () => {
     const volume = new bandeja.Volume();
     let bateria = null;
     sistemaBandeja = {
-      volume, brilho: new bandeja.Brilho({ volume }), rede: new bandeja.Rede({ shell }), perfil: new bandeja.PerfilEnergia(),
+      volume, brilho: new bandeja.Brilho({ volume }), luzTeclado: new bandeja.LuzTeclado(), rede: new bandeja.Rede({ shell }), perfil: new bandeja.PerfilEnergia(),
       // A bateria não aparece nem some com o computador ligado: basta perguntar uma vez.
       bateria: async () => (bateria = bateria || bandeja.temBateria(process.platform, volume).then((existe) => ({ existe }))),
       aparelhos: async () => (process.platform === 'linux' ? bandeja.lerAparelhos() : []),

@@ -5037,6 +5037,60 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.evaluate(() => import('./js/sistema.js').then((m) => m.definirConfig({ barra: { ...window.__retro.estado.config.barra, data: false } })));
     xlogo.kill();
   },
+  // As teclas de função do computador portátil (com RETRO_SISTEMA=1, RETRO_ENERGIA_FALSA=1,
+  // RETRO_BANDEJA_FALSA=1, o openbox rodando com a cópia do rc.xml em RETRO_OPENBOX_RC e um
+  // XDG_RUNTIME_DIR só do teste): os atalhos entram no rc.xml, e cada tecla, com o xlogo na frente,
+  // chega ao Retro Computer pelo Openbox: a luz do teclado, o brilho, a mídia, o F3, o F4 e o botão de ligar.
+  async teclas() {
+    if (!process.env.RETRO_OPENBOX_RC) throw new Error('rode com RETRO_OPENBOX_RC e o openbox');
+    await fecharTudo();
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
+    for (let i = 0; i < 40 && !fs.readFileSync(process.env.RETRO_OPENBOX_RC, 'utf8').includes('XF86KbdBrightnessUp'); i++) await pagina.waitForTimeout(250);
+    console.log('atalhos no rc.xml:', fs.readFileSync(process.env.RETRO_OPENBOX_RC, 'utf8').includes('key="XF86PowerOff"'));
+    const xlogo = spawn('xlogo', ['-geometry', '300x200+100+100'], { stdio: 'ignore' });
+    const naFrente = async () => {
+      await pagina.waitForTimeout(800);
+      try { execFileSync('wmctrl', ['-a', 'xlogo']); } catch { }
+      await pagina.waitForTimeout(600);
+    };
+    const apertar = async (t) => { execFileSync('xdotool', ['key', t]); await pagina.waitForTimeout(900); };
+    const aviso = () => pagina.evaluate(() => { const i = document.querySelector('.indicador-bandeja'); return i && !i.hidden ? i.children[1].textContent : '(nenhum)'; });
+    const tela = (nome) => {
+      const arq = path.join(SAIDA, `${String(++n).padStart(2, '0')}-teclas-${nome}.png`);
+      try { execFileSync('import', ['-window', 'root', arq]); console.log('captura:', arq); } catch { }
+    };
+    await naFrente();
+    await apertar('XF86KbdBrightnessUp');
+    await apertar('XF86KbdBrightnessUp');
+    await apertar('XF86KbdBrightnessUp');
+    console.log('F6 três vezes:', await aviso());
+    tela('luz-teclado');
+    await apertar('XF86KbdBrightnessDown');
+    console.log('F5:', await aviso());
+    await apertar('XF86KbdLightOnOff');
+    console.log('ligar e desligar a luz:', await aviso());
+    await apertar('XF86MonBrightnessDown');
+    console.log('F1:', await aviso());
+    await apertar('XF86AudioPlay');
+    await apertar('XF86AudioNext');
+    console.log('mídia (o tocador de mentira):', JSON.stringify(await app.evaluate(() => global.__midiaFalsa && global.__midiaFalsa.pedidos)));
+    await naFrente();
+    await apertar('XF86LaunchA');
+    console.log('F3, a Visão das tarefas:', await pagina.locator('#visao-tarefas').count());
+    tela('visao-tarefas');
+    await tecla('visao-tarefas');
+    await naFrente();
+    await apertar('XF86LaunchB');
+    console.log('F4, o Iniciar:', await pagina.evaluate(() => !!document.querySelector('#iniciar.apertado, .bt-iniciar.apertado')));
+    tela('iniciar');
+    await pagina.keyboard.press('Escape');
+    await naFrente();
+    await apertar('XF86PowerOff');
+    console.log('o botão de ligar, a caixa Desligar:', await pagina.locator('.escurecer').count(), '; a trava do logind:', await app.evaluate(() => !!global.__travaDoBotao));
+    tela('desligar');
+    await pagina.keyboard.press('Escape');
+    xlogo.kill();
+  },
   async janelasLinux() {
     await fecharTudo();
     await abrir('bloco');
