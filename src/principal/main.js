@@ -462,21 +462,20 @@ function registrarProtocolos() {
 
 function criarJanela() {
   const c = config.obter();
-  // No Mac, as duas telas usam a tela cheia "simples" (a nativa fica num monitor só): a janela abre
-  // sem a nativa e se espalha logo depois de aparecer.
+  // No Mac, as duas telas usam a tela cheia "simples" (a nativa fica num monitor só), e no Windows a
+  // janela espalhada fica sem a tela cheia (ESPALHAR_SEM_CHEIA): a janela abre sem a nativa e se
+  // espalha (no Windows, antes de aparecer).
   const espalharAoAbrir = !MODO_SISTEMA && !!c.telaCheia && !process.env.RETRO_JANELA && querDuasTelas();
+  const espalharSemCheia = espalharAoAbrir && (process.platform === 'darwin' || ESPALHAR_SEM_CHEIA);
   // O monitor escolhido em Painel › Aparência (fora do modo sistema), se ainda estiver ligado.
   const monitor = (!MODO_SISTEMA && c.tela && c.tela.monitor != null && screen.getAllDisplays().find((d) => d.id === c.tela.monitor)) || screen.getPrimaryDisplay();
-  const area = monitor.workArea;
-  const largura = Math.min(1280, area.width);
-  const altura = Math.min(800, area.height);
   // No modo sistema, a janela já nasce cobrindo a tela (sem a tela cheia: veja lugarNaTela).
-  const lugar = MODO_SISTEMA ? lugarNaTela() : { x: area.x + Math.round((area.width - largura) / 2), y: area.y + Math.round((area.height - altura) / 2), width: largura, height: altura };
+  const lugar = MODO_SISTEMA ? lugarNaTela() : lugarNormal(monitor.workArea);
   janela = new BrowserWindow({
     ...lugar,
     minWidth: 640,
     minHeight: 480,
-    fullscreen: !MODO_SISTEMA && !!c.telaCheia && !process.env.RETRO_JANELA && !(espalharAoAbrir && process.platform === 'darwin'),
+    fullscreen: !MODO_SISTEMA && !!c.telaCheia && !process.env.RETRO_JANELA && !espalharSemCheia,
     enableLargerThanScreen: process.platform === 'darwin', // no Mac, para a janela poder cobrir dois monitores
     backgroundColor: '#000000',
     title: 'Retro Computer',
@@ -493,8 +492,14 @@ function criarJanela() {
     },
   });
   janela.once('ready-to-show', () => {
-    janela.show();
-    if (espalharAoAbrir) setTimeout(() => espalhar().catch(() => { }), 300);
+    // No Windows, a janela já aparece espalhada (sem passar pela moldura de uma janela comum); se não
+    // der, na tela cheia de sempre.
+    if (espalharAoAbrir && ESPALHAR_SEM_CHEIA) {
+      espalhar().catch(() => false).then((ok) => { if (!janela || janela.isDestroyed()) return; if (!ok) janela.setFullScreen(true); janela.show(); });
+    } else {
+      janela.show();
+      if (espalharAoAbrir) setTimeout(() => espalhar().catch(() => { }), 300);
+    }
     // No modo sistema, a conferência de que a janela cobre a tela (o Openbox pode encolhê-la ao abrir).
     if (MODO_SISTEMA) for (const ms of [1000, 4000]) setTimeout(cobrirATela, ms);
   });
@@ -505,6 +510,11 @@ function criarJanela() {
   const telasDepois = () => { clearTimeout(esperaTelas); esperaTelas = setTimeout(() => avisarTelas(), 150); };
   janela.on('resize', telasDepois);
   janela.on('move', telasDepois);
+  // A janela espalhada sem a tela cheia (o Windows) volta ao lugar depois que algo a move.
+  if (ESPALHAR_SEM_CHEIA && !MODO_SISTEMA) {
+    let esperaLugar = null;
+    for (const ev of ['move', 'resize']) janela.on(ev, () => { clearTimeout(esperaLugar); esperaLugar = setTimeout(voltarAoLugarEspalhado, 400); });
+  }
   // No Windows, a janela espalhada fica por cima das barras de tarefas do sistema só enquanto está em
   // foco (o Windows só esconde a barra do monitor em que a janela "está"); ao trocar de programa, solta.
   if (process.platform === 'win32') {
@@ -628,6 +638,18 @@ function monitoresLigados() {
 
 let espalhada = false; // a janela cobre todos os monitores agora
 let cheiaDoVideo = false; // um vídeo em tela cheia levou a janela para um monitor só
+// No Windows, a tela cheia do Chromium prende a janela num monitor: mover ou redimensionar uma janela em
+// tela cheia a devolve ao monitor que tem a maior parte dela (OnWindowPosChanging, em
+// hwnd_message_handler.cc), e a troca de escala entre os monitores (WM_DPICHANGED) passa por ali. Por
+// isso, lá, a janela espalhada sai da tela cheia: o conteúdo cobre os monitores, e a barra de título
+// fica acima deles, fora da vista. RETRO_ESPALHAR_SEM_CHEIA=1 faz o mesmo nos outros sistemas (os testes).
+const ESPALHAR_SEM_CHEIA = process.platform === 'win32' || !!process.env.RETRO_ESPALHAR_SEM_CHEIA;
+// O conteúdo passa um pouco dos monitores dos lados e embaixo: as bordas e os cantos arredondados do
+// Windows 11 ficam fora da vista.
+const MARGEM_ESPALHADA = 8;
+let alvoEspalhada = null; // a união dos monitores que a janela espalhada cobre
+let normalAntes = null; // o lugar da janela antes de se espalhar sem a tela cheia, para a volta (F11)
+let consertos = { n: 0, desde: 0 }; // as voltas ao lugar nos últimos segundos (para não brigar com o Windows)
 
 /** A opção de Painel › Aparência está ligada, e há mais de um monitor? */
 function querDuasTelas() {
@@ -637,7 +659,80 @@ function querDuasTelas() {
 /** A janela está em tela cheia (no Mac, também a "simples", a das duas telas)? */
 function emTelaCheia() {
   if (!janela || janela.isDestroyed()) return false;
-  return janela.isFullScreen() || (process.platform === 'darwin' && janela.isSimpleFullScreen());
+  return janela.isFullScreen() || (process.platform === 'darwin' && janela.isSimpleFullScreen()) || (ESPALHAR_SEM_CHEIA && espalhada);
+}
+
+/** O lugar de uma janela comum: 1280 por 800 (ou a área inteira, se menor), no meio da área. */
+function lugarNormal(area) {
+  const w = Math.min(1280, area.width);
+  const h = Math.min(800, area.height);
+  return { x: area.x + Math.round((area.width - w) / 2), y: area.y + Math.round((area.height - h) / 2), width: w, height: h };
+}
+
+/** Os dois retângulos são o mesmo (com 2 pontos de folga)? */
+function mesmoLugar(a, b) {
+  return Math.abs(a.x - b.x) <= 2 && Math.abs(a.y - b.y) <= 2 && Math.abs(a.width - b.width) <= 2 && Math.abs(a.height - b.height) <= 2;
+}
+
+/** Onde fica o conteúdo da janela espalhada (sem a tela cheia, com a margem fora dos monitores). */
+function lugarEspalhado(u) {
+  if (!ESPALHAR_SEM_CHEIA) return u;
+  const m = MARGEM_ESPALHADA;
+  return { x: u.x - m, y: u.y, width: u.width + 2 * m, height: u.height + m };
+}
+
+/** Põe a janela espalhada no lugar. */
+function posicionarEspalhada(u) {
+  if (!ESPALHAR_SEM_CHEIA) { janela.setBounds(u); return; }
+  const c = lugarEspalhado(u);
+  // O Windows não deixa uma janela com moldura passar da área de trabalho inteira (o tamanho máximo
+  // do WM_GETMINMAXINFO): o limite fica bem acima do que ela ocupa.
+  janela.setMaximumSize(c.width + 2000, c.height + 2000);
+  janela.setContentBounds(c);
+}
+
+/** A janela espalhada saiu do lugar (a troca de escala, o Windows+Shift+seta): volta, até 5 vezes em 10 segundos. */
+function voltarAoLugarEspalhado() {
+  if (!ESPALHAR_SEM_CHEIA || !espalhada || cheiaDoVideo || !alvoEspalhada || !janela || janela.isDestroyed()) return;
+  if (janela.isMinimized() || janela.isFullScreen()) return;
+  if (mesmoLugar(janela.getContentBounds(), lugarEspalhado(alvoEspalhada))) return;
+  const agora = Date.now();
+  if (agora - consertos.desde > 10000) consertos = { n: 0, desde: agora };
+  if (++consertos.n > 5) return;
+  if (janela.isMaximized()) janela.unmaximize();
+  posicionarEspalhada(alvoEspalhada);
+  avisarTelas();
+}
+
+/** Sai da tela cheia do sistema e espera a janela voltar ao lugar de antes. */
+function sairDaTelaCheiaNativa() {
+  return new Promise((ok) => {
+    let feito = false;
+    // No Windows, o aviso vem antes de a janela voltar ao lugar: a espera vem depois dele.
+    const fim = () => { if (!feito) { feito = true; setTimeout(ok, 250); } };
+    janela.once('leave-full-screen', fim);
+    janela.setFullScreen(false);
+    setTimeout(fim, 1500);
+  });
+}
+
+/** O lugar guardado ainda cabe num monitor ligado (ele pode ter sido desligado)? */
+function cabeNumMonitor(r) {
+  if (!r || r.width < 200 || r.height < 150) return false;
+  const a = screen.getDisplayMatching(r).workArea;
+  const w = Math.min(r.x + r.width, a.x + a.width) - Math.max(r.x, a.x);
+  const h = Math.min(r.y + r.height, a.y + a.height) - Math.max(r.y, a.y);
+  return w >= 200 && h >= 150;
+}
+
+/** Sem a tela cheia: a janela espalhada volta a um monitor só (a principal), em tela cheia ou, com sairDaCheia, na janela de antes. */
+function voltarParaUmaTela(sairDaCheia) {
+  janela.setMaximumSize(0, 0);
+  const normal = sairDaCheia && cabeNumMonitor(normalAntes) ? normalAntes : lugarNormal(screen.getPrimaryDisplay().workArea);
+  normalAntes = null;
+  alvoEspalhada = null;
+  janela.setBounds(normal);
+  if (!sairDaCheia) janela.setFullScreen(true);
 }
 
 /** No Mac, a janela só aparece nos dois monitores sem os Spaces separados por monitor. */
@@ -647,9 +742,10 @@ function spacesJuntosNoMac() {
 }
 
 /**
- * A janela cobre todos os monitores. No Windows (e no Linux fora do modo sistema), ela entra na tela
- * cheia de sempre e cresce para a união deles; no Mac, a tela cheia nativa fica num monitor só, e a
- * "simples" (sem Space próprio) é a que cresce. Devolve se conseguiu.
+ * A janela cobre todos os monitores. No Linux fora do modo sistema, ela entra na tela cheia de sempre
+ * e cresce para a união deles; no Windows, ela sai da tela cheia e cobre a união com o conteúdo (veja
+ * ESPALHAR_SEM_CHEIA); no Mac, a tela cheia nativa fica num monitor só, e a "simples" (sem Space
+ * próprio) é a que cresce. Devolve se conseguiu.
  */
 async function espalhar() {
   if (!janela || janela.isDestroyed() || !querDuasTelas() || !(await spacesJuntosNoMac())) return false;
@@ -657,11 +753,16 @@ async function espalhar() {
   if (process.platform === 'darwin') {
     if (janela.isFullScreen()) await new Promise((ok) => { janela.once('leave-full-screen', () => setTimeout(ok, 300)); janela.setFullScreen(false); setTimeout(ok, 2000); });
     if (!janela.isSimpleFullScreen()) janela.setSimpleFullScreen(true);
+  } else if (ESPALHAR_SEM_CHEIA) {
+    if (janela.isFullScreen()) await sairDaTelaCheiaNativa();
+    if (!espalhada) normalAntes = janela.getNormalBounds();
+    if (janela.isMaximized()) janela.unmaximize();
   } else if (!janela.isFullScreen()) {
     await new Promise((ok) => { janela.once('enter-full-screen', ok); janela.setFullScreen(true); setTimeout(ok, 1500); });
   }
   espalhada = true;
-  janela.setBounds(u);
+  alvoEspalhada = u;
+  posicionarEspalhada(u);
   if (process.platform === 'win32' && janela.isFocused()) janela.setAlwaysOnTop(true, 'screen-saver');
   avisarTelas();
   conferirEspalhada(u);
@@ -669,16 +770,16 @@ async function espalhar() {
 }
 
 /**
- * A janela ficou onde foi pedida? A tela cheia que termina depois (o Windows, o X sem gerenciador de
- * janelas) pode devolvê-la a um monitor só ou à posição de antes: ela volta ao lugar, até duas vezes.
+ * A janela ficou onde foi pedida? A tela cheia que termina depois (o X sem gerenciador de janelas) e a
+ * troca de escala entre os monitores (o Windows) podem devolvê-la a um monitor só ou à posição de
+ * antes: ela volta ao lugar, até duas vezes.
  */
 function conferirEspalhada(u, vezes = 2) {
   setTimeout(() => {
     if (!espalhada || cheiaDoVideo || !janela || janela.isDestroyed()) return;
-    const b = janela.getBounds();
-    const longe = Math.abs(b.x - u.x) > 2 || Math.abs(b.y - u.y) > 2 || Math.abs(b.width - u.width) > 2 || Math.abs(b.height - u.height) > 2;
-    if (!longe) return;
-    janela.setBounds(u);
+    const b = ESPALHAR_SEM_CHEIA ? janela.getContentBounds() : janela.getBounds();
+    if (mesmoLugar(b, lugarEspalhado(u))) return;
+    posicionarEspalhada(u);
     avisarTelas();
     if (vezes > 1) conferirEspalhada(u, vezes - 1);
   }, 500);
@@ -693,6 +794,8 @@ function juntar({ sairDaCheia = false } = {}) {
   if (process.platform === 'darwin') {
     if (janela.isSimpleFullScreen()) janela.setSimpleFullScreen(false);
     if (!sairDaCheia) janela.setFullScreen(true);
+  } else if (ESPALHAR_SEM_CHEIA && estava) {
+    voltarParaUmaTela(sairDaCheia);
   } else if (sairDaCheia) {
     janela.setFullScreen(false);
   } else if (estava) {
@@ -2058,8 +2161,21 @@ function registrarPonte() {
   // a como estava depois (sem mudar a escolha do Painel › Aparência).
   tratar('navegador:telaCheia', (v) => {
     if (!janela || janela.isDestroyed()) return false;
-    if (v && !janela.isFullScreen()) { cheiaPeloSite = true; janela.setFullScreen(true); }
-    else if (!v && cheiaPeloSite) { cheiaPeloSite = false; if (MODO_SISTEMA) cobrirATela(); else janela.setFullScreen(false); }
+    if (v && !janela.isFullScreen()) {
+      cheiaPeloSite = true;
+      // Espalhada sem a tela cheia (o Windows): o site fica em tela cheia no monitor do ponteiro, e a
+      // janela se espalha de novo ao sair.
+      if (ESPALHAR_SEM_CHEIA && espalhada) {
+        cheiaDoVideo = true;
+        janela.setContentBounds(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).bounds);
+      }
+      janela.setFullScreen(true);
+    } else if (!v && cheiaPeloSite) {
+      cheiaPeloSite = false;
+      if (MODO_SISTEMA) cobrirATela();
+      else janela.setFullScreen(false);
+      if (ESPALHAR_SEM_CHEIA && cheiaDoVideo) setTimeout(() => { cheiaDoVideo = false; if (espalhada) espalhar().catch(() => { }); }, 300);
+    }
     return true;
   });
   // A página que não abriu era a versão segura de um http:// (ou um http:// recusado)? Devolve o endereço sem segurança.
