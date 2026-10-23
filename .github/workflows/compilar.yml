@@ -53,6 +53,20 @@ jobs:
           path: capturas/**/*.png
           if-no-files-found: ignore
 
+      # As duas telas em tela cheia no Windows de verdade, com dois monitores de mentira: a tela cheia do
+      # Chromium devolvia a janela a um monitor só (ESPALHAR_SEM_CHEIA em main.js).
+      - name: Teste das duas telas no Windows
+        if: matrix.os == 'windows-latest'
+        run: node testes/duas-telas.mjs capturas-duas-telas
+
+      - name: Guardar as capturas das duas telas
+        if: matrix.os == 'windows-latest' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-duas-telas
+          path: capturas-duas-telas/*.png
+          if-no-files-found: ignore
+
       - name: Gerar os instaladores
         run: npx electron-builder --publish never
         env:
