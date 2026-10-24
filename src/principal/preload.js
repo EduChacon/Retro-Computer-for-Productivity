@@ -300,6 +300,13 @@ contextBridge.exposeInMainWorld('retro', {
     verificarTodos: (o) => chamar('programas:verificarTodos', o),
     aoProgresso: ouvir('programas:progresso'),
   },
+  // Os Craft instalados no Windows, fora do Retro Computer (só no Windows).
+  craftWindows: {
+    disponivel: () => chamar('craftWindows:disponivel'),
+    verificar: (o) => chamar('craftWindows:verificar', o),
+    atualizar: (id) => chamar('craftWindows:atualizar', id),
+    aoProgresso: ouvir('craftWindows:progresso'),
+  },
   terminal: {
     disponivel: () => chamar('terminal:disponivel'),
     criar: (o) => chamar('terminal:criar', o),

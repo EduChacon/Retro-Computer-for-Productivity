@@ -17,6 +17,7 @@ import { confirmar } from './dialogos.js';
 import * as janelas from './janelas.js';
 import { carregarIdioma, tr } from './idioma.js';
 import { atualizarEmSegundoPlano } from './apps/programas.js';
+import { avisarCraftWindows } from './apps/craft-windows.js';
 import { programasAbertos } from './apps/craft.js';
 import { procurarAtualizacao } from './atualizacao.js';
 import { bloquearAoAbrir } from './bloqueio.js';
@@ -292,9 +293,11 @@ async function iniciar() {
   }
   iniciarReabrir({ reabrir: !primeira });
 
-  // As atualizações: os programas (sem mexer nos que estão abertos) e o próprio Retro Computer.
+  // As atualizações: os programas (sem mexer nos que estão abertos), os Craft instalados no Windows
+  // (só o aviso: o instalador pede a confirmação do Windows) e o próprio Retro Computer.
   setTimeout(() => {
     atualizarEmSegundoPlano(() => programasAbertos().map((p) => p.id)).catch(() => { });
+    avisarCraftWindows().catch(() => { });
     if (estado.config.atualizacoes !== 'nunca') procurarAtualizacao().catch(() => { });
   }, 20000);
 }

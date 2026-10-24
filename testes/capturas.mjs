@@ -2746,6 +2746,29 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     console.log('relógio:', await pagina.evaluate(() => document.querySelector('#bandeja .relogio, #barra-mac .relogio').innerText.replace(/\n/g, ' | ')));
   },
 
+  // Os Craft instalados no Windows, com RETRO_CRAFT_WINDOWS_FALSO=1 (o WordCraft com versão nova e o
+  // GridCraft em dia): o aviso da abertura, a aba na janela Programas, a atualização com o andamento e
+  // a lista depois.
+  async craftWindows() {
+    await fecharTudo();
+    await pagina.evaluate(() => import('./js/apps/craft-windows.js').then((m) => m.avisarCraftWindows()));
+    await pagina.waitForTimeout(800);
+    await foto('craft-windows-aviso');
+    await abrir('programas', { aba: 'craft' });
+    await pagina.waitForSelector('.janela.ativa .aba-programas:not([hidden]) .linha-programa', { timeout: 15000 });
+    await pagina.waitForTimeout(600);
+    console.log('abas:', await pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .abas > *')].map((a) => a.textContent + (a.classList.contains('ativa') ? ' (ativa)' : '')).join(' | ')));
+    console.log('lista:', await pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .linha-programa')].filter((l) => l.offsetParent).map((l) => l.innerText.replace(/\n/g, ' · ')).join(' || ')));
+    await foto('craft-windows-aba');
+    await pagina.locator('.janela.ativa button', { hasText: new RegExp(`^${T('Atualizar')}$`) }).filter({ visible: true }).click();
+    await pagina.waitForTimeout(500);
+    await foto('craft-windows-baixando');
+    await pagina.waitForFunction(() => [...document.querySelectorAll('.janela.ativa .linha-programa')].some((l) => l.offsetParent && /WordCraft/.test(l.innerText) && !/0\.9\.0/.test(l.innerText)), null, { timeout: 15000 }).catch(() => console.log('a lista não mudou'));
+    await pagina.waitForTimeout(2000);
+    console.log('depois:', await pagina.evaluate(() => [...document.querySelectorAll('.janela.ativa .linha-programa')].filter((l) => l.offsetParent).map((l) => l.innerText.replace(/\n/g, ' · ')).join(' || ')));
+    await foto('craft-windows-depois');
+  },
+
   // A loja de programas. Com RETRO_LOJA_FALSA=1, a do Linux (o Flathub de verdade, o flatpak de mentira);
   // com =winget, a do Windows (os manifestos de verdade, o winget de mentira); com =brew, a do Mac
   // (a lista do Homebrew de verdade, o brew de mentira). As fotos levam o nome da loja.

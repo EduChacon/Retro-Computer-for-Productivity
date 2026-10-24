@@ -18,6 +18,7 @@ const path = require('node:path');
 const { Disco, nomeValido } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
+const { CraftWindows, CraftWindowsFalso } = require('./craft-windows');
 const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
 const { Aplicativos, iconeDoArquivo, acharPorNome } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
@@ -221,6 +222,7 @@ let janela = null;
 let config = null;
 let disco = null;
 let programas = null;
+let craftWindows = null; // os Craft instalados no Windows, fora do Retro Computer (craft-windows.js)
 let terminais = null;
 let aplicativos = null;
 let atualizador = null;
@@ -1877,6 +1879,10 @@ function registrarPonte() {
   tratar('programas:remover', (id) => programas.remover(id));
   tratar('programas:verificar', (id, o) => programas.verificar(id, o));
   tratar('programas:verificarTodos', (o) => programas.verificarTodos(o));
+  // Os Craft instalados no Windows (fora do Retro Computer): procurar e atualizar pelo instalador oficial.
+  tratar('craftWindows:disponivel', () => !!craftWindows.disponivel);
+  tratar('craftWindows:verificar', (o) => (craftWindows.disponivel ? craftWindows.verificar({ forcar: !!(o && o.forcar) }) : []));
+  tratar('craftWindows:atualizar', (id) => craftWindows.atualizar(String(id), (p) => enviar('craftWindows:progresso', String(id), p)));
 
   // Terminal
   tratar('terminal:disponivel', () => terminais.disponivel());
@@ -2740,6 +2746,7 @@ app.whenReady().then(async () => {
   });
   idioma.definir(idioma.resolver(idiomaEscolhido, app.getLocale()));
   programas = new Programas(path.join(BASE_DADOS, 'programas'), (url, o) => net.fetch(url, o));
+  craftWindows = process.env.RETRO_CRAFT_WINDOWS_FALSO ? new CraftWindowsFalso() : new CraftWindows((url, o) => net.fetch(url, o), path.join(BASE_DADOS, 'craft-windows.json'));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
   if (MODO_SISTEMA || process.env.RETRO_JANELAS_FALSAS) {

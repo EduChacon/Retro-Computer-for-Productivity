@@ -480,6 +480,8 @@ const TOPICOS = [
 <ul><li>No Linux, <b>Programas do Linux</b>: os do Flathub, instalados sem senha.</li>
 <li>No Windows, <b>Programas do Windows</b>: os do winget, o repositório oficial de programas do Windows. Alguns pedem a confirmação do Windows para instalar.</li>
 <li>No Mac, <b>Programas do Mac</b>: os do Homebrew (brew.sh), que vão para a pasta Aplicativos. Sem o Homebrew, a aba o instala pelo Prompt de comando; os programas que pedem a senha do Mac terminam a instalação por lá.</li></ul>
+<h2>Os Craft instalados no Windows</h2>
+<p>No Windows, a aba <b>Craft do Windows</b> mostra os Craft instalados no próprio Windows pelos instaladores oficiais (.msi), com a versão de cada um. <b>Atualizar</b> baixa o instalador da versão nova do lançamento oficial, confere o resumo publicado no GitHub e a assinatura digital do fabricante e roda o instalador oficial; o Windows pede a confirmação de administrador. Feche o programa antes de atualizar. Ao ligar, o Retro Computer avisa quando há versão nova.</p>
 <h2>Sem internet?</h2>
 <p>Baixe o pacote "nome-web-versão.zip" em outro lugar e use <b>Instalar de um arquivo .zip</b>.</p>
 <h2>Programas do Windows (no Linux)</h2>
@@ -500,6 +502,8 @@ const TOPICOS = [
 <ul><li>On Linux, <b>Linux programs</b>: the ones from Flathub, installed without a password.</li>
 <li>On Windows, <b>Windows Programs</b>: the ones from winget, the official Windows program repository. Some ask for Windows confirmation to install.</li>
 <li>On the Mac, <b>Mac programs</b>: the ones from Homebrew (brew.sh), which go to the Applications folder. Without Homebrew, the tab installs it through the Command Prompt; programs that ask for the Mac password finish installing there.</li></ul>
+<h2>The Craft apps installed on Windows</h2>
+<p>On Windows, the <b>Craft on Windows</b> tab shows the Craft apps installed on Windows itself with the official installers (.msi), with each one's version. <b>Update</b> downloads the new version's installer from the official release, checks the digest published on GitHub and the maker's digital signature, and runs the official installer; Windows asks for the administrator confirmation. Close the program before updating. When the computer starts, Retro Computer tells you when there is a new version.</p>
 <h2>No internet?</h2>
 <p>Download the "name-web-version.zip" package somewhere else and use <b>Install from a .zip file</b>.</p>
 <h2>Windows programs (on Linux)</h2>
@@ -520,6 +524,8 @@ const TOPICOS = [
 <ul><li>En Linux, <b>Programas de Linux</b>: los de Flathub, instalados sin contraseña.</li>
 <li>En Windows, <b>Programas de Windows</b>: los de winget, el repositorio oficial de programas de Windows. Algunos piden la confirmación de Windows para instalarse.</li>
 <li>En el Mac, <b>Programas de Mac</b>: los de Homebrew (brew.sh), que van a la carpeta Aplicaciones. Sin Homebrew, la pestaña lo instala por la Línea de comandos; los programas que piden la contraseña del Mac terminan de instalarse ahí.</li></ul>
+<h2>Los Craft instalados en Windows</h2>
+<p>En Windows, la pestaña <b>Craft de Windows</b> muestra los Craft instalados en el propio Windows con los instaladores oficiales (.msi), con la versión de cada uno. <b>Actualizar</b> descarga el instalador de la versión nueva desde la publicación oficial, comprueba el resumen publicado en GitHub y la firma digital del fabricante y ejecuta el instalador oficial; Windows pide la confirmación de administrador. Cierre el programa antes de actualizar. Al encender, el Retro Computer avisa cuando hay una versión nueva.</p>
 <h2>¿Sin internet?</h2>
 <p>Descarga el paquete "nombre-web-versión.zip" en otro lugar y usa <b>Instalar desde un archivo .zip</b>.</p>
 <h2>Programas de Windows (en Linux)</h2>

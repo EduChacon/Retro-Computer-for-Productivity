@@ -1,8 +1,9 @@
 /*
  * Adicionar ou remover programas: o catálogo (os Craft), com instalar,
  * atualizar, remover e abrir; a instalação a partir de um .zip baixado; e
- * a escolha de como os programas se atualizam ao abrir. No Linux, a segunda
- * aba é a loja dos programas do Linux (o Flathub, em loja.js).
+ * a escolha de como os programas se atualizam ao abrir. A segunda aba é a
+ * loja do computador (o Flathub, o winget ou o Homebrew, em loja.js); no
+ * Windows, a terceira são os Craft instalados no próprio Windows (craft-windows.js).
  */
 import { h, img, tamanho, rotulo } from '../util.js';
 import { Janela, lista as janelas } from '../janelas.js';
@@ -11,6 +12,7 @@ import { confirmar, erro } from '../dialogos.js';
 import { adicionarAtalho } from '../mesa.js';
 import { tr, idiomaAtual } from '../idioma.js';
 import { AbaLoja, nomeDaLoja } from './loja.js';
+import { AbaCraftWindows } from './craft-windows.js';
 
 /** Um texto do catálogo no idioma atual ({ "pt-BR": …, "en": …, "es": … } ou texto simples). */
 export function doCatalogo(v) {
@@ -72,35 +74,42 @@ class Programas {
         h('div', { style: { flex: '1', color: 'var(--texto-fraco)', lineHeight: '12px' } }, tr('Para instalar um pacote "nome-web-versão.zip" já baixado.')),
         h('button', { on: { click: () => this.j.fechar() } }, tr('Fechar'))),
     );
-    // As abas: os programas recomendados (os Craft) e a loja do computador (o Flathub no Linux,
-    // o winget no Windows, o Homebrew no Mac).
+    // As abas: os programas recomendados (os Craft), a loja do computador (o Flathub no Linux, o
+    // winget no Windows, o Homebrew no Mac) e, no Windows, os Craft instalados no próprio Windows.
     this.linux = new AbaLoja();
     if (args.busca) this.linux.pesquisar(args.busca);
+    this.craftWindows = null;
     this.abasEl = h('div.abas', { hidden: true });
     this.painelEl = h('div.programas-painel', abaRetro, this.linux.el);
-    let abas = [tr('Programas recomendados'), tr('Programas do computador')];
-    this.mostrarAba = (i) => {
-      this.aba = i;
-      this.abasEl.replaceChildren(...abas.map((t, k) => {
-        const el = h('div' + (k === i ? '.ativa' : ''), t);
-        el.addEventListener('mousedown', () => this.mostrarAba(k));
+    this.abas = [{ id: 'retro', titulo: tr('Programas recomendados'), el: abaRetro }];
+    this.mostrarAba = (id) => {
+      const aba = this.abas.find((a) => a.id === id) || this.abas[0];
+      this.aba = aba.id;
+      this.abasEl.replaceChildren(...this.abas.map((a) => {
+        const el = h('div' + (a === aba ? '.ativa' : ''), a.titulo);
+        el.addEventListener('mousedown', () => this.mostrarAba(a.id));
         return el;
       }));
-      abaRetro.hidden = i !== 0;
-      this.linux.el.hidden = i !== 1;
-      if (i === 1) this.linux.mostrar();
+      for (const a of this.abas) a.el.hidden = a !== aba;
+      if (aba.mostrar) aba.mostrar();
     };
     this.linux.el.hidden = true;
     this.j.corpo.append(this.abasEl, this.painelEl);
-    retro.loja.info().then((info) => {
-      if (!info.loja) return;
-      abas = [tr('Programas recomendados'), nomeDaLoja(info)];
+    Promise.all([retro.loja.info().catch(() => ({})), retro.craftWindows.disponivel().catch(() => false)]).then(([info, noWindows]) => {
+      if (info && info.loja) this.abas.push({ id: 'loja', titulo: nomeDaLoja(info), el: this.linux.el, mostrar: () => this.linux.mostrar() });
+      if (noWindows) {
+        this.craftWindows = new AbaCraftWindows();
+        this.craftWindows.el.hidden = true;
+        this.painelEl.append(this.craftWindows.el);
+        this.abas.push({ id: 'craft', titulo: tr('Craft do Windows'), el: this.craftWindows.el, mostrar: () => this.craftWindows.mostrar() });
+      }
+      if (this.abas.length < 2) return;
       this.abasEl.hidden = false;
       this.painelEl.classList.add('com-abas');
-      this.mostrarAba(args.aba === 'loja' || args.aba === 'linux' ? 1 : 0);
-    }).catch(() => { });
+      this.mostrarAba(abaPedida(args.aba));
+    });
     this.paraDeOuvir = retro.programas.aoProgresso((id, p) => this.progresso(id, p));
-    this.j.ev.on('fechada', () => { this.paraDeOuvir(); this.linux.fechar(); });
+    this.j.ev.on('fechada', () => { this.paraDeOuvir(); this.linux.fechar(); if (this.craftWindows) this.craftWindows.fechar(); });
     this.carregar(args.instalar).then(() => this.procurar(false));
   }
 
@@ -274,12 +283,17 @@ class Programas {
   }
 }
 
+/** A aba pedida ao abrir: 'loja' (ou 'linux', o nome de antes), 'craft' ou a primeira. */
+function abaPedida(aba) {
+  return aba === 'loja' || aba === 'linux' ? 'loja' : aba === 'craft' ? 'craft' : 'retro';
+}
+
 function abrirProgramas(args = {}) {
   const aberta = janelas.find((j) => j.id === 'programas');
   if (aberta) {
     aberta.focar();
     if (args.instalar && aberta.programas) aberta.programas.carregar(args.instalar);
-    if ((args.aba === 'loja' || args.aba === 'linux') && aberta.programas && !aberta.programas.abasEl.hidden) aberta.programas.mostrarAba(1);
+    if (args.aba && aberta.programas && !aberta.programas.abasEl.hidden) aberta.programas.mostrarAba(abaPedida(args.aba));
     if (args.busca && aberta.programas) aberta.programas.linux.pesquisar(args.busca);
     return aberta.programas;
   }
