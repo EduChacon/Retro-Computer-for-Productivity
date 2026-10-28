@@ -711,7 +711,7 @@ const TOPICOS = [
 <p><b>Claude</b>: a instalação do Claude Code e a chave de API.</p>
 <p><b>Internet</b>: o e-mail, a pesquisa, em qual navegador os links abrem, as permissões dos sites e os programas da internet.</p>
 <p><b>Idioma</b>: português, inglês ou espanhol (o Retro Computer reinicia para trocar). Na aba <b>Ortografia</b>, o corretor dos campos de texto: as palavras erradas ficam sublinhadas em vermelho, e o botão direito nelas mostra as sugestões e o <b>Adicionar ao dicionário</b>. Ele começa no idioma da interface; marque outros para escrever em mais de um. Os dicionários vão junto com o Retro Computer, sem internet (no Mac, o corretor é o do próprio Mac).</p>
-<p><b>Segurança</b>: o estado das proteções (a senha, o firewall, as atualizações, a chave do Claude) e a privacidade (só conexões seguras no Navegador, apagar os dados de navegação ao fechar, o histórico da área de transferência).</p>
+<p><b>Segurança</b>: o estado das proteções (a senha, o firewall, as atualizações, a chave do Claude) e a privacidade (só conexões seguras e o bloqueio de propagandas no Navegador, apagar os dados de navegação ao fechar, o histórico da área de transferência).</p>
 <p><b>Senhas</b>: a senha da tela de bloqueio e quando pedi-la.</p>
 <p><b>Usuários</b>: as pessoas que usam este computador, cada uma com a área de trabalho, as configurações e o disco C: próprios.</p>
 <p><b>Bluetooth</b>: procurar, parear, conectar e esquecer mouses, teclados e fones sem fio (no Windows e no macOS, abre as configurações do sistema).</p>
@@ -828,7 +828,7 @@ const TOPICOS = [
 <h2>A Central de segurança</h2>
 <p><b>Painel de controle › Segurança</b> mostra, num lugar só, a senha da tela de bloqueio, o firewall e as atualizações de segurança automáticas (no Linux) e como a chave do Claude está guardada. O que estiver em vermelho merece uma olhada; cada linha tem o botão que leva à configuração dela.</p>
 <h2>Privacidade</h2>
-<p>Na aba <b>Privacidade</b>: só conexões seguras (HTTPS) no Navegador, apagar os dados de navegação (os cookies, os dados dos sites e os arquivos temporários) ao fechar o Retro Computer e guardar ou não o histórico da área de transferência.</p>
+<p>Na aba <b>Privacidade</b>: só conexões seguras (HTTPS) no Navegador, bloquear as propagandas e os rastreadores (um site pode ficar de fora pelo Navegador, em Exibir › Permitir as propagandas neste site), apagar os dados de navegação (os cookies, os dados dos sites e os arquivos temporários) ao fechar o Retro Computer e guardar ou não o histórico da área de transferência.</p>
 <h2>O firewall</h2>
 <p>No Linux, <b>Painel de controle › Firewall</b> liga o firewall do sistema (o ufw): ele recusa as conexões que outros computadores tentam abrir neste, e a internet continua como antes. Ligar e desligar pedem a senha de administrador.</p>
 <h2>O antivírus</h2>
@@ -837,7 +837,7 @@ const TOPICOS = [
 <h2>The Security Center</h2>
 <p><b>Control Panel › Security</b> shows, in one place, the lock screen password, the firewall and the automatic security updates (on Linux) and how the Claude key is stored. Whatever is in red deserves a look; each line has the button that leads to its settings.</p>
 <h2>Privacy</h2>
-<p>On the <b>Privacy</b> tab: secure connections only (HTTPS) in the Browser, deleting the browsing data (cookies, site data and temporary files) when Retro Computer closes, and keeping the clipboard history or not.</p>
+<p>On the <b>Privacy</b> tab: secure connections only (HTTPS) in the Browser, blocking ads and trackers (a site can be left out from the Browser, with View › Allow ads on this site), deleting the browsing data (cookies, site data and temporary files) when Retro Computer closes, and keeping the clipboard history or not.</p>
 <h2>The firewall</h2>
 <p>On Linux, <b>Control Panel › Firewall</b> turns on the system firewall (ufw): it refuses the connections that other computers try to open to this one, and the internet keeps working as before. Turning it on and off asks for the administrator password.</p>
 <h2>The antivirus</h2>
@@ -846,7 +846,7 @@ const TOPICOS = [
 <h2>El Centro de seguridad</h2>
 <p><b>Panel de control › Seguridad</b> muestra, en un solo lugar, la contraseña de la pantalla de bloqueo, el firewall y las actualizaciones de seguridad automáticas (en Linux) y cómo está guardada la clave de Claude. Lo que esté en rojo merece una mirada; cada línea tiene el botón que lleva a su configuración.</p>
 <h2>Privacidad</h2>
-<p>En la pestaña <b>Privacidad</b>: solo conexiones seguras (HTTPS) en el Navegador, borrar los datos de navegación (las cookies, los datos de los sitios y los archivos temporales) al cerrar Retro Computer y guardar o no el historial del portapapeles.</p>
+<p>En la pestaña <b>Privacidad</b>: solo conexiones seguras (HTTPS) en el Navegador, bloquear la publicidad y los rastreadores (un sitio puede quedar fuera desde el Navegador, con Ver › Permitir la publicidad en este sitio), borrar los datos de navegación (las cookies, los datos de los sitios y los archivos temporales) al cerrar Retro Computer y guardar o no el historial del portapapeles.</p>
 <h2>El firewall</h2>
 <p>En Linux, <b>Panel de control › Firewall</b> activa el firewall del sistema (ufw): rechaza las conexiones que otras computadoras intentan abrir con esta, e internet sigue igual que antes. Activarlo y desactivarlo piden la contraseña de administrador.</p>
 <h2>El antivirus</h2>

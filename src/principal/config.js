@@ -50,8 +50,9 @@ const PADRAO = {
   luzNoturna: { ligada: false, quando: 'noite', de: 20, ate: 7, intensidade: 50 },
   // O histórico da área de transferência (logotipo + V), só na memória.
   transferencia: { historico: true },
-  // O Navegador: só conexões seguras (http:// vira https://) e apagar os dados ao fechar.
-  navegador: { soHttps: true, limparAoFechar: false },
+  // O Navegador: só conexões seguras (http:// vira https://), apagar os dados ao fechar e bloquear as
+  // propagandas e os rastreadores (propaganda.js), menos nos sites de propagandaPermitida.
+  navegador: { soHttps: true, limparAoFechar: false, bloquearPropaganda: true, propagandaPermitida: [] },
   // A busca pelo conteúdo dos arquivos (o índice, na pasta de dados do usuário; desligada, ele é apagado).
   busca: { conteudo: true },
   // O Diário de trabalho: anotar sozinho os focos concluídos e os arquivos alterados.

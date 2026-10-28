@@ -64,7 +64,7 @@ function textoEscala(escala) {
  * O user.js do perfil: o visual (o userChrome.css ligado, a barra de título do sistema, os
  * botões compactos), sem as boas-vindas e a telemetria, e as escolhas do Retro Computer.
  */
-function userJs({ downloads, soHttps = true, limparAoFechar = false, idioma = 'pt-BR', inicio = '', escala = 1, favoritosAVista = false }) {
+function userJs({ downloads, soHttps = true, limparAoFechar = false, bloquearPropaganda = true, idioma = 'pt-BR', inicio = '', escala = 1, favoritosAVista = false }) {
   const p = [
     '// Gerado pelo Retro Computer a cada abertura do Firefox: as mudanças aqui se perdem.',
     '// As preferências escolhidas no próprio Firefox ficam no prefs.js e continuam valendo.',
@@ -100,6 +100,10 @@ function userJs({ downloads, soHttps = true, limparAoFechar = false, idioma = 'p
     pref('browser.download.always_ask_before_handling_new_types', false),
     pref('intl.locale.requested', IDIOMAS[idioma] || 'pt-BR'),
     pref('dom.security.https_only_mode', !!soHttps),
+    // Bloquear propagandas (Painel › Segurança): no Firefox, a proteção contra rastreamento em todas as
+    // janelas, que barra as redes de anúncios que rastreiam (a lista do Disconnect, a do próprio Firefox).
+    pref('privacy.trackingprotection.enabled', !!bloquearPropaganda),
+    pref('privacy.trackingprotection.socialtracking.enabled', !!bloquearPropaganda),
     pref('privacy.sanitize.sanitizeOnShutdown', !!limparAoFechar),
     pref('privacy.clearOnShutdown_v2.cookiesAndStorage', !!limparAoFechar),
     pref('privacy.clearOnShutdown_v2.cache', !!limparAoFechar),

@@ -1216,12 +1216,15 @@ function dialogoSeguranca() {
   const n = estado.config.navegador || {};
   const chkHttps = h('input', { type: 'checkbox', checked: n.soHttps !== false });
   const chkLimpar = h('input', { type: 'checkbox', checked: !!n.limparAoFechar });
+  const chkPropaganda = h('input', { type: 'checkbox', checked: n.bloquearPropaganda !== false });
   const chkHistorico = h('input', { type: 'checkbox', checked: !estado.config.transferencia || estado.config.transferencia.historico !== false });
   const nota = (texto) => h('div', { style: { color: 'var(--texto-fraco)', margin: '4px 0 10px 18px', lineHeight: '13px' } }, texto);
   const privacidade = h('div',
     h('fieldset', { style: { margin: '0 0 10px' } }, h('legend', tr('Navegador')),
       h('label', chkHttps, h('span', tr('Só conexões seguras (HTTPS)'))),
       nota(tr('Os endereços http:// abrem na versão segura; o site que não a tiver só abre depois de um aviso. Os aparelhos da rede de casa (o roteador, a impressora) ficam de fora.')),
+      h('label', chkPropaganda, h('span', tr('Bloquear propagandas e rastreadores'))),
+      nota(tr('Os anúncios e os rastreadores das redes conhecidas não carregam, e os espaços deles somem da página. Um site que não funcionar bem pode ficar de fora (no Navegador, Exibir › Permitir as propagandas neste site).')),
       h('label', chkLimpar, h('span', tr('Apagar os dados de navegação ao fechar o Retro Computer'))),
       nota(tr('Os cookies, os dados dos sites e os arquivos temporários. Ao abrir de novo, é preciso entrar outra vez nas contas.'))),
     h('fieldset', { style: { margin: '0' } }, h('legend', tr('Área de transferência')),
@@ -1231,7 +1234,7 @@ function dialogoSeguranca() {
   const j = dialogoBase({
     titulo: tr('Central de segurança'), icone: 'seguranca', larg: 440, altMin: 470,
     abas: [{ titulo: tr('Estado'), conteudo: estadoAba }, { titulo: tr('Privacidade'), conteudo: privacidade }],
-    aoAplicar: () => definirConfig({ navegador: { soHttps: chkHttps.checked, limparAoFechar: chkLimpar.checked }, transferencia: { historico: chkHistorico.checked } }),
+    aoAplicar: () => definirConfig({ navegador: { soHttps: chkHttps.checked, limparAoFechar: chkLimpar.checked, bloquearPropaganda: chkPropaganda.checked }, transferencia: { historico: chkHistorico.checked } }),
   });
   if (j) ler();
   return j;

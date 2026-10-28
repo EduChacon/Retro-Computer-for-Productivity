@@ -20,6 +20,9 @@ test('firefox: o user.js leva as escolhas do Retro Computer', () => {
   // As aspas e as barras de um caminho do Windows ficam escapadas.
   assert.match(userJs({ downloads: 'C:\\Users\\Eu "x"\\Recebidos' }), /"C:\\\\Users\\\\Eu \\"x\\"\\\\Recebidos"/);
   assert.match(userJs({ limparAoFechar: true }), /privacy\.clearOnShutdown_v2\.cookiesAndStorage", true/);
+  // Bloquear propagandas: a proteção contra rastreamento do Firefox, ligada por padrão.
+  assert.match(userJs({}), /user_pref\("privacy\.trackingprotection\.enabled", true\);/);
+  assert.match(userJs({ bloquearPropaganda: false }), /user_pref\("privacy\.trackingprotection\.enabled", false\);/);
 });
 
 test('firefox: o tamanho dos pixels exato (o 1,25 não vira 2, o 2 não vira 4)', () => {

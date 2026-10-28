@@ -11,11 +11,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { execFileSync, spawn } from 'node:child_process';
 import http from 'node:http';
 
 const require = createRequire(import.meta.url);
-const RAIZ = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+// O fileURLToPath, não o pathname: no Windows, o pathname começa com "/C:/" e virava "C:\C:\…".
+const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SAIDA = path.resolve(process.argv[2] || path.join(os.tmpdir(), 'retro-capturas'));
 const ROTEIRO = process.argv[3] || 'geral';
 fs.mkdirSync(SAIDA, { recursive: true });
@@ -2370,6 +2372,63 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
     await pagina.evaluate(() => { window.__retro.abrir('correio'); }); // não espera: a caixa aguarda a escolha
     await pagina.waitForTimeout(700);
     await foto('correio-escolher');
+    servidor.close();
+  },
+
+  // O bloqueio de propagandas (propaganda.js): a página com um script de uma rede de anúncios e o
+  // espaço de um anúncio do Google. Ligado, o script não carrega e o espaço some; com o site de fora
+  // (Exibir › Permitir as propagandas neste site) e desligado, os dois voltam. Precisa da internet
+  // para o script carregar quando desligado.
+  async propaganda() {
+    const servidor = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(`<!doctype html><meta charset="utf-8"><title>Jornal</title><body style="font:16px sans-serif;padding:16px">
+<script>window.gpt = 'esperando';</script>
+<script src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" onload="window.gpt = 'carregou'" onerror="window.gpt = 'bloqueado'"></script>
+<h1>Notícia do dia</h1><p>O texto da notícia continua à vista.</p>
+<ins class="adsbygoogle" style="display:block;width:300px;height:120px;background:#fc0;font:20px sans-serif">ANÚNCIO</ins>
+<p>Mais texto depois do anúncio.</p>`);
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    servidor.unref();
+    const wv = '.janela.ativa .nav-conteudo:not(.escondida) webview';
+    const estado = () => pagina.evaluate((s) => document.querySelector(s).executeJavaScript('({ gpt: window.gpt, espaco: document.querySelector("ins.adsbygoogle").offsetHeight })'), wv);
+    const exibir = async (opcao) => {
+      await pagina.click(`.janela.ativa .menubar > div:has-text("${T('E&xibir').replace('&', '')}")`);
+      await pagina.waitForTimeout(300);
+      if (!opcao) return;
+      await pagina.click(`.menu .opcao:has-text("${T(opcao).replace('&', '')}")`);
+      await pagina.waitForTimeout(3000);
+    };
+    await fecharTudo();
+    await pagina.evaluate(() => window.__retro.definirConfig({ navegador: { bloquearPropaganda: true, propagandaPermitida: [] } }));
+    await abrir('navegador', { url: `http://127.0.0.1:${servidor.address().port}/`, interno: true });
+    await pagina.waitForTimeout(4000);
+    const ligado = await estado();
+    console.log('ligado:', JSON.stringify(ligado), ligado.gpt === 'bloqueado' && ligado.espaco === 0 ? 'ok' : 'ERRADO');
+    await foto('propaganda-bloqueada');
+    await exibir();
+    await foto('propaganda-menu');
+    await pagina.keyboard.press('Escape');
+    await exibir('Permitir as propagandas neste s&ite');
+    const deFora = await estado();
+    console.log('site de fora:', JSON.stringify(deFora), deFora.gpt !== 'bloqueado' && deFora.espaco > 0 ? 'ok' : 'ERRADO');
+    await foto('propaganda-site-de-fora');
+    await exibir('Permitir as propagandas neste s&ite');
+    const deVolta = await estado();
+    console.log('site de volta:', JSON.stringify(deVolta), deVolta.gpt === 'bloqueado' && deVolta.espaco === 0 ? 'ok' : 'ERRADO');
+    await exibir('Bloquear propa&gandas');
+    const desligado = await estado();
+    console.log('desligado:', JSON.stringify(desligado), desligado.gpt !== 'bloqueado' && desligado.espaco > 0 ? 'ok' : 'ERRADO');
+    await exibir('Bloquear propa&gandas');
+    // A opção no Painel (Central de segurança › Privacidade).
+    await fecharTudo();
+    await abrir('painel', { secao: 'seguranca' });
+    await pagina.waitForTimeout(800);
+    await pagina.locator('.janela.ativa .abas > *', { hasText: T('Privacidade') }).click();
+    await pagina.waitForTimeout(200);
+    await foto('propaganda-painel');
+    await fecharTudo();
     servidor.close();
   },
 

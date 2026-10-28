@@ -203,6 +203,7 @@ Com mais de um usuário, o Retro Computer pergunta quem vai usar ao abrir (dá p
 Painel de controle › **Segurança** mostra o estado de cada proteção, com o botão que leva à configuração dela: a senha da tela de bloqueio, o firewall e as atualizações de segurança automáticas (no Linux) e como a chave do Claude está guardada (cifrada pelo cofre de senhas do sistema; no Linux sem chaveiro, só embaralhada, com o aviso em vermelho). A aba Privacidade tem:
 
 - **Só conexões seguras (HTTPS)** no Navegador (ligada): os endereços `http://` abrem na versão segura; o site que não a tiver mostra um aviso, com a escolha de abri-lo assim mesmo (até fechar o Retro Computer). Os aparelhos da rede de casa (o roteador, a impressora) ficam de fora.
+- **Bloquear propagandas e rastreadores** no Navegador (ligada): os pedidos às redes de anúncios e de rastreamento conhecidas são cancelados, e os espaços vazios dos anúncios somem da página. A página aberta nunca é bloqueada, só o que ela carrega. Se um site não funcionar bem, Exibir › Permitir as propagandas neste site o deixa de fora (e recarrega a página); Exibir › Bloquear propagandas liga e desliga tudo. Os anúncios dentro dos vídeos do YouTube, que vêm do próprio YouTube, podem continuar. Com o Firefox como navegador, vale a proteção contra rastreamento dele.
 - **Apagar os dados de navegação ao fechar** (desligada): os cookies, os dados dos sites e os arquivos temporários do Navegador.
 - **O histórico da área de transferência** (ligado).
 

@@ -69,6 +69,7 @@ const { dentro: dentroDaUnidade } = require('./unidades');
 const { HistoricoTransferencia } = require('./transferencia');
 const { Firewall, FirewallFalso } = require('./firewall');
 const { paraHttps, Subidos } = require('./https');
+const propaganda = require('./propaganda');
 const { Perfis, PRINCIPAL } = require('./perfis');
 const { ehExecutavel } = require('./executaveis');
 const { modoAcentos, gravarCompose } = require('./teclado');
@@ -1159,9 +1160,15 @@ function configurarNavegador() {
     }
   });
   receberDownloads(s);
-  // Só conexões seguras (Painel › Segurança, ligado por padrão): o http:// das páginas vira https://.
-  s.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (d, cb) => {
-    if (d.resourceType !== 'mainFrame' || (config.obter().navegador || {}).soHttps === false) return cb({});
+  // Um ouvinte só para os dois (o Electron guarda um onBeforeRequest por sessão: o segundo troca o primeiro).
+  s.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (d, cb) => {
+    const n = config.obter().navegador || {};
+    // As propagandas e os rastreadores (propaganda.js, ligado por padrão): o pedido é cancelado.
+    let pagina = '';
+    try { pagina = d.webContents ? d.webContents.getURL() : ''; } catch { }
+    if (propaganda.bloquear({ url: d.url, tipo: d.resourceType, pagina }, { ligado: n.bloquearPropaganda !== false, permitidos: n.propagandaPermitida || [] })) return cb({ cancel: true });
+    // Só conexões seguras (Painel › Segurança, ligado por padrão): o http:// das páginas vira https://.
+    if (!d.url.startsWith('http:') || d.resourceType !== 'mainFrame' || n.soHttps === false) return cb({});
     const seguro = paraHttps(d.url, liberadosHttp);
     if (!seguro) return cb({});
     // A versão segura mandou de volta para o http: o site não tem HTTPS de verdade. A carga é
@@ -1199,6 +1206,12 @@ function configurarNavegador() {
     });
     wc.on('will-navigate', (e, url) => { if (!enderecoDaWeb(url)) e.preventDefault(); });
     wc.on('will-redirect', (e, url) => { if (!enderecoDaWeb(url)) e.preventDefault(); });
+    // Os espaços vazios dos anúncios bloqueados somem da página (o CSS de propaganda.js).
+    wc.on('dom-ready', () => {
+      const n = config.obter().navegador || {};
+      if (n.bloquearPropaganda === false || propaganda.permitido(propaganda.siteDe(wc.getURL()), n.propagandaPermitida || [])) return;
+      wc.insertCSS(propaganda.CSS_ESCONDER, { cssOrigin: 'user' }).catch(() => { });
+    });
   });
 }
 
@@ -1765,7 +1778,7 @@ function registrarPonte() {
     await fsp.mkdir(downloads, { recursive: true }).catch(() => { });
     const endereco = typeof url === 'string' && enderecoDaWeb(url) ? url : '';
     const inicio = typeof o.inicio === 'string' && enderecoDaWeb(o.inicio) ? o.inicio : '';
-    return firefox.abrir(endereco, { downloads, soHttps: n.soHttps !== false, limparAoFechar: !!n.limparAoFechar, idioma: idioma.idioma(), inicio, escala: Number(o.escala) || 1, novaJanela: !!o.novaJanela });
+    return firefox.abrir(endereco, { downloads, soHttps: n.soHttps !== false, limparAoFechar: !!n.limparAoFechar, bloquearPropaganda: n.bloquearPropaganda !== false, idioma: idioma.idioma(), inicio, escala: Number(o.escala) || 1, novaJanela: !!o.novaJanela });
   });
   // A cópia de segurança (Painel › Cópia de segurança).
   tratar('copia:escolher', async () => {

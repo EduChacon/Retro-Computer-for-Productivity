@@ -466,6 +466,9 @@ class Navegador {
           { separador: true },
           { rotulo: tr('Vídeo em janela flu&tuante'), atalho: 'Ctrl+Shift+P', desativado: !this.visivel(), acao: () => this.videoFlutuante() },
           { separador: true },
+          { rotulo: tr('Bloquear propa&gandas'), marcado: propagandaBloqueada(), acao: () => this.alternarPropaganda() },
+          { rotulo: tr('Permitir as propagandas neste s&ite'), marcado: propagandaPermitida(this.url), desativado: !propagandaBloqueada() || !siteDe(this.url), acao: () => this.permitirPropaganda() },
+          { separador: true },
           { rotulo: tr('&Parar'), atalho: 'Esc', desativado: !this.carregando, acao: () => this.wv.stop() },
           { rotulo: tr('&Atualizar'), atalho: 'F5', desativado: !this.visivel(), acao: () => this.atualizar() },
           { separador: true },
@@ -1097,6 +1100,22 @@ class Navegador {
     this.ajustarLinks();
   }
 
+  /** Liga ou desliga o bloqueio de propagandas e recarrega a página, para valer nela também. */
+  async alternarPropaganda() {
+    await definirConfig({ navegador: { bloquearPropaganda: !propagandaBloqueada() } });
+    if (this.visivel()) this.atualizar();
+  }
+
+  /** Deixa o site desta aba de fora do bloqueio (ou o põe de volta) e recarrega a página. */
+  async permitirPropaganda() {
+    const site = siteDe(this.url);
+    if (!site) return;
+    const lista = cfg().propagandaPermitida || [];
+    const nova = lista.includes(site) ? lista.filter((s) => s !== site) : [...lista, site];
+    await definirConfig({ navegador: { propagandaPermitida: nova } });
+    if (this.visivel()) this.atualizar();
+  }
+
   /** A barra de status embaixo da janela (escondida por padrão: Exibir › Barra de status). */
   mostrarBarraStatus() {
     const ligada = barraStatusLigada();
@@ -1321,6 +1340,20 @@ class Navegador {
 
 const barraLinksLigada = () => cfg().barraFavoritos !== false;
 const barraStatusLigada = () => cfg().barraStatus === true;
+
+/* ---------- O bloqueio de propagandas (o do processo principal: propaganda.js) ---------- */
+
+const propagandaBloqueada = () => cfg().bloquearPropaganda !== false;
+// O site sem o "www." (a mesma chave do processo principal); vazio fora da web.
+function siteDe(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+    const h = u.hostname.toLowerCase();
+    return h.startsWith('www.') ? h.slice(4) : h;
+  } catch { return ''; }
+}
+const propagandaPermitida = (url) => !!siteDe(url) && (cfg().propagandaPermitida || []).includes(siteDe(url));
 async function alternarBarraStatus() {
   await definirConfig({ navegador: { barraStatus: !barraStatusLigada() } });
   for (const n of abertos) if (!n.j.fechada) n.mostrarBarraStatus();
