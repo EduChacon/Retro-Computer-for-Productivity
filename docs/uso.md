@@ -406,3 +406,24 @@ e) **Enviar arquivos a outro computador da casa** (como o Warpinator do Linux Mi
 f) **As várias telas no Retro Computer como sistema**: com as telas estendidas, a área de trabalho e a barra de tarefas nas duas, como as duas telas na tela cheia do Windows e do Mac (hoje o Retro Computer fica na principal, e a outra é dos programas do Linux).
 
 A pesquisa das distribuições do Linux que deu origem a algumas destas ideias (e aos recursos da 1.0) está em [pesquisa-distribuicoes.md](pesquisa-distribuicoes.md).
+## Aprender a programar
+
+Em **Iniciar › Programas › Acessórios › Laboratório de programação**, escolha C, C++, C#, Python, Rust ou Java. C tem sete lições, com explicações e desafios: mensagens, variáveis, entrada, decisões, repetições, funções, vetores e ponteiros. As outras linguagens têm exemplos editáveis e um desafio inicial.
+
+O botão **Preparar linguagem** procura a ferramenta e mostra o que instalar:
+
+| Linguagem | Ferramenta |
+|---|---|
+| C e C++ | GCC ou Clang: Command Line Tools no Mac (`xcode-select --install`), MSYS2 UCRT64 no Windows, `build-essential` no Debian/Ubuntu/Mint |
+| C# | .NET SDK 6 ou mais novo, de `dotnet.microsoft.com/download` |
+| Python | Python 3, de `python.org`, ou `sudo apt install python3` no Linux |
+| Rust | Rust com rustup, de `rustup.rs`; no Windows, também as ferramentas de C++ pedidas pelo instalador |
+| Java | JDK, como o Eclipse Temurin de `adoptium.net`, com `javac` e `java` no PATH ou `JAVA_HOME` definido |
+
+No Mac M4, escolha as ferramentas **Arm64**. No Windows, para C/C++, instale o MSYS2 na pasta padrão e execute `pacman -S mingw-w64-ucrt-x86_64-gcc` no terminal UCRT64. Depois de instalar uma linguagem e mudar o PATH, feche e abra o Retro Computer.
+
+Escreva o código no editor, preencha **Entrada do programa** com os dados que ele vai ler e pressione **F5**. A saída, os avisos e os erros aparecem embaixo. A entrada é enviada inteira e depois fechada; para uma conversa interativa ou um projeto maior, use o **Prompt de comando** com as mesmas ferramentas. Em Java, a classe pública precisa se chamar `Main`.
+
+**Ctrl+S** guarda um arquivo comum do disco C:. Gravar de novo mantém a versão anterior; abrir um arquivo `.c`, `.cpp`, `.cc`, `.cxx`, `.cs`, `.py`, `.rs` ou `.java` seleciona a linguagem correspondente. Nada depende de uma conta ou de um serviço de compilação na internet. Os compiladores e interpretadores são instalados à parte.
+
+Os exercícios usam a biblioteca padrão, sem dependências externas ou projetos de vários arquivos. Cada execução usa uma pasta temporária nova: os arquivos criados pelo exercício nela são temporários. O código-fonte só fica permanente quando salvo no disco C:. Há um prazo de 30 segundos para compilar, cinco segundos para executar, saída limitada a 64 KiB e o botão **Parar**. Esses limites não são uma sandbox: o programa tem as permissões do usuário no computador. Execute apenas código em que confia.

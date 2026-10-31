@@ -28,6 +28,11 @@ function ouvir(canal) {
 }
 
 contextBridge.exposeInMainWorld('retro', {
+  laboratorio: {
+    detectar: (linguagem) => chamar('laboratorio:detectar', linguagem),
+    executar: (o) => chamar('laboratorio:executar', o),
+    parar: () => chamar('laboratorio:parar'),
+  },
   config: {
     obter: () => chamar('config:obter'),
     definir: (parte) => chamar('config:definir', parte),

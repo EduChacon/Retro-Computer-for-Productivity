@@ -290,7 +290,7 @@ export const guardaRecentes = () => cfgIniciar().recentes !== false;
 /** Os programas que podem ser fixados (no menu Iniciar ou na barra), para a lista do Painel. */
 export function programasFixaveis() {
   const embutidos = ['explorador', 'navegador', 'correio', 'claude', 'bloco', 'calculadora', 'captura', 'diario', 'foco', 'caracteres',
-    'monitor', 'prompt', 'dos', 'mac', 'midia', 'imagens', 'transferencia', 'painel', 'programas', 'paciencia', 'campo-minado', 'breakout', 'damas', 'xadrez'];
+    'monitor', 'laboratorio', 'prompt', 'dos', 'mac', 'midia', 'imagens', 'transferencia', 'painel', 'programas', 'paciencia', 'campo-minado', 'breakout', 'damas', 'xadrez'];
   const chaves = [...embutidos, ...estado.instalados.map((p) => 'craft:' + p.id), ...(estado.config.webapps || []).map((w) => 'webapp:' + w.id), ...noMenu().map((id) => 'nativo:' + id)];
   return chaves.map(programaDe).filter(Boolean).sort((a, b) => a.nome.localeCompare(b.nome, localidade()));
 }
@@ -637,6 +637,7 @@ async function itensProgramas() {
         prog('foco', tr('Foco (Pomodoro)'), 'foco'),
         prog('pdf', tr('Ferramentas de PDF'), 'pdf'),
         prog('leitorpdf', tr('Leitor de PDF'), 'leitor-pdf'),
+        prog('laboratorio', tr('Laboratório de programação'), 'codigo'),
         prog('mac', tr('Mac Plus'), 'mac'),
         prog('caracteres', tr('Mapa de caracteres'), 'caracteres'),
         prog('monitor', tr('Monitor do sistema'), 'monitor'),

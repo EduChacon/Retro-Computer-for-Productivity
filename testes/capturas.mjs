@@ -301,6 +301,46 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
+  async laboratorio() {
+    await fecharTudo();
+    await abrir('laboratorio');
+    await pagina.waitForSelector('.laboratorio .c-editor');
+    const rodar = async () => {
+      await pagina.locator('.c-ferramentas button').nth(3).click();
+      await pagina.waitForFunction(() => !document.querySelector('.c-ferramentas button:nth-child(4)').disabled, null, { timeout: 45000 });
+    };
+    const conferir = async (alvo) => {
+      const texto = await pagina.locator('.c-saida').textContent();
+      if (!texto.includes(alvo)) throw new Error(`Saída incorreta: ${texto}; esperado: ${alvo}`);
+    };
+    // Todas as lições passam pelo compilador instalado, também dentro do .app do Mac.
+    for (const [i, alvo] of ['Ola, mundo!', '13.50', 'Menor de idade', '5', '42', 'Retro Computer: 60', '42'].entries()) {
+      await pagina.locator('.c-licao select').selectOption(String(i));
+      await rodar(); await conferir(alvo);
+    }
+    await foto('laboratorio-c');
+    // Ctrl+S e uma segunda gravação guardam o fonte comum e a versão anterior.
+    await pagina.locator('.c-editor').fill('int main(void) { return 0; }');
+    await pagina.locator('.c-ferramentas button').nth(2).click();
+    await pagina.locator('.janela.dialogo input[type=text]').fill('exercicio.c');
+    await pagina.locator('.janela.dialogo button.padrao').click();
+    await pagina.waitForFunction(() => !document.querySelector('.janela.dialogo'));
+    await pagina.locator('.c-editor').fill('int main(void) { return 7; }');
+    await pagina.locator('.c-ferramentas button').nth(2).click();
+    await pagina.waitForFunction(() => !document.querySelector('.laboratorio .titulo')?.textContent.startsWith('*'));
+    const salvo = await pagina.evaluate(async (p) => ({ texto: await retro.disco.lerTexto(p), versoes: await retro.disco.versoes(p) }), `${DOCS}/exercicio.c`);
+    if (!salvo.texto.includes('return 7') || !salvo.versoes.length) throw new Error('O fonte ou sua versão anterior não foi guardado.');
+    await pagina.locator('.c-linguagem').selectOption('python');
+    await rodar(); await conferir('Retro Computer'); await foto('laboratorio-python');
+    await pagina.locator('.c-linguagem').selectOption('cpp');
+    await rodar(); await conferir('Retro Computer');
+    await pagina.locator('.c-editor').fill('int main() { for (;;) {} }');
+    await pagina.locator('.c-ferramentas button').nth(3).click();
+    await pagina.locator('.c-ferramentas button').nth(4).click();
+    await pagina.waitForFunction(() => !document.querySelector('.c-ferramentas button:nth-child(4)').disabled);
+    if (!(await pagina.locator('.laboratorio .statusbar').textContent()).includes(T('Programa interrompido.'))) throw new Error('Parar não interrompeu.');
+    await foto('laboratorio-parar');
+  },
   // Os vários usuários: o Painel › Usuários, o logoff, a tela de entrada, a área de trabalho de outro
   // usuário (com o disco C: dele) e a senha dele na tela de entrada.
   async perfis() {
@@ -5974,6 +6014,7 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
 try {
   await ROTEIROS[ROTEIRO]();
 } catch (e) {
+  process.exitCode = 1;
   console.error('ERRO NO ROTEIRO:', e);
   await foto('erro').catch(() => {});
 } finally {

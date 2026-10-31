@@ -32,6 +32,8 @@ src/principal/         o processo principal (Node)
   craft-windows.js     os Craft instalados no Windows (o .msi oficial, fora do Retro Computer): reconhecer pelo registro,
                        comparar com o lançamento, baixar o .msi conferido e rodá-lo com a confirmação do Windows
   terminal.js          o Prompt de comando (node-pty) e achar o "claude"
+  laboratorio.js       as seis linguagens (C, C++, C#, Python, Rust e Java): detectar a ferramenta, compilar e executar
+                       uma cópia temporária sem shell, com entrada, saída limitada, prazo e cancelamento
   config.js            as configurações (config.json) e a chave cifrada
   idioma.js            tr() do processo principal, os nomes das pastas em cada idioma
   servir.js            sistema://retro/disco/ (em trechos, para o vídeo) e /miniatura/ (cache)
@@ -290,3 +292,7 @@ Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do proc
 - Usar o Retro Computer como o sistema de um notebook antigo (com mouse e teclado sem fio, teclado em EUA internacional): o que funciona no Windows de hoje deve ter um equivalente aqui.
 - Foco no trabalho: poucas distrações, tudo à mão.
 - Nada perdido e arquivos sempre acessíveis fora do programa.
+
+## Laboratório de programação
+
+`src/sistema/js/apps/laboratorio.js` abre os fontes de C, C++, C#, Python, Rust e Java. Os exemplos ficam em `linguagens.js`, e as sete lições de C em `licoes-c.js`. O processo principal só aceita as linguagens de `LINGUAGENS` (`src/principal/laboratorio.js`), nunca caminhos ou opções de compilador vindos da tela. Cada execução usa uma pasta temporária e um ambiente sem as chaves do Claude, com limite de entrada, saída, tempo e cancelamento. Isso não é uma sandbox: a interface avisa que o programa roda com as permissões do usuário. O C# usa só as bibliotecas do SDK e o NuGet.Config temporário sem fontes externas. O roteiro `laboratorio` de `testes/capturas.mjs` confere as sete lições, Python, C++, salvar com versão anterior e Parar; o Mac o roda também no .app empacotado, depois de conferir a assinatura ad hoc. Os testes das linguagens estão em `testes/laboratorio.test.js`.

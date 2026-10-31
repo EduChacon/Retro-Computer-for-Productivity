@@ -150,6 +150,8 @@ const TIPOS = {
   zip: ['compactado', marcar('Pasta compactada')], rar: ['compactado', marcar('Arquivo compactado')], '7z': ['compactado', marcar('Arquivo compactado')], gz: ['compactado', marcar('Arquivo compactado')],
   tar: ['compactado', marcar('Arquivo compactado')], tgz: ['compactado', marcar('Arquivo compactado')], xz: ['compactado', marcar('Arquivo compactado')], bz2: ['compactado', marcar('Arquivo compactado')],
   htm: ['html', marcar('Página da internet')], html: ['html', marcar('Página da internet')], url: ['html', marcar('Atalho da internet')],
+  cpp: ['codigo', marcar('Código C++')], cc: ['codigo', marcar('Código C++')], cxx: ['codigo', marcar('Código C++')], cs: ['codigo', marcar('Código C#')], rs: ['codigo', marcar('Código Rust')], java: ['codigo', marcar('Código Java')],
+  c: ['codigo', marcar('Código C')], h: ['codigo', marcar('Cabeçalho C')],
   js: ['codigo', marcar('Código JavaScript')], ts: ['codigo', marcar('Código TypeScript')], json: ['json', marcar('Dados JSON')], py: ['python', marcar('Código Python')],
   sh: ['shell', marcar('Roteiro do shell')], bat: ['shell', marcar('Arquivo de lote')], ps1: ['shell', marcar('Roteiro do PowerShell')],
   ttf: ['fonte', marcar('Fonte TrueType')], otf: ['fonte', marcar('Fonte OpenType')], woff2: ['fonte', marcar('Fonte da web')],
@@ -167,7 +169,7 @@ export function tipoDe(nome, pasta) {
   return { icone: 'arquivo', descricao: ext ? tr('Arquivo {ext}', { ext: ext.toUpperCase() }) : tr('Arquivo'), ext };
 }
 
-export const ehTexto = (nome) => ['txt', 'log', 'ini', 'md', 'markdown', 'csv', 'tsv', 'json', 'js', 'ts', 'py', 'sh', 'bat', 'ps1', 'css', 'xml', 'yml', 'yaml', 'toml', 'html', 'htm', 'url'].includes(extensao(nome));
+export const ehTexto = (nome) => ['cpp', 'cc', 'cxx', 'cs', 'rs', 'java', 'c', 'h', 'txt', 'log', 'ini', 'md', 'markdown', 'csv', 'tsv', 'json', 'js', 'ts', 'py', 'sh', 'bat', 'ps1', 'css', 'xml', 'yml', 'yaml', 'toml', 'html', 'htm', 'url'].includes(extensao(nome));
 
 /**
  * Ícone: icone('pasta', 16) → "icones/16/pasta.png" (no tema Mac, "icones-mac/16/pasta.png", se ele o

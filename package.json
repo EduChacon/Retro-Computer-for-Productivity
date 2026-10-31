@@ -1,7 +1,7 @@
 {
   "name": "retro-computer",
   "productName": "Retro Computer",
-  "version": "2.0.8",
+  "version": "2.1.0",
   "description": "A retro computer for productivity: a 1990s-style desktop with the Craft apps, your files in an ordinary folder and Claude Code in the Command Prompt. In English, Portuguese and Spanish.",
   "main": "src/principal/main.js",
   "license": "MIT",
@@ -91,13 +91,7 @@
     },
     "mac": {
       "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "dmg"
       ],
       "category": "public.app-category.productivity",
       "icon": "recursos/icone.png",
@@ -112,7 +106,10 @@
             ]
           }
         ]
-      }
+      },
+      "identity": "-",
+      "entitlements": "recursos/entitlements.mac.plist",
+      "entitlementsInherit": "recursos/entitlements.mac.plist"
     },
     "linux": {
       "target": [
