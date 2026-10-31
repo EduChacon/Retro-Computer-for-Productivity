@@ -19,7 +19,18 @@ jobs:
       fail-fast: false
       matrix:
         # ubuntu-24.04-arm: os pacotes do Linux para ARM64 (Raspberry Pi 3, 4 e 5, com o sistema de 64 bits).
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            argumentos: --linux --x64
+          - os: ubuntu-24.04-arm
+            argumentos: --linux --arm64
+          - os: windows-latest
+            argumentos: --win --x64
+          # Cada Mac compila e abre sua própria arquitetura, inclusive o node-pty.
+          - os: macos-latest
+            argumentos: --mac --arm64
+          - os: macos-15-intel
+            argumentos: --mac --x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -38,12 +49,18 @@ jobs:
       - name: Testes (disco, idiomas e atualizações)
         run: npm test
 
+      - name: Conferir as seis linguagens do laboratório
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          node -e 'const { LaboratorioProgramacao, LINGUAGENS } = require("./src/principal/laboratorio"); (async () => { for (const l of Object.keys(LINGUAGENS)) { if (!await new LaboratorioProgramacao().detectar(l)) throw new Error("Ferramenta ausente: " + l); } })().catch(e => { console.error(e); process.exitCode = 1; });'
+
       - name: Teste da área de trabalho (com capturas)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update && sudo apt-get install -y xvfb
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas geral
           RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en geral
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas laboratorio
 
       - name: Guardar as capturas
         if: matrix.os == 'ubuntu-latest' && always()
@@ -68,10 +85,28 @@ jobs:
           if-no-files-found: ignore
 
       - name: Gerar os instaladores
-        run: npx electron-builder --publish never
+        run: npx electron-builder ${{ matrix.argumentos }} --publish never
         env:
-          # Sem certificado da Apple ou da Microsoft: os instaladores saem sem assinatura.
+          # Sem certificados: no Mac, apenas assinatura ad hoc (mac.identity), sem notarização.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          # A assinatura ad hoc não usa credenciais e deve ser conferida também nas PRs.
+          CSC_FOR_PULL_REQUEST: "true"
+
+      - name: Conferir e abrir o aplicativo do Mac empacotado
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          if [ "$RUNNER_ARCH" = "ARM64" ]; then pasta="dist/mac-arm64"; else pasta="dist/mac"; fi
+          codesign --verify --deep --strict --verbose=2 "$pasta/Retro Computer.app"
+          RETRO_EXECUTAVEL="$PWD/$pasta/Retro Computer.app/Contents/MacOS/Retro Computer" node testes/capturas.mjs capturas-mac laboratorio
+
+      - name: Guardar a captura do aplicativo do Mac
+        if: runner.os == 'macOS' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-mac-${{ runner.arch }}
+          path: capturas-mac/**
+          if-no-files-found: ignore
 
       - name: Guardar os instaladores
         uses: actions/upload-artifact@v4

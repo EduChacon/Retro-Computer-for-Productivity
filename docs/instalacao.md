@@ -37,6 +37,26 @@ O item "Linux" do Explorador do Windows é o WSL (o Subsistema do Windows para L
 
 A tecla Command funciona como a tecla do logotipo do Windows nos atalhos do Retro Computer que não são do próprio macOS.
 
+### Mac mini M4 e outros Mac com Apple Silicon
+
+Use o arquivo **`mac-arm64.dmg`**; `mac-x64.dmg` é para Intel. Abra o DMG e arraste **Retro Computer** para **Aplicativos** antes de executar. Ejete o DMG e abra a cópia de Aplicativos.
+
+O pacote usa assinatura **ad hoc**, que confere a integridade local e permite carregar os componentes do Electron em Apple Silicon. Ela não identifica um desenvolvedor certificado nem substitui a notarização: na primeira abertura, pode ser necessário **Ajustes do Sistema › Privacidade e Segurança › Abrir Mesmo Assim**. Não é necessário desligar o Gatekeeper.
+
+Se o aplicativo continuar sem abrir, anote a mensagem exata. Se disser que está danificado, baixe novamente o pacote da página oficial. Para conferir a integridade da cópia instalada, execute no Terminal:
+
+```sh
+codesign --verify --deep --strict --verbose=2 "/Applications/Retro Computer.app"
+```
+
+Se a conferência passar e ainda assim a janela não aparecer, execute o programa pelo Terminal para ver a falha:
+
+```sh
+"/Applications/Retro Computer.app/Contents/MacOS/Retro Computer"
+```
+
+Os pacotes Intel e Apple Silicon são gerados em máquinas da própria arquitetura. O fluxo Compilar confere a assinatura e abre o aplicativo empacotado, salva e executa exercícios no laboratório. Esse teste não reproduz o Gatekeeper de um arquivo recém-baixado: a confirmação de primeira abertura continua valendo enquanto não houver notarização.
+
 ## 3. O MacBook Air de 2014 (e outros Mac antigos)
 
 O MacBook Air de 2014 recebe, no máximo, o macOS 11 Big Sur, e o Electron (a base do Retro Computer) pede o macOS 12 desde a versão 38. Mas o computador ainda tem fôlego: com o Linux, ele roda o Retro Computer como o sistema inteiro, bem mais leve que o macOS.

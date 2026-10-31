@@ -51,6 +51,7 @@ registrarPreguicoso({ prompt: { nome: 'Prompt de comando', icone: 'prompt' }, cl
 registrarPreguicoso({ painel: { nome: 'Painel de controle', icone: 'painel' } }, () => import('./apps/painel.js'));
 registrarPreguicoso({ foco: { nome: 'Foco', icone: 'foco' } }, () => import('./apps/foco.js'));
 registrarPreguicoso({ ajuda: { nome: 'Ajuda', icone: 'ajuda' } }, () => import('./apps/ajuda.js'));
+registrarPreguicoso({ 'laboratorio': { nome: 'Laboratório de programação', icone: 'codigo', tipos: ['c', 'cpp', 'cc', 'cxx', 'cs', 'py', 'rs', 'java'] } }, () => import('./apps/laboratorio.js'));
 registrarPreguicoso({ calculadora: { nome: 'Calculadora', icone: 'calculadora' } }, () => import('./apps/calculadora.js'));
 registrarPreguicoso({ antivirus: { nome: 'Antivírus', icone: 'seguranca' } }, () => import('./apps/antivirus.js'));
 registrarPreguicoso({ caracteres: { nome: 'Mapa de caracteres', icone: 'caracteres' } }, () => import('./apps/caracteres.js'));

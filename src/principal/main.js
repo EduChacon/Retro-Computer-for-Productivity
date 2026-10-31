@@ -15,6 +15,8 @@ const { spawn, execFile, execFileSync } = require('node:child_process');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 
+const { LaboratorioProgramacao } = require('./laboratorio');
+const laboratorio = new LaboratorioProgramacao();
 const { Disco, nomeValido } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
@@ -1898,6 +1900,9 @@ function registrarPonte() {
   tratar('craftWindows:atualizar', (id) => craftWindows.atualizar(String(id), (p) => enviar('craftWindows:progresso', String(id), p)));
 
   // Terminal
+  tratar('laboratorio:detectar', (linguagem) => laboratorio.detectar(linguagem));
+  tratar('laboratorio:executar', (o) => laboratorio.executar(o));
+  tratar('laboratorio:parar', () => laboratorio.parar());
   tratar('terminal:disponivel', () => terminais.disponivel());
   tratar('terminal:criar', (o) => {
     const env = {};
@@ -2918,6 +2923,10 @@ app.whenReady().then(async () => {
     });
     cantosLinux.iniciar();
   }
+}).catch((e) => {
+  // Uma falha antes da primeira janela não pode deixar só o ícone no Dock.
+  dialog.showErrorBox('Retro Computer', tr('Não foi possível iniciar o Retro Computer: {erro}', { erro: e.message }));
+  app.exit(1);
 });
 
 // "Apagar os dados de navegação ao fechar" (Painel › Segurança): antes de sair, com um prazo.
@@ -2929,7 +2938,10 @@ app.on('will-quit', (e) => {
   Promise.race([limparNavegador(), new Promise((ok) => setTimeout(ok, 4000))]).catch(() => { }).finally(() => app.quit());
 });
 
+app.on('before-quit', () => laboratorio.parar());
+
 app.on('window-all-closed', () => {
+  laboratorio.parar();
   pararObservar();
   if (dosNativo) dosNativo.encerrar();
   if (nuvens) nuvens.encerrar();

@@ -2045,3 +2045,15 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 .nv-lista .ag-item { align-items: center; }
 .nv-opcao { display: flex; align-items: center; gap: 4px; }
 .nv-login { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+/* O Laboratório de C acompanha as cores e os dois temas da área de trabalho. */
+.laboratorio .corpo { display: flex; flex-direction: column; overflow: hidden; }
+.c-ferramentas { display: flex; flex-wrap: wrap; gap: 4px; padding: 5px; }
+.c-licoes { padding: 0 6px; }
+.c-guia { margin: 5px 0; line-height: 1.4; }
+.c-editor, .c-entrada, .c-saida { font-family: 'Csilla', monospace; font-size: 12px; line-height: 1.4; tab-size: 4; background: var(--janela); color: var(--texto); }
+.c-editor { display: block; flex: 1; min-height: 100px; resize: none; margin: 0 6px; white-space: pre; }
+.c-resultados { display: grid; grid-template-columns: 28% 1fr; gap: 6px; padding: 6px; height: 132px; min-height: 85px; }
+.c-resultados > * { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 3px; }
+.c-entrada, .c-saida { flex: 1; min-height: 0; min-width: 0; width: 100%; resize: none; margin: 0; overflow: auto; }
+.c-saida { border: 1px solid var(--texto-meio); padding: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.c-nota { margin: 0 6px 5px; color: var(--texto-meio); }
