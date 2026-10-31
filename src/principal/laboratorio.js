@@ -23,7 +23,7 @@ function candidatos(plataforma = process.platform, env = process.env) {
 // Os segredos do Electron e do Claude não são herdados pelos exercícios.
 function ambiente(env = process.env, compilador = '') {
   const r = {};
-  const permitidas = new Set(['path', 'systemroot', 'windir', 'comspec', 'pathext', 'temp', 'tmp', 'tmpdir', 'home', 'userprofile', 'lang', 'lc_all', 'sdkroot', 'developer_dir']);
+  const permitidas = new Set(['path', 'systemroot', 'windir', 'comspec', 'pathext', 'temp', 'tmp', 'tmpdir', 'home', 'userprofile', 'homedrive', 'homepath', 'programfiles', 'programfiles(x86)', 'programw6432', 'programdata', 'appdata', 'localappdata', 'lang', 'lc_all', 'sdkroot', 'developer_dir']);
   for (const [k, v] of Object.entries(env)) if (permitidas.has(k.toLowerCase())) r[k] = v;
   const chave = Object.keys(r).find((k) => k.toLowerCase() === 'path') || 'PATH';
   if (path.isAbsolute(compilador)) r[chave] = path.dirname(compilador) + path.delimiter + (r[chave] || '');
@@ -81,7 +81,7 @@ class LaboratorioProgramacao {
         if (!existe) continue;
       }
       const versao = await new Promise((r) => execFile(arquivo, [linguagem === 'java' ? '-version' : '--version'], { timeout: 3000, maxBuffer: 8192, windowsHide: true, env: ambiente() }, (e, s, err) => r(e ? null : (s || err).split(/\r?\n/)[0])));
-      if (versao) return { arquivo, versao };
+      if (versao && (linguagem !== 'python' || /^Python 3\./.test(versao))) return { arquivo, versao };
     }
     return null;
   }

@@ -12,7 +12,7 @@ async function laboratorio(t, opcoes) {
 test('compila C11, recebe stdin e devolve stdout e o código de saída', async (t) => {
   const c = await laboratorio(t); if (!c) return;
   const r = await c.executar({ codigo: '#include <stdio.h>\nint main(void) { int n; if (scanf("%d", &n) != 1) return 2; printf("%d\\n", n*2); return 0; }', entrada: '21\n' });
-  assert.equal(r.etapa, 'executar'); assert.equal(r.codigo, 0); assert.equal(r.saida, '42\n');
+  assert.equal(r.etapa, 'executar'); assert.equal(r.codigo, 0); assert.equal(r.saida.replace(/\r\n/g, '\n'), '42\n');
   assert.equal(c.ativo, null);
 });
 
@@ -53,6 +53,8 @@ test('recusa entradas inválidas e informa a falta do compilador', async () => {
 test('o ambiente não herda chaves e encontra o MSYS2 fora do PATH', () => {
   const env = ambiente({ PATH: '/usr/bin', ANTHROPIC_API_KEY: 'nao-herdar', RETRO_PEDIDO: 'nao-herdar', OPENAI_API_KEY: 'nao-herdar' });
   assert.deepEqual(env, { PATH: '/usr/bin' });
+  // O NuGet do .NET usa as pastas comuns do Windows mesmo sem fontes de pacotes externas.
+  assert.deepEqual(ambiente({ ProgramFiles: 'C:\\Program Files', ProgramData: 'C:\\ProgramData', APPDATA: 'C:\\Usuario\\AppData', ANTHROPIC_API_KEY: 'segredo' }), { ProgramFiles: 'C:\\Program Files', ProgramData: 'C:\\ProgramData', APPDATA: 'C:\\Usuario\\AppData' });
   assert.ok(candidatos('darwin').includes('/usr/bin/clang'));
   assert.ok(candidatos('win32', {}).includes('C:\\msys64\\ucrt64\\bin\\gcc.exe'));
 });
