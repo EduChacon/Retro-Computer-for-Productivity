@@ -1,5 +1,5 @@
 # Entrada real somente na janela WinForms criada pelo teste, em coordenadas lidas do seu relatorio.
-param([string]$Relatorio, [switch]$Mover)
+param([string]$Relatorio, [switch]$Mover, [string]$Texto = 'OK_RETRO')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @'
@@ -21,4 +21,4 @@ if ($Mover) {
 [RetroEntradaTeste]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
 [System.Threading.Thread]::Sleep(100)
 [System.Windows.Forms.SendKeys]::SendWait('^a')
-[System.Windows.Forms.SendKeys]::SendWait('OK_RETRO')
+[System.Windows.Forms.SendKeys]::SendWait($Texto)

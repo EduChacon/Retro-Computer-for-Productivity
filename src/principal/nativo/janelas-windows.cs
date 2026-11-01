@@ -107,9 +107,10 @@ public static class RetroJanelas {
   public static bool Aberta(string id) { bool aberta=false; UI(()=> { Item i; aberta=itens.TryGetValue(id,out i) && Valido(i); }); return aberta; }
   public static void Focar(string id) { UI(()=> {
     var i=Obter(id); uint p; uint atual=GetCurrentThreadId(), destino=GetWindowThreadProcessId(i.H,out p), frente=GetWindowThreadProcessId(GetForegroundWindow(),out p);
-    bool a=destino!=atual && AttachThreadInput(atual,destino,true), b=frente!=atual && frente!=destino && AttachThreadInput(atual,frente,true);
+    // SetParent já liga as filas do hospedeiro e do programa; não desfazer essa ligação implícita.
+    bool b=frente!=atual && frente!=destino && AttachThreadInput(atual,frente,true);
     try { if(i.Host!=null) { i.Visivel=true; i.Host.Show(); SetForegroundWindow(i.Host.Handle); } else { ShowWindow(i.H,9); SetForegroundWindow(i.H); } SetFocus(i.H); }
-    finally { if(b) AttachThreadInput(atual,frente,false); if(a) AttachThreadInput(atual,destino,false); }
+    finally { if(b) AttachThreadInput(atual,frente,false); }
   }); }
   public static void Esconder(string id) { UI(()=> { var i=Obter(id); i.Visivel=false; if(i.Host!=null) i.Host.Hide(); }); }
   public static void Ocultar() { UI(()=> { foreach(var i in itens.Values) { i.Visivel=false; if(i.Host!=null) i.Host.Hide(); } }); }

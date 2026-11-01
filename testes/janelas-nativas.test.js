@@ -22,6 +22,8 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   });
   const ler = () => JSON.parse(fs.readFileSync(dadosFilho, 'utf8'));
   const inicial = await esperar(ler), p = await esperar(() => JSON.parse(fs.readFileSync(dadosPai, 'utf8')));
+  execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosFilho, '-Texto', 'ANTES_RETRO'], { windowsHide: true });
+  await esperar(() => ler().texto === 'ANTES_RETRO', ler);
   ponte = new PonteNativa({ pai: () => p.hwnd, processoPai: pai.pid });
   assert.equal((await ponte.pedir('estado')).permitido, true);
   const lista = await ponte.pedir('listar', { arquivo: exe }); assert.equal(lista.length, 1); id = lista[0].id;
