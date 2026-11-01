@@ -15,6 +15,7 @@ public class JanelaDeTeste {
     SetProcessDpiAwarenessContext(new IntPtr(-4));
     var form=new Form { Text="Programa de teste do Retro",Left=90,Top=90,Width=640,Height=420,StartPosition=FormStartPosition.Manual };
     if(args.Length>1) form.Location=new System.Drawing.Point(300,230);
+    if(args.Length>1 && args[1]=="tela-cheia") { form.FormBorderStyle=FormBorderStyle.None; form.Bounds=Screen.PrimaryScreen.Bounds; }
     var campo=new TextBox { Left=20,Top=25,Width=400,Text="Documento preservado" };
     form.Controls.Add(campo); int tentativas=0;
     form.FormClosing+=(s,e)=> { if(e.CloseReason==CloseReason.UserClosing) { tentativas++; e.Cancel=true; } };

@@ -49,7 +49,7 @@ public static partial class RetroJanelas {
   }
   public class Janela { public string id; public string titulo; }
   class Hospedeira:Form { protected override bool ShowWithoutActivation { get { return true; } } }
-  class Item { public string Id; public IntPtr H,Parent,Style,Ex; public uint Pid; public long Inicio; public PLACEMENT Lugar; public Hospedeira Host; public bool Visivel,Cheia; public double X,Y,W,Hh,Vw,Vh; }
+  class Item { public string Id; public IntPtr H,Parent,Style,Ex; public uint Pid; public long Inicio; public PLACEMENT Lugar; public Hospedeira Host; public bool Visivel,Cheia; public Rectangle Recorte; public double X,Y,W,Hh,Vw,Vh; }
   static Dictionary<string,Item> itens = new Dictionary<string,Item>();
   static readonly HashSet<string> classesDoSistema=new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Progman","WorkerW","Shell_TrayWnd","Shell_SecondaryTrayWnd","#32769" };
   static Control fila; static Thread thread; static IntPtr pai; static int processoPai; static System.Windows.Forms.Timer timer; static bool encerrando;
@@ -115,7 +115,7 @@ public static partial class RetroJanelas {
     if(i.Cheia==cheia) return;
     // O hospedeiro representa o conteúdo do Retro em tela cheia. Não escondemos a barra globalmente,
     // nem tornamos o hospedeiro uma janela possuída: destruir o Retro deve preservar o aplicativo.
-    try { if(barra!=null) barra.MarkFullscreenWindow(i.Host.Handle,cheia); i.Cheia=cheia; } catch { }
+    try { if(barra!=null) { barra.MarkFullscreenWindow(i.Host.Handle,cheia); i.Cheia=cheia; } } catch { }
   }
   public static void Posicionar(string id,double x,double y,double w,double h,double vw,double vh,bool visivel) { UI(()=> {
     var i=Obter(id); if(i.Host==null || vw<=0 || vh<=0) throw new Exception("sessao");
@@ -126,12 +126,19 @@ public static partial class RetroJanelas {
     if(i.Host==null || !i.Visivel || i.Vw<=0 || i.Vh<=0) return;
     RECT r; GetClientRect(pai,out r); var p=new POINT(); ClientToScreen(pai,ref p);
     double sx=(r.R-r.L)/i.Vw, sy=(r.B-r.T)/i.Vh;
-    int x=p.X+(int)Math.Round(i.X*sx), y=p.Y+(int)Math.Round(i.Y*sy), w=Math.Max(1,(int)Math.Round(i.W*sx)), h=Math.Max(1,(int)Math.Round(i.Hh*sy));
+    int x=(int)Math.Round(i.X*sx), y=(int)Math.Round(i.Y*sy), w=Math.Max(1,(int)Math.Round(i.W*sx)), h=Math.Max(1,(int)Math.Round(i.Hh*sy));
     bool topo=(GetLong(pai,-20).ToInt64() & 8)!=0; if(i.Host.TopMost!=topo) i.Host.TopMost=topo;
+    // O shell também verifica o tamanho da janela ativa. O HWND acompanha o Retro inteiro,
+    // mas a região só deixa aparecer e receber cliques na área do aplicativo.
+    var recorte=new Rectangle(x,y,w,h);
+    if(i.Host.Region==null || i.Recorte!=recorte) {
+      var anterior=i.Host.Region; i.Host.Region=new Region(recorte); i.Recorte=recorte;
+      if(anterior!=null) anterior.Dispose();
+    }
     RECT antes; GetWindowRect(i.Host.Handle,out antes);
-    if(antes.L!=x || antes.T!=y || antes.R-antes.L!=w || antes.B-antes.T!=h) SetWindowPos(i.Host.Handle,IntPtr.Zero,x,y,w,h,0x0014);
+    if(antes.L!=p.X || antes.T!=p.Y || antes.R-antes.L!=r.R-r.L || antes.B-antes.T!=r.B-r.T) SetWindowPos(i.Host.Handle,IntPtr.Zero,p.X,p.Y,r.R-r.L,r.B-r.T,0x0014);
     GetWindowRect(i.H,out antes);
-    if(antes.L!=x || antes.T!=y || antes.R-antes.L!=w || antes.B-antes.T!=h) SetWindowPos(i.H,IntPtr.Zero,0,0,w,h,0x0034);
+    if(antes.L!=p.X+x || antes.T!=p.Y+y || antes.R-antes.L!=w || antes.B-antes.T!=h) SetWindowPos(i.H,IntPtr.Zero,x,y,w,h,0x0034);
   }
   static void Visibilidade(Item i) {
     if(i.Host==null) return; var f=GetForegroundWindow(); uint pid; GetWindowThreadProcessId(f,out pid);

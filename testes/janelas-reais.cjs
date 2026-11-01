@@ -19,7 +19,7 @@ for (const programa of ['notepad', 'chrome']) for (const lancador of [false, tru
     const executar = (script, args) => execFileSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, ...args], { windowsHide: true, encoding: 'utf8' });
     const compilar = path.join(tmp, 'compilar.ps1'); fs.writeFileSync(compilar, "param($Fonte,$Saida)\n$ErrorActionPreference='Stop'\nAdd-Type -Path $Fonte -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $Saida -OutputType WindowsApplication\n");
     const exePai = path.join(tmp, 'Hospedeiro.exe'); executar(compilar, [path.join(__dirname, 'janela-windows-falsa.cs'), exePai]);
-    const dadosPai = path.join(tmp, 'pai.json'), pai = spawn(exePai, [dadosPai, 'pai']);
+    const dadosPai = path.join(tmp, 'pai.json'), pai = spawn(exePai, [dadosPai, programa === 'chrome' ? 'tela-cheia' : 'pai']);
     let ponte, j, sessao;
     t.after(async () => {
       if (j && sessao) { await j.acao(sessao.id, 'fechar').catch(() => {}); await j.soltar(sessao.id).catch(() => {}); }
@@ -58,6 +58,11 @@ for (const programa of ['notepad', 'chrome']) for (const lancador of [false, tru
     await j.associar(sessao.id, escolhida.id, g); await j.acao(sessao.id, 'focar');
     assert.equal((await j.estado(sessao.id)).embutida, true);
     await new Promise((r) => setTimeout(r, 800));
+    if (programa === 'chrome') {
+      const conferir = path.join(tmp, 'conferir.json');
+      fs.writeFileSync(conferir, JSON.stringify({ pai: p.hwnd, ...g, barra: { x: 312, y: 373 } }));
+      t.diagnostic(executar(path.join(__dirname, 'conferir-integracao.ps1'), [conferir]).trim());
+    }
     const pasta = path.resolve(process.env.RETRO_CAPTURAS_JANELAS || 'capturas-janelas-reais'); fs.mkdirSync(pasta, { recursive: true });
     const captura = path.join(tmp, 'captura.json');
     fs.writeFileSync(captura, JSON.stringify(await aguardar(() => JSON.parse(fs.readFileSync(dadosPai, 'utf8')))));
