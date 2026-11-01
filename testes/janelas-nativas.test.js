@@ -13,7 +13,7 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   fs.writeFileSync(compilar, "param($Fonte,$Saida)\n$ErrorActionPreference='Stop'\nAdd-Type -Path $Fonte -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $Saida -OutputType WindowsApplication\n");
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', compilar, path.join(__dirname, 'janela-windows-falsa.cs'), exe], { windowsHide: true });
   const dadosPai = path.join(tmp, 'pai.json'), dadosFilho = path.join(tmp, 'filho.json');
-  const pai = spawn(exe, [dadosPai]), filho = spawn(exe, [dadosFilho]);
+  const pai = spawn(exe, [dadosPai, 'pai']), filho = spawn(exe, [dadosFilho]);
   let ponte, id;
   t.after(async () => {
     if (ponte?.filho && id && pai.exitCode === null) await ponte.pedir('soltar', { janela: id }).catch(() => {}); ponte?.encerrar();
@@ -22,6 +22,8 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   });
   const ler = () => JSON.parse(fs.readFileSync(dadosFilho, 'utf8'));
   const inicial = await esperar(ler), p = await esperar(() => JSON.parse(fs.readFileSync(dadosPai, 'utf8')));
+  execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosFilho, '-Texto', 'ANTES_RETRO'], { windowsHide: true });
+  await esperar(() => ler().texto.includes('ANTES_RETRO'), ler);
   ponte = new PonteNativa({ pai: () => p.hwnd, processoPai: pai.pid });
   assert.equal((await ponte.pedir('estado')).permitido, true);
   const lista = await ponte.pedir('listar', { arquivo: exe }); assert.equal(lista.length, 1); id = lista[0].id;
@@ -31,16 +33,20 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   await esperar(() => ler().w > 450);
   await ponte.pedir('focar', { janela: id });
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosFilho], { windowsHide: true });
-  await esperar(() => ler().texto === 'OK_RETRO', ler);
+  await esperar(() => ler().texto.includes('OK_RETRO'), ler);
+  const documento = ler().texto;
+  assert.equal(documento.replace('ANTES_RETRO', '').replace('OK_RETRO', ''), inicial.texto);
   const antes = ler();
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosPai, '-Mover'], { windowsHide: true });
   await esperar(() => Math.abs(ler().sx - antes.sx - 100) <= 2 && Math.abs(ler().sy - antes.sy - 60) <= 2);
-  await ponte.pedir('fechar', { janela: id }); await esperar(() => ler().fechamentos === 1); assert.equal((await ponte.pedir('consultar', { janela: id })).aberta, true);
+  await ponte.pedir('fechar', { janela: id }); await esperar(() => ler().fechamentos === 1, ler); assert.equal((await ponte.pedir('consultar', { janela: id })).aberta, true);
   await ponte.pedir('soltar', { janela: id }); await esperar(() => ler().parent === 0);
   assert.equal(ler().style, inicial.style); assert.equal(ler().w, inicial.w); assert.equal(ler().h, inicial.h);
+  assert.equal(ler().texto, documento);
   const lista2 = await ponte.pedir('listar', { arquivo: exe }); id = lista2[0].id;
   await ponte.pedir('associar', { ...g, janela: id }); await esperar(() => ler().parent !== 0);
   pai.kill(); await esperar(() => ler().parent === 0); assert.equal(filho.exitCode, null);
+  assert.equal(ler().texto, documento);
 });
 test('Mac real: auxiliar assinado informa a permissão sem abrir uma solicitação automática', { skip: process.platform !== 'darwin', timeout: 15000 }, async (t) => {
   const ponte = new PonteNativa({ plataforma: 'darwin', empacotado: false }); t.after(() => ponte.encerrar());

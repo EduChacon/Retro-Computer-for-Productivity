@@ -75,7 +75,7 @@ class Integracao {
     this.j.el.dataset.associada = 'true';
     this.barra.replaceChildren(this.botao(tr('Focar programa'), () => retro.integracao.acao(s.id, 'focar')),
       this.botao(tr('Minimizar programa'), async () => { if (this.modo === 'embutida') this.j.minimizar(); else await retro.integracao.acao(s.id, 'minimizar'); }),
-      this.botao(tr('Fechar programa…'), () => retro.integracao.acao(s.id, 'fechar')),
+      this.botao(tr('Fechar programa…'), async () => { await retro.integracao.acao(s.id, 'fechar'); if (s.modo === 'embutida') await this.j.fechar(); }),
       this.botao(tr('Sair da integração'), () => this.j.fechar()));
     if (s.modo === 'acompanhada') {
       this.barra.append(this.botao(tr('Organizar lado a lado'), () => retro.integracao.acao(s.id, 'organizar')));
