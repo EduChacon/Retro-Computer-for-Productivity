@@ -2,6 +2,11 @@
 
 O Retro Computer é de código aberto (licença MIT, veja [LICENSE](LICENSE)). Ele usa os recursos de terceiros abaixo, cada um com a sua licença.
 
+## Mascotes do assistente (desenhos próprios)
+
+Os oito personagens, as folhas de oito poses em `src/sistema/mascotes/` e o ícone do Assistente são desenhos originais criados para este projeto com auxílio de geração de imagens, a partir dos conceitos escolhidos pelo autor. Não usam personagens, logotipos, fontes ou recursos da Microsoft ou da Apple. As animações são montadas pelo código do Retro Computer. Integram o projeto sob a licença MIT.
+
+
 ## Ícones e fontes: SerenityOS
 
 - **Origem:** <https://github.com/SerenityOS/serenity> (`Base/res/icons`, `Base/res/fonts` e `Base/res/cursor-themes/Default`).

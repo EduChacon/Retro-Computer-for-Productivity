@@ -17,7 +17,7 @@ import { prepararParaSair, desistirDeSair } from '../reabrir.js';
 const NOMES = {
   bloco: 'bloco', notepad: 'bloco', 'bloco de notas': 'bloco', notas: 'bloco', 'bloc de notas': 'bloco',
   cmd: 'prompt', prompt: 'prompt', terminal: 'prompt', command: 'prompt', shell: 'prompt',
-  claude: 'claude', codex: 'codex', dot: 'dot',
+  claude: 'claude', codex: 'codex', assistente: 'assistente', assistant: 'assistente', asistente: 'assistente',
   painel: 'painel', control: 'painel', 'painel de controle': 'painel', 'control panel': 'painel', 'panel de control': 'painel',
   explorer: 'explorador', explorador: 'explorador', 'meu computador': 'explorador', computer: 'explorador', 'mi computadora': 'explorador',
   programas: 'programas', programs: 'programas', foco: 'foco', focus: 'foco', pomodoro: 'foco', ajuda: 'ajuda', help: 'ajuda', ayuda: 'ajuda',

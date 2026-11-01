@@ -2055,5 +2055,76 @@ html.alto-contraste #mesa .item:not(.sel) .rotulo { color: #000; }
 .c-resultados { display: grid; grid-template-columns: 28% 1fr; gap: 6px; padding: 6px; height: 132px; min-height: 85px; }
 .c-resultados > * { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 3px; }
 .c-entrada, .c-saida { flex: 1; min-height: 0; min-width: 0; width: 100%; resize: none; margin: 0; overflow: auto; }
+
+/* Companheiros animados: folhas originais 4 × 2, independentes do motor do assistente. */
+.mascote-figura { display: inline-block; flex: 0 0 auto; width: 96px; height: 96px; background-repeat: no-repeat; background-size: 400% 200%; image-rendering: pixelated; transform-origin: 50% 90%; }
+.mascote-figura[data-estado="pronto"] { animation: mascote-respirar 3.8s ease-in-out infinite; }
+.mascote-figura[data-estado="pensando"] { animation: mascote-pensar 2s ease-in-out infinite; }
+.mascote-figura[data-estado="trabalhando"] { animation: mascote-trabalhar 1s steps(4) infinite; }
+.mascote-figura[data-estado="falando"] { animation: mascote-respirar 1.4s ease-in-out infinite; }
+.mascote-figura[data-estado="aguardando"] { animation: mascote-chamar 2.4s ease-in-out infinite; }
+.mascote-figura[data-estado="concluido"] { animation: mascote-feliz 1s ease-in-out 3; }
+.mascote-figura[data-estado="dormindo"] { animation: mascote-respirar 5s ease-in-out infinite; }
+.mascote-figura.sem-animacao { animation: none !important; }
+@keyframes mascote-respirar { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes mascote-pensar { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes mascote-trabalhar { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes mascote-chamar { 0%,70%,100% { transform: translateY(0); } 80%,90% { transform: translateY(-5px); } }
+@keyframes mascote-feliz { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-9px) rotate(-3deg); } 65% { transform: translateY(-4px) rotate(3deg); } }
+.mascote-companhia { position: absolute; z-index: 500005; width: 108px; height: 108px; user-select: none; }
+.mascote-companhia[data-tamanho="pequeno"], .mascote-companhia[data-tamanho="pequeno"] .mascote-figura { width: 72px; height: 72px; }
+.mascote-companhia[data-tamanho="grande"], .mascote-companhia[data-tamanho="grande"] .mascote-figura { width: 144px; height: 144px; }
+.mascote-companhia .mascote-figura { width: 100%; height: 100%; }
+.mascote-botao { display: block; width: 100%; height: 100%; padding: 0; border: 0; box-shadow: none; background: transparent; cursor: var(--cur-default, default); touch-action: none; }
+.mascote-botao:active { padding: 0; }
+.mascote-botao:focus-visible { outline: 1px dotted var(--texto); outline-offset: -6px; }
+.mascote-companhia.recebendo { outline: 2px dotted var(--selecao); }
+.mascote-balao { position: absolute; bottom: 100%; right: 0; max-width: 200px; min-width: 145px; padding: 8px; background: var(--dica-fundo, #ffffe1); color: var(--texto, #000); border: 1px solid var(--texto); box-shadow: 2px 2px 0 #0005; }
+.mascote-companhia[hidden], .mascote-balao[hidden], .assistente-opcoes[hidden], .assistente-conteudo[hidden], .assistente-vazio[hidden] { display: none !important; }
+body:has(#bloqueio) #mascote, body:has(#entrada) #mascote, body:has(#protecao-tela) #mascote, body:has(#boot.visivel) #mascote { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .mascote-figura { animation: none !important; } }
+.assistente-chat .corpo { display: flex; flex-direction: column; overflow: hidden; }
+.assistente-cabecalho { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 4px 8px; border-bottom: 1px solid var(--sombra); flex-shrink: 0; }
+.assistente-cabecalho .mascote-figura { width: 55px; height: 55px; }
+.assistente-cabecalho > div { flex: 1; min-width: 80px; display: flex; flex-direction: column; gap: 4px; }
+.assistente-conteudo { display: flex; flex: 1; min-height: 0; }
+.assistente-conteudo > aside { display: flex; flex-direction: column; width: 155px; flex-shrink: 0; border-right: 1px solid var(--sombra); padding: 6px; gap: 6px; }
+.assistente-historico { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.assistente-historico > button { min-height: 44px; text-align: left; display: flex; flex-direction: column; gap: 3px; padding: 5px; flex: 0 0 auto; }
+.assistente-historico > button > span { display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assistente-historico small { opacity: .75; }
+.assistente-historico .selecionado { background: var(--selecao); color: var(--selecao-texto); }
+.assistente-conversa { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; padding: 6px; gap: 5px; }
+.assistente-mensagens { min-height: 70px; flex: 1; overflow: auto; padding: 10px; background: var(--janela); color: var(--texto); border: 1px inset var(--sombra); }
+.assistente-vazio { padding: 16px 5px; line-height: 1.6; }
+.assistente-sugestoes { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 10px; }
+.assistente-sugestoes button { text-align: left; white-space: normal; }
+.assistente-mensagem { margin-bottom: 13px; padding: 8px; border-left: 3px solid var(--sombra); }
+.assistente-mensagem[data-papel="usuario"] { border-left-color: var(--selecao); background: color-mix(in srgb, var(--selecao) 7%, var(--janela)); }
+.assistente-mensagem pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.5; margin: 6px 0 0; user-select: text; }
+.assistente-entrada { width: 100%; min-height: 50px; max-height: 130px; resize: vertical; margin: 0; font: inherit; }
+.assistente-enviar { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.assistente-enviar > span { flex: 1; font-size: 10px; opacity: .75; }
+.assistente-anexos { display: flex; flex-wrap: wrap; gap: 3px; max-height: 65px; overflow: auto; }
+.assistente-anexos button { text-overflow: ellipsis; overflow: hidden; max-width: 100%; }
+.assistente-erro { padding: 7px; color: var(--texto); background: var(--janela); border: 1px solid #b22; white-space: pre-wrap; }
+.assistente-confirmacoes { overflow: auto; flex-shrink: 0; max-height: 220px; }
+.assistente-pedido { padding: 9px; background: var(--janela); color: var(--texto); border: 2px solid var(--selecao); margin-bottom: 5px; }
+.assistente-pedido pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 95px; overflow: auto; user-select: text; }
+.assistente-pedido label { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.assistente-respostas { display: flex; flex-wrap: wrap; gap: 4px; }
+.assistente-atividade { max-height: 90px; overflow: auto; }
+.assistente-atividade > div { white-space: pre-wrap; overflow-wrap: anywhere; padding: 5px; font-family: 'Csilla', monospace; }
+.assistente-opcoes { padding: 8px 12px; overflow: auto; flex: 1; min-height: 0; }
+.assistente-opcoes h3 { margin: 3px 0 8px; font-size: 12px; }
+.assistente-escolha-topo { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.assistente-mascotes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.mascote-escolha { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px; min-width: 0; white-space: normal; }
+.mascote-escolha[aria-pressed="true"] { outline: 2px solid var(--selecao); outline-offset: -3px; }
+.mascote-escolha .mascote-figura { width: 82px; height: 82px; }
+.mascote-escolha > span:last-child { font-size: 10px; }
+.assistente-preferencias { display: flex; flex-wrap: wrap; gap: 9px 14px; margin: 13px 0; }
+.assistente-preferencias label { display: inline-flex; align-items: center; gap: 3px; }
+@media (max-width: 620px) { .assistente-conteudo > aside { width: 110px; } .assistente-mascotes { grid-template-columns: repeat(2,minmax(0,1fr)); } .assistente-enviar > span { display: none; } }
 .c-saida { border: 1px solid var(--texto-meio); padding: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .c-nota { margin: 0 6px 5px; color: var(--texto-meio); }

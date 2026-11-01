@@ -46,25 +46,36 @@ test('a 0.3.0 põe o Navegador e o E-mail na área de trabalho de quem já usava
   const antigo = mesclar(PADRAO, { versao: 1, mesa: { atalhos: ['meu-computador', 'lixeira', 'craft:wordcraft'] } });
   const d = migrar(antigo);
   assert.deepEqual(d.mesa.atalhos, ['meu-computador', 'lixeira', 'navegador', 'correio', 'craft:wordcraft']);
-  assert.equal(d.versao, 6);
+  assert.equal(d.versao, 7);
   // Quem já está na versão 3 não muda (nem se tirou os ícones).
   assert.deepEqual(migrar({ ...d, mesa: { atalhos: ['lixeira'] } }).mesa.atalhos, ['lixeira']);
 });
 
 test('a 1.0.0 tira o Prompt de comando da área de trabalho só de quem tinha a lista padrão', () => {
   const padraoAntigo = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'prompt'];
-  assert.deepEqual(migrar({ versao: 2, mesa: { atalhos: padraoAntigo } }).mesa.atalhos, [...padraoAntigo.slice(0, 6), 'codex', 'dot']);
+  assert.deepEqual(migrar({ versao: 2, mesa: { atalhos: padraoAntigo } }).mesa.atalhos, [...padraoAntigo.slice(0, 6), 'codex', 'assistente']);
   // Quem mudou a lista (pôs ou tirou um ícone) fica com o Prompt.
   const mudada = [...padraoAntigo, 'craft:wordcraft'];
   assert.deepEqual(migrar({ versao: 2, mesa: { atalhos: mudada } }).mesa.atalhos, mudada);
-  assert.equal(migrar({ versao: 2, mesa: { atalhos: mudada } }).versao, 6);
+  assert.equal(migrar({ versao: 2, mesa: { atalhos: mudada } }).versao, 7);
   assert.ok(!PADRAO.mesa.atalhos.includes('prompt'));
+});
+
+test('a 2.3.0 retira o Dot sem perder a mesa, os fixados ou as janelas pessoais', () => {
+  const antigo = { versao: 6, mesa: { atalhos: ['lixeira', 'dot', 'craft:wordcraft', 'assistente'], posicoes: { dot: { x: 12, y: 34 }, lixeira: { x: 1, y: 2 } } }, barra: { fixados: ['bloco', 'dot', 'navegador'] }, reabrir: { ligado: true, janelas: [{ p: 'dot', args: { url: 'https://chatgpt.com/dots' }, ret: { x: 40 } }, { p: 'bloco', args: { caminho: 'a.txt' } }] } };
+  const d = migrar(antigo);
+  assert.deepEqual(d.mesa.atalhos, ['lixeira', 'assistente', 'craft:wordcraft']);
+  assert.deepEqual(d.mesa.posicoes, { assistente: { x: 12, y: 34 }, lixeira: { x: 1, y: 2 } });
+  assert.deepEqual(d.barra.fixados, ['bloco', 'assistente', 'navegador']);
+  assert.deepEqual(d.reabrir.janelas, [{ p: 'assistente', args: {}, ret: { x: 40 } }, antigo.reabrir.janelas[1]]);
+  assert.equal(antigo.mesa.atalhos[1], 'dot');
+  assert.deepEqual(migrar(d), d);
 });
 
 test('a 1.1.0 pede a senha ao abrir (quem tem senha não abria mais pedindo, a não ser marcando a opção)', () => {
   const antigo = migrar(mesclar(PADRAO, { versao: 3, bloqueio: { aoVoltar: true, aoAbrir: false, naProtecao: false } }));
   assert.equal(antigo.bloqueio.aoAbrir, true);
-  assert.equal(antigo.versao, 6);
+  assert.equal(antigo.versao, 7);
   // Depois da migração, desligar no Painel fica desligado.
   assert.equal(migrar({ ...antigo, bloqueio: { ...antigo.bloqueio, aoAbrir: false } }).bloqueio.aoAbrir, false);
   assert.equal(PADRAO.bloqueio.aoAbrir, true);
@@ -73,7 +84,7 @@ test('a 1.1.0 pede a senha ao abrir (quem tem senha não abria mais pedindo, a n
 test('a 2.0.0 deixa a proteção de tela pedir a senha no modo sistema (o falso guardado só pelo padrão sai)', () => {
   const antigo = migrar(mesclar(PADRAO, { versao: 4, bloqueio: { aoVoltar: true, aoAbrir: true, naProtecao: false } }));
   assert.ok(!('naProtecao' in antigo.bloqueio));
-  assert.equal(antigo.versao, 6);
+  assert.equal(antigo.versao, 7);
   assert.ok(!('naProtecao' in PADRAO.bloqueio));
   // Marcado continua marcado; e, depois da 2.0.0, a escolha do Painel fica como está.
   assert.equal(migrar(mesclar(PADRAO, { versao: 4, bloqueio: { naProtecao: true } })).bloqueio.naProtecao, true);

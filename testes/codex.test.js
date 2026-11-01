@@ -61,6 +61,6 @@ test('Codex: acha as instalações do Windows sem herdar o PATH atualizado', () 
 
 test('Codex: a atualização só acrescenta o ícone à mesa padrão', () => {
   const antes = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'];
-  assert.deepEqual(migrar({ versao: 5, mesa: { atalhos: antes } }).mesa.atalhos, [...antes, 'codex', 'dot']);
+  assert.deepEqual(migrar({ versao: 5, mesa: { atalhos: antes } }).mesa.atalhos, [...antes, 'codex', 'assistente']);
   assert.deepEqual(migrar({ versao: 5, mesa: { atalhos: ['claude', 'bloco'] } }).mesa.atalhos, ['claude', 'bloco']);
 });

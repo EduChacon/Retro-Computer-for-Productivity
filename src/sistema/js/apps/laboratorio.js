@@ -1,7 +1,7 @@
 /* Um caderno de programação, com o editor e o resultado na mesma janela. */
 import { h, nomeDe, paiDe } from '../util.js';
 import { Janela } from '../janelas.js';
-import { registrarApp, pastaDocs, adicionarRecente } from '../sistema.js';
+import { registrarApp, pastaDocs, adicionarRecente, abrir as abrirApp } from '../sistema.js';
 import { caixaArquivo, simNaoCancelar, erro, info } from '../dialogos.js';
 import { tr, marcar } from '../idioma.js';
 import { licoesC } from './licoes-c.js';
@@ -33,7 +33,8 @@ class Laboratorio {
     this.trocas = [novo, abrirBt, this.seletor, this.linguagemEl];
     this.j = new Janela({ titulo: tr('Laboratório de programação'), icone: 'codigo', largura: 760, altura: 580, classe: 'laboratorio', aoFechar: () => this.podeFechar() });
     this.j.corpo.append(
-      h('div.c-ferramentas', novo, abrirBt, salvar, this.executarBt, this.pararBt, h('button', { on: { click: () => this.preparar() } }, tr('Preparar linguagem'))),
+      h('div.c-ferramentas', novo, abrirBt, salvar, this.executarBt, this.pararBt, h('button', { on: { click: () => this.preparar() } }, tr('Preparar linguagem')),
+        h('button', { on: { click: () => abrirApp('assistente', { pedido: tr('Me ajude a entender este código. Explique os erros e dê pistas, sem resolver tudo por mim.'), contexto: this.editor.value.slice(0, 64000) }) } }, tr('Pedir ajuda'))),
       h('div.c-licoes', h('label', tr('Linguagem: '), this.linguagemEl), h('label.c-licao', tr('Lição: '), this.seletor), this.guia),
       this.editor,
       h('div.c-resultados', h('label', tr('Entrada do programa'), this.entrada), h('div', h('b', tr('Saída e erros')), this.saida)),

@@ -9,7 +9,7 @@ const path = require('node:path');
 const { tr } = require('./idioma');
 
 const PADRAO = {
-  versao: 6,
+  versao: 7,
   disco: null,
   idioma: 'auto',
   atualizacoes: 'automatico',
@@ -34,7 +34,7 @@ const PADRAO = {
   inicioRapido: true, // a área de trabalho direto; o BIOS e a marca, em Painel › Aparência › Configurações
   protecaoTela: { ligada: true, minutos: 10, tipo: 'estrelas' },
   // Os ícones da área de trabalho (Painel › Aparência › Área de trabalho); o Prompt fica no Iniciar.
-  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'codex', 'dot'] },
+  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'codex', 'assistente'] },
   // A tela de bloqueio (a senha fica em bloqueio.senha, só o resumo; ver bloqueio.js). Com uma senha,
   // ela é pedida ao abrir, como no Windows (desliga em Painel › Senhas). Sem naProtecao escolhida no Painel,
   // a proteção de tela pede a senha só no modo sistema (bloqueio.js da área de trabalho).
@@ -73,6 +73,7 @@ const PADRAO = {
   // O Claude do Prompt ajusta o Retro Computer pelo servidor MCP (mcp.js).
   claude: { ajustes: true },
   codex: { ajustes: true },
+  assistente: { mascote: 'monitorzinho', motor: 'codex', visivel: true, animacoes: true, tamanho: 'normal', ajustes: true },
   primeiraVez: true,
 };
 
@@ -132,6 +133,21 @@ function migrar(dados) {
     const at = d.mesa && d.mesa.atalhos;
     if (Array.isArray(at) && at.length === antes.length && at.every((k, i) => k === antes[i])) d.mesa.atalhos = [...at, 'codex', 'dot'];
     d.versao = 6;
+  }
+  if (d.versao < 7) {
+    // O aplicativo Dot foi retirado; atalhos pessoais passam para o assistente nativo.
+    const substituir = (lista) => Array.isArray(lista) ? [...new Set(lista.map((k) => k === 'dot' ? 'assistente' : k))] : lista;
+    if (d.mesa) {
+      d.mesa.atalhos = substituir(d.mesa.atalhos);
+      if (d.mesa.posicoes && d.mesa.posicoes.dot) {
+        if (!d.mesa.posicoes.assistente) d.mesa.posicoes.assistente = d.mesa.posicoes.dot;
+        delete d.mesa.posicoes.dot;
+      }
+    }
+    if (d.barra) d.barra.fixados = substituir(d.barra.fixados);
+    if (d.iniciar) d.iniciar.fixados = substituir(d.iniciar.fixados);
+    if (Array.isArray(d.reabrir?.janelas)) d.reabrir.janelas = d.reabrir.janelas.map((j) => j?.p === 'dot' ? { ...j, p: 'assistente', args: {} } : j);
+    d.versao = 7;
   }
   return d;
 }

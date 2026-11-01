@@ -363,6 +363,7 @@ export function menuDeItens(sel, o = {}) {
   const rels = sel.map((s) => s.rel);
   const um = sel.length === 1 ? sel[0] : null;
   const itens = [];
+  if (um) itens.push({ rotulo: tr('Pedir ao &assistente…'), icone: 'assistente', acao: () => abrir('assistente', { arquivos: [um.rel] }) });
   if (um && um.pasta) {
     itens.push({ rotulo: tr('&Abrir'), negrito: true, acao: () => (o.abrirPasta ? o.abrirPasta(um.rel) : abrir('explorador', { pasta: um.rel })) });
     itens.push({ rotulo: tr('Expl&orar'), acao: () => abrir('explorador', { pasta: um.rel }) });

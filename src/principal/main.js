@@ -22,6 +22,7 @@ const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
 const { CraftWindows, CraftWindowsFalso } = require('./craft-windows');
 const { acharCodex, comandoInstalarCodex, argumentosCodex, programaCodex } = require('./codex');
+const { Assistente, prepararAgente } = require('./assistente');
 const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
 const { Aplicativos, iconeDoArquivo, acharPorNome } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
@@ -228,6 +229,7 @@ let disco = null;
 let programas = null;
 let craftWindows = null; // os Craft instalados no Windows, fora do Retro Computer (craft-windows.js)
 let terminais = null;
+let assistente = null;
 let aplicativos = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
@@ -316,6 +318,7 @@ async function abrirDisco() {
     config.definir({ disco: raiz });
   }
   disco = new Disco(raiz);
+  if (assistente) { assistente.encerrar(); assistente.disco = disco; }
   disco.aoExportar = copiarMarcas;
   // A primeira vez com este disco: a configuração ainda não sabe os nomes das pastas dele.
   const primeiraVez = !(config.obter().pastas && config.obter().pastas.documentos);
@@ -1549,6 +1552,13 @@ async function executarMcp(nome, a) {
 }
 
 function registrarPonte() {
+  tratar('assistente:estado', () => assistente.obter());
+  tratar('assistente:lista', () => assistente.lista());
+  tratar('assistente:nova', (motor) => assistente.nova(motor));
+  tratar('assistente:carregar', (id) => assistente.carregar(String(id)));
+  tratar('assistente:enviar', (pedido) => assistente.enviar(pedido));
+  tratar('assistente:responder', (id, resposta) => assistente.responder(String(id), resposta));
+  tratar('assistente:parar', () => assistente.parar());
   tratar('mcp:resposta', (id, r) => {
     const p = pendentesMcp.get(id);
     if (!p) return false;
@@ -1576,6 +1586,7 @@ function registrarPonte() {
     arrastoSistema: process.platform !== 'linux' || /utf-?8/i.test(process.env.LC_ALL || process.env.LC_CTYPE || process.env.LANG || ''),
   }));
   tratar('config:definir', (parte) => {
+    const ajustesAssistenteAntes = (config.obter().assistente || {}).ajustes !== false;
     // Os nomes da Agenda e da pasta das notas são guardados na primeira vez (trocar de idioma não
     // cria outros); só esses dois, só uma vez e só com um nome válido. O resto das pastas, nunca.
     const pastas = parte && parte.pastas && typeof parte.pastas === 'object' ? parte.pastas : null;
@@ -1615,6 +1626,7 @@ function registrarPonte() {
       else delete parte.ortografia;
     }
     const r = config.definir(parte);
+    if (assistente && parte.assistente && ajustesAssistenteAntes !== ((r.assistente || {}).ajustes !== false)) assistente.encerrar();
     if (parte.ortografia) ortografia.aplicarOrtografia(session.defaultSession, r.ortografia, idioma.idioma());
     if (parte.transferencia && historico) historico.ligar(r.transferencia.historico !== false);
     if (parte.busca && indice) indice.ligar((r.busca || {}).conteudo !== false).catch(() => { });
@@ -2300,6 +2312,7 @@ function registrarPonte() {
     if (!MODO_SISTEMA) throw new Error('modo sistema');
     if (acao === 'suspender') return sistemaLinux.energia('suspender');
     terminais.fecharTodos();
+    if (assistente) await assistente.encerrar();
     // As contas na nuvem gravam o que falta e desmontam antes de desligar.
     if (nuvens) nuvens.encerrar();
     if (acao === 'sair') {
@@ -2537,6 +2550,7 @@ function criarLoja() {
 }
 
 function reabrirApp() {
+  if (assistente) assistente.encerrar();
   if (terminais) terminais.fecharTodos();
   if (nuvens) nuvens.encerrar();
   if (servidorMcp) servidorMcp.fechar();
@@ -2782,6 +2796,15 @@ app.whenReady().then(async () => {
   programas = new Programas(path.join(BASE_DADOS, 'programas'), (url, o) => net.fetch(url, o));
   craftWindows = process.env.RETRO_CRAFT_WINDOWS_FALSO ? new CraftWindowsFalso() : new CraftWindows((url, o) => net.fetch(url, o), path.join(BASE_DADOS, 'craft-windows.json'));
   terminais = new Terminais((id, d) => enviar('terminal:dados', id, d), (id, c) => enviar('terminal:saiu', id, c));
+  assistente = new Assistente({
+    pasta: path.join(app.getPath('userData'), 'assistente'), disco,
+    preparar: (motor, sessao) => {
+      const ligado = (config.obter().assistente || {}).ajustes !== false;
+      const mcp = ligado && servidorMcp ? { executavel: process.execPath, script: scriptMcp(), endereco: servidorMcp.endereco, token: servidorMcp.token } : null;
+      return prepararAgente({ motor, sessao, raiz: disco.raiz, idioma: idioma.idioma(), mcp, arquivosMcp: mcp ? arquivosMcp() : null, chave: motor === 'claude' ? config.lerChave() : null });
+    },
+    aoMudar: (s) => enviar('assistente:mudou', s),
+  });
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
   if (MODO_SISTEMA || process.env.RETRO_JANELAS_FALSAS) {
     janelasLinux = new (process.env.RETRO_JANELAS_FALSAS ? JanelasFalsas : JanelasLinux)({
@@ -2954,7 +2977,7 @@ app.on('will-quit', (e) => {
   Promise.race([limparNavegador(), new Promise((ok) => setTimeout(ok, 4000))]).catch(() => { }).finally(() => app.quit());
 });
 
-app.on('before-quit', () => laboratorio.parar());
+app.on('before-quit', () => { laboratorio.parar(); if (assistente) assistente.encerrar(); });
 
 app.on('window-all-closed', () => {
   laboratorio.parar();
