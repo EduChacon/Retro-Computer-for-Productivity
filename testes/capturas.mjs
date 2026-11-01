@@ -313,29 +313,48 @@ async function esperarPronto(ms = 90000) {
 const ROTEIROS = {
   async dot() {
     await fecharTudo();
-    // As ações são interceptadas: nenhuma conta, navegador externo ou conexão pessoal é aberta.
-    await app.evaluate(({ ipcMain }) => {
+    // A página oficial é substituída só neste teste, sem rede, login ou conta pessoal.
+    await app.evaluate(({ ipcMain, session }) => {
       global.__dotTeste = [];
-      for (const canal of ['sistema:abrirLink', 'nativos:listar', 'nativos:abrir']) ipcMain.removeHandler(canal);
+      session.fromPartition('persist:navegador').protocol.handle('https', (r) => new Response('<!doctype html><title>Dot — teste local</title><h1>Dot — teste local</h1><p>' + new URL(r.url).pathname + '</p>', { headers: { 'content-type': 'text/html; charset=utf-8' } }));
+      for (const canal of ['sistema:abrirLink', 'nativos:listar', 'nativos:abrir', 'firefox:estado', 'firefox:abrir']) ipcMain.removeHandler(canal);
       ipcMain.handle('sistema:abrirLink', (_e, url) => { global.__dotTeste.push(url); return { ok: true, valor: true }; });
       ipcMain.handle('nativos:listar', () => ({ ok: true, valor: [{ id: 'chatgpt-teste', nome: 'ChatGPT' }] }));
       ipcMain.handle('nativos:abrir', (_e, id) => { global.__dotTeste.push(id); return { ok: true, valor: true }; });
+      ipcMain.handle('firefox:estado', () => ({ ok: true, valor: { instalado: true } }));
+      ipcMain.handle('firefox:abrir', (_e, url) => { global.__dotTeste.push('firefox:' + url); return { ok: true, valor: { ok: true } }; });
+    });
+    await pagina.evaluate(async () => {
+      await retro.config.definir({ navegador: { links: 'firefox' } });
+      await (await import('./js/apps/navegador.js')).conferirFirefox();
     });
     await abrir('dot');
     await pagina.waitForSelector('.dot .corpo');
     await foto('dot');
     await pagina.locator('.dot button', { hasText: T('Abrir meu Dot') }).click();
+    await pagina.waitForFunction(() => [...document.querySelectorAll('.nav-endereco')].some((c) => c.value === 'https://chatgpt.com/dots'));
+    await pagina.waitForFunction(() => [...document.querySelectorAll('webview')].some((w) => { try { return w.getURL() === 'https://chatgpt.com/dots'; } catch { return false; } }));
+    const paginaDot = await app.evaluate(async ({ webContents }) => {
+      const wc = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && w.getURL() === 'https://chatgpt.com/dots');
+      if (!wc) return null;
+      return { url: wc.getURL(), ponte: await wc.executeJavaScript('!!window.retro') };
+    });
+    if (!paginaDot || paginaDot.ponte) throw new Error('O Dot não abriu isolado dentro do Navegador.');
+    await foto('dot-no-retro');
+    await abrir('dot');
     await pagina.locator('.dot button', { hasText: T('Abrir o aplicativo ChatGPT') }).click();
     await pagina.locator('.dot button', { hasText: T('Ajuda oficial') }).click();
+    await pagina.waitForFunction(() => [...document.querySelectorAll('.nav-endereco')].some((c) => c.value === 'https://learn.chatgpt.com/docs/dots/computers-and-apps'));
     const vistos = await app.evaluate(() => global.__dotTeste);
-    if (JSON.stringify(vistos) !== JSON.stringify(['https://chatgpt.com/dots', 'chatgpt-teste', 'https://learn.chatgpt.com/docs/dots/computers-and-apps'])) throw new Error('Destino do Dot incorreto: ' + JSON.stringify(vistos));
+    if (JSON.stringify(vistos) !== JSON.stringify(['chatgpt-teste'])) throw new Error('O Dot saiu do Retro: ' + JSON.stringify(vistos));
   },
   async codexInstalar() {
     await fecharTudo();
     await abrir('codex');
     await pagina.waitForSelector('.janela.dialogo .codigo-linha');
     const comando = await pagina.locator('.janela.dialogo .codigo-linha').textContent();
-    if (!comando.includes('https://chatgpt.com/codex/install.')) throw new Error('Instalador não oficial.');
+    const esperado = process.platform === 'win32' ? 'winget install --id OpenAI.Codex --exact --source winget' : 'curl -fsSL https://chatgpt.com/codex/install.sh | sh';
+    if (comando !== esperado) throw new Error('Instalador incorreto: ' + comando);
     await foto('codex-instalar');
   },
   async codex() {
@@ -358,6 +377,9 @@ const ROTEIROS = {
     const r = await esperar(1);
     if (r.args.at(-1) !== pedido || r.args.at(-2) !== '--') throw new Error('O pedido deixou de ser um argumento literal.');
     if (!r.mcp || r.chaveClaude || r.electronComoNode) throw new Error('MCP ausente ou ambiente do Codex incorreto.');
+    if (JSON.stringify(r.ferramentas) !== JSON.stringify(['estado', 'mudar_configuracoes', 'atalho', 'agenda_ver'])) throw new Error('O Codex não conseguiu modificar o sistema.');
+    const cfg = await pagina.evaluate(() => retro.config.obter());
+    if (cfg.papel.cor !== '#335577' || !cfg.mesa.atalhos.includes('bloco')) throw new Error('As mudanças do Codex não chegaram ao Retro.');
     // No Mac, /var e /tmp são aliases de /private/var e /private/tmp.
     const pastaReal = (p) => { const s = fs.realpathSync(p); return process.platform === 'win32' ? s.toLowerCase() : s; };
     if (pastaReal(r.pasta) !== pastaReal(path.join(disco, DOCS))) throw new Error('O Codex começou fora da pasta escolhida.');

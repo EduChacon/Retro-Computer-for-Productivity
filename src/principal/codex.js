@@ -10,7 +10,8 @@ const { tr } = require('./idioma');
 
 function comandoInstalarCodex(plataforma = process.platform) {
   return plataforma === 'win32'
-    ? 'irm https://chatgpt.com/codex/install.ps1 | iex'
+    // O install.ps1 usa RuntimeInformation.OSArchitecture, ausente em alguns Windows PowerShell 5.1.
+    ? 'winget install --id OpenAI.Codex --exact --source winget'
     : 'curl -fsSL https://chatgpt.com/codex/install.sh | sh';
 }
 
@@ -18,10 +19,17 @@ function comandoInstalarCodex(plataforma = process.platform) {
 function candidatosCodex({ plataforma = process.platform, casa = os.homedir(), env = process.env } = {}) {
   const p = plataforma === 'win32' ? path.win32 : path.posix;
   const nome = plataforma === 'win32' ? 'codex.exe' : 'codex';
+  const local = env.LOCALAPPDATA || p.join(casa, 'AppData', 'Local');
   return [
     p.join(casa, '.local', 'bin', nome), p.join(casa, '.codex', 'bin', nome),
     ...(plataforma === 'win32'
-      ? [p.join(env.APPDATA || p.join(casa, 'AppData', 'Roaming'), 'npm', 'codex.cmd')]
+      ? [
+        p.join(local, 'Programs', 'OpenAI', 'Codex', 'bin', nome),
+        p.join(local, 'Microsoft', 'WinGet', 'Links', nome),
+        ...(env.ProgramFiles ? [p.join(env.ProgramFiles, 'WinGet', 'Links', nome)] : []),
+        ...(env.CODEX_INSTALL_DIR ? [p.join(env.CODEX_INSTALL_DIR, nome)] : []),
+        p.join(env.APPDATA || p.join(casa, 'AppData', 'Roaming'), 'npm', 'codex.cmd'),
+      ]
       : ['/opt/homebrew/bin/codex', '/usr/local/bin/codex']),
   ];
 }

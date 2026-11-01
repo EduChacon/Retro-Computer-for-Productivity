@@ -49,6 +49,25 @@ jobs:
       - name: Testes (disco, idiomas e atualizações)
         run: npm test
 
+      - name: Instalar o Codex no Windows PowerShell e conferir o executável real
+        if: runner.os == 'Windows'
+        # O mesmo Windows PowerShell 5.1 usado no Prompt, sem depender do pwsh 7 do runner.
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            Install-PackageProvider -Name NuGet -Force -Scope CurrentUser | Out-Null
+            Install-Module Microsoft.WinGet.Client -Force -Scope CurrentUser -Repository PSGallery
+            Repair-WinGetPackageManager -AllUsers
+          }
+          $env:RETRO_PATH_ANTES_CODEX = $env:PATH
+          $comando = node -p "require('./src/principal/codex').comandoInstalarCodex()"
+          if ($LASTEXITCODE -ne 0) { throw 'Não foi possível obter o comando do aplicativo.' }
+          Invoke-Expression ($comando + ' --accept-source-agreements --accept-package-agreements --disable-interactivity')
+          if ($LASTEXITCODE -ne 0) { throw 'A instalação real do Codex falhou.' }
+          node testes/codex-instalado.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'O Codex instalado não foi encontrado ou não executou.' }
+
       - name: Conferir as seis linguagens do laboratório
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -112,6 +131,7 @@ jobs:
         run: |
           $env:RETRO_EXECUTAVEL = Join-Path $PWD 'dist/win-unpacked/Retro Computer.exe'
           node testes/capturas.mjs capturas-codex codex
+          node testes/capturas.mjs capturas-codex codexInstalar
           node testes/capturas.mjs capturas-codex dot
 
       - name: Guardar as capturas do Codex no Windows

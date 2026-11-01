@@ -2725,7 +2725,6 @@
   "Retomar conversa no Codex": "Resume a Codex conversation",
   "Entrar no Codex": "Sign in to Codex",
   "Codex CLI instalado neste computador.": "Codex CLI is installed on this computer.",
-  "O Codex trabalha nos arquivos do disco C: nesta janela retrô. A instalação usa o instalador oficial da OpenAI.": "Codex works on drive C: files in this retro window. Installation uses the official OpenAI installer.",
   "Entre com sua conta do ChatGPT quando o Codex pedir. O login e as credenciais ficam com o próprio Codex CLI; a chave do Claude não é usada.": "Sign in with your ChatGPT account when Codex asks. Codex CLI handles sign-in and credentials; the Claude key is not used.",
   "Permitir que o Codex ajuste o Retro Computer": "Allow Codex to adjust Retro Computer",
   "As permissões e as confirmações são as do Codex. O Retro Computer não desativa essas proteções.": "Permissions and confirmations are handled by Codex. Retro Computer does not disable these protections.",
@@ -2742,12 +2741,15 @@
   "Evento marcado na Agenda": "Calendar event added",
   "Instale o aplicativo oficial do ChatGPT em chatgpt.com/download. Depois, abra o perfil do Dot › Computadores › Seu computador › Permitir acesso.": "Install the official ChatGPT app from chatgpt.com/download. Then open the dot profile › Computers › Your computer › Allow access.",
   "Seu Dot da OpenAI": "Your OpenAI dot",
-  "Converse com o Dot da sua conta pelo acesso oficial do ChatGPT. O login é feito no navegador; a disponibilidade depende da sua conta e região.": "Talk to your account's dot through the official ChatGPT page. Sign-in happens in your browser; availability depends on your account and region.",
   "Para o Dot trabalhar neste computador: abra o aplicativo oficial do ChatGPT, entre na sua conta e acesse o perfil do Dot › Computadores › Seu computador › Permitir acesso. Mantenha o aplicativo aberto enquanto ele trabalha.": "To let your dot work on this computer: open the official ChatGPT app, sign in and go to the dot profile › Computers › Your computer › Allow access. Keep the app open while it works.",
   "Abrir a conversa não conecta o computador. A autorização local é controlada pelo ChatGPT e é separada da conexão do Codex.": "Opening the conversation does not connect the computer. Local access is controlled by ChatGPT and is separate from the Codex connection.",
   "Abrir meu Dot": "Open my dot",
   "Abrir o aplicativo ChatGPT": "Open the ChatGPT app",
   "Mostrar a pasta do disco C:": "Show the drive C: folder",
   "Ajuda oficial": "Official help",
-  "Dot": "Dot"
+  "Dot": "Dot",
+  "O Codex trabalha nos arquivos do disco C: e pode ajustar o sistema nesta janela retrô, como o Claude Code.": "Codex works on drive C: files and can adjust the system in this retro window, like Claude Code.",
+  "No Windows, a instalação usa o pacote OpenAI.Codex da fonte winget. Se o winget não estiver disponível, instale ou atualize o Instalador de Aplicativo pela Microsoft Store.": "On Windows, installation uses the OpenAI.Codex package from the winget source. If winget is unavailable, install or update App Installer from the Microsoft Store.",
+  "A instalação usa o instalador oficial da OpenAI.": "Installation uses the official OpenAI installer.",
+  "Converse com o seu Dot da conta do ChatGPT dentro do Navegador do Retro Computer. O login é feito na página oficial; a disponibilidade depende da sua conta e região.": "Chat with your ChatGPT account’s dot inside the Retro Computer Browser. Sign in on the official page; availability depends on your account and region."
 }

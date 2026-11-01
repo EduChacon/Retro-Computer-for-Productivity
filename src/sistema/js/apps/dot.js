@@ -1,7 +1,7 @@
 /* Acesso ao Dot da conta do ChatGPT, com a conexão local pelo aplicativo oficial. */
 import { h, img } from '../util.js';
 import { Janela } from '../janelas.js';
-import { registrarApp } from '../sistema.js';
+import { registrarApp, abrir as abrirApp } from '../sistema.js';
 import { erro, info } from '../dialogos.js';
 import { tr } from '../idioma.js';
 
@@ -14,7 +14,8 @@ function abrirDot() {
   const j = new Janela({ titulo: 'Dot', icone: 'internet', largura: 500, altura: 360, classe: 'dot' });
   atual = j;
   j.corpo.style.padding = '12px';
-  const abrir = (url) => retro.sistema.abrirLink(url).catch((e) => erro(e.message, 'Dot'));
+  // De propósito dentro do Retro, mesmo quando o navegador padrão é externo ou o Firefox.
+  const abrir = (url) => abrirApp('navegador', { url, interno: true }).catch((e) => erro(e.message, 'Dot'));
   const chatgpt = async () => {
     try {
       const lista = await retro.nativos.listar(false);
@@ -26,7 +27,7 @@ function abrirDot() {
   j.corpo.append(
     h('div.mensagem', img('internet', 32), h('div.texto.texto-ajuda',
       h('b', tr('Seu Dot da OpenAI')),
-      h('p', tr('Converse com o Dot da sua conta pelo acesso oficial do ChatGPT. O login é feito no navegador; a disponibilidade depende da sua conta e região.')),
+      h('p', tr('Converse com o seu Dot da conta do ChatGPT dentro do Navegador do Retro Computer. O login é feito na página oficial; a disponibilidade depende da sua conta e região.')),
       h('p', tr('Para o Dot trabalhar neste computador: abra o aplicativo oficial do ChatGPT, entre na sua conta e acesse o perfil do Dot › Computadores › Seu computador › Permitir acesso. Mantenha o aplicativo aberto enquanto ele trabalha.')),
       h('p', tr('Abrir a conversa não conecta o computador. A autorização local é controlada pelo ChatGPT e é separada da conexão do Codex.')),
     )),
