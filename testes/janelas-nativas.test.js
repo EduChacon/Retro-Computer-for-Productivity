@@ -39,7 +39,7 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   const antes = ler();
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosPai, '-Mover'], { windowsHide: true });
   await esperar(() => Math.abs(ler().sx - antes.sx - 100) <= 2 && Math.abs(ler().sy - antes.sy - 60) <= 2);
-  await ponte.pedir('fechar', { janela: id }); await esperar(() => ler().fechamentos === 1); assert.equal((await ponte.pedir('consultar', { janela: id })).aberta, true);
+  await ponte.pedir('fechar', { janela: id }); await esperar(() => ler().fechamentos === 1, ler); assert.equal((await ponte.pedir('consultar', { janela: id })).aberta, true);
   await ponte.pedir('soltar', { janela: id }); await esperar(() => ler().parent === 0);
   assert.equal(ler().style, inicial.style); assert.equal(ler().w, inicial.w); assert.equal(ler().h, inicial.h);
   assert.equal(ler().texto, documento);

@@ -372,11 +372,9 @@ const ROTEIROS = {
     await pagina.waitForFunction(() => document.querySelector('.integracao-nativa')?.classList.contains('minimizada'));
     await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('integracao-nativa')).focar());
     await pagina.locator('.integracao-nativa button', { hasText: T('Fechar programa…'), exact: true }).click();
-    await pagina.waitForTimeout(300);
-    if (!await pagina.locator('.integracao-nativa').count()) throw new Error('Desconsiderou Fechar cancelado.');
-    await pagina.locator('.integracao-nativa button', { hasText: T('Sair da integração'), exact: true }).click();
     await pagina.waitForFunction(() => !document.querySelector('.integracao-nativa'));
     if (!ler().some((p) => p.acao === 'soltar')) throw new Error('Não devolveu a janela.');
+    if (!ler().some((p) => p.acao === 'fechar')) throw new Error('Não pediu o fechamento normal.');
     await pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }).click({ button: 'right' });
     await pagina.locator('.menu .opcao', { hasText: T('Usar integração por padrão'), exact: true }).click();
     await pagina.waitForFunction(() => window.__retro.estado.config.nativos?.integrados?.includes('retro:janela-de-teste'));

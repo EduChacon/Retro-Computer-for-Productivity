@@ -114,7 +114,11 @@ public static class RetroJanelas {
   }); }
   public static void Esconder(string id) { UI(()=> { var i=Obter(id); i.Visivel=false; if(i.Host!=null) i.Host.Hide(); }); }
   public static void Ocultar() { UI(()=> { foreach(var i in itens.Values) { i.Visivel=false; if(i.Host!=null) i.Host.Hide(); } }); }
-  public static void Fechar(string id) { UI(()=> { var i=Obter(id); Focar(id); PostMessage(i.H,0x0010,IntPtr.Zero,IntPtr.Zero); }); }
+  public static void Fechar(string id) { UI(()=> {
+    var i=Obter(id);
+    // O fechamento volta ao contexto original, inclusive os avisos de salvar do aplicativo.
+    Restaurar(i); Focar(id); PostMessage(i.H,0x0010,IntPtr.Zero,IntPtr.Zero);
+  }); }
   static void Restaurar(Item i) {
     if(i.Host==null) return;
     if(Valido(i)) {
