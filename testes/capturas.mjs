@@ -358,7 +358,9 @@ const ROTEIROS = {
     const r = await esperar(1);
     if (r.args.at(-1) !== pedido || r.args.at(-2) !== '--') throw new Error('O pedido deixou de ser um argumento literal.');
     if (!r.mcp || r.chaveClaude || r.electronComoNode) throw new Error('MCP ausente ou ambiente do Codex incorreto.');
-    if (path.resolve(r.pasta) !== path.resolve(disco, DOCS)) throw new Error('O Codex começou fora da pasta escolhida.');
+    // No Mac, /var e /tmp são aliases de /private/var e /private/tmp.
+    const pastaReal = (p) => { const s = fs.realpathSync(p); return process.platform === 'win32' ? s.toLowerCase() : s; };
+    if (pastaReal(r.pasta) !== pastaReal(path.join(disco, DOCS))) throw new Error('O Codex começou fora da pasta escolhida.');
     await pagina.waitForTimeout(300); await foto('codex-terminal');
     // O botão Retomar abre outra sessão, com a ação oficial resume.
     await pagina.locator('.janela.ativa button', { hasText: T('Retomar conversa') }).click();
