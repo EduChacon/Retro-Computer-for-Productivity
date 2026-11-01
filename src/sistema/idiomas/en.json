@@ -2764,7 +2764,6 @@
   "Este pedido já foi encerrado.": "This request has already ended.",
   "Responda às perguntas antes de continuar.": "Answer the questions before continuing.",
   "Esta decisão não está disponível para o pedido.": "This decision is not available for the request.",
-  "Continue esta confirmação no terminal do motor.": "Continue this confirmation in the engine's terminal.",
   "Assistente do Retro": "Retro Assistant",
   "Pronto para ajudar": "Ready to help",
   "Motor do assistente": "Assistant engine",
@@ -2828,5 +2827,12 @@
   "&Conversar": "&Chat",
   "&Escolher mascote…": "&Choose mascot…",
   "&Ocultar mascote": "&Hide mascot",
-  "Prévia da animação": "Animation preview"
+  "Prévia da animação": "Animation preview",
+  "Resposta do formulário inválida.": "Invalid form response.",
+  "Confira o campo “{campo}” antes de permitir.": "Check the “{campo}” field before allowing.",
+  "Autorização solicitada por {servidor}": "Authorization requested by {servidor}",
+  "Este formato de confirmação ainda não é compatível com o assistente.": "This confirmation format is not yet supported by the assistant.",
+  "Selecione…": "Select…",
+  "Conclua a autorização na página do serviço. O assistente continuará nesta conversa.": "Complete authorization on the service’s page. The assistant will continue in this conversation.",
+  "Abrir autorização": "Open authorization"
 }

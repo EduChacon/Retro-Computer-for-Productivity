@@ -398,9 +398,11 @@ class Navegador {
   }
 
   focarPagina() {
+    // A ativação pode chegar depois de fechar a janela de autorização.
+    if (this.j.fechada || !this.j.el.isConnected) return;
     const a = this.aba;
     if (!a) return;
-    if (a.wv && !a.wv.hidden && a.inicio.hidden) a.wv.focus();
+    if (a.wv && a.pronto && a.wv.isConnected && !a.wv.hidden && a.inicio.hidden) a.wv.focus();
     else if (!this.app) this.campo.focus();
   }
 

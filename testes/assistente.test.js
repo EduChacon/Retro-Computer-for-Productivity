@@ -58,6 +58,33 @@ for (const motor of ['codex', 'claude']) {
     await a.parar(); assert.equal(a.obter().ocupado, false); assert.equal(a.canal, null);
   });
 }
+test('Assistente Codex: aprova e recusa formulários MCP na mesma conversa, preservando os tipos', async (t) => {
+  const { a } = await montar(t, 'codex');
+  await a.enviar({ texto: 'formulario-mcp' });
+  const s = await esperar(a, (x) => x.pedidos.length);
+  const p = s.pedidos[0];
+  assert.equal(p.tipo, 'formulario'); assert.equal(p.servidor, 'Retro de teste');
+  assert.equal(p.campos[0].padrao, false);
+  assert.throws(() => a.responder(p.id, { permitir: true, respostas: { autorizar: true } }), /campo/);
+  assert.equal(a.obter().pedidos.length, 1);
+  a.responder(p.id, { permitir: true, respostas: { autorizar: true, motivo: 'Teste', quantidade: 2, cor: 'azul' } });
+  const fim = await esperar(a, (x) => !x.ocupado);
+  assert.match(fim.conversa.mensagens.at(-1).texto, /Concluído/);
+  await a.enviar({ texto: 'formulario-mcp' });
+  const outro = await esperar(a, (x) => x.pedidos.length);
+  a.responder(outro.pedidos[0].id, { permitir: false });
+  assert.match((await esperar(a, (x) => !x.ocupado)).conversa.mensagens.at(-1).texto, /recusada/);
+});
+
+test('Assistente Codex: autorização por endereço responde accept na conexão original', async (t) => {
+  const { a } = await montar(t, 'codex');
+  await a.enviar({ texto: 'url-mcp' });
+  const s = await esperar(a, (x) => x.pedidos.length);
+  assert.equal(s.pedidos[0].tipo, 'autorizacao-url');
+  a.responder(s.pedidos[0].id, { permitir: true });
+  assert.equal((await esperar(a, (x) => !x.ocupado)).estado, 'concluido');
+});
+
 test('Assistente Claude: shims do npm no Windows resolvem instalações nativas e antigas sem shell', (t) => {
   const pasta = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'retro-claude-npm-')));
   t.after(() => fs.rmSync(pasta, { recursive: true, force: true }));

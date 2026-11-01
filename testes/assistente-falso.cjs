@@ -62,6 +62,16 @@ function comecar(pedido) {
   if (codex) evento('turn/started', { turn: { id: turno } });
   else saida({ type: 'system', subtype: 'init', session_id: sessao });
   if (pedido.includes('demorar')) return;
+  if (codex && pedido.includes('formulario-mcp')) {
+    const id = 'formulario-' + numero; permissoes.set(id, 'formulario');
+    saida({ id, method: 'mcpServer/elicitation/request', params: { threadId: sessao, turnId: turno, serverName: 'Retro de teste', mode: 'form', message: 'Autorizar a alteração do fundo nesta tarefa?', requestedSchema: { type: 'object', properties: { autorizar: { type: 'boolean', title: 'Permitir alteração do fundo', default: false }, motivo: { type: 'string', title: 'Motivo', minLength: 3 }, quantidade: { type: 'integer', title: 'Quantidade', minimum: 1, maximum: 3 }, cor: { type: 'string', title: 'Cor', oneOf: [{ const: 'azul', title: 'Azul' }, { const: 'verde', title: 'Verde' }] } }, required: ['autorizar', 'motivo', 'quantidade', 'cor'] } } });
+    return;
+  }
+  if (codex && pedido.includes('url-mcp')) {
+    const id = 'url-' + numero; permissoes.set(id, 'url');
+    saida({ id, method: 'mcpServer/elicitation/request', params: { threadId: sessao, turnId: turno, serverName: 'Serviço de teste', mode: 'url', message: 'Autorize o serviço na página oficial.', url: 'https://autorizacao.example.test/permitir?pedido=teste', elicitationId: id } });
+    return;
+  }
   if (pedido.includes('pergunta')) {
     const id = 'pergunta-' + numero;
     permissoes.set(id, 'pergunta');
@@ -83,7 +93,11 @@ rl.on('line', async (s) => {
     else if (m.method === 'thread/start' || m.method === 'thread/resume') { sessao = m.params.threadId || sessao; responder(m.id, { thread: { id: sessao } }); }
     else if (m.method === 'turn/start') { responder(m.id, { turn: { id: 'turno-' + (numero + 1) } }); comecar(m.params.input[0].text); }
     else if (m.method === 'turn/interrupt') { responder(m.id, {}); evento('turn/completed', { turn: { id: turno, status: 'interrupted' } }); }
-    else if (m.id && permissoes.has(m.id)) { const p = permissoes.get(m.id); permissoes.delete(m.id); await concluir(p === 'pergunta' ? Object.values(m.result.answers).some((v) => v.answers.length) : m.result.decision === 'accept'); }
+    else if (m.id && permissoes.has(m.id)) {
+      const p = permissoes.get(m.id); permissoes.delete(m.id);
+      if (process.env.RETRO_ASSISTENTE_RELATORIO) fs.appendFileSync(process.env.RETRO_ASSISTENTE_RELATORIO, JSON.stringify({ motor: 'codex', resposta: m.result }) + '\n');
+      await concluir(p === 'pergunta' ? Object.values(m.result.answers).some((v) => v.answers.length) : p === 'formulario' ? m.result.action === 'accept' && m.result.content?.autorizar === true && typeof m.result.content.quantidade === 'number' && m.result.content.motivo.length >= 3 && m.result.content.cor === 'azul' : p === 'url' ? m.result.action === 'accept' && m.result.content === null : m.result.decision === 'accept');
+    }
   } else {
     if (m.type === 'control_request') controle(m.request_id, {});
     if (m.type === 'user') comecar(m.message.content);

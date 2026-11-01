@@ -450,4 +450,6 @@ Anexe até oito arquivos ou pastas do disco C:, pelo botão **Anexar arquivo…*
 
 **Permitir ajustes no Retro Computer** conecta as ferramentas de aparência, atalhos, programas e Agenda, como no Claude Code do Prompt. Desligar encerra a conexão atual. As políticas de sandbox e confirmação do CLI continuam valendo. O chat não carrega a chave do Claude no Codex, e as credenciais do provedor ficam com o CLI. O histórico do Retro fica na pasta de dados do perfil, fora do disco C:. Fechar só a janela permite voltar ao trabalho pelo companheiro; sair do aplicativo encerra o processo do agente. O assistente não começa tarefas sozinho nem oferece execução recorrente nesta versão.
 
+As confirmações do Codex e do Claude aparecem na própria conversa. Pedidos MCP mostram o serviço responsável e os campos necessários; revise as respostas e clique em **Permitir uma vez** ou **Recusar**. Para uma autorização na página do serviço, confira o endereço e use **Abrir autorização**: a página abre no Navegador do Retro, e a tarefa continua na mesma conversa. Nenhuma página é aberta nem permissão concedida só por receber o pedido.
+
 O aplicativo Dot foi retirado. Seus atalhos na mesa e na barra passam para o Assistente, preservando os outros programas escolhidos. Arquivos de atalho antigos também abrem o novo chat dentro do Retro Computer.

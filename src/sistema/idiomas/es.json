@@ -2764,7 +2764,6 @@
   "Este pedido já foi encerrado.": "Esta solicitud ya ha terminado.",
   "Responda às perguntas antes de continuar.": "Responde las preguntas antes de continuar.",
   "Esta decisão não está disponível para o pedido.": "Esta decisión no está disponible para la solicitud.",
-  "Continue esta confirmação no terminal do motor.": "Continúa esta confirmación en el terminal del motor.",
   "Assistente do Retro": "Asistente de Retro",
   "Pronto para ajudar": "Listo para ayudar",
   "Motor do assistente": "Motor del asistente",
@@ -2828,5 +2827,12 @@
   "&Conversar": "&Conversar",
   "&Escolher mascote…": "&Elegir mascota…",
   "&Ocultar mascote": "&Ocultar mascota",
-  "Prévia da animação": "Vista previa de la animación"
+  "Prévia da animação": "Vista previa de la animación",
+  "Resposta do formulário inválida.": "Respuesta de formulario inválida.",
+  "Confira o campo “{campo}” antes de permitir.": "Revisa el campo «{campo}» antes de permitir.",
+  "Autorização solicitada por {servidor}": "Autorización solicitada por {servidor}",
+  "Este formato de confirmação ainda não é compatível com o assistente.": "El asistente aún no admite este formato de confirmación.",
+  "Selecione…": "Selecciona…",
+  "Conclua a autorização na página do serviço. O assistente continuará nesta conversa.": "Completa la autorización en la página del servicio. El asistente continuará en esta conversación.",
+  "Abrir autorização": "Abrir autorización"
 }
