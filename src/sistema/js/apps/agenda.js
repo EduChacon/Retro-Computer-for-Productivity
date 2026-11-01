@@ -17,6 +17,7 @@ import { lerIcs, paraData, dataTexto, dataHoraTexto, novoUid } from '../ics.js';
 
 const MAX_IMPORTAR = 20 * 1024 * 1024;
 let aberta = null;
+const abrirGoogle = () => import('./google-agenda.js').then((m) => m.abrirGoogleAgenda());
 
 /** O primeiro dia da semana do idioma (0 = domingo), como no calendário do relógio. */
 function primeiroDia() {
@@ -70,7 +71,8 @@ class Agenda {
         this.itensEl,
         h('div.acoes',
           h('button.padrao', { type: 'button', on: { click: () => this.novo() } }, rotulo(tr('&Novo evento…'))),
-          this.btEditar, this.btExcluir)),
+          this.btEditar, this.btExcluir,
+          h('button', { type: 'button', on: { click: abrirGoogle } }, tr('Google Calendar…')))),
     );
     this.itensEl.addEventListener('keydown', (e) => this.teclaLista(e));
     this.j.el.addEventListener('keydown', (e) => this.tecla(e));
@@ -92,6 +94,7 @@ class Agenda {
           { rotulo: tr('&Novo evento…'), atalho: 'Ctrl+N', acao: () => this.novo() },
           { rotulo: tr('&Importar um calendário (.ics)…'), acao: () => this.importarPerguntando() },
           { rotulo: tr('&Calendários da internet…'), acao: () => abrirCalendarios() },
+          { rotulo: tr('&Google Calendar…'), acao: abrirGoogle },
           { rotulo: tr('Abrir a &pasta da Agenda'), acao: () => abrir('explorador', { pasta: paiDe(arquivoAgenda()), selecionar: arquivoAgenda() }) },
           { separador: true },
           { rotulo: tr('Sai&r'), acao: () => this.j.fechar() },

@@ -43,6 +43,8 @@ jobs:
     needs: verificar
     if: needs.verificar.outputs.publicar == 'true'
     uses: ./.github/workflows/compilar.yml
+    secrets:
+      GOOGLE_CALENDAR_CLIENT_JSON: ${{ secrets.GOOGLE_CALENDAR_CLIENT_JSON }}
 
   publicar:
     needs: [verificar, compilar]

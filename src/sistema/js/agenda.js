@@ -77,6 +77,7 @@ export async function alterarAgenda(mudar) {
   carregado = Promise.resolve(dados);
   evAgenda.emit('mudou', dados);
   conferirLembretes();
+  retro.googleAgenda.agendar().catch(() => {});
   return dados;
 }
 
@@ -326,6 +327,13 @@ export function conferirLembretes() {
 
 /** Liga os lembretes: lê a Agenda (sem atrasar a abertura) e acompanha o arquivo. */
 export function iniciarAgenda() {
+  let googleAnterior = null;
+  retro.googleAgenda.aoMudar((s) => {
+    if (s.calendario?.id !== googleAnterior) {
+      googleAnterior = s.calendario?.id || null;
+      retro.config.obter().then((c) => guardarLista(c.agenda?.calendarios || [])).catch(() => {});
+    }
+  });
   setTimeout(() => carregarAgenda().then(conferirLembretes).catch(() => { }), 4000);
   // Os da internet: a cópia guardada logo; baixar de novo, depois da abertura e a cada dez minutos (os vencidos).
   setTimeout(() => carregarCalendarios().then(conferirLembretes).catch(() => { }), 4500);

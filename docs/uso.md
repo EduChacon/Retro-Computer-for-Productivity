@@ -453,3 +453,9 @@ Anexe até oito arquivos ou pastas do disco C:, pelo botão **Anexar arquivo…*
 As confirmações do Codex e do Claude aparecem na própria conversa. Pedidos MCP mostram o serviço responsável e os campos necessários; revise as respostas e clique em **Permitir uma vez** ou **Recusar**. Para uma autorização na página do serviço, confira o endereço e use **Abrir autorização**: a página abre no Navegador do Retro, e a tarefa continua na mesma conversa. Nenhuma página é aberta nem permissão concedida só por receber o pedido.
 
 O aplicativo Dot foi retirado. Seus atalhos na mesa e na barra passam para o Assistente, preservando os outros programas escolhidos. Arquivos de atalho antigos também abrem o novo chat dentro do Retro Computer.
+
+## Google Calendar nos dois sentidos
+
+Abra **Agenda › Google Calendar…** para conectar a Agenda local a um calendário editável do Google. O login usa a página oficial no navegador padrão; depois, escolha o calendário e confirme a sincronização. Criações, alterações e exclusões passam a valer nos dois lados. Sem internet, os eventos locais continuam disponíveis; mudanças simultâneas mostram as duas versões para você escolher. A janela oferece Sincronizar agora, Pausar, Desconectar e Mostrar cópias de recuperação.
+
+O aplicativo precisa de um cadastro OAuth Google válido. Se o instalador ainda não trouxer esse cadastro, a própria janela explica como importar uma configuração pessoal de aplicativo para computador. Não use uma senha da conta nem o endereço secreto iCal. O guia [Google Calendar](google-calendar.md) explica a configuração, as permissões, os limites e a recuperação. As assinaturas em Calendários da internet continuam sendo somente leitura.

@@ -5,3 +5,6 @@ _to_delete/
 .DS_Store
 # As cópias de trabalho dos ajudantes do Claude Code (locais, nunca no repositório).
 .claude/worktrees/
+
+# Configuração OAuth opcional do aplicativo, preparada fora do histórico.
+recursos/google-oauth.json
