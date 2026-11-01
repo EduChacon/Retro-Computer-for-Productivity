@@ -31,7 +31,9 @@ jobs:
           $recursos = Join-Path $exe.Directory.FullName 'resources'
           Rename-Item (Join-Path $recursos 'app.asar') 'app-base.asar'
           New-Item (Join-Path $recursos 'app') -ItemType Directory | Out-Null
-          @{name='retro-computer';version='2.5.2';main=(Join-Path $PWD 'src/principal/main.js')} | ConvertTo-Json | Set-Content (Join-Path $recursos 'app/package.json') -Encoding utf8
+          @{name='retro-computer';version='2.5.2';main='iniciar.cjs'} | ConvertTo-Json | Set-Content (Join-Path $recursos 'app/package.json') -Encoding utf8
+          node -e 'const fs=require("node:fs"),path=require("node:path");fs.writeFileSync(process.argv[1],"process.on(\"uncaughtException\",e=>{console.error(e);process.exit(1)});require("+JSON.stringify(path.resolve("src/principal/main.js"))+");");' (Join-Path $recursos 'app/iniciar.cjs')
+          node -e 'require("@electron/asar").createPackage(process.argv[1],process.argv[2]).catch(e=>{console.error(e);process.exitCode=1;});' (Join-Path $recursos 'app') (Join-Path $recursos 'app.asar')
           Copy-Item (Join-Path $recursos 'app.asar.unpacked/node_modules/node-pty/*') node_modules/node-pty -Recurse -Force
           $env:RETRO_EXECUTAVEL = $exe.FullName
           node testes/capturas.mjs capturas-pacote integracaoChrome
