@@ -74,7 +74,14 @@ class GoogleAuth {
   }
   guardarTokens(tokens) {
     if (!tokens || typeof tokens.access_token !== 'string') throw erro('resposta');
-    if (tokens.scope && ESCOPOS.some((s) => !tokens.scope.split(' ').includes(s))) throw erro('permissao');
+    if (tokens.scope) {
+      if (typeof tokens.scope !== 'string') throw erro('resposta');
+      const s = tokens.scope.split(/\s+/);
+      const todos = s.includes('https://www.googleapis.com/auth/calendar');
+      const eventos = todos || s.includes(ESCOPOS[0]);
+      const lista = todos || [ESCOPOS[1], 'https://www.googleapis.com/auth/calendar.calendarlist', 'https://www.googleapis.com/auth/calendar.readonly'].some((x) => s.includes(x));
+      if (!eventos || !lista) throw erro('permissao');
+    }
     this.dados.tokens = { access_token: tokens.access_token, refresh_token: tokens.refresh_token || this.dados.tokens?.refresh_token || null, expira: Date.now() + Math.min(Math.max(Number(tokens.expires_in) || 3600, 60), 86400) * 1000 };
     this.salvar();
   }

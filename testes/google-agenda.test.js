@@ -170,6 +170,9 @@ test('Google OAuth: configuração do instalador e validação do cliente não e
   await assert.rejects(a.conectar(), (e) => e.codigo === 'cofre');
   disponivel = true; a.carregar(); assert.equal(a.estado().configurado, true);
   assert.throws(() => a.configurar({ web: f.cliente.installed }), (e) => e.codigo === 'cliente');
+  a.guardarTokens({ access_token: 'teste', scope: 'https://www.googleapis.com/auth/calendar' });
+  assert.equal(a.estado().conectado, true);
+  assert.throws(() => a.guardarTokens({ access_token: 'teste', scope: 'https://www.googleapis.com/auth/calendar.readonly' }), (e) => e.codigo === 'permissao');
   assert.ok(!JSON.stringify(a.estado()).includes('client_secret'));
 });
 
