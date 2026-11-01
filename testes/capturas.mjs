@@ -42,6 +42,13 @@ if (ROTEIRO === 'codex') {
   process.env.ANTHROPIC_API_KEY = 'teste-nao-compartilhar';
 }
 if (ROTEIRO === 'codexInstalar') process.env.RETRO_CODEX_AUSENTE = '1';
+if (['googleAgenda', 'googleAgendaSemConfig'].includes(ROTEIRO)) {
+  process.env.RETRO_SEM_BOAS_VINDAS = '1';
+  process.env.RETRO_GOOGLE_FALSO = path.join(RAIZ, 'testes', 'google-falso.cjs');
+  process.env.RETRO_GOOGLE_DADOS = path.join(tmp, 'google-servidor.json');
+  if (ROTEIRO === 'googleAgendaSemConfig') process.env.RETRO_GOOGLE_SEM_CLIENTE = '1';
+  fs.writeFileSync(process.env.RETRO_GOOGLE_DADOS, JSON.stringify({ cursor: 1, pedidos: [], eventos: { google1: { id: 'google1', iCalUID: 'google1@example.test', summary: 'Evento do Google de teste', start: { date: '2026-11-04' }, end: { date: '2026-11-05' }, status: 'confirmed', _versao: 1 } } }));
+}
 if (ROTEIRO === 'mascotes') {
   const cli = path.join(tmp, 'Assistente de teste.cjs');
   fs.copyFileSync(path.join(RAIZ, 'testes', 'assistente-falso.cjs'), cli);
@@ -318,6 +325,57 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
+  async googleAgendaSemConfig() {
+    await fecharTudo(); await abrir('agenda');
+    await pagina.locator('.ag-corpo button', { hasText: T('Google Calendar…'), exact: true }).click();
+    await pagina.waitForSelector('.google-agenda details[open]');
+    if (!await pagina.locator('.google-agenda button', { hasText: T('Conectar Google'), exact: true }).isDisabled()) throw new Error('Ofereceu login Google sem cliente OAuth configurado.');
+    await foto('google-configuracao-inicial');
+  },
+  async googleAgenda() {
+    await fecharTudo();
+    const arq = `${DOCS}/${T('Agenda')}.ics`;
+    const local = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT', 'UID:retro-local@teste', 'DTSTART;VALUE=DATE:20261106', 'DTEND;VALUE=DATE:20261107', 'SUMMARY:Evento local de teste', 'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
+    await pagina.evaluate(async ({ arq, local }) => { await retro.disco.gravar(arq, new TextEncoder().encode(local)); }, { arq, local });
+    await abrir('agenda', { dia: '2026-11-04' });
+    await pagina.locator('.ag-corpo button', { hasText: T('Google Calendar…'), exact: true }).click();
+    await pagina.waitForSelector('.google-agenda');
+    await pagina.locator('.google-agenda button', { hasText: T('Conectar Google'), exact: true }).click();
+    await pagina.waitForSelector('.google-agenda[data-conectado="true"]');
+    await pagina.getByLabel(T('Calendário do Google'), { exact: true }).selectOption('retro@example.test');
+    await foto('google-conectar');
+    await pagina.locator('.google-agenda button', { hasText: T('Ativar sincronização'), exact: true }).click();
+    await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim'), exact: true }).click();
+    await pagina.waitForFunction(() => Number(document.querySelector('.google-agenda')?.dataset.ultima) > 0 && document.querySelector('.google-agenda')?.dataset.sincronizando === 'false');
+    const dados = await pagina.evaluate(async (arq) => ({ texto: await retro.disco.lerTexto(arq), conta: await retro.googleAgenda.estado() }), arq);
+    if (!dados.texto.includes('Evento local de teste') || !dados.texto.includes('Evento do Google de teste') || dados.conta.erro) throw new Error('Não reuniu as duas agendas: ' + JSON.stringify(dados.conta));
+    let servidor = JSON.parse(fs.readFileSync(process.env.RETRO_GOOGLE_DADOS, 'utf8'));
+    if (!Object.values(servidor.eventos).some((e) => e.summary === 'Evento local de teste')) throw new Error('O evento local não chegou ao Google.');
+    await foto('google-sincronizado');
+    // Mantém as duas mudanças pendentes até o teste poder compará-las na mesma rodada.
+    await pagina.locator('.google-agenda button', { hasText: T('Pausar sincronização'), exact: true }).click();
+    await pagina.locator('.google-agenda button', { hasText: T('Retomar sincronização'), exact: true }).waitFor();
+    await pagina.evaluate(async (arq) => { const t = await retro.disco.lerTexto(arq); await retro.disco.gravar(arq, new TextEncoder().encode(t.replace('Evento do Google de teste', 'Mudança feita no Retro'))); }, arq);
+    servidor = JSON.parse(fs.readFileSync(process.env.RETRO_GOOGLE_DADOS, 'utf8'));
+    servidor.cursor++; servidor.eventos.google1.summary = 'Mudança feita no Google'; servidor.eventos.google1._versao = servidor.cursor;
+    fs.writeFileSync(process.env.RETRO_GOOGLE_DADOS, JSON.stringify(servidor));
+    await pagina.locator('.google-agenda button', { hasText: T('Retomar sincronização'), exact: true }).click();
+    await pagina.locator('.google-agenda button', { hasText: T('Sincronizar agora'), exact: true }).click();
+    await pagina.waitForSelector('.google-agenda-conflito'); await foto('google-conflito');
+    await pagina.locator('.google-agenda button', { hasText: T('Usar versão do Google'), exact: true }).click();
+    await pagina.waitForFunction(() => !document.querySelector('.google-agenda-conflito'));
+    const texto = await pagina.evaluate((arq) => retro.disco.lerTexto(arq), arq);
+    if (!texto.includes('Mudança feita no Google') || !(await pagina.evaluate((arq) => retro.disco.versoes(arq), arq)).length) throw new Error('Resolução sem cópia anterior ou com a versão incorreta.');
+    await pagina.locator('.google-agenda button', { hasText: T('Pausar sincronização'), exact: true }).click();
+    if (!(await pagina.evaluate(() => retro.googleAgenda.estado())).pausado) throw new Error('Não pausou.');
+    await pagina.locator('.google-agenda button', { hasText: T('Desconectar Google…'), exact: true }).click();
+    await pagina.locator('.janela.dialogo.ativa button', { hasText: T('&Sim'), exact: true }).click();
+    await pagina.waitForSelector('.google-agenda[data-conectado="false"]');
+    if (!(await pagina.evaluate((arq) => retro.disco.lerTexto(arq), arq)).includes('Mudança feita no Google')) throw new Error('Desconectar apagou os eventos locais.');
+    if (JSON.stringify(dados.conta).includes('token-teste') || JSON.stringify(dados.conta).includes('client_secret')) throw new Error('Credenciais chegaram à página.');
+    if (erros.some((e) => e.startsWith('[pageerror]'))) throw new Error('Erro na interface Google: ' + erros.join('\n'));
+    await foto('google-desconectado');
+  },
   async mascotes() {
     await pagina.emulateMedia({ reducedMotion: 'no-preference' });
     await fecharTudo();
@@ -361,7 +419,10 @@ const ROTEIROS = {
       }
     }
     await pagina.emulateMedia({ reducedMotion: 'reduce' });
-    await pagina.waitForTimeout(150);
+    await pagina.waitForFunction(() => {
+      const figuras = [...document.querySelectorAll('.mascote-escolha .mascote-figura')];
+      return matchMedia('(prefers-reduced-motion: reduce)').matches && figuras.length === 8 && figuras.every((e) => e.classList.contains('sem-animacao'));
+    });
     const estatico = await pagina.locator('.mascote-escolha .mascote-figura').first().getAttribute('data-quadro');
     await pagina.waitForTimeout(550);
     if (estatico !== await pagina.locator('.mascote-escolha .mascote-figura').first().getAttribute('data-quadro')) throw new Error('Movimento reduzido ignorado.');

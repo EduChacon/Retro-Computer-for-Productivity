@@ -2118,6 +2118,19 @@ body:has(#bloqueio) #mascote, body:has(#entrada) #mascote, body:has(#protecao-te
 .assistente-pedido small { white-space: pre-wrap; color: var(--texto-meio); }
 .assistente-pedido-erro { white-space: pre-wrap; font-weight: bold; }
 .assistente-pedido > .acoes { position: sticky; bottom: 0; background: var(--janela); padding-top: 5px; }
+.google-agenda .corpo { overflow: auto; }
+.google-agenda-conteudo { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.google-agenda-conteudo h3, .google-agenda-conteudo h4, .google-agenda-conteudo p { margin: 0; }
+.google-agenda-conteudo details { padding: 8px; border: 1px solid var(--sombra); }
+.google-agenda-conteudo details > p, .google-agenda-conteudo details > .acoes { margin-top: 8px; }
+.google-agenda-conteudo summary { cursor: var(--cur-pointer, pointer); }
+.google-agenda-conteudo .acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.google-agenda-calendario { display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
+.google-agenda-erro { white-space: pre-wrap; font-weight: bold; }
+.google-agenda-conflito { border: 2px solid var(--selecao); padding: 8px; }
+.google-agenda-versoes { display: flex; gap: 8px; margin: 8px 0; }
+.google-agenda-versoes > div { flex: 1; min-width: 0; background: var(--janela); padding: 6px; }
+.google-agenda-versoes pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 150px; overflow: auto; font: inherit; }
 .assistente-respostas { display: flex; flex-wrap: wrap; gap: 4px; }
 .assistente-atividade { max-height: 90px; overflow: auto; }
 .assistente-atividade > div { white-space: pre-wrap; overflow-wrap: anywhere; padding: 5px; font-family: 'Csilla', monospace; }

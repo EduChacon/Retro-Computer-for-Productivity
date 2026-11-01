@@ -1,7 +1,7 @@
 {
   "name": "retro-computer",
   "productName": "Retro Computer",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "A retro computer for productivity: a 1990s-style desktop with the Craft apps, your files in an ordinary folder and Claude Code in the Command Prompt. In English, Portuguese and Spanish.",
   "main": "src/principal/main.js",
   "license": "MIT",
@@ -167,7 +167,16 @@
         "gnome-keyring",
         "ufw"
       ]
-    }
+    },
+    "extraResources": [
+      {
+        "from": "recursos",
+        "to": ".",
+        "filter": [
+          "google-oauth.json"
+        ]
+      }
+    ]
   },
   "desktopName": "retro-computer.desktop"
 }

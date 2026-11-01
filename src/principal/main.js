@@ -79,6 +79,8 @@ const { ehExecutavel } = require('./executaveis');
 const { modoAcentos, gravarCompose } = require('./teclado');
 const ortografia = require('./ortografia');
 const { Calendarios, semEnderecos, buscarNaRede, buscarFalso } = require('./calendarios');
+const { GoogleAgenda } = require('./google-agenda');
+const { mensagemGoogle } = require('./google-mensagens');
 const { Nuvens } = require('./nuvem');
 const { Chaveiro, ChaveiroFalso } = require('./chaveiro');
 // As configurações como a área de trabalho (e o Claude) as veem: sem a senha e sem os endereços dos calendários.
@@ -260,6 +262,7 @@ let copia = null; // a cópia de segurança do disco C: (copia.js)
 let firefox = null; // o Firefox com o visual do Retro Computer (firefox.js)
 let historico = null; // o histórico da área de transferência (transferencia.js)
 let calendarios = null; // os calendários da internet da Agenda (calendarios.js)
+let googleAgenda = null; // a conexão bidirecional, privada deste perfil
 let nuvens = null; // as contas na nuvem do Linux, pelo rclone (nuvem.js)
 let pararObservar = () => { };
 
@@ -318,6 +321,7 @@ async function abrirDisco() {
     config.definir({ disco: raiz });
   }
   disco = new Disco(raiz);
+  if (googleAgenda) { googleAgenda.geracao++; googleAgenda.disco = disco; }
   if (assistente) { assistente.encerrar(); assistente.disco = disco; }
   disco.aoExportar = copiarMarcas;
   // A primeira vez com este disco: a configuração ainda não sabe os nomes das pastas dele.
@@ -327,7 +331,7 @@ async function abrirDisco() {
   await disco.preparar([pastas.documentos, pastas.mesa]);
   if (primeiraVez && !fs.existsSync(path.join(raiz, pastas.documentos, pastas.leiame))) await criarBoasVindas(pastas);
   pararObservar();
-  pararObservar = disco.observar((mudancas) => { enviar('disco:mudou', mudancas); if (indice) indice.agendar(); }, (rel) => { if (diario) diario.arquivoMudou(rel).catch(() => { }); });
+  pararObservar = disco.observar((mudancas) => { enviar('disco:mudou', mudancas); if (indice) indice.agendar(); if (googleAgenda && mudancas.includes(path.posix.dirname(googleAgenda.arquivo()))) googleAgenda.agendar(); }, (rel) => { if (diario) diario.arquivoMudou(rel).catch(() => { }); });
 }
 
 /** O nome da pasta da cópia de segurança dentro do destino (guardado, como o do diário). */
@@ -2114,6 +2118,31 @@ function registrarPonte() {
   tratar('calendarios:ler', comErro((id) => calendarios.ler(String(id))));
   tratar('calendarios:mudar', comErro((id, parte) => { calendarios.mudar(String(id), parte && typeof parte === 'object' ? parte : {}); return listaCalendarios(); }));
   tratar('calendarios:remover', comErro((id) => { calendarios.remover(String(id)); return listaCalendarios(); }));
+  const estadoGoogle = (s = googleAgenda.estado()) => ({ ...s, mensagem: mensagemGoogle(s.erro) });
+  const comGoogle = (f) => async (...a) => { try { return await f(...a); } catch (e) { throw new Error(mensagemGoogle(e.codigo || (e.code === 'alterado' ? 'alterado' : 'rede'))); } };
+  tratar('googleAgenda:estado', () => estadoGoogle());
+  tratar('googleAgenda:configurar', comGoogle(async () => {
+    const r = await dialog.showOpenDialog(janela, { title: idioma.tr('Importar configuração do Google'), properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
+    if (r.canceled || !r.filePaths[0]) return estadoGoogle();
+    let cliente;
+    try { if (fs.statSync(r.filePaths[0]).size > 128 * 1024) throw new Error(); cliente = JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8')); } catch { const e = new Error(); e.codigo = 'cliente'; throw e; }
+    googleAgenda.auth.configurar(cliente); return estadoGoogle();
+  }));
+  tratar('googleAgenda:conectar', comGoogle(async () => { if (googleAgenda.ocupado) { const e = new Error(); e.codigo = 'conflito'; throw e; } googleAgenda.geracao++; await googleAgenda.auth.conectar(); return estadoGoogle(); }));
+  tratar('googleAgenda:cancelarLogin', () => { googleAgenda.auth.cancelar(); return estadoGoogle(); });
+  tratar('googleAgenda:abrirLogin', comGoogle(() => googleAgenda.auth.abrirLogin()));
+  tratar('googleAgenda:calendarios', comGoogle(() => googleAgenda.calendarios()));
+  tratar('googleAgenda:selecionar', comGoogle(async (id) => {
+    if (!config.obter().pastas?.agenda) config.definir({ pastas: { agenda: path.posix.basename(googleAgenda.arquivo()) } });
+    return estadoGoogle(await googleAgenda.selecionar(String(id)));
+  }));
+  tratar('googleAgenda:sincronizar', comGoogle(async () => estadoGoogle(await googleAgenda.sincronizar(true))));
+  tratar('googleAgenda:agendar', () => { googleAgenda.agendar(); return true; });
+  tratar('googleAgenda:pausar', (v) => estadoGoogle(googleAgenda.pausar(!!v)));
+  tratar('googleAgenda:desconectar', comGoogle(() => estadoGoogle(googleAgenda.desconectar())));
+  tratar('googleAgenda:resolver', comGoogle(async (k, escolha) => estadoGoogle(await googleAgenda.resolver(String(k), escolha))));
+  tratar('googleAgenda:guia', (consoleGoogle) => shell.openExternal(consoleGoogle ? 'https://console.cloud.google.com/apis/library/calendar-json.googleapis.com' : 'https://developers.google.com/identity/protocols/oauth2/native-app'));
+  tratar('googleAgenda:copias', async () => { const pasta = path.join(googleAgenda.pasta, 'recuperacao'); fs.mkdirSync(pasta, { recursive: true, mode: 0o700 }); return shell.openPath(pasta); });
   // As contas na nuvem (Linux, pelo rclone): a tela vê o nome, o serviço e o estado de cada uma.
   const erroNuvem = (e) => {
     const c = e && e.codigo;
@@ -2550,6 +2579,7 @@ function criarLoja() {
 }
 
 function reabrirApp() {
+  if (googleAgenda) googleAgenda.encerrar();
   if (assistente) assistente.encerrar();
   if (terminais) terminais.fecharTodos();
   if (nuvens) nuvens.encerrar();
@@ -2888,6 +2918,26 @@ app.whenReady().then(async () => {
     if (a.aderencia || a.teclasMouse) acessLinux.aplicar(a).catch(() => { });
   }
   await abrirDisco();
+  // O login do Google usa o navegador padrão; cookies do Navegador do Retro não entram na API.
+  const googleTeste = process.env.RETRO_GOOGLE_FALSO ? require(process.env.RETRO_GOOGLE_FALSO)() : null;
+  let clienteGoogle = null;
+  try {
+    const arquivo = path.join(app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'recursos'), 'google-oauth.json');
+    if (fs.statSync(arquivo).size <= 128 * 1024) clienteGoogle = JSON.parse(fs.readFileSync(arquivo, 'utf8'));
+  } catch { }
+  googleAgenda = new GoogleAgenda({
+    pasta: path.join(app.getPath('userData'), 'google-agenda'), disco, config,
+    arquivo: () => {
+      const p = config.obter().pastas || {};
+      return (p.documentos || idioma.tr('Meus documentos')) + '/' + (p.agenda || idioma.tr('Agenda') + '.ics');
+    },
+    cofre: googleTeste?.cofre || safeStorage, clientePadrao: googleTeste ? null : clienteGoogle,
+    disponivel: googleTeste ? () => true : () => config.cofreDisponivel() && (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend() !== 'basic_text'),
+    buscar: googleTeste?.buscar || ((url, o) => net.fetch(url, o)), abrir: googleTeste?.abrir || ((url) => shell.openExternal(url)),
+    aoMudar: (s) => enviar('googleAgenda:mudou', { ...s, mensagem: mensagemGoogle(s.erro) }),
+  });
+  if (googleTeste?.cliente && !googleAgenda.auth.estado().configurado) googleAgenda.auth.configurar(googleTeste.cliente);
+  googleAgenda.iniciar();
   // Os pendrives e cartões (RETRO_UNIDADES_FALSAS: uma pasta comum, para os testes).
   unidades = process.env.RETRO_UNIDADES_FALSAS
     ? new UnidadesFalsas({ disco: () => disco }, process.env.RETRO_UNIDADES_FALSAS)
@@ -2977,7 +3027,7 @@ app.on('will-quit', (e) => {
   Promise.race([limparNavegador(), new Promise((ok) => setTimeout(ok, 4000))]).catch(() => { }).finally(() => app.quit());
 });
 
-app.on('before-quit', () => { laboratorio.parar(); if (assistente) assistente.encerrar(); });
+app.on('before-quit', () => { laboratorio.parar(); if (assistente) assistente.encerrar(); if (googleAgenda) googleAgenda.encerrar(); });
 
 app.on('window-all-closed', () => {
   laboratorio.parar();

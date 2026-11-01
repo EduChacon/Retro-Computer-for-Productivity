@@ -181,6 +181,24 @@ contextBridge.exposeInMainWorld('retro', {
     mudar: (id, parte) => chamar('calendarios:mudar', id, parte),
     remover: (id) => chamar('calendarios:remover', id),
   },
+  // A conexão do Google: os tokens e a configuração OAuth nunca chegam à página.
+  googleAgenda: {
+    estado: () => chamar('googleAgenda:estado'),
+    configurar: () => chamar('googleAgenda:configurar'),
+    conectar: () => chamar('googleAgenda:conectar'),
+    cancelarLogin: () => chamar('googleAgenda:cancelarLogin'),
+    abrirLogin: () => chamar('googleAgenda:abrirLogin'),
+    calendarios: () => chamar('googleAgenda:calendarios'),
+    selecionar: (id) => chamar('googleAgenda:selecionar', id),
+    sincronizar: () => chamar('googleAgenda:sincronizar'),
+    agendar: () => chamar('googleAgenda:agendar'),
+    pausar: (v) => chamar('googleAgenda:pausar', v),
+    desconectar: () => chamar('googleAgenda:desconectar'),
+    resolver: (k, escolha) => chamar('googleAgenda:resolver', k, escolha),
+    guia: (consoleGoogle = false) => chamar('googleAgenda:guia', consoleGoogle),
+    copias: () => chamar('googleAgenda:copias'),
+    aoMudar: ouvir('googleAgenda:mudou'),
+  },
   // As contas na nuvem do Linux (nuvem.js): o rclone, as contas, conectar e desconectar.
   nuvem: {
     estado: () => chamar('nuvem:estado'),

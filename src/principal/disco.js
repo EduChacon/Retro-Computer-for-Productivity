@@ -67,6 +67,7 @@ const ehAtalho = (nome) => nome.toLowerCase().endsWith(EXT_ATALHO);
 class Disco {
   constructor(raiz) {
     this.raiz = path.resolve(raiz);
+    this.gravacoes = new Map();
   }
 
   /** Prepara a pasta na primeira vez (as pastas iniciais, no idioma escolhido). */
@@ -191,12 +192,26 @@ class Disco {
   }
 
   /** Grava o arquivo; se ele já existir, a versão anterior vai para .versoes/. */
-  async gravar(rel, dados, { versao = true } = {}) {
+  async gravar(rel, dados, opcoes = {}) {
+    const n = this.normalizar(rel);
+    const antes = this.gravacoes.get(n) || Promise.resolve();
+    const p = antes.catch(() => {}).then(() => this._gravar(n, dados, opcoes));
+    this.gravacoes.set(n, p);
+    return p.finally(() => { if (this.gravacoes.get(n) === p) this.gravacoes.delete(n); });
+  }
+
+  async _gravar(rel, dados, { versao = true, esperado = undefined } = {}) {
     const n = this.normalizar(rel);
     if (!n) throw new ErroDisco(tr('Nome de arquivo vazio.'), 'invalido');
     const nome = path.posix.basename(n);
     if (!nomeValido(nome)) throw new ErroDisco(tr('O nome "{nome}" não é válido.', { nome }), 'nome');
     const destino = this.real(n);
+    // A sincronização só substitui exatamente a versão que leu, dentro da mesma fila de gravação.
+    if (esperado !== undefined) {
+      let atual = null;
+      try { atual = crypto.createHash('sha256').update(await fsp.readFile(destino)).digest('hex'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+      if (atual !== esperado) throw new ErroDisco(tr('O arquivo mudou durante a sincronização. As alterações foram preservadas; tente novamente.'), 'alterado');
+    }
     await fsp.mkdir(path.dirname(destino), { recursive: true });
     let anterior = null;
     try { anterior = await fsp.stat(destino); } catch { }
