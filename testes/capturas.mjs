@@ -352,9 +352,14 @@ const ROTEIROS = {
     let servidor = JSON.parse(fs.readFileSync(process.env.RETRO_GOOGLE_DADOS, 'utf8'));
     if (!Object.values(servidor.eventos).some((e) => e.summary === 'Evento local de teste')) throw new Error('O evento local não chegou ao Google.');
     await foto('google-sincronizado');
+    // Mantém as duas mudanças pendentes até o teste poder compará-las na mesma rodada.
+    await pagina.locator('.google-agenda button', { hasText: T('Pausar sincronização'), exact: true }).click();
+    await pagina.locator('.google-agenda button', { hasText: T('Retomar sincronização'), exact: true }).waitFor();
     await pagina.evaluate(async (arq) => { const t = await retro.disco.lerTexto(arq); await retro.disco.gravar(arq, new TextEncoder().encode(t.replace('Evento do Google de teste', 'Mudança feita no Retro'))); }, arq);
+    servidor = JSON.parse(fs.readFileSync(process.env.RETRO_GOOGLE_DADOS, 'utf8'));
     servidor.cursor++; servidor.eventos.google1.summary = 'Mudança feita no Google'; servidor.eventos.google1._versao = servidor.cursor;
     fs.writeFileSync(process.env.RETRO_GOOGLE_DADOS, JSON.stringify(servidor));
+    await pagina.locator('.google-agenda button', { hasText: T('Retomar sincronização'), exact: true }).click();
     await pagina.locator('.google-agenda button', { hasText: T('Sincronizar agora'), exact: true }).click();
     await pagina.waitForSelector('.google-agenda-conflito'); await foto('google-conflito');
     await pagina.locator('.google-agenda button', { hasText: T('Usar versão do Google'), exact: true }).click();
@@ -414,7 +419,10 @@ const ROTEIROS = {
       }
     }
     await pagina.emulateMedia({ reducedMotion: 'reduce' });
-    await pagina.waitForTimeout(150);
+    await pagina.waitForFunction(() => {
+      const figuras = [...document.querySelectorAll('.mascote-escolha .mascote-figura')];
+      return matchMedia('(prefers-reduced-motion: reduce)').matches && figuras.length === 8 && figuras.every((e) => e.classList.contains('sem-animacao'));
+    });
     const estatico = await pagina.locator('.mascote-escolha .mascote-figura').first().getAttribute('data-quadro');
     await pagina.waitForTimeout(550);
     if (estatico !== await pagina.locator('.mascote-escolha .mascote-figura').first().getAttribute('data-quadro')) throw new Error('Movimento reduzido ignorado.');
