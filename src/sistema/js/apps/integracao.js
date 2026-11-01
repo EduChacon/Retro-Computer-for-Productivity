@@ -45,6 +45,7 @@ class Integracao {
         this.barra.append(this.botao(tr('Permitir controle de janelas…'), async () => { await retro.integracao.permitir(); this.aviso(tr('Permita o controle de janelas em Ajustes do Sistema › Privacidade e Segurança › Acessibilidade e tente novamente.')); }), this.botao(tr('Tentar novamente'), () => this.iniciar()));
         this.alternativas(); return;
       }
+      this.aviso(tr('Aguardando a janela do programa… A primeira abertura pode levar até 30 segundos.'));
       const s = await retro.integracao.abrir(this.id);
       if (this.j.fechada) { await retro.integracao.soltar(s.id); return; }
       this.sessao = s; this.j.el.dataset.modo = s.modo;

@@ -4,7 +4,7 @@
 
 Um computador retrô para produtividade: a área de trabalho de um PC dos anos 90, com os programas de trabalho, os seus arquivos e o Claude Code, sem as distrações do computador de hoje. Funciona no Windows, no macOS e no Linux (inclusive no Raspberry Pi), e no Linux pode ser o sistema inteiro do computador, transformando um notebook antigo ou um mini PC num computador retrô dedicado. Código aberto (licença MIT).
 
-- **Versão:** 2.5.0 · [Baixar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Versão:** 2.5.1 · [Baixar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
 - **Google Calendar:** sincronização da Agenda nos dois sentidos, alterações sem internet e escolha explícita em conflitos; exige configuração OAuth do Google.
 - **Programas integrados:** moldura retrô experimental para programas compatíveis do Windows, controles de janelas do Mac e versões web internas. [Guia](docs/programas-integrados.md)
 - **Assistente:** oito mascotes animados, chat integrado com Claude Code ou Codex, anexos e ferramentas do sistema retrô.

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-public static class RetroJanelas {
+public static partial class RetroJanelas {
   [StructLayout(LayoutKind.Sequential)] struct RECT { public int L,T,R,B; }
   [StructLayout(LayoutKind.Sequential)] struct POINT { public int X,Y; }
   [StructLayout(LayoutKind.Sequential)] struct PLACEMENT { public int Length,Flags,Show; public POINT Min,Max; public RECT Normal; }
@@ -18,6 +18,7 @@ public static class RetroJanelas {
   [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder t, int n);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder t, int n);
   [DllImport("user32.dll")] static extern IntPtr GetParent(IntPtr h);
   [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
   [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
@@ -43,10 +44,17 @@ public static class RetroJanelas {
   class Hospedeira:Form { protected override bool ShowWithoutActivation { get { return true; } } }
   class Item { public string Id; public IntPtr H,Parent,Style,Ex; public uint Pid; public long Inicio; public PLACEMENT Lugar; public Hospedeira Host; public bool Visivel; public double X,Y,W,Hh,Vw,Vh; }
   static Dictionary<string,Item> itens = new Dictionary<string,Item>();
+  static readonly HashSet<string> classesDoSistema=new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Progman","WorkerW","Shell_TrayWnd","Shell_SecondaryTrayWnd","#32769" };
   static Control fila; static Thread thread; static IntPtr pai; static int processoPai; static System.Windows.Forms.Timer timer; static bool encerrando;
   static void UI(Action f) { if (fila.InvokeRequired) fila.Invoke(f); else f(); }
   static bool Valido(Item i) { uint p; GetWindowThreadProcessId(i.H,out p); try { return IsWindow(i.H) && p==i.Pid && Process.GetProcessById((int)p).StartTime.ToUniversalTime().Ticks==i.Inicio; } catch { return false; } }
   static Item Obter(string id) { Item i; if (!itens.TryGetValue(id,out i) || !Valido(i)) throw new Exception("sessao"); return i; }
+  static bool JanelaDePrograma(IntPtr h) {
+    if(!IsWindowVisible(h) || GetWindow(h,4)!=IntPtr.Zero || h==pai) return false;
+    var classe=new StringBuilder(128); GetClassName(h,classe,128);
+    // O Explorer também hospeda a mesa e a barra do Windows; elas nunca são um programa a incorporar.
+    return !classesDoSistema.Contains(classe.ToString());
+  }
   public static void Iniciar(long h,int pid) {
     if (IntPtr.Size!=8) throw new Exception("plataforma");
     pai=new IntPtr(h); processoPai=pid; uint p; GetWindowThreadProcessId(pai,out p); if (p!=pid || !IsWindow(pai)) throw new Exception("pai");
@@ -59,7 +67,7 @@ public static class RetroJanelas {
     var lista=new List<Janela>(); UI(()=> {
       EnumWindows((h,p)=> {
         try {
-          if (!IsWindowVisible(h) || GetWindow(h,4)!=IntPtr.Zero || h==pai) return true;
+          if (!JanelaDePrograma(h)) return true;
           uint pid; GetWindowThreadProcessId(h,out pid); if (pid==processoPai || pid==Process.GetCurrentProcess().Id) return true;
           var processo=Process.GetProcessById((int)pid);
           if (!String.Equals(processo.MainModule.FileName,arquivo,StringComparison.OrdinalIgnoreCase)) return true;
@@ -105,6 +113,7 @@ public static class RetroJanelas {
     if(mostrar) { if(!i.Host.Visible) i.Host.Show(); SetWindowPos(i.Host.Handle,IntPtr.Zero,0,0,0,0,0x0013); } else if(i.Host.Visible) i.Host.Hide();
   }
   public static bool Aberta(string id) { bool aberta=false; UI(()=> { Item i; aberta=itens.TryGetValue(id,out i) && Valido(i); }); return aberta; }
+  public static bool Embutida(string id) { bool embutida=false; UI(()=> { Item i; embutida=itens.TryGetValue(id,out i) && Valido(i) && i.Host!=null && GetParent(i.H)==i.Host.Handle; }); return embutida; }
   public static void Focar(string id) { UI(()=> {
     var i=Obter(id); uint p; uint atual=GetCurrentThreadId(), destino=GetWindowThreadProcessId(i.H,out p), frente=GetWindowThreadProcessId(GetForegroundWindow(),out p);
     // SetParent já liga as filas do hospedeiro e do programa; não desfazer essa ligação implícita.
