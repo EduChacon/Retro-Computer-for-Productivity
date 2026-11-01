@@ -49,7 +49,7 @@ class Programas {
     this.selModo.value = (estado.config && estado.config.atualizacoes) || 'automatico';
     this.selModo.addEventListener('change', () => definirConfig({ atualizacoes: this.selModo.value }));
     this.btProcurar = h('button', { on: { click: () => this.procurar(true) } }, tr('Procurar atualizações'));
-    this.btLista = h('button', { on: { click: () => this.atualizarLista(true) } }, tr('Atualizar lista'));
+    this.btLista = h('button', { style: { flexShrink: '0' }, on: { click: () => this.atualizarLista(true) } }, tr('Atualizar lista'));
     this.j.corpo.style.padding = '8px';
     const abaRetro = h('div.aba-programas');
     abaRetro.append(
@@ -122,7 +122,7 @@ class Programas {
     try {
       const r = await retro.programas.atualizarCatalogo({ forcar });
       if (this.j.fechada) return;
-      if (r.atualizado) await this.carregar();
+      if (r.atualizado && r.novos > 0) await this.carregar();
       if (forcar) this.estadoEl.textContent = r.offline ? tr('Sem conexão. A lista salva continua disponível.') : tr('Lista de programas atualizada.');
     } catch { if (forcar && !this.j.fechada) this.estadoEl.textContent = tr('Sem conexão. A lista salva continua disponível.'); }
     finally { this.atualizandoLista = false; this.btLista.disabled = false; }

@@ -382,6 +382,7 @@ const ROTEIROS = {
     if (!fs.readdirSync(path.join(disco, DOCS)).some((n) => n.endsWith('.xlsx'))) throw new Error('Não criou a planilha pelo menu Arquivo.');
     await foto('novos-explorador');
     await abrir('programas');
+    await pagina.waitForFunction(() => window.__retro.janelas.lista.find((j) => j.id === 'programas')?.programas?.atualizandoLista === false);
     await pagina.locator('.linha-programa', { hasText: 'TextureCraft' }).waitFor();
     await pagina.locator('.linha-programa', { hasText: 'Craft Anything' }).waitFor();
     await pagina.locator('.linha-programa', { hasText: 'SolidCraft' }).scrollIntoViewIfNeeded(); await foto('catalogo-novos-craft');
