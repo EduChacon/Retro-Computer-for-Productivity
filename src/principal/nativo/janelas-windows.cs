@@ -52,7 +52,7 @@ public static partial class RetroJanelas {
   class Item { public string Id; public IntPtr H,Parent,Style,Ex; public uint Pid; public long Inicio; public PLACEMENT Lugar; public Hospedeira Host; public bool Visivel,Cheia; public Rectangle Recorte; public double X,Y,W,Hh,Vw,Vh; }
   static Dictionary<string,Item> itens = new Dictionary<string,Item>();
   static readonly HashSet<string> classesDoSistema=new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Progman","WorkerW","Shell_TrayWnd","Shell_SecondaryTrayWnd","#32769" };
-  static Control fila; static Thread thread; static IntPtr pai; static int processoPai; static System.Windows.Forms.Timer timer; static bool encerrando;
+  static Control fila; static Thread thread; static IntPtr pai; static int processoPai; static System.Windows.Forms.Timer timer; static bool encerrando,elevouRetro;
   static BarraDeTarefas barra;
   static void UI(Action f) { if (fila.InvokeRequired) fila.Invoke(f); else f(); }
   static bool Valido(Item i) { uint p; GetWindowThreadProcessId(i.H,out p); try { return IsWindow(i.H) && p==i.Pid && Process.GetProcessById((int)p).StartTime.ToUniversalTime().Ticks==i.Inicio; } catch { return false; } }
@@ -117,10 +117,23 @@ public static partial class RetroJanelas {
     // nem tornamos o hospedeiro uma janela possuída: destruir o Retro deve preservar o aplicativo.
     try { if(barra!=null) { barra.MarkFullscreenWindow(i.Host.Handle,cheia); i.Cheia=cheia; } } catch { }
   }
+  static void OrdemDoRetro() {
+    bool usar=false;
+    if(!encerrando && IsWindow(pai) && !IsIconic(pai)) {
+      var f=GetForegroundWindow(); RECT r; GetWindowRect(pai,out r); var tela=Screen.FromHandle(pai).Bounds;
+      bool cheia=r.L<=tela.Left && r.T<=tela.Top && r.R>=tela.Right && r.B>=tela.Bottom;
+      if(cheia) foreach(var i in itens.Values) if(i.Host!=null && i.Visivel && Valido(i) && (f==pai || IsChild(pai,f) || f==i.Host.Handle || IsChild(i.Host.Handle,f))) { usar=true; break; }
+    }
+    // O Electron perde a precedência sobre a barra ao focar outro processo. A ordem só vale
+    // durante esta integração em tela cheia; Alt+Tab, ocultar e devolver restauram o estado.
+    bool jaNoTopo=IsWindow(pai) && (GetLong(pai,-20).ToInt64() & 8)!=0;
+    if(usar && !jaNoTopo) { if(SetWindowPos(pai,new IntPtr(-1),0,0,0,0,0x0013)) elevouRetro=true; }
+    if(!usar && elevouRetro) { if(IsWindow(pai)) SetWindowPos(pai,new IntPtr(-2),0,0,0,0,0x0013); elevouRetro=false; }
+  }
   public static void Posicionar(string id,double x,double y,double w,double h,double vw,double vh,bool visivel) { UI(()=> {
     var i=Obter(id); if(i.Host==null || vw<=0 || vh<=0) throw new Exception("sessao");
-    if(!visivel) { i.Visivel=false; TelaCheia(i,false); i.Host.Hide(); return; }
-    i.X=x; i.Y=y; i.W=w; i.Hh=h; i.Vw=vw; i.Vh=vh; i.Visivel=true; Mover(i); Visibilidade(i);
+    if(!visivel) { i.Visivel=false; TelaCheia(i,false); i.Host.Hide(); OrdemDoRetro(); return; }
+    i.X=x; i.Y=y; i.W=w; i.Hh=h; i.Vw=vw; i.Vh=vh; i.Visivel=true; OrdemDoRetro(); Mover(i); Visibilidade(i);
   }); }
   static void Mover(Item i) {
     if(i.Host==null || !i.Visivel || i.Vw<=0 || i.Vh<=0) return;
@@ -153,11 +166,11 @@ public static partial class RetroJanelas {
     var i=Obter(id); uint p; uint atual=GetCurrentThreadId(), destino=GetWindowThreadProcessId(i.H,out p), frente=GetWindowThreadProcessId(GetForegroundWindow(),out p);
     // SetParent já liga as filas do hospedeiro e do programa; não desfazer essa ligação implícita.
     bool b=frente!=atual && frente!=destino && AttachThreadInput(atual,frente,true);
-    try { if(i.Host!=null) { i.Visivel=true; Mover(i); TelaCheia(i,true); i.Host.Show(); SetForegroundWindow(i.Host.Handle); } else { ShowWindow(i.H,9); SetForegroundWindow(i.H); } SetFocus(i.H); }
+    try { if(i.Host!=null) { i.Visivel=true; OrdemDoRetro(); Mover(i); TelaCheia(i,true); i.Host.Show(); SetForegroundWindow(i.Host.Handle); OrdemDoRetro(); Mover(i); } else { ShowWindow(i.H,9); SetForegroundWindow(i.H); } SetFocus(i.H); }
     finally { if(b) AttachThreadInput(atual,frente,false); }
   }); }
-  public static void Esconder(string id) { UI(()=> { var i=Obter(id); i.Visivel=false; if(i.Host!=null) { TelaCheia(i,false); i.Host.Hide(); } }); }
-  public static void Ocultar() { UI(()=> { foreach(var i in itens.Values) { i.Visivel=false; if(i.Host!=null) { TelaCheia(i,false); i.Host.Hide(); } } }); }
+  public static void Esconder(string id) { UI(()=> { var i=Obter(id); i.Visivel=false; if(i.Host!=null) { TelaCheia(i,false); i.Host.Hide(); } OrdemDoRetro(); }); }
+  public static void Ocultar() { UI(()=> { foreach(var i in itens.Values) { i.Visivel=false; if(i.Host!=null) { TelaCheia(i,false); i.Host.Hide(); } } OrdemDoRetro(); }); }
   public static void Fechar(string id) { UI(()=> {
     var i=Obter(id);
     // O fechamento volta ao contexto original, inclusive os avisos de salvar do aplicativo.
@@ -170,12 +183,13 @@ public static partial class RetroJanelas {
       ShowWindow(i.H,0); SetParent(i.H,i.Parent); if(GetParent(i.H)==i.Host.Handle) throw new Exception("restaurar");
       SetLong(i.H,-16,i.Style); SetLong(i.H,-20,i.Ex); SetWindowPos(i.H,IntPtr.Zero,0,0,0,0,0x0037); SetWindowPlacement(i.H,ref i.Lugar); ShowWindow(i.H,i.Lugar.Show==2?9:i.Lugar.Show);
     }
-    i.Host.Dispose(); i.Host=null;
+    i.Host.Dispose(); i.Host=null; OrdemDoRetro();
   }
   public static void Soltar(string id) { UI(()=> { Item i; if(itens.TryGetValue(id,out i)) { Restaurar(i); itens.Remove(id); } }); }
   static void Vigiar() {
     uint pidPai; GetWindowThreadProcessId(pai,out pidPai);
     bool vivo=IsWindow(pai) && pidPai==processoPai; try { vivo=vivo && !Process.GetProcessById(processoPai).HasExited; } catch { vivo=false; }
+    OrdemDoRetro();
     foreach(var i in new List<Item>(itens.Values)) {
       try { if(!vivo || encerrando || !Valido(i)) { Restaurar(i); itens.Remove(i.Id); } else { Mover(i); Visibilidade(i); } } catch { }
     }

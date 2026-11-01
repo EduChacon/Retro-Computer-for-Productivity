@@ -1,0 +1,44 @@
+name: Conferir pacote de janelas
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  janelas:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Preparar o runtime do pacote publicado com o código desta branch
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release download v2.5.1 --repo EduChacon/Retro-Computer-for-Productivity --pattern '*win-x64.zip' --dir pacote
+          if ($LASTEXITCODE -ne 0) { throw 'O pacote base não foi baixado.' }
+          $zip = Get-ChildItem pacote -Filter '*.zip' | Select-Object -First 1
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath runtime-teste
+          $exe = Get-ChildItem runtime-teste -Filter 'Retro Computer.exe' -Recurse | Select-Object -First 1
+          if (-not $exe) { throw 'O runtime não foi encontrado.' }
+          $recursos = Join-Path $exe.Directory.FullName 'resources'
+          Rename-Item (Join-Path $recursos 'app.asar') 'app-base.asar'
+          New-Item (Join-Path $recursos 'app') -ItemType Directory | Out-Null
+          @{name='retro-computer';version='2.5.2';main=(Join-Path $PWD 'src/principal/main.js')} | ConvertTo-Json | Set-Content (Join-Path $recursos 'app/package.json') -Encoding utf8
+          Copy-Item (Join-Path $recursos 'app.asar.unpacked/node_modules/node-pty/*') node_modules/node-pty -Recurse -Force
+          $env:RETRO_EXECUTAVEL = $exe.FullName
+          node testes/capturas.mjs capturas-pacote integracaoChrome
+          if ($LASTEXITCODE -ne 0) { throw 'A integração no runtime publicado falhou.' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janelas-pacote
+          path: capturas-pacote/*.png
+          if-no-files-found: ignore
