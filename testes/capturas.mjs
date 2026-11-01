@@ -413,7 +413,12 @@ const ROTEIROS = {
       });
       d.pai = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getNativeWindowHandle().readBigUInt64LE().toString(16));
       const arquivo = path.join(tmp, 'conferir-integracao.json'); fs.writeFileSync(arquivo, JSON.stringify(d));
-      console.log(execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(RAIZ, 'testes/conferir-integracao.ps1'), arquivo], { windowsHide: true, encoding: 'utf8' }).trim());
+      try {
+        console.log(execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(RAIZ, 'testes/conferir-integracao.ps1'), arquivo], { windowsHide: true, encoding: 'utf8' }).trim());
+      } catch (e) {
+        const captura = await app.evaluate(async ({ desktopCapturer }) => { const f = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1600, height: 1000 } }); return f[0].thumbnail.toPNG().toString('base64'); });
+        fs.writeFileSync(path.join(SAIDA, 'integracao-chrome-tela-falha.png'), Buffer.from(captura, 'base64')); throw e;
+      }
     };
     await conferir();
     const titulo = await pagina.locator('.integracao-nativa > .titulo').boundingBox();
