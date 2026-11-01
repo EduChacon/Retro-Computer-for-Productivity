@@ -127,7 +127,7 @@ public static partial class RetroJanelas {
     // O Electron perde a precedência sobre a barra ao focar outro processo. A ordem só vale
     // durante esta integração em tela cheia; Alt+Tab, ocultar e devolver restauram o estado.
     bool jaNoTopo=IsWindow(pai) && (GetLong(pai,-20).ToInt64() & 8)!=0;
-    if(usar && !jaNoTopo) { if(SetWindowPos(pai,new IntPtr(-1),0,0,0,0,0x0013)) elevouRetro=true; }
+    if(usar) { if(SetWindowPos(pai,new IntPtr(-1),0,0,0,0,0x0013) && !jaNoTopo) elevouRetro=true; }
     if(!usar && elevouRetro) { if(IsWindow(pai)) SetWindowPos(pai,new IntPtr(-2),0,0,0,0,0x0013); elevouRetro=false; }
   }
   public static void Posicionar(string id,double x,double y,double w,double h,double vw,double vh,bool visivel) { UI(()=> {
@@ -140,7 +140,9 @@ public static partial class RetroJanelas {
     RECT r; GetClientRect(pai,out r); var p=new POINT(); ClientToScreen(pai,ref p);
     double sx=(r.R-r.L)/i.Vw, sy=(r.B-r.T)/i.Vh;
     int x=(int)Math.Round(i.X*sx), y=(int)Math.Round(i.Y*sy), w=Math.Max(1,(int)Math.Round(i.W*sx)), h=Math.Max(1,(int)Math.Round(i.Hh*sy));
-    bool topo=(GetLong(pai,-20).ToInt64() & 8)!=0; if(i.Host.TopMost!=topo) i.Host.TopMost=topo;
+    bool topo=(GetLong(pai,-20).ToInt64() & 8)!=0, hostNoTopo=(GetLong(i.Host.Handle,-20).ToInt64() & 8)!=0;
+    // Mudar a ordem pelo Form.TopMost pode ativá-lo e roubar de volta o foco de outro programa.
+    if(hostNoTopo!=topo) SetWindowPos(i.Host.Handle,new IntPtr(topo?-1:-2),0,0,0,0,0x0013);
     // O shell também verifica o tamanho da janela ativa. O HWND acompanha o Retro inteiro,
     // mas a região só deixa aparecer e receber cliques na área do aplicativo.
     var recorte=new Rectangle(x,y,w,h);
