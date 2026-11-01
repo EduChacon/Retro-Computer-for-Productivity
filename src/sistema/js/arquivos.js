@@ -307,17 +307,19 @@ export async function levar(rels, onde) {
  * pedido. Antes, a versão de agora do arquivo é guardada (Versões anteriores…): o Claude grava
  * direto no disco, e assim nada se perde.
  */
-function pedidosAoClaude(um) {
+function pedidosAoAssistente(um, agente = 'claude') {
   const pedir = async (pedido) => {
     if (!pedido) return;
-    if (!um.pasta) await retro.disco.guardarVersao(um.rel).catch(() => { });
-    abrir('claude', { pasta: um.pasta ? um.rel : paiDe(um.rel), pedido });
+    try { if (!um.pasta) await retro.disco.guardarVersao(um.rel); } catch (e) { erro(e.message); return; }
+    abrir(agente, { pasta: um.pasta ? um.rel : paiDe(um.rel), pedido });
   };
   const arquivo = um.nome;
   const outro = async () => {
     const texto = await entrada({
-      titulo: tr('Pedir ao Claude'), icone: 'claude', larg: 420,
-      texto: um.pasta ? tr('O que o Claude deve fazer na pasta "{pasta}"?', { pasta: arquivo }) : tr('O que o Claude deve fazer com o arquivo "{arquivo}"?', { arquivo }),
+      titulo: agente === 'codex' ? tr('Pedir ao Codex') : tr('Pedir ao Claude'), icone: agente, larg: 420,
+      texto: agente === 'codex'
+        ? (um.pasta ? tr('O que o Codex deve fazer na pasta "{pasta}"?', { pasta: arquivo }) : tr('O que o Codex deve fazer com o arquivo "{arquivo}"?', { arquivo }))
+        : um.pasta ? tr('O que o Claude deve fazer na pasta "{pasta}"?', { pasta: arquivo }) : tr('O que o Claude deve fazer com o arquivo "{arquivo}"?', { arquivo }),
     });
     if (texto && texto.trim()) pedir(um.pasta ? texto.trim() : tr('Sobre o arquivo "{arquivo}": {pedido}', { arquivo, pedido: texto.trim() }));
   };
@@ -366,8 +368,10 @@ export function menuDeItens(sel, o = {}) {
     itens.push({ rotulo: tr('Expl&orar'), acao: () => abrir('explorador', { pasta: um.rel }) });
     if (o.novaAba) itens.push({ rotulo: tr('Abrir em nova a&ba'), acao: () => o.novaAba(um.rel) });
     itens.push({ rotulo: tr('Abrir o &Prompt de comando aqui'), acao: () => abrir('prompt', { pasta: um.rel }) });
+    itens.push({ rotulo: tr('Abrir o Code&x aqui'), icone: 'codex', acao: () => abrir('codex', { pasta: um.rel }) });
+    itens.push({ rotulo: tr('Pedir ao Code&x'), icone: 'codex', sub: () => pedidosAoAssistente(um, 'codex') });
     itens.push({ rotulo: tr('Abrir o C&laude aqui'), icone: 'claude', acao: () => abrir('claude', { pasta: um.rel }) });
-    itens.push({ rotulo: tr('Pe&dir ao Claude'), sub: () => pedidosAoClaude(um) });
+    itens.push({ rotulo: tr('Pe&dir ao Claude'), sub: () => pedidosAoAssistente(um) });
     if (um.rel) {
       itens.push({ separador: true });
       itens.push(ehFixada(um.rel)
@@ -388,7 +392,8 @@ export function menuDeItens(sel, o = {}) {
     });
     if (ehCompactado(um.nome)) itens.push({ rotulo: tr('Extra&ir tudo…'), acao: () => extrairEMostrar(um.rel) });
     if (EXTS_PAPEL.includes(extensao(um.nome))) itens.push({ rotulo: tr('Usar como papel de &parede'), icone: 'aparencia', acao: () => usarComoPapel(um.rel) });
-    itens.push({ rotulo: tr('Pe&dir ao Claude'), icone: 'claude', sub: () => pedidosAoClaude(um) });
+    itens.push({ rotulo: tr('Pe&dir ao Claude'), icone: 'claude', sub: () => pedidosAoAssistente(um) });
+    itens.push({ rotulo: tr('Pedir ao Code&x'), icone: 'codex', sub: () => pedidosAoAssistente(um, 'codex') });
   }
   // As ferramentas de PDF: um PDF (separar, extrair, girar), uma imagem (converter) ou vários (combinar).
   const pdf = itensPdf(sel);

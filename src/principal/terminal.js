@@ -51,8 +51,14 @@ class Terminais {
    */
   criar(o) {
     if (!pty) throw new Error(tr('O terminal não está disponível nesta instalação (node-pty não carregou).'));
-    const { arquivo, args } = shellPadrao();
+    // O Codex recebe argumentos nativos: pedidos com aspas, $() e crases não viram comandos.
+    const { arquivo, args } = o.programa || shellPadrao();
     const env = { ...process.env, ...o.env, TERM: 'xterm-256color', COLORTERM: 'truecolor', RETRO_COMPUTER: '1' };
+    if (o.semChaveClaude) {
+      delete env.ANTHROPIC_API_KEY;
+      delete env.RETRO_PEDIDO;
+      for (const k of Object.keys(env)) if (k.startsWith('RETRO_CLAUDE_')) delete env[k];
+    }
     if (!env.LANG && process.platform !== 'win32') env.LANG = 'pt_BR.UTF-8';
     const p = pty.spawn(arquivo, args, {
       name: 'xterm-256color',

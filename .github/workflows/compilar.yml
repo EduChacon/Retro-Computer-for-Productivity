@@ -61,6 +61,9 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas geral
           RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en geral
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas laboratorio
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas codex
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas codexInstalar
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas dot
 
       - name: Guardar as capturas
         if: matrix.os == 'ubuntu-latest' && always()
@@ -98,7 +101,26 @@ jobs:
         run: |
           if [ "$RUNNER_ARCH" = "ARM64" ]; then pasta="dist/mac-arm64"; else pasta="dist/mac"; fi
           codesign --verify --deep --strict --verbose=2 "$pasta/Retro Computer.app"
-          RETRO_EXECUTAVEL="$PWD/$pasta/Retro Computer.app/Contents/MacOS/Retro Computer" node testes/capturas.mjs capturas-mac laboratorio
+          export RETRO_EXECUTAVEL="$PWD/$pasta/Retro Computer.app/Contents/MacOS/Retro Computer"
+          node testes/capturas.mjs capturas-mac laboratorio
+          node testes/capturas.mjs capturas-mac codex
+          node testes/capturas.mjs capturas-mac dot
+
+      - name: Testar o Codex no aplicativo do Windows empacotado
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:RETRO_EXECUTAVEL = Join-Path $PWD 'dist/win-unpacked/Retro Computer.exe'
+          node testes/capturas.mjs capturas-codex codex
+          node testes/capturas.mjs capturas-codex dot
+
+      - name: Guardar as capturas do Codex no Windows
+        if: runner.os == 'Windows' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-codex-Windows
+          path: capturas-codex/**
+          if-no-files-found: ignore
 
       - name: Guardar a captura do aplicativo do Mac
         if: runner.os == 'macOS' && always()

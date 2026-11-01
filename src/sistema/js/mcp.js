@@ -53,7 +53,7 @@ const FERRAMENTAS = {
   },
 
   avisar: ({ titulo, texto }) => {
-    avisar(String(titulo || tr('Claude')), String(texto || ''), { icone: 'claude' });
+    avisar(String(titulo || 'Retro Computer'), String(texto || ''), { icone: 'logo' });
     return { avisado: true };
   },
 
@@ -91,7 +91,7 @@ const FERRAMENTAS = {
     };
     await alterarAgenda((lista) => [...lista, ev]);
     const quando = diaTodo ? ini.toLocaleDateString(localidade(), { weekday: 'long', day: 'numeric', month: 'long' }) : ini.toLocaleString(localidade(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-    avisar(tr('O Claude marcou na Agenda'), `${ev.titulo} · ${quando}`, { icone: 'calendario', aoClicar: () => abrir('agenda', { dia: dataTexto(ini), evento: ev.uid }) });
+    avisar(tr('Evento marcado na Agenda'), `${ev.titulo} · ${quando}`, { icone: 'calendario', aoClicar: () => abrir('agenda', { dia: dataTexto(ini), evento: ev.uid }) });
     return { marcado: { titulo: ev.titulo, inicio: ev.inicio, fim: ev.fim, lembrete: min } };
   },
 

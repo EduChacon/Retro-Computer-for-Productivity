@@ -427,3 +427,25 @@ Escreva o código no editor, preencha **Entrada do programa** com os dados que e
 **Ctrl+S** guarda um arquivo comum do disco C:. Gravar de novo mantém a versão anterior; abrir um arquivo `.c`, `.cpp`, `.cc`, `.cxx`, `.cs`, `.py`, `.rs` ou `.java` seleciona a linguagem correspondente. Nada depende de uma conta ou de um serviço de compilação na internet. Os compiladores e interpretadores são instalados à parte.
 
 Os exercícios usam a biblioteca padrão, sem dependências externas ou projetos de vários arquivos. Cada execução usa uma pasta temporária nova: os arquivos criados pelo exercício nela são temporários. O código-fonte só fica permanente quando salvo no disco C:. Há um prazo de 30 segundos para compilar, cinco segundos para executar, saída limitada a 64 KiB e o botão **Parar**. Esses limites não são uma sandbox: o programa tem as permissões do usuário no computador. Execute apenas código em que confia.
+
+## Codex
+
+O **Codex**, no menu Iniciar e na área de trabalho padrão, abre o Codex CLI numa janela retrô, como o Claude Code. Ele começa em Meus documentos; no botão direito de uma pasta, **Abrir o Codex aqui** começa nessa pasta. A fonte, o fundo claro ou escuro, Copiar e Colar funcionam como no Prompt.
+
+Se o CLI não estiver instalado, a janela mostra o comando do instalador oficial da OpenAI e o botão **Instalar agora**. Depois de concluir a instalação, abra o ícone Codex novamente. Não é preciso instalar o aplicativo de desktop da OpenAI: esta integração usa o CLI nativo no Windows, no Mac e no Linux. O instalador também serve para atualizar o CLI.
+
+Na primeira abertura, siga o login do próprio Codex com sua conta do ChatGPT. **Conta e opções…** oferece **Entrar**, **Entrar com código…** e **Retomar conversa**. O login com código pode exigir que você o habilite nas configurações de segurança da conta; o login normal continua disponível. Credenciais e sessões ficam com o Codex, fora do disco C:; o Retro Computer não lê os arquivos de autenticação nem usa a chave do Claude. Os métodos disponíveis e os limites de uso seguem a sua conta. Veja a [documentação oficial](https://developers.openai.com/codex/cli).
+
+No botão direito de um arquivo, **Pedir ao Codex** oferece revisar, resumir, traduzir ou escrever outro pedido. A versão de agora é guardada antes de abrir o agente. Para pastas, há também um pedido de organização. O pedido chega como texto, mesmo com aspas ou símbolos do terminal.
+
+Em **Conta e opções…**, **Permitir que o Codex ajuste o Retro Computer** conecta o mesmo servidor MCP usado pelo Claude: aparência, atalhos, programas e Agenda, com as mesmas restrições. Desmarcar vale para as próximas janelas; feche uma sessão já aberta para retirar o acesso dela. As configurações temporárias não mudam o config.toml do Codex. As permissões de execução e as confirmações continuam sendo as do CLI; nenhuma proteção é desligada pelo Retro Computer.
+
+## Dot da OpenAI
+
+**Dot**, no Iniciar e na área de trabalho padrão, dá acesso ao agente sempre ativo da sua conta do ChatGPT, além do Codex. **Abrir meu Dot** leva a `https://chatgpt.com/dots` no navegador do computador, com o login e as condições de acesso da sua conta. O recurso depende da disponibilidade do Dot na conta e região.
+
+Para o Dot trabalhar no computador local, use **Abrir o aplicativo ChatGPT**. No aplicativo oficial, entre na sua conta e vá ao perfil do Dot › **Computadores › Seu computador › Permitir acesso**. Revise a confirmação nessa tela e mantenha o computador conectado e o ChatGPT aberto enquanto ele trabalha. Se o aplicativo não estiver instalado, a janela explica como obtê-lo em `chatgpt.com/download`.
+
+**Mostrar a pasta do disco C:** abre a pasta real dos seus documentos. Ela pode ser usada nas tarefas do Dot depois que você autorizar a conexão no ChatGPT. O acesso à conversa pelo navegador não concede acesso aos arquivos do computador e a conexão do Codex não concede acesso ao Dot. O Retro Computer não lê credenciais nem altera as autorizações da sua conta.
+
+Este é um acesso ao serviço oficial e um guia para a conexão local, sem uma API privada ou um runtime de Dot dentro do Retro Computer. As conexões, tarefas e permissões do Dot permanecem no ChatGPT. Veja [a documentação oficial da conexão](https://learn.chatgpt.com/docs/dots/computers-and-apps).

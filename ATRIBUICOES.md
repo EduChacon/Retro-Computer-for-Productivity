@@ -107,6 +107,10 @@ O [rclone](https://rclone.org/) (MIT) e o FUSE do Linux (libfuse, LGPL-2.1, e o 
 
 Claude e Claude Code são da Anthropic. O Retro Computer só oferece instalar o Claude Code com o instalador oficial.
 
+Dot e ChatGPT são da OpenAI; o acesso ao Dot abre as páginas oficiais e, quando instalado, o aplicativo ChatGPT do próprio computador. Nenhum runtime, credencial ou logotipo deles é incluído no Retro Computer.
+
+Codex é da OpenAI. O Codex CLI ([código-fonte](https://github.com/openai/codex), Apache-2.0) não é incluído no instalador do Retro Computer: a janela oferece o instalador oficial da OpenAI e executa a instalação do próprio computador, sem modificar o CLI. A conta e as credenciais são geridas pelo Codex. O ícone `codex`, nos dois temas, é um desenho próprio de um terminal com `>_`, gerado por `ferramentas/icone-codex.py`, sem logotipos da OpenAI.
+
 ## Inspiração
 
 O visual homenageia os computadores pessoais dos anos 90 (o tema Mac clássico, o visual cinza e listrado do Mac do fim da década). Nenhum ícone, fonte, som ou imagem da Microsoft ou da Apple é usado.

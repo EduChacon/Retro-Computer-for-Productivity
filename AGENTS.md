@@ -31,7 +31,8 @@ src/principal/         o processo principal (Node)
   programas.js         o catálogo, instalar (GitHub ou .zip), servir os programas
   craft-windows.js     os Craft instalados no Windows (o .msi oficial, fora do Retro Computer): reconhecer pelo registro,
                        comparar com o lançamento, baixar o .msi conferido e rodá-lo com a confirmação do Windows
-  terminal.js          o Prompt de comando (node-pty) e achar o "claude"
+  terminal.js          o Prompt de comando (node-pty), os agentes com argumentos nativos e achar o "claude"
+  codex.js             achar o Codex CLI, as ações de login e retomada, o instalador oficial e o MCP só na sessão
   laboratorio.js       as seis linguagens (C, C++, C#, Python, Rust e Java): detectar a ferramenta, compilar e executar
                        uma cópia temporária sem shell, com entrada, saída limitada, prazo e cancelamento
   config.js            as configurações (config.json) e a chave cifrada
@@ -296,3 +297,11 @@ Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do proc
 ## Laboratório de programação
 
 `src/sistema/js/apps/laboratorio.js` abre os fontes de C, C++, C#, Python, Rust e Java. Os exemplos ficam em `linguagens.js`, e as sete lições de C em `licoes-c.js`. O processo principal só aceita as linguagens de `LINGUAGENS` (`src/principal/laboratorio.js`), nunca caminhos ou opções de compilador vindos da tela. Cada execução usa uma pasta temporária e um ambiente sem as chaves do Claude, com limite de entrada, saída, tempo e cancelamento. Isso não é uma sandbox: a interface avisa que o programa roda com as permissões do usuário. O C# usa só as bibliotecas do SDK e o NuGet.Config temporário sem fontes externas. O roteiro `laboratorio` de `testes/capturas.mjs` confere as sete lições, Python, C++, salvar com versão anterior e Parar; o Mac o roda também no .app empacotado, depois de conferir a assinatura ad hoc. Os testes das linguagens estão em `testes/laboratorio.test.js`.
+
+## Codex
+
+O Codex usa `src/principal/codex.js` e a janela compartilhada de `apps/prompt.js`, com o próprio ícone, o tema do terminal e a conta do CLI. O processo principal lança o CLI diretamente pelo node-pty, com argumentos separados (o pedido vem depois de `--`), sem shell e sem repassar a chave do Claude. O wrapper do npm roda no Electron como Node, inclusive no Mac com nvm fora do PATH do Finder. Os ajustes do MCP valem só para a sessão, sem escrever no config.toml do usuário; o token fica no ambiente e é encaminhado por env_vars. Não acrescente flags que removam sandbox ou confirmações. O teste `codex` usa `testes/codex-falso.cjs`: não usa contas nem modelos reais, mas abre o MCP real e confere argumentos, pasta, isolamento da chave, login, retomada e as versões anteriores do pedido sobre arquivos. `codexInstalar` usa `RETRO_CODEX_AUSENTE=1` para conferir a instalação sem executar o instalador. Os pacotes do Mac e do Windows também rodam o roteiro `codex`. Os ícones se refazem com `python3 -I ferramentas/icone-codex.py`.
+
+## Dot
+
+`src/sistema/js/apps/dot.js` é o acesso ao Dot da conta do ChatGPT, em `https://chatgpt.com/dots`. O login fica no navegador e o acesso local é autorizado no app oficial do ChatGPT, pelo perfil do Dot › Computadores. Não apresente o atalho como uma conexão automática de arquivos, um GPT personalizado ou uma API própria de Dot. O roteiro `dot` intercepta a abertura de links e apps, sem usar contas reais, e também roda nos pacotes do Windows e do Mac.

@@ -1361,6 +1361,13 @@ def especiais():
     return d
 
 
+def codex(tam):
+    from runpy import run_path
+    t = Tela(tam)
+    t.im = run_path(os.path.join(os.path.dirname(__file__), 'icone-codex.py'))['desenhar'](tam, mac=True)
+    return t
+
+
 ICONES = {
     'pasta': pasta,
     'configuracoes': pasta_especial('painel'),
@@ -1407,6 +1414,7 @@ ICONES = {
     'calculadora': calculadora,
     'desligar': desligar,
     'claude': assistente,
+    'codex': codex,
     'relogio': relogio,
     'programas-caixa': caixa_programas,
 }

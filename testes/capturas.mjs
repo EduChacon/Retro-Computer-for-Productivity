@@ -33,6 +33,16 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-teste-'));
 const dados = process.env.RETRO_DADOS || path.join(tmp, 'dados');
 const disco = process.env.RETRO_DISCO || path.join(tmp, 'disco');
 
+// O Codex das capturas é um CLI local: não acessa contas, modelos nem credenciais reais.
+if (ROTEIRO === 'codex') {
+  const cli = path.join(tmp, 'Codex de teste.cjs');
+  fs.copyFileSync(path.join(RAIZ, 'testes', 'codex-falso.cjs'), cli);
+  process.env.RETRO_CODEX_FALSO = cli;
+  process.env.RETRO_CODEX_RELATORIO = path.join(tmp, 'codex-relatorio.jsonl');
+  process.env.ANTHROPIC_API_KEY = 'teste-nao-compartilhar';
+}
+if (ROTEIRO === 'codexInstalar') process.env.RETRO_CODEX_AUSENTE = '1';
+
 // Instala um pacote já baixado (RETRO_ZIP=caminho/wordcraft-web-0.7.0.zip) antes de abrir.
 if (process.env.RETRO_ZIP) {
   const { Programas } = require('../src/principal/programas.js');
@@ -301,6 +311,85 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
+  async dot() {
+    await fecharTudo();
+    // As ações são interceptadas: nenhuma conta, navegador externo ou conexão pessoal é aberta.
+    await app.evaluate(({ ipcMain }) => {
+      global.__dotTeste = [];
+      for (const canal of ['sistema:abrirLink', 'nativos:listar', 'nativos:abrir']) ipcMain.removeHandler(canal);
+      ipcMain.handle('sistema:abrirLink', (_e, url) => { global.__dotTeste.push(url); return { ok: true, valor: true }; });
+      ipcMain.handle('nativos:listar', () => ({ ok: true, valor: [{ id: 'chatgpt-teste', nome: 'ChatGPT' }] }));
+      ipcMain.handle('nativos:abrir', (_e, id) => { global.__dotTeste.push(id); return { ok: true, valor: true }; });
+    });
+    await abrir('dot');
+    await pagina.waitForSelector('.dot .corpo');
+    await foto('dot');
+    await pagina.locator('.dot button', { hasText: T('Abrir meu Dot') }).click();
+    await pagina.locator('.dot button', { hasText: T('Abrir o aplicativo ChatGPT') }).click();
+    await pagina.locator('.dot button', { hasText: T('Ajuda oficial') }).click();
+    const vistos = await app.evaluate(() => global.__dotTeste);
+    if (JSON.stringify(vistos) !== JSON.stringify(['https://chatgpt.com/dots', 'chatgpt-teste', 'https://learn.chatgpt.com/docs/dots/computers-and-apps'])) throw new Error('Destino do Dot incorreto: ' + JSON.stringify(vistos));
+  },
+  async codexInstalar() {
+    await fecharTudo();
+    await abrir('codex');
+    await pagina.waitForSelector('.janela.dialogo .codigo-linha');
+    const comando = await pagina.locator('.janela.dialogo .codigo-linha').textContent();
+    if (!comando.includes('https://chatgpt.com/codex/install.')) throw new Error('Instalador não oficial.');
+    await foto('codex-instalar');
+  },
+  async codex() {
+    await fecharTudo();
+    const arquivo = `${DOCS}/teste-codex.txt`;
+    await pagina.evaluate(async (f) => { await retro.disco.gravar(f, new TextEncoder().encode('Texto original do teste.')); }, arquivo);
+    await abrir('codex', { pasta: DOCS, configurar: true });
+    await pagina.waitForSelector('.janela.dialogo input[type=checkbox]');
+    await foto('codex-conta');
+    await fecharTudo();
+    // O pedido contém metacaracteres e começa com uma opção: chega como texto, sem virar comando.
+    const pedido = '--dangerously-bypass-approvals-and-sandbox $(echo indevido) `crases` "aspas"\nExplique o arquivo.';
+    await abrir('codex', { pasta: DOCS, pedido });
+    const relatorios = () => fs.existsSync(process.env.RETRO_CODEX_RELATORIO) ? fs.readFileSync(process.env.RETRO_CODEX_RELATORIO, 'utf8').trim().split('\n').filter(Boolean).map((x) => JSON.parse(x)) : [];
+    const esperar = async (n) => {
+      for (let i = 0; i < 100 && relatorios().length < n; i++) await pagina.waitForTimeout(100);
+      if (relatorios().length < n) throw new Error('O Codex de teste não recebeu a sessão.');
+      return relatorios()[n - 1];
+    };
+    const r = await esperar(1);
+    if (r.args.at(-1) !== pedido || r.args.at(-2) !== '--') throw new Error('O pedido deixou de ser um argumento literal.');
+    if (!r.mcp || r.chaveClaude || r.electronComoNode) throw new Error('MCP ausente ou ambiente do Codex incorreto.');
+    // No Mac, /var e /tmp são aliases de /private/var e /private/tmp.
+    const pastaReal = (p) => { const s = fs.realpathSync(p); return process.platform === 'win32' ? s.toLowerCase() : s; };
+    if (pastaReal(r.pasta) !== pastaReal(path.join(disco, DOCS))) throw new Error('O Codex começou fora da pasta escolhida.');
+    await pagina.waitForTimeout(300); await foto('codex-terminal');
+    // O botão Retomar abre outra sessão, com a ação oficial resume.
+    await pagina.locator('.janela.ativa button', { hasText: T('Retomar conversa') }).click();
+    if (!(await esperar(2)).args.includes('resume')) throw new Error('Retomar não abriu o seletor do Codex.');
+    await fecharTudo();
+    await abrir('codex', { acao: 'entrar-codigo' });
+    if (JSON.stringify((await esperar(3)).args) !== JSON.stringify(['login', '--device-auth'])) throw new Error('Login incorreto.');
+    await foto('codex-entrar');
+    await fecharTudo();
+    // Com os ajustes desligados, não há servidor MCP nesta sessão.
+    await abrir('codex', { configurar: true });
+    await pagina.locator('.janela.dialogo input[type=checkbox]').uncheck();
+    await fecharTudo();
+    await abrir('codex');
+    if ((await esperar(4)).args.some((a) => a.startsWith('mcp_servers.'))) throw new Error('A opção de ajustes foi ignorada.');
+    await fecharTudo();
+    await abrir('explorador', { pasta: DOCS });
+    await pagina.waitForTimeout(300);
+    const item = pagina.locator('.item', { hasText: 'teste-codex.txt' }).first();
+    await item.click({ button: 'right' });
+    const codex = pagina.locator('.menu .opcao', { hasText: T('Pedir ao Code&x') }).last();
+    await codex.hover(); await pagina.waitForTimeout(300);
+    await foto('codex-arquivo');
+    await pagina.locator('.menu .opcao', { hasText: T('Re&sumir') }).last().click();
+    const arq = await esperar(5);
+    if (!arq.args.at(-1).includes('teste-codex.txt')) throw new Error('O arquivo não foi incluído no pedido.');
+    const versoes = await pagina.evaluate((f) => retro.disco.versoes(f), arquivo);
+    if (!versoes.length) throw new Error('A versão anterior não foi guardada antes do pedido.');
+  },
   async laboratorio() {
     await fecharTudo();
     await abrir('laboratorio');
