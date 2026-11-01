@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { Assistente, ambienteAgente, prepararAgente } = require('../src/principal/assistente');
+const { Assistente, ambienteAgente, prepararAgente, programaClaude } = require('../src/principal/assistente');
 const { Disco } = require('../src/principal/disco');
 
 async function montar(t, motor) {
@@ -58,6 +58,27 @@ for (const motor of ['codex', 'claude']) {
     await a.parar(); assert.equal(a.obter().ocupado, false); assert.equal(a.canal, null);
   });
 }
+test('Assistente Claude: shims do npm no Windows resolvem instalações nativas e antigas sem shell', (t) => {
+  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-claude-npm-'));
+  t.after(() => fs.rmSync(pasta, { recursive: true, force: true }));
+  const pacote = path.join(pasta, 'node_modules', '@anthropic-ai', 'claude-code');
+  fs.mkdirSync(path.join(pacote, 'bin'), { recursive: true });
+  const nativo = path.join(pacote, 'bin', 'claude.exe');
+  const shim = path.join(pasta, 'claude.cmd'); fs.writeFileSync(shim, ''); fs.writeFileSync(nativo, '');
+  const args = ['--print', '--input-format', 'stream-json'];
+  assert.deepEqual(programaClaude(shim, args), { arquivo: nativo, args, env: {} });
+  fs.rmSync(nativo);
+  const antigo = path.join(pacote, 'cli.js'); fs.writeFileSync(antigo, '');
+  const programa = programaClaude(shim, args, 'electron-de-teste');
+  assert.equal(programa.arquivo, 'electron-de-teste');
+  assert.deepEqual(programa.args.slice(1), [antigo, ...args]);
+  assert.deepEqual(programa.env, { ELECTRON_RUN_AS_NODE: '1' });
+  // Instalação local: node_modules/.bin/claude.cmd.
+  const local = path.join(pasta, 'node_modules', '.bin', 'claude.cmd');
+  fs.mkdirSync(path.dirname(local)); fs.writeFileSync(local, '');
+  assert.equal(programaClaude(local, args).args[1], antigo);
+});
+
 test('Assistente: cancelamento durante a preparação não lança o processo depois', async (t) => {
   const { a } = await montar(t, 'codex');
   let liberar; a.preparar = () => new Promise((r) => { liberar = r; });

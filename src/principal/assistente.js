@@ -36,7 +36,12 @@ async function acharClaudeDoChat() {
 function programaClaude(caminho, args, executavel = process.execPath) {
   let real = caminho;
   try { real = fs.realpathSync(caminho); } catch { }
-  if (/\.(cmd|ps1)$/i.test(real)) real = path.join(path.dirname(real), 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js');
+  if (/\.(cmd|ps1)$/i.test(real)) {
+    // O npm atual instala um binário nativo; versões antigas usavam cli.js.
+    const raizes = [path.join(path.dirname(real), 'node_modules', '@anthropic-ai', 'claude-code'), path.resolve(path.dirname(real), '..', '@anthropic-ai', 'claude-code')];
+    real = raizes.flatMap((p) => [path.join(p, 'bin', 'claude.exe'), path.join(p, 'cli.js')]).find((p) => fs.existsSync(p));
+    if (!real) throw new Error(tr('Instale o Claude Code antes de usar este motor.'));
+  }
   if (/[\\/]@anthropic-ai[\\/]claude-code[\\/]cli\.js$/i.test(real) || (process.env.RETRO_ASSISTENTE_FALSO && /\.cjs$/i.test(real))) {
     if (!fs.existsSync(real)) throw new Error(tr('Instale o Claude Code antes de usar este motor.'));
     const iniciador = path.join(__dirname, 'codex-node.js').replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
