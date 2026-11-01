@@ -54,6 +54,7 @@ public static partial class RetroJanelas {
   static readonly HashSet<string> classesDoSistema=new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Progman","WorkerW","Shell_TrayWnd","Shell_SecondaryTrayWnd","#32769" };
   static Control fila; static Thread thread; static IntPtr pai; static int processoPai; static System.Windows.Forms.Timer timer; static bool encerrando,elevouRetro;
   static BarraDeTarefas barra;
+  static bool? ultimoFoco;
   static void UI(Action f) { if (fila.InvokeRequired) fila.Invoke(f); else f(); }
   static bool Valido(Item i) { uint p; GetWindowThreadProcessId(i.H,out p); try { return IsWindow(i.H) && p==i.Pid && Process.GetProcessById((int)p).StartTime.ToUniversalTime().Ticks==i.Inicio; } catch { return false; } }
   static Item Obter(string id) { Item i; if (!itens.TryGetValue(id,out i) || !Valido(i)) throw new Exception("sessao"); return i; }
@@ -137,7 +138,7 @@ public static partial class RetroJanelas {
         // que acabou de receber o foco, sem reativar o Retro ou cobrir esse programa.
         if(!nossa && IsWindow(frente) && (GetLong(frente,-20).ToInt64() & 8)==0) SetWindowPos(pai,frente,0,0,0,0,0x0013);
       }
-      elevouRetro=false;
+      elevouRetro=IsWindow(pai) && (GetLong(pai,-20).ToInt64() & 8)!=0;
     }
   }
   public static void Posicionar(string id,double x,double y,double w,double h,double vw,double vh,bool visivel) { UI(()=> {
@@ -174,6 +175,9 @@ public static partial class RetroJanelas {
   public static bool Aberta(string id) { bool aberta=false; UI(()=> { Item i; aberta=itens.TryGetValue(id,out i) && Valido(i); }); return aberta; }
   public static bool Embutida(string id) { bool embutida=false; UI(()=> { Item i; embutida=itens.TryGetValue(id,out i) && Valido(i) && i.Host!=null && GetParent(i.H)==i.Host.Handle; }); return embutida; }
   public static bool Visivel(string id) { bool v=false; UI(()=> { Item i; v=itens.TryGetValue(id,out i) && Valido(i) && i.Host!=null && IsWindowVisible(i.Host.Handle); }); return v; }
+  public static bool FocoIntegrado() {
+    bool ativo=false; UI(()=> { var f=GetForegroundWindow(); foreach(var i in itens.Values) if(i.Host!=null && i.Visivel && Valido(i) && (f==i.Host.Handle || IsChild(i.Host.Handle,f))) { ativo=true; break; } }); return ativo;
+  }
   public static void Focar(string id) { UI(()=> {
     var i=Obter(id); uint p; uint atual=GetCurrentThreadId(), destino=GetWindowThreadProcessId(i.H,out p), frente=GetWindowThreadProcessId(GetForegroundWindow(),out p);
     // SetParent já liga as filas do hospedeiro e do programa; não desfazer essa ligação implícita.
@@ -205,6 +209,8 @@ public static partial class RetroJanelas {
     foreach(var i in new List<Item>(itens.Values)) {
       try { if(!vivo || encerrando || !Valido(i)) { Restaurar(i); itens.Remove(i.Id); } else { Mover(i); Visibilidade(i); } } catch { }
     }
+    bool foco=vivo && !encerrando && FocoIntegrado();
+    if(ultimoFoco!=foco) { ultimoFoco=foco; Console.WriteLine("{\"evento\":\"focoIntegrado\",\"ativo\":"+(foco?"true":"false")+"}"); }
     if((!vivo || encerrando) && itens.Count==0) { timer.Stop(); Application.ExitThread(); }
   }
   public static void Encerrar() { encerrando=true; UI(()=>Vigiar()); thread.Join(); }

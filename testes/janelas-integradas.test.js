@@ -78,3 +78,11 @@ test('integração: janela original só pode ser uma da abertura conhecida, sem 
   await a.j.original(s.id, s.janelas[0].id); assert.equal(a.pedidos.at(-1).acao, 'focar'); assert.equal(a.abertos.length, 1);
   await a.j.bloquear(true); await assert.rejects(a.j.original(s.id, s.janelas[0].id), { codigo: 'sessao' });
 });
+test('integração: o foco do hospedeiro mantém o Retro; outra janela e o bloqueio o liberam', async () => {
+  const a = montar(); assert.equal(await a.j.temFoco(), false);
+  const s = await a.j.abrir('programa'); await a.j.associar(s.id, s.janelas[0].id, g);
+  const original = a.ponte.pedir; let ativo = true;
+  a.ponte.pedir = (acao, dados) => acao === 'focoIntegrado' ? Promise.resolve({ ativo }) : original(acao, dados);
+  assert.equal(await a.j.temFoco(), true); ativo = false; assert.equal(await a.j.temFoco(), false);
+  ativo = true; await a.j.bloquear(true); assert.equal(await a.j.temFoco(), false);
+});

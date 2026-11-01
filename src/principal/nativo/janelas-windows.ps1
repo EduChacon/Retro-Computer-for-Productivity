@@ -12,6 +12,7 @@ try {
       $r = $linha | ConvertFrom-Json
       $dados = switch ($r.acao) {
         'estado' { @{ permitido = $true } }
+        'focoIntegrado' { @{ ativo = [RetroJanelas]::FocoIntegrado() } }
         'listar' { ,@([RetroJanelas]::Listar([string]$r.arquivo)) }
         'abrirPrograma' { @{ abertura = [RetroJanelas]::AbrirPrograma([string]$r.atalho, [string]$r.arquivo, [string]$r.appId, [string]$r.processoEsperado) } }
         'listarAbertura' { ,@([RetroJanelas]::ListarAbertura([string]$r.abertura)) }
