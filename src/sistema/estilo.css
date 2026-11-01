@@ -2147,3 +2147,13 @@ body:has(#bloqueio) #mascote, body:has(#entrada) #mascote, body:has(#protecao-te
 @media (max-width: 620px) { .assistente-conteudo > aside { width: 110px; } .assistente-mascotes { grid-template-columns: repeat(2,minmax(0,1fr)); } .assistente-enviar > span { display: none; } }
 .c-saida { border: 1px solid var(--texto-meio); padding: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .c-nota { margin: 0 6px 5px; color: var(--texto-meio); }
+
+/* A moldura das janelas nativas usa os mesmos temas e controles das outras janelas. */
+.int-corpo { display: flex; flex-direction: column; min-height: 0; padding: 6px; gap: 6px; }
+.int-mensagem { flex: none; padding: 4px; background: var(--face); color: var(--texto); }
+.int-acoes { display: flex; flex-wrap: wrap; gap: 5px; flex: none; }
+.int-acoes button, .int-alvo button { cursor: var(--cur-default, default); }
+.int-alvo { flex: 1; min-height: 50px; overflow: auto; background: var(--janela); color: var(--texto); border: 1px solid var(--sombra); padding: 8px; }
+.int-alvo p { margin: 4px 0 10px; }
+.int-alvo button { display: block; margin: 5px 0; }
+.integracao-nativa[data-associada="true"][data-modo="embutida"] .int-alvo { padding: 0; }

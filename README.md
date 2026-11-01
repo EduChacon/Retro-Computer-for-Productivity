@@ -4,8 +4,9 @@
 
 A retro computer for productivity: the desktop of a 1990s PC, with your work programs, your files and Claude Code, without the distractions of today's computer. It runs on Windows, macOS and Linux (including the Raspberry Pi), and on Linux it can be the computer's whole system, turning an old laptop or a mini PC into a dedicated retro computer. Open source (MIT license).
 
-- **Version:** 2.4.0 · [Download](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Version:** 2.5.0 · [Download](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
 - **Google Calendar:** two-way Calendar sync, offline changes and explicit conflict resolution; Google OAuth setup is required.
+- **Integrated apps:** experimental Retro frames for compatible Windows apps, Mac window controls and internal web versions. [Guide](docs/programas-integrados.md)
 - **Assistant:** eight animated desktop companions with an integrated Claude Code or Codex chat, file attachments and Retro system tools.
 - **Languages:** English, Portuguese and Spanish (Control Panel › Language)
 

@@ -277,6 +277,16 @@ class Aplicativos {
     return this.lista.find((a) => a.id === id) || null;
   }
 
+  /** A integração só recebe um alvo da lista local, nunca um executável escolhido pela página. */
+  alvoIntegracao(id) {
+    const a = this.achar(id); if (!a || a.terminal) return null;
+    if (this.plataforma === 'darwin') return a.arquivo;
+    if (this.plataforma === 'win32') {
+      try { const alvo = this.shell.readShortcutLink(a.arquivo).target; return path.win32.isAbsolute(alvo) && /\.exe$/i.test(alvo) && fs.existsSync(alvo) ? alvo : null; } catch { return null; }
+    }
+    return null;
+  }
+
   /** O ícone do programa como data: URL (32 pontos), ou null. */
   async icone(id) {
     if (this.icones.has(id)) return this.icones.get(id);

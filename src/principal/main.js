@@ -25,6 +25,7 @@ const { acharCodex, comandoInstalarCodex, argumentosCodex, programaCodex } = req
 const { Assistente, prepararAgente } = require('./assistente');
 const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
 const { Aplicativos, iconeDoArquivo, acharPorNome } = require('./aplicativos');
+const { JanelasIntegradas, PonteNativa } = require('./janelas-integradas');
 const { Atualizador } = require('./atualizador');
 const bandeja = require('./bandeja');
 const { Loja, LojaFalsa } = require('./loja');
@@ -233,6 +234,7 @@ let craftWindows = null; // os Craft instalados no Windows, fora do Retro Comput
 let terminais = null;
 let assistente = null;
 let aplicativos = null;
+let janelasIntegradas = null;
 let atualizador = null;
 let sistemaBandeja = null; // o volume, o brilho e a rede do computador (bandeja.js)
 let filaTeclas = null; // as teclas de função do computador portátil, pelo Openbox (teclas-linux.js)
@@ -545,6 +547,7 @@ function criarJanela() {
   janela.loadURL('sistema://retro/index.html' + (process.env.RETRO_RAPIDO ? '?rapido' : ''));
 
   const wc = janela.webContents;
+  wc.on('render-process-gone', () => { if (janelasIntegradas) { janelasIntegradas.encerrar(); janelasIntegradas = null; } });
   // A área de trabalho não navega para fora; links externos abrem no navegador do sistema.
   wc.on('will-navigate', (e, url) => {
     if (!PAGINA_SISTEMA.test(url)) e.preventDefault();
@@ -1726,8 +1729,9 @@ function registrarPonte() {
   });
   // A tela de bloqueio apareceu ou saiu: no modo sistema, enquanto ela estiver à vista, a janela fica
   // em tela cheia, por cima de tudo (também das janelas "sempre visíveis" dos programas do Linux).
-  tratar('bloqueio:naFrente', (v) => {
+  tratar('bloqueio:naFrente', async (v) => {
     naFrenteDeTudo = !!v;
+    if (janelasIntegradas) await janelasIntegradas.bloquear(v);
     if (MODO_SISTEMA) cobrirATela();
     return true;
   });
@@ -1976,6 +1980,18 @@ function registrarPonte() {
   tratar('nativos:listar', (atualizar) => aplicativos.listar(!!atualizar));
   tratar('nativos:icone', (id) => aplicativos.icone(String(id)));
   tratar('nativos:abrir', (id) => aplicativos.abrir(String(id)));
+  tratar('integracao:info', () => integracaoDeJanelas().info());
+  tratar('integracao:permitir', async () => {
+    const r = await integracaoDeJanelas().permitir();
+    if (process.platform === 'darwin' && !r.permitido) await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
+    return r;
+  });
+  tratar('integracao:abrir', (id) => integracaoDeJanelas().abrir(String(id)));
+  tratar('integracao:associar', (id, alvo, o) => integracaoDeJanelas().associar(String(id), String(alvo), o));
+  tratar('integracao:atualizar', (id, o) => integracaoDeJanelas().atualizar(String(id), o));
+  tratar('integracao:acao', (id, acao) => integracaoDeJanelas().acao(String(id), String(acao)));
+  tratar('integracao:estado', (id) => integracaoDeJanelas().estado(String(id)));
+  tratar('integracao:soltar', (id) => integracaoDeJanelas().soltar(String(id)));
   // As janelas dos programas do Linux (modo sistema): a barra de tarefas mostra e comanda.
   tratar('janelasLinux:listar', () => (janelasLinux ? janelasLinux.listar() : { lista: [], retroAtivo: true }));
   tratar('janelasLinux:ativar', (id) => janelasLinux && janelasLinux.ativar(String(id)));
@@ -2578,7 +2594,29 @@ function criarLoja() {
   return new (falsa ? LojaFalsa : Loja)(comum);
 }
 
+function integracaoDeJanelas() {
+  if (janelasIntegradas) return janelasIntegradas;
+  const teste = process.env.RETRO_INTEGRACAO_TESTE ? require(process.env.RETRO_INTEGRACAO_TESTE) : null;
+  const ponte = teste?.ponte ? teste.ponte() : new PonteNativa({
+    recursos: process.resourcesPath, empacotado: app.isPackaged,
+    pai: () => { const b = janela.getNativeWindowHandle(); return (b.length === 8 ? b.readBigUInt64LE() : BigInt(b.readUInt32LE())).toString(16); },
+  });
+  janelasIntegradas = new JanelasIntegradas({ aplicativos, ponte, plataforma: teste?.plataforma || process.platform, organizar: async () => {
+    if (!janela || janela.isDestroyed()) throw new Error(tr('Esta janela já não está disponível. Abra a integração novamente.'));
+    if (janela.isFullScreen()) await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { janela?.removeListener('leave-full-screen', sair); reject(new Error(tr('Saia da tela cheia para organizar as janelas lado a lado.'))); }, 5000);
+      const sair = () => { clearTimeout(timer); resolve(); }; janela.once('leave-full-screen', sair); janela.setFullScreen(false);
+    });
+    if (janela.isSimpleFullScreen?.()) janela.setSimpleFullScreen(false);
+    const r = screen.getDisplayMatching(janela.getBounds()).workArea;
+    const w = Math.max(640, Math.floor(r.width / 2)); janela.setBounds({ x: r.x, y: r.y, width: w, height: r.height });
+    return { x: r.x + w + 8, y: r.y, w: Math.max(200, r.width - w - 8), h: r.height };
+  } });
+  return janelasIntegradas;
+}
+
 function reabrirApp() {
+  if (janelasIntegradas) janelasIntegradas.encerrar();
   if (googleAgenda) googleAgenda.encerrar();
   if (assistente) assistente.encerrar();
   if (terminais) terminais.fecharTodos();
@@ -2836,6 +2874,7 @@ app.whenReady().then(async () => {
     aoMudar: (s) => enviar('assistente:mudou', s),
   });
   aplicativos = new Aplicativos({ shell, nativeImage, app, idioma: () => idioma.idioma() });
+  if (process.env.RETRO_INTEGRACAO_TESTE) aplicativos = require(process.env.RETRO_INTEGRACAO_TESTE).aplicativos({ aplicativos, shell });
   if (MODO_SISTEMA || process.env.RETRO_JANELAS_FALSAS) {
     janelasLinux = new (process.env.RETRO_JANELAS_FALSAS ? JanelasFalsas : JanelasLinux)({
       pidsProprios: () => new Set([process.pid, ...app.getAppMetrics().map((m) => m.pid)]),
@@ -3027,7 +3066,7 @@ app.on('will-quit', (e) => {
   Promise.race([limparNavegador(), new Promise((ok) => setTimeout(ok, 4000))]).catch(() => { }).finally(() => app.quit());
 });
 
-app.on('before-quit', () => { laboratorio.parar(); if (assistente) assistente.encerrar(); if (googleAgenda) googleAgenda.encerrar(); });
+app.on('before-quit', () => { laboratorio.parar(); if (assistente) assistente.encerrar(); if (googleAgenda) googleAgenda.encerrar(); if (janelasIntegradas) janelasIntegradas.encerrar(); });
 
 app.on('window-all-closed', () => {
   laboratorio.parar();
