@@ -43,12 +43,13 @@ import { iniciarMcp } from './mcp.js';
 import { iniciarAgenda } from './agenda.js';
 import { iniciarNotas } from './notas.js';
 import { iniciarReabrir } from './reabrir.js';
+import { iniciarMascote } from './mascotes.js';
 
 // Estes carregam só quando abrem (ou com o computador parado, logo depois da abertura). Os de
 // cima ficam prontos desde o início: abrem arquivos pelo tipo, recebem avisos do processo
 // principal (os links, as permissões do Navegador) ou têm relógios próprios.
 registrarPreguicoso({ prompt: { nome: 'Prompt de comando', icone: 'prompt' }, claude: { nome: 'Claude', icone: 'claude' }, codex: { nome: 'Codex', icone: 'codex' } }, () => import('./apps/prompt.js'));
-registrarPreguicoso({ dot: { nome: 'Dot', icone: 'internet' } }, () => import('./apps/dot.js'));
+registrarPreguicoso({ assistente: { nome: 'Assistente do Retro', icone: 'assistente' } }, () => import('./apps/assistente.js'));
 registrarPreguicoso({ painel: { nome: 'Painel de controle', icone: 'painel' } }, () => import('./apps/painel.js'));
 registrarPreguicoso({ foco: { nome: 'Foco', icone: 'foco' } }, () => import('./apps/foco.js'));
 registrarPreguicoso({ ajuda: { nome: 'Ajuda', icone: 'ajuda' } }, () => import('./apps/ajuda.js'));
@@ -294,6 +295,7 @@ async function iniciar() {
     setTimeout(() => avisar(tr('Bem-vindo!'), tr('Clique em Iniciar para começar. O disco C: é uma pasta do seu computador.'), { icone: 'logo', som: null, ms: 9000 }), 1200);
   }
   iniciarReabrir({ reabrir: !primeira });
+  iniciarMascote();
 
   // As atualizações: os programas (sem mexer nos que estão abertos), os Craft instalados no Windows
   // (só o aviso: o instalador pede a confirmação do Windows) e o próprio Retro Computer.

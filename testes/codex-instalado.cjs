@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { acharCodex, programaCodex, argumentosCodex } = require('../src/principal/codex');
+const { CanalAgente } = require('../src/principal/assistente');
 
 (async () => {
   assert.equal(process.platform, 'win32');
@@ -20,4 +21,12 @@ const { acharCodex, programaCodex, argumentosCodex } = require('../src/principal
   const r = await promisify(execFile)(lista.arquivo, lista.args, { env: { ...process.env, ...lista.env }, timeout: 20000, windowsHide: true });
   assert.ok(JSON.parse(r.stdout).some((s) => s.name === 'retro-computer' && s.enabled !== false), 'O CLI real precisa aceitar o servidor MCP do Retro.');
   console.log('Configuração do MCP aceita pelo CLI real.');
+  const app = programaCodex(caminho, ['app-server']);
+  const canal = new CanalAgente(app, { motor: 'codex', cwd: process.cwd(), env: process.env, aoMensagem: () => { }, aoFechar: () => { } });
+  try {
+    const init = await canal.pedir('initialize', { clientInfo: { name: 'retro_computer_teste', title: 'Retro Computer', version: require('../package.json').version } });
+    assert.ok(init && typeof init === 'object');
+    canal.enviar({ method: 'initialized', params: {} });
+    console.log('App-server do CLI real inicializado, sem conta ou chamada a modelo.');
+  } finally { await canal.encerrar(); }
 })().catch((e) => { console.error(e); process.exitCode = 1; });

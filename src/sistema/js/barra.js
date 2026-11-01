@@ -289,7 +289,7 @@ export const guardaRecentes = () => cfgIniciar().recentes !== false;
 
 /** Os programas que podem ser fixados (no menu Iniciar ou na barra), para a lista do Painel. */
 export function programasFixaveis() {
-  const embutidos = ['explorador', 'navegador', 'correio', 'claude', 'codex', 'dot', 'bloco', 'calculadora', 'captura', 'diario', 'foco', 'caracteres',
+  const embutidos = ['explorador', 'navegador', 'correio', 'claude', 'codex', 'assistente', 'bloco', 'calculadora', 'captura', 'diario', 'foco', 'caracteres',
     'monitor', 'laboratorio', 'prompt', 'dos', 'mac', 'midia', 'imagens', 'transferencia', 'painel', 'programas', 'paciencia', 'campo-minado', 'breakout', 'damas', 'xadrez'];
   const chaves = [...embutidos, ...estado.instalados.map((p) => 'craft:' + p.id), ...(estado.config.webapps || []).map((w) => 'webapp:' + w.id), ...noMenu().map((id) => 'nativo:' + id)];
   return chaves.map(programaDe).filter(Boolean).sort((a, b) => a.nome.localeCompare(b.nome, localidade()));
@@ -681,7 +681,7 @@ async function itensProgramas() {
     prog('correio', tr('E-mail'), 'correio'),
     prog('claude', tr('Claude'), 'claude'),
     prog('codex', tr('Codex'), 'codex'),
-    prog('dot', tr('Dot'), 'internet'),
+    prog('assistente', tr('Assistente do Retro'), 'assistente'),
     prog('explorador', tr('Explorador de arquivos'), 'computador', () => abrir('explorador', { pasta: pastaDocs() })),
     ...(craft.length ? [] : [{ rotulo: tr('Instalar programas…'), icone: 'programas-caixa', acao: () => abrir('programas') }]),
   ];

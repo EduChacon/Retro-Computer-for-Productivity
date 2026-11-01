@@ -27,7 +27,6 @@ const ATALHOS = {
   correio: { rotulo: marcar('E-mail'), icone: 'correio', abrir: () => abrir('correio') },
   claude: { rotulo: marcar('Claude'), icone: 'claude', abrir: () => abrir('claude') },
   codex: { rotulo: marcar('Codex'), icone: 'codex', abrir: () => abrir('codex') },
-  dot: { rotulo: marcar('Dot'), icone: 'internet', abrir: () => abrir('dot') },
   prompt: { rotulo: marcar('Prompt de comando'), icone: 'prompt', abrir: () => abrir('prompt') },
   bloco: { rotulo: marcar('Bloco de notas'), icone: 'bloco', abrir: () => abrir('bloco') },
   foco: { rotulo: marcar('Foco'), icone: 'foco', abrir: () => abrir('foco') },
@@ -57,10 +56,10 @@ function atalhoDe(chave) {
 }
 
 /** Os ícones do sistema que Painel › Aparência › Área de trabalho liga e desliga, na ordem da mesa. */
-export const ICONES_SISTEMA = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'codex', 'dot', 'programas', 'prompt', 'painel', 'bloco', 'foco'];
+export const ICONES_SISTEMA = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'codex', 'assistente', 'programas', 'prompt', 'painel', 'bloco', 'foco'];
 // Os ícones da área de trabalho que não são programas (não viram arquivo de atalho).
 const NAO_PROGRAMAS = ['meu-computador', 'meus-documentos', 'lixeira'];
-export const ICONES_PADRAO = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'codex', 'dot'];
+export const ICONES_PADRAO = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'codex', 'assistente'];
 export const naMesa = (chave) => ((estado.config.mesa && estado.config.mesa.atalhos) || []).includes(chave);
 
 /** Liga e desliga os ícones do sistema de uma vez, mantendo os outros atalhos e a ordem. */

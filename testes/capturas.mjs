@@ -42,6 +42,13 @@ if (ROTEIRO === 'codex') {
   process.env.ANTHROPIC_API_KEY = 'teste-nao-compartilhar';
 }
 if (ROTEIRO === 'codexInstalar') process.env.RETRO_CODEX_AUSENTE = '1';
+if (ROTEIRO === 'mascotes') {
+  const cli = path.join(tmp, 'Assistente de teste.cjs');
+  fs.copyFileSync(path.join(RAIZ, 'testes', 'assistente-falso.cjs'), cli);
+  process.env.RETRO_ASSISTENTE_FALSO = cli;
+  process.env.RETRO_ASSISTENTE_RELATORIO = path.join(tmp, 'assistente-relatorio.jsonl');
+  process.env.ANTHROPIC_API_KEY = 'teste-nao-compartilhar';
+}
 
 // Instala um pacote já baixado (RETRO_ZIP=caminho/wordcraft-web-0.7.0.zip) antes de abrir.
 if (process.env.RETRO_ZIP) {
@@ -311,42 +318,104 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
-  async dot() {
+  async mascotes() {
+    await pagina.emulateMedia({ reducedMotion: 'no-preference' });
     await fecharTudo();
-    // A página oficial é substituída só neste teste, sem rede, login ou conta pessoal.
-    await app.evaluate(({ ipcMain, session }) => {
-      global.__dotTeste = [];
-      session.fromPartition('persist:navegador').protocol.handle('https', (r) => new Response('<!doctype html><title>Dot — teste local</title><h1>Dot — teste local</h1><p>' + new URL(r.url).pathname + '</p>', { headers: { 'content-type': 'text/html; charset=utf-8' } }));
-      for (const canal of ['sistema:abrirLink', 'nativos:listar', 'nativos:abrir', 'firefox:estado', 'firefox:abrir']) ipcMain.removeHandler(canal);
-      ipcMain.handle('sistema:abrirLink', (_e, url) => { global.__dotTeste.push(url); return { ok: true, valor: true }; });
-      ipcMain.handle('nativos:listar', () => ({ ok: true, valor: [{ id: 'chatgpt-teste', nome: 'ChatGPT' }] }));
-      ipcMain.handle('nativos:abrir', (_e, id) => { global.__dotTeste.push(id); return { ok: true, valor: true }; });
-      ipcMain.handle('firefox:estado', () => ({ ok: true, valor: { instalado: true } }));
-      ipcMain.handle('firefox:abrir', (_e, url) => { global.__dotTeste.push('firefox:' + url); return { ok: true, valor: { ok: true } }; });
+    // O aplicativo antigo não existe; arquivos .atalho abrem o chat nativo.
+    const legado = await pagina.evaluate(async () => {
+      const s = await import('./js/sistema.js');
+      await s.abrir('dot');
+      return !!s.app('dot');
     });
-    await pagina.evaluate(async () => {
-      await retro.config.definir({ navegador: { links: 'firefox' } });
-      await (await import('./js/apps/navegador.js')).conferirFirefox();
-    });
-    await abrir('dot');
-    await pagina.waitForSelector('.dot .corpo');
-    await foto('dot');
-    await pagina.locator('.dot button', { hasText: T('Abrir meu Dot') }).click();
-    await pagina.waitForFunction(() => [...document.querySelectorAll('.nav-endereco')].some((c) => c.value === 'https://chatgpt.com/dots'));
-    await pagina.waitForFunction(() => [...document.querySelectorAll('webview')].some((w) => { try { return w.getURL() === 'https://chatgpt.com/dots'; } catch { return false; } }));
-    const paginaDot = await app.evaluate(async ({ webContents }) => {
-      const wc = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && w.getURL() === 'https://chatgpt.com/dots');
-      if (!wc) return null;
-      return { url: wc.getURL(), ponte: await wc.executeJavaScript('!!window.retro') };
-    });
-    if (!paginaDot || paginaDot.ponte) throw new Error('O Dot não abriu isolado dentro do Navegador.');
-    await foto('dot-no-retro');
-    await abrir('dot');
-    await pagina.locator('.dot button', { hasText: T('Abrir o aplicativo ChatGPT') }).click();
-    await pagina.locator('.dot button', { hasText: T('Ajuda oficial') }).click();
-    await pagina.waitForFunction(() => [...document.querySelectorAll('.nav-endereco')].some((c) => c.value === 'https://learn.chatgpt.com/docs/dots/computers-and-apps'));
-    const vistos = await app.evaluate(() => global.__dotTeste);
-    if (JSON.stringify(vistos) !== JSON.stringify(['chatgpt-teste'])) throw new Error('O Dot saiu do Retro: ' + JSON.stringify(vistos));
+    if (legado) throw new Error('O aplicativo Dot ainda está registrado.');
+    await pagina.waitForSelector('.assistente-chat');
+    if (await pagina.locator('webview').count()) throw new Error('O atalho antigo abriu a web.');
+    await fecharTudo();
+    await abrir('assistente', { opcoes: true });
+    await pagina.waitForSelector('.mascote-escolha');
+    const esperados = ['monitorzinho', 'disquetinho', 'robo', 'pastinha', 'ratinho', 'gato', 'cafezinho', 'esmalte'];
+    const vistos = await pagina.locator('.mascote-escolha').evaluateAll((es) => es.map((e) => e.dataset.id));
+    if (JSON.stringify(vistos) !== JSON.stringify(esperados)) throw new Error('A seleção não contém exatamente os oito mascotes escolhidos.');
+    await foto('mascotes-opcoes');
+    for (const id of esperados) {
+      await pagina.locator(`.mascote-escolha[data-id="${id}"]`).click();
+      await pagina.waitForFunction((m) => document.querySelector('#mascote .mascote-figura')?.dataset.mascote === m, id);
+      const info = await pagina.evaluate(async (m) => {
+        const i = new Image(); i.src = `sistema://retro/mascotes/${m}.png`; await i.decode();
+        const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight;
+        const ctx = c.getContext('2d'); ctx.drawImage(i, 0, 0);
+        const alpha = ctx.getImageData(0, 0, 1, 1).data[3];
+        return { largura: i.naturalWidth, altura: i.naturalHeight, alpha };
+      }, id);
+      if (info.largura !== info.altura * 2 || info.alpha !== 0) throw new Error('Folha sem transparência ou proporção incorreta: ' + id);
+    }
+    await pagina.getByLabel(T('Prévia da animação'), { exact: true }).selectOption('trabalhando');
+    const antes = await pagina.locator('.mascote-escolha .mascote-figura').first().getAttribute('data-quadro');
+    await pagina.waitForFunction((q) => document.querySelector('.mascote-escolha .mascote-figura')?.dataset.quadro !== q, antes, { timeout: 5000 });
+    await foto('mascotes-trabalhando');
+    if (process.env.RETRO_MASCOTES_PREVIA) {
+      const quadros = path.join(SAIDA, 'quadros'); fs.mkdirSync(quadros, { recursive: true });
+      for (let i = 0; i < 24; i++) {
+        await pagina.locator('.assistente-mascotes').screenshot({ path: path.join(quadros, String(i).padStart(3, '0') + '.png') });
+        await pagina.waitForTimeout(120);
+      }
+    }
+    await pagina.emulateMedia({ reducedMotion: 'reduce' });
+    await pagina.waitForTimeout(150);
+    const estatico = await pagina.locator('.mascote-escolha .mascote-figura').first().getAttribute('data-quadro');
+    await pagina.waitForTimeout(550);
+    if (estatico !== await pagina.locator('.mascote-escolha .mascote-figura').first().getAttribute('data-quadro')) throw new Error('Movimento reduzido ignorado.');
+    await pagina.emulateMedia({ reducedMotion: 'no-preference' });
+    await pagina.locator('.mascote-escolha[data-id="cafezinho"]').click();
+    await pagina.locator('.assistente-opcoes button', { hasText: T('Voltar à conversa') }).click();
+    const arquivo = `${DOCS}/assistente.txt`;
+    await pagina.evaluate(async (f) => { await retro.disco.gravar(f, new TextEncoder().encode('Documento original.')); }, arquivo);
+    await abrir('assistente', { arquivos: [arquivo] });
+    const texto = 'Mude a aparência. Pedido literal: $(comando) `crases` "aspas" ☕';
+    await pagina.locator('.assistente-entrada').fill(texto);
+    await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
+    await pagina.waitForSelector('.assistente-pedido');
+    await pagina.waitForFunction(() => document.querySelector('#mascote')?.dataset.estado === 'aguardando');
+    await foto('assistente-permissao');
+    await pagina.locator('.assistente-pedido button', { hasText: T('Permitir uma vez') }).click();
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
+    const resultado = await pagina.evaluate(async () => ({ s: await retro.assistente.estado(), cfg: await retro.config.obter(), html: !!document.querySelector('.assistente-mensagem img') }));
+    if (resultado.s.estado !== 'concluido' || resultado.cfg.papel.cor !== '#224466' || resultado.html) throw new Error('Ação, finalização ou isolamento do texto incorretos: ' + JSON.stringify({ estado: resultado.s.estado, erro: resultado.s.erro, cor: resultado.cfg.papel.cor, html: resultado.html }));
+    if (!(await pagina.evaluate((f) => retro.disco.versoes(f), arquivo)).length) throw new Error('Anexo sem versão anterior.');
+    await foto('assistente-codex');
+    await pagina.locator('.assistente-entrada').fill('Faça uma pergunta');
+    await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
+    await pagina.waitForSelector('.assistente-pedido input');
+    await pagina.locator('.assistente-pedido input').fill('Azul');
+    await pagina.locator('.assistente-pedido button', { hasText: T('Responder'), exact: true }).click();
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
+    await pagina.locator('.assistente-entrada').fill('demorar');
+    await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'true');
+    await pagina.locator('.assistente-enviar button', { hasText: T('Interromper'), exact: true }).click();
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
+    await pagina.getByLabel(T('Motor do assistente'), { exact: true }).selectOption('claude');
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.motor === 'claude');
+    await pagina.locator('.assistente-entrada').fill('Mude a aparência com Claude Code.');
+    await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
+    await pagina.waitForSelector('.assistente-pedido');
+    await pagina.locator('.assistente-pedido button', { hasText: T('Permitir uma vez') }).click();
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
+    await foto('assistente-claude');
+    const logs = fs.readFileSync(process.env.RETRO_ASSISTENTE_RELATORIO, 'utf8').trim().split('\n').map((s) => JSON.parse(s));
+    if (!logs.some((s) => s.motor === 'codex' && !s.chaveClaude && !s.electronComoNode && s.pedido.includes(texto))) throw new Error('Codex sem isolamento ou pedido literal.');
+    if (!logs.some((s) => s.motor === 'claude' && s.chaveClaude && !s.electronComoNode)) throw new Error('Claude não recebeu seu ambiente próprio.');
+    await fecharTudo();
+    await abrir('assistente');
+    await pagina.waitForSelector('.assistente-mensagem');
+    if (!await pagina.locator('.assistente-historico button').count()) throw new Error('Histórico não foi preservado.');
+    // Arrastar o companheiro guarda a posição e não abre uma conversa por engano.
+    const m = await pagina.locator('#mascote .mascote-botao').boundingBox();
+    await pagina.mouse.move(m.x + m.width / 2, m.y + m.height / 2);
+    await pagina.mouse.down(); await pagina.mouse.move(m.x - 120, m.y - 60, { steps: 8 }); await pagina.mouse.up();
+    const pos = await pagina.evaluate(async () => (await retro.config.obter()).assistente.posicao);
+    if (!Number.isFinite(pos?.x) || !Number.isFinite(pos?.y)) throw new Error('Posição do mascote não foi guardada.');
+    await foto('assistente-posicao');
   },
   async codexInstalar() {
     await fecharTudo();
