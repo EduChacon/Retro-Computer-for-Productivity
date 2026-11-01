@@ -26,7 +26,8 @@ class Integracao {
   aviso(texto) { this.mensagem.textContent = texto; }
   botao(texto, fn) { return h('button', { type: 'button', on: { click: () => this.executar(fn) } }, texto); }
   controle(texto, icone, fn) {
-    return h('button.int-bt', { type: 'button', title: texto, 'aria-label': texto, on: { click: () => this.executar(fn) } },
+    const mostrar = () => { this.dica.textContent = texto; }, limpar = () => { this.dica.textContent = ''; };
+    return h('button.int-bt', { type: 'button', 'aria-label': texto, on: { click: () => this.executar(fn), pointerenter: mostrar, pointerleave: limpar, focus: mostrar, blur: limpar } },
       h('span', { 'aria-hidden': 'true', html: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1">${icones[icone]}</svg>` }));
   }
   async executar(fn) {
@@ -90,6 +91,7 @@ class Integracao {
     this.sessao = s; if (this.j.fechada) return;
     this.j.el.dataset.associada = 'true';
     const embutida = s.modo === 'embutida';
+    this.dica = h('span.int-dica', { 'aria-hidden': 'true' });
     this.barra.replaceChildren(this.controle(embutida ? tr('Focar') : tr('Focar programa'), 'focar', () => retro.integracao.acao(s.id, 'focar')),
       this.controle(embutida ? tr('Minimizar') : tr('Minimizar programa'), 'minimizar', async () => { if (this.modo === 'embutida') this.j.minimizar(); else await retro.integracao.acao(s.id, 'minimizar'); }),
       this.controle(embutida ? tr('Fechar') : tr('Fechar programa…'), 'fechar', async () => { await retro.integracao.acao(s.id, 'fechar'); if (s.modo === 'embutida') await this.j.fechar(); }),
@@ -98,6 +100,7 @@ class Integracao {
       this.barra.append(this.controle(tr('Organizar lado a lado'), 'organizar', () => retro.integracao.acao(s.id, 'organizar')));
       this.alvo.replaceChildren(h('p', tr('Use os controles acima para trabalhar com a janela original. Fechar esta janela do Retro mantém o programa aberto.')));
     } else { this.alvo.replaceChildren(); this.aviso(''); }
+    this.barra.append(this.dica);
     await this.posicionar();
   }
   async posicionar() {

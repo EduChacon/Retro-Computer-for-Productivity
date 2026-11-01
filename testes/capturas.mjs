@@ -459,6 +459,9 @@ const ROTEIROS = {
     await pagina.locator('.janela.ativa button', { hasText: T('Abrir integrado…'), exact: true }).click();
     await pagina.waitForSelector('.integracao-nativa[data-associada="true"]');
     if (await pagina.locator('.int-mensagem').innerText() || await pagina.locator('.int-alvo').innerText()) throw new Error('A integração ainda exibe texto extra.');
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Focar'), exact: true }).hover();
+    if (await pagina.locator('.int-dica').innerText() !== T('Focar')) throw new Error('A dica do ícone não aparece na faixa de controles.');
+    await pagina.mouse.move(900, 620);
     await foto('integracao-windows');
     const ler = () => JSON.parse(fs.readFileSync(process.env.RETRO_INTEGRACAO_RELATORIO, 'utf8'));
     if (!ler().some((p) => p.acao === 'associar')) throw new Error('Não associou a janela.');
