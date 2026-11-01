@@ -10,7 +10,7 @@ exports.aplicativos = ({ aplicativos }) => Object.assign(Object.create(aplicativ
   listar: () => [{ id, nome: 'Programa de teste', terminal: false }],
   achar: (chave) => chave === id ? { id, nome: 'Programa de teste', arquivo: process.env.RETRO_INTEGRACAO_EXE || '/programa-de-teste.exe' } : null,
   icone: async () => null,
-  alvoIntegracao: (chave) => chave === id ? (process.env.RETRO_INTEGRACAO_EXE || '/programa-de-teste.exe') : null,
+  alvoIntegracao: (chave) => chave !== id ? null : exports.plataforma === 'darwin' ? '/programa-de-teste.app' : { atalho: process.env.RETRO_INTEGRACAO_ATALHO || '/programa-de-teste.lnk', arquivo: process.env.RETRO_INTEGRACAO_EXE || '/programa-de-teste.exe' },
   abrir: async (chave) => {
     if (chave !== id) throw new Error('programa desconhecido'); anotar('abrir');
     if (process.env.RETRO_INTEGRACAO_REAL) { const p = spawn(process.env.RETRO_INTEGRACAO_EXE, [process.env.RETRO_INTEGRACAO_JANELA], { stdio: 'ignore' }); p.unref(); }
@@ -22,7 +22,8 @@ if (!process.env.RETRO_INTEGRACAO_REAL) exports.ponte = () => ({
     anotar(acao, dados);
     if (acao === 'estado') return { permitido };
     if (acao === 'permitir') { permitido = true; return { permitido }; }
-    if (acao === 'listar') return [{ id: 'janela-local', titulo: 'Documento de teste' }];
+    if (acao === 'abrirPrograma') return { abertura: 'abertura-local' };
+    if (['listar', 'listarAbertura'].includes(acao)) return [{ id: 'janela-local', titulo: 'Documento de teste' }];
     if (acao === 'consultar') return { aberta: true };
     if (acao === 'associar') associada = true;
     if (acao === 'soltar') associada = false;

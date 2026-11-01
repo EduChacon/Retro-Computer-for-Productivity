@@ -46,6 +46,10 @@ if (['integracao', 'integracaoMac', 'integracaoReal', 'integracaoWeb'].includes(
     const compilar = path.join(tmp, 'compilar.ps1');
     fs.writeFileSync(compilar, "param($Fonte,$Saida)\n$ErrorActionPreference='Stop'\nAdd-Type -Path $Fonte -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $Saida -OutputType WindowsApplication\n");
     execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', compilar, path.join(RAIZ, 'testes/janela-windows-falsa.cs'), process.env.RETRO_INTEGRACAO_EXE]);
+    process.env.RETRO_INTEGRACAO_ATALHO = path.join(tmp, 'Programa de teste.lnk');
+    const spec = path.join(tmp, 'atalho-integracao.json');
+    fs.writeFileSync(spec, JSON.stringify({ atalho: process.env.RETRO_INTEGRACAO_ATALHO, arquivo: process.env.RETRO_INTEGRACAO_EXE, argumentos: '"' + process.env.RETRO_INTEGRACAO_JANELA + '"' }));
+    execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(RAIZ, 'testes/atalho-janelas.ps1'), spec]);
   }
 }
 

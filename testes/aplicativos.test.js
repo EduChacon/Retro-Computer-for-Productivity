@@ -3,7 +3,30 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { lerDesktop, limparExec } = require('../src/principal/aplicativos.js');
+const { Aplicativos } = require('../src/principal/aplicativos.js');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { migrar, mesclar, PADRAO } = require('../src/principal/config.js');
+
+test('integração Windows conserva o atalho e expande o alvo de um lançador', (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-atalho-')), atalho = path.join(tmp, 'Programa.lnk'); fs.writeFileSync(atalho, 'teste');
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  const anterior = process.env.RETRO_TESTE_LANCADOR_DIR; process.env.RETRO_TESTE_LANCADOR_DIR = 'C:\\Programas\\Aplicativo';
+  t.after(() => { if (anterior === undefined) delete process.env.RETRO_TESTE_LANCADOR_DIR; else process.env.RETRO_TESTE_LANCADOR_DIR = anterior; });
+  const a = new Aplicativos({ plataforma: 'win32', shell: { readShortcutLink: () => ({ target: '%RETRO_TESTE_LANCADOR_DIR%\\Update.exe', args: '--processStart programa.exe' }) } });
+  a.lista = [{ id: 'programa', arquivo: atalho }];
+  assert.deepEqual(a.alvoIntegracao('programa'), { atalho, arquivo: 'C:\\Programas\\Aplicativo\\Update.exe', appId: null });
+  assert.equal(a.alvoIntegracao('desconhecido'), null);
+});
+test('integração Windows reconhece um atalho AppsFolder sem confundir o Explorer com o programa', (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-atalho-')), atalho = path.join(tmp, 'Aplicativo.lnk'); fs.writeFileSync(atalho, 'teste');
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  const appId = 'Microsoft.WindowsCalculator_8wekyb3d8bbwe!App';
+  const a = new Aplicativos({ plataforma: 'win32', shell: { readShortcutLink: () => ({ target: 'C:\\Windows\\explorer.exe', args: 'shell:AppsFolder\\' + appId }) } });
+  a.lista = [{ id: 'programa', arquivo: atalho }];
+  assert.deepEqual(a.alvoIntegracao('programa'), { atalho, arquivo: null, appId });
+});
 
 const WRITER = `[Desktop Entry]
 Version=1.0

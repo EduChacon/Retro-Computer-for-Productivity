@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-public static class RetroJanelas {
+public static partial class RetroJanelas {
   [StructLayout(LayoutKind.Sequential)] struct RECT { public int L,T,R,B; }
   [StructLayout(LayoutKind.Sequential)] struct POINT { public int X,Y; }
   [StructLayout(LayoutKind.Sequential)] struct PLACEMENT { public int Length,Flags,Show; public POINT Min,Max; public RECT Normal; }
@@ -105,6 +105,7 @@ public static class RetroJanelas {
     if(mostrar) { if(!i.Host.Visible) i.Host.Show(); SetWindowPos(i.Host.Handle,IntPtr.Zero,0,0,0,0,0x0013); } else if(i.Host.Visible) i.Host.Hide();
   }
   public static bool Aberta(string id) { bool aberta=false; UI(()=> { Item i; aberta=itens.TryGetValue(id,out i) && Valido(i); }); return aberta; }
+  public static bool Embutida(string id) { bool embutida=false; UI(()=> { Item i; embutida=itens.TryGetValue(id,out i) && Valido(i) && i.Host!=null && GetParent(i.H)==i.Host.Handle; }); return embutida; }
   public static void Focar(string id) { UI(()=> {
     var i=Obter(id); uint p; uint atual=GetCurrentThreadId(), destino=GetWindowThreadProcessId(i.H,out p), frente=GetWindowThreadProcessId(GetForegroundWindow(),out p);
     // SetParent já liga as filas do hospedeiro e do programa; não desfazer essa ligação implícita.

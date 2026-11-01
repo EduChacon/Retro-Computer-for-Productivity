@@ -72,8 +72,9 @@ class PonteNativa {
 }
 
 class JanelasIntegradas {
-  constructor({ aplicativos, ponte, plataforma = process.platform, organizar = async () => {}, aoMudar = () => {} }) {
+  constructor({ aplicativos, ponte, plataforma = process.platform, organizar = async () => {}, aoMudar = () => {}, esperaJanela = 30000, agora = Date.now, esperar = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
     this.aplicativos = aplicativos; this.ponte = ponte; this.plataforma = plataforma; this.organizar = organizar; this.aoMudar = aoMudar; this.sessoes = new Map(); this.aberturas = new Map(); this.geracao = 0; this.bloqueada = false;
+    this.esperaJanela = esperaJanela; this.agora = agora; this.esperar = esperar;
   }
   async info() {
     if (!['win32', 'darwin'].includes(this.plataforma)) return { disponivel: false, modo: null };
@@ -94,19 +95,26 @@ class JanelasIntegradas {
     if (existente) return this.resumo(existente);
     if (this.sessoes.size >= 4) throw falha('programa');
     const geracao = this.geracao;
-    if (this.plataforma === 'darwin') await this.ponte.pedir('abrir', { arquivo: alvo });
-    else await this.aplicativos.abrir(id);
-    let janelas = [];
-    for (let i = 0; i < 24; i++) {
+    let abertura = null, vinculada = false;
+    try {
+      if (this.plataforma === 'darwin') await this.ponte.pedir('abrir', { arquivo: alvo });
+      else {
+        const d = typeof alvo === 'string' ? { atalho: alvo, arquivo: alvo } : alvo;
+        const r = await this.ponte.pedir('abrirPrograma', d); abertura = r?.abertura;
+        if (typeof abertura !== 'string' || !abertura) throw falha('auxiliar');
+      }
+      let janelas = []; const limite = this.agora() + this.esperaJanela;
+      do {
+        if (geracao !== this.geracao) throw falha('sessao');
+        janelas = await this.ponte.pedir(abertura ? 'listarAbertura' : 'listar', abertura ? { abertura } : { arquivo: alvo });
+        if (janelas.length || this.agora() >= limite) break;
+        await this.esperar(300);
+      } while (true);
       if (geracao !== this.geracao) throw falha('sessao');
-      janelas = await this.ponte.pedir('listar', { arquivo: alvo });
-      if (janelas.length) break;
-      await new Promise((r) => setTimeout(r, 250));
-    }
-    if (geracao !== this.geracao) throw falha('sessao');
-    if (!janelas.length) throw falha('ausente');
-    const s = { id: crypto.randomUUID(), programa: id, modo: info.modo, janelas: janelas.slice(0, 50), escolhida: null, ultima: null };
-    this.sessoes.set(s.id, s); return this.resumo(s);
+      if (!janelas.length) throw falha('ausente');
+      const s = { id: crypto.randomUUID(), programa: id, modo: info.modo, abertura, janelas: janelas.slice(0, 50), escolhida: null, ultima: null };
+      this.sessoes.set(s.id, s); vinculada = true; return this.resumo(s);
+    } finally { if (abertura && !vinculada) await this.ponte.pedir('liberarAbertura', { abertura }).catch(() => {}); }
   }
   resumo(s) { return { id: s.id, programa: s.programa, modo: s.modo, janelas: s.janelas.map((j) => ({ id: j.id, titulo: String(j.titulo || '').slice(0, 300) })), escolhida: s.escolhida }; }
   obter(id) { const s = this.sessoes.get(id); if (!s) throw falha('sessao'); return s; }
@@ -132,7 +140,7 @@ class JanelasIntegradas {
     return this.ponte.pedir(acao, { janela: s.escolhida });
   }
   async estado(id) { const s = this.obter(id); return s.escolhida ? this.ponte.pedir('consultar', { janela: s.escolhida }) : { aberta: true }; }
-  async soltar(id) { const s = this.obter(id); if (s.escolhida) await this.ponte.pedir('soltar', { janela: s.escolhida }); this.sessoes.delete(id); }
+  async soltar(id) { const s = this.obter(id); if (s.escolhida) await this.ponte.pedir('soltar', { janela: s.escolhida }); if (s.abertura) await this.ponte.pedir('liberarAbertura', { abertura: s.abertura }); this.sessoes.delete(id); }
   async bloquear(v) { this.bloqueada = !!v; for (const s of this.sessoes.values()) s.ultima = null; if (v && this.plataforma === 'win32' && this.sessoes.size) await this.ponte.pedir('ocultar'); }
   encerrar() { this.geracao++; this.sessoes.clear(); this.ponte.encerrar(); }
 }

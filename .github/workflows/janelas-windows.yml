@@ -7,13 +7,17 @@ on:
       - 'testes/janelas-nativas.test.js'
       - 'testes/janela-windows-falsa.cs'
       - 'testes/tocar-janela.ps1'
+      - 'testes/janelas-reais.cjs'
+      - 'testes/atalho-janelas.ps1'
+      - 'testes/lancador-janelas.cs'
+      - 'testes/capturar-janelas.ps1'
       - '.github/workflows/janelas-windows.yml'
 permissions:
   contents: read
 jobs:
   janelas:
     runs-on: windows-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,4 +26,10 @@ jobs:
         with:
           node-version: 22
       # Só módulos do Node e .NET do Windows: não precisa instalar npm ou os compiladores do laboratório.
-      - run: node --test testes/janelas-nativas.test.js
+      - run: node --test --test-concurrency=1 testes/janelas-nativas.test.js testes/janelas-reais.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: janelas-reais-Windows
+          path: capturas-janelas-reais/*.png
+          if-no-files-found: ignore

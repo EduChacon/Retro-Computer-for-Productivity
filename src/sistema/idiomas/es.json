@@ -2948,5 +2948,6 @@
   "Usar integração por padrão": "Usar integración de forma predeterminada",
   "Endereço HTTPS da versão web deste programa. Ela abrirá dentro do Retro com a moldura completa.": "Dirección HTTPS de la versión web de este programa. Se abrirá dentro de Retro con el marco completo.",
   "Versão web no Retro": "Versión web en Retro",
-  "Informe um endereço HTTPS válido, sem usuário ou senha.": "Introduce una dirección HTTPS válida, sin usuario ni contraseña."
+  "Informe um endereço HTTPS válido, sem usuário ou senha.": "Introduce una dirección HTTPS válida, sin usuario ni contraseña.",
+  "Aguardando a janela do programa… A primeira abertura pode levar até 30 segundos.": "Esperando la ventana del programa… El primer inicio puede tardar hasta 30 segundos."
 }
