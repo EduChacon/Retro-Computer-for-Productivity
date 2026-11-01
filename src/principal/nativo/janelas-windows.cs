@@ -117,7 +117,7 @@ public static class RetroJanelas {
   public static void Fechar(string id) { UI(()=> {
     var i=Obter(id);
     // O fechamento volta ao contexto original, inclusive os avisos de salvar do aplicativo.
-    Restaurar(i); Focar(id); PostMessage(i.H,0x0010,IntPtr.Zero,IntPtr.Zero);
+    Restaurar(i); Focar(id); PostMessage(i.H,0x0112,new IntPtr(0xF060),IntPtr.Zero);
   }); }
   static void Restaurar(Item i) {
     if(i.Host==null) return;
