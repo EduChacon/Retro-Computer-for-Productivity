@@ -46,9 +46,17 @@ test('Codex: o npm do Windows roda como JavaScript, sem executar o .cmd pelo she
 });
 
 test('Codex: instalador oficial e procura nos caminhos nativos', () => {
-  assert.equal(comandoInstalarCodex('win32'), 'irm https://chatgpt.com/codex/install.ps1 | iex');
+  assert.equal(comandoInstalarCodex('win32'), 'winget install --id OpenAI.Codex --exact --source winget');
   assert.equal(comandoInstalarCodex('darwin'), 'curl -fsSL https://chatgpt.com/codex/install.sh | sh');
   assert.ok(candidatosCodex({ plataforma: 'linux', casa: '/casa' }).includes('/casa/.local/bin/codex'));
+});
+
+test('Codex: acha as instalações do Windows sem herdar o PATH atualizado', () => {
+  const caminhos = candidatosCodex({ plataforma: 'win32', casa: 'C:\\Users\\Teste', env: { LOCALAPPDATA: 'D:\\Dados locais', ProgramFiles: 'C:\\Program Files', CODEX_INSTALL_DIR: 'D:\\Codex' } });
+  assert.ok(caminhos.includes('D:\\Dados locais\\Programs\\OpenAI\\Codex\\bin\\codex.exe'));
+  assert.ok(caminhos.includes('D:\\Dados locais\\Microsoft\\WinGet\\Links\\codex.exe'));
+  assert.ok(caminhos.includes('C:\\Program Files\\WinGet\\Links\\codex.exe'));
+  assert.ok(caminhos.includes('D:\\Codex\\codex.exe'));
 });
 
 test('Codex: a atualização só acrescenta o ícone à mesa padrão', () => {

@@ -275,7 +275,10 @@ async function abrirCodex(args = {}) {
   j.corpo.append(
     h('div.mensagem', img('codex', 32), h('div.texto.texto-ajuda',
       h('b', caminho ? tr('Codex CLI instalado neste computador.') : tr('O Codex CLI ainda não está instalado neste computador.')),
-      h('p', tr('O Codex trabalha nos arquivos do disco C: nesta janela retrô. A instalação usa o instalador oficial da OpenAI.')),
+      h('p', tr('O Codex trabalha nos arquivos do disco C: e pode ajustar o sistema nesta janela retrô, como o Claude Code.')),
+      ...(!caminho ? [h('p', estado.config.plataforma === 'win32'
+        ? tr('No Windows, a instalação usa o pacote OpenAI.Codex da fonte winget. Se o winget não estiver disponível, instale ou atualize o Instalador de Aplicativo pela Microsoft Store.')
+        : tr('A instalação usa o instalador oficial da OpenAI.'))] : []),
       ...(!caminho ? [h('span.codigo-linha', comando)] : []),
       h('p', tr('Entre com sua conta do ChatGPT quando o Codex pedir. O login e as credenciais ficam com o próprio Codex CLI; a chave do Claude não é usada.')),
       h('label', ajustes, ' ', tr('Permitir que o Codex ajuste o Retro Computer')),
