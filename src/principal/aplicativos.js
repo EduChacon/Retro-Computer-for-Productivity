@@ -282,7 +282,18 @@ class Aplicativos {
     const a = this.achar(id); if (!a || a.terminal) return null;
     if (this.plataforma === 'darwin') return a.arquivo;
     if (this.plataforma === 'win32') {
-      try { const alvo = this.shell.readShortcutLink(a.arquivo).target; return path.win32.isAbsolute(alvo) && /\.exe$/i.test(alvo) && fs.existsSync(alvo) ? alvo : null; } catch { return null; }
+      try {
+        const l = this.shell.readShortcutLink(a.arquivo);
+        const alvo = expandirVariaveis(l.target || '');
+        const virtual = /shell:AppsFolder[\\/]([^"\s]+)/i.exec(l.args || '');
+        const appId = virtual?.[1] || l.appUserModelId || null;
+        const iniciar = /--processStart(?:AndWait)?"?[=\s]+(?:"([^"]+)"|([^\s]+))/i.exec(l.args || '');
+        const esperado = iniciar?.[1] || iniciar?.[2] || null;
+        const processoEsperado = esperado && /\.exe$/i.test(esperado) ? path.win32.basename(esperado) : null;
+        // O atalho é a fonte da abertura. Atualizadores e apps da Loja podem trocar de executável.
+        if (!path.win32.isAbsolute(a.arquivo) || !fs.existsSync(a.arquivo)) return null;
+        return { atalho: a.arquivo, arquivo: !virtual && path.win32.isAbsolute(alvo) && /\.exe$/i.test(alvo) ? alvo : null, appId, processoEsperado };
+      } catch { return null; }
     }
     return null;
   }

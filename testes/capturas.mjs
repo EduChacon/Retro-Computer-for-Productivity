@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync, spawn } from 'node:child_process';
 import http from 'node:http';
 
@@ -33,7 +33,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-teste-'));
 const dados = process.env.RETRO_DADOS || path.join(tmp, 'dados');
 const disco = process.env.RETRO_DISCO || path.join(tmp, 'disco');
 
-if (['integracao', 'integracaoMac', 'integracaoReal', 'integracaoWeb'].includes(ROTEIRO)) {
+if (['integracao', 'integracaoMac', 'integracaoReal', 'integracaoChrome', 'integracaoWeb'].includes(ROTEIRO)) {
   process.env.RETRO_SEM_BOAS_VINDAS = '1';
   process.env.RETRO_INTEGRACAO_TESTE = path.join(RAIZ, 'testes/integracao-falsa.cjs');
   process.env.RETRO_INTEGRACAO_MODO = ROTEIRO === 'integracaoMac' ? 'darwin' : 'win32';
@@ -46,6 +46,21 @@ if (['integracao', 'integracaoMac', 'integracaoReal', 'integracaoWeb'].includes(
     const compilar = path.join(tmp, 'compilar.ps1');
     fs.writeFileSync(compilar, "param($Fonte,$Saida)\n$ErrorActionPreference='Stop'\nAdd-Type -Path $Fonte -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $Saida -OutputType WindowsApplication\n");
     execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', compilar, path.join(RAIZ, 'testes/janela-windows-falsa.cs'), process.env.RETRO_INTEGRACAO_EXE]);
+    process.env.RETRO_INTEGRACAO_ATALHO = path.join(tmp, 'Programa de teste.lnk');
+    const spec = path.join(tmp, 'atalho-integracao.json');
+    fs.writeFileSync(spec, JSON.stringify({ atalho: process.env.RETRO_INTEGRACAO_ATALHO, arquivo: process.env.RETRO_INTEGRACAO_EXE, argumentos: '"' + process.env.RETRO_INTEGRACAO_JANELA + '"' }));
+    execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(RAIZ, 'testes/atalho-janelas.ps1'), spec]);
+  }
+  if (ROTEIRO === 'integracaoChrome') {
+    if (process.platform !== 'win32') throw new Error('O roteiro do Chrome real exige Windows.');
+    process.env.RETRO_INTEGRACAO_REAL = '1'; process.env.RETRO_INTEGRACAO_NOME = 'Google Chrome';
+    process.env.RETRO_INTEGRACAO_EXE = ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'].find((f) => fs.existsSync(f));
+    if (!process.env.RETRO_INTEGRACAO_EXE) throw new Error('Chrome real não encontrado no runner.');
+    const html = path.join(tmp, 'chrome-retro.html'); fs.writeFileSync(html, '<!doctype html><html><title>Retro Chrome do teste</title><body style="font:24px sans-serif;background:#e0f0e0"><h1>Chrome real dentro do Retro</h1><input value="Documento do teste"></body></html>');
+    const args = ['--user-data-dir=' + path.join(tmp, 'perfil-chrome'), '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--disable-background-mode', '--disable-sync', '--disable-component-update', '--app=' + pathToFileURL(html).href];
+    process.env.RETRO_INTEGRACAO_ATALHO = path.join(tmp, 'Chrome teste.lnk'); const spec = path.join(tmp, 'atalho-chrome.json');
+    fs.writeFileSync(spec, JSON.stringify({ atalho: process.env.RETRO_INTEGRACAO_ATALHO, arquivo: process.env.RETRO_INTEGRACAO_EXE, argumentos: args.map((s) => '"' + s + '"').join(' ') }));
+    execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(RAIZ, 'testes/atalho-janelas.ps1'), spec]);
   }
 }
 
@@ -341,6 +356,17 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
+  async integracaoChrome() {
+    await fecharTudo(); await abrir('nativos');
+    await pagina.locator('.janela.ativa .item', { hasText: 'Google Chrome' }).click();
+    await pagina.locator('.janela.ativa button', { hasText: T('Abrir integrado…'), exact: true }).click();
+    await pagina.waitForSelector('.integracao-nativa[data-associada="true"]', { timeout: 45000 });
+    await pagina.waitForTimeout(1500);
+    const captura = await app.evaluate(async ({ desktopCapturer }) => { const fontes = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1600, height: 1000 } }); if (fontes[0].thumbnail.isEmpty()) throw new Error('Captura nativa vazia.'); return fontes[0].thumbnail.toPNG().toString('base64'); });
+    fs.writeFileSync(path.join(SAIDA, 'integracao-chrome-real.png'), Buffer.from(captura, 'base64'));
+    await pagina.locator('.integracao-nativa button', { hasText: T('Fechar programa…'), exact: true }).click();
+    await pagina.waitForFunction(() => !document.querySelector('.integracao-nativa'));
+  },
   async integracaoWeb() {
     await fecharTudo();
     await app.evaluate(({ session }) => session.fromPartition('persist:navegador').protocol.handle('https', () => new Response('<!doctype html><html><head><title>Programa web de teste</title></head><body><h1 id="prova">Versão web dentro do Retro</h1></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } })));

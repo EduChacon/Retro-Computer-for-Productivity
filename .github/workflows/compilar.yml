@@ -52,6 +52,18 @@ jobs:
       - name: Testes (disco, idiomas e atualizações)
         run: npm test
 
+      - name: Programas reais do Windows por atalho direto e por lançador
+        if: runner.os == 'Windows'
+        run: node --test testes/janelas-reais.cjs
+
+      - name: Guardar as capturas dos programas reais do Windows
+        if: runner.os == 'Windows' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janelas-reais-Windows
+          path: capturas-janelas-reais/*.png
+          if-no-files-found: ignore
+
       - name: Instalar o Codex no Windows PowerShell e conferir o executável real
         if: runner.os == 'Windows'
         # O mesmo Windows PowerShell 5.1 usado no Prompt, sem depender do pwsh 7 do runner.
@@ -156,6 +168,7 @@ jobs:
           node testes/capturas.mjs capturas-codex mascotes
           node testes/capturas.mjs capturas-codex googleAgenda
           node testes/capturas.mjs capturas-codex integracaoReal
+          node testes/capturas.mjs capturas-codex integracaoChrome
 
       - name: Guardar as capturas do Codex no Windows
         if: runner.os == 'Windows' && always()

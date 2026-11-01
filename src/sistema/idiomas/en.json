@@ -2948,5 +2948,6 @@
   "Usar integração por padrão": "Use integration by default",
   "Endereço HTTPS da versão web deste programa. Ela abrirá dentro do Retro com a moldura completa.": "HTTPS address of this app's web version. It will open inside Retro with the full frame.",
   "Versão web no Retro": "Web version in Retro",
-  "Informe um endereço HTTPS válido, sem usuário ou senha.": "Enter a valid HTTPS address without a username or password."
+  "Informe um endereço HTTPS válido, sem usuário ou senha.": "Enter a valid HTTPS address without a username or password.",
+  "Aguardando a janela do programa… A primeira abertura pode levar até 30 segundos.": "Waiting for the app window… The first launch may take up to 30 seconds."
 }
