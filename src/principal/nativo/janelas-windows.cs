@@ -128,7 +128,17 @@ public static partial class RetroJanelas {
     // durante esta integração em tela cheia; Alt+Tab, ocultar e devolver restauram o estado.
     bool jaNoTopo=IsWindow(pai) && (GetLong(pai,-20).ToInt64() & 8)!=0;
     if(usar) { if(SetWindowPos(pai,new IntPtr(-1),0,0,0,0,0x0013) && !jaNoTopo) elevouRetro=true; }
-    if(!usar && elevouRetro) { if(IsWindow(pai)) SetWindowPos(pai,new IntPtr(-2),0,0,0,0,0x0013); elevouRetro=false; }
+    if(!usar && elevouRetro) {
+      if(IsWindow(pai)) {
+        SetWindowPos(pai,new IntPtr(-2),0,0,0,0,0x0013);
+        var frente=GetForegroundWindow(); bool nossa=frente==pai || IsChild(pai,frente);
+        foreach(var i in itens.Values) if(i.Host!=null && (frente==i.Host.Handle || IsChild(i.Host.Handle,frente))) nossa=true;
+        // HWND_NOTOPMOST põe a janela no alto da faixa normal; mantenha-a abaixo do programa
+        // que acabou de receber o foco, sem reativar o Retro ou cobrir esse programa.
+        if(!nossa && IsWindow(frente) && (GetLong(frente,-20).ToInt64() & 8)==0) SetWindowPos(pai,frente,0,0,0,0,0x0013);
+      }
+      elevouRetro=false;
+    }
   }
   public static void Posicionar(string id,double x,double y,double w,double h,double vw,double vh,bool visivel) { UI(()=> {
     var i=Obter(id); if(i.Host==null || vw<=0 || vh<=0) throw new Exception("sessao");
