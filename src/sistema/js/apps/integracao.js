@@ -5,6 +5,13 @@ import { nomeNativo, abrirNativo, configurarWeb } from '../nativos.js';
 import { tr } from '../idioma.js';
 
 const abertas = new Map();
+const icones = {
+  focar: '<path d="M2.5 6.5v-4h4m3 0h4v4m0 3v4h-4m-3 0h-4v-4"/>',
+  minimizar: '<path d="M3 11.5h10"/>',
+  fechar: '<path d="m4 4 8 8m0-8-8 8"/>',
+  sair: '<path d="M6.5 3.5h-3v9h9v-3m-4-6h4v4m0-4-7 7"/>',
+  organizar: '<path d="M1.5 3.5h5v9h-5zm8 0h5v9h-5z"/>',
+};
 class Integracao {
   constructor(id) {
     this.id = id; this.sessao = null; this.ocupada = false; this.movendo = false;
@@ -18,6 +25,10 @@ class Integracao {
   }
   aviso(texto) { this.mensagem.textContent = texto; }
   botao(texto, fn) { return h('button', { type: 'button', on: { click: () => this.executar(fn) } }, texto); }
+  controle(texto, icone, fn) {
+    return h('button.int-bt', { type: 'button', title: texto, 'aria-label': texto, on: { click: () => this.executar(fn) } },
+      h('span', { 'aria-hidden': 'true', html: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1">${icones[icone]}</svg>` }));
+  }
   async executar(fn) {
     if (this.ocupada || this.j.fechada) return;
     this.ocupada = true;
@@ -79,12 +90,12 @@ class Integracao {
     this.sessao = s; if (this.j.fechada) return;
     this.j.el.dataset.associada = 'true';
     const embutida = s.modo === 'embutida';
-    this.barra.replaceChildren(this.botao(embutida ? tr('Focar') : tr('Focar programa'), () => retro.integracao.acao(s.id, 'focar')),
-      this.botao(embutida ? tr('Minimizar') : tr('Minimizar programa'), async () => { if (this.modo === 'embutida') this.j.minimizar(); else await retro.integracao.acao(s.id, 'minimizar'); }),
-      this.botao(embutida ? tr('Fechar') : tr('Fechar programa…'), async () => { await retro.integracao.acao(s.id, 'fechar'); if (s.modo === 'embutida') await this.j.fechar(); }),
-      this.botao(embutida ? tr('Sair') : tr('Sair da integração'), () => this.j.fechar()));
+    this.barra.replaceChildren(this.controle(embutida ? tr('Focar') : tr('Focar programa'), 'focar', () => retro.integracao.acao(s.id, 'focar')),
+      this.controle(embutida ? tr('Minimizar') : tr('Minimizar programa'), 'minimizar', async () => { if (this.modo === 'embutida') this.j.minimizar(); else await retro.integracao.acao(s.id, 'minimizar'); }),
+      this.controle(embutida ? tr('Fechar') : tr('Fechar programa…'), 'fechar', async () => { await retro.integracao.acao(s.id, 'fechar'); if (s.modo === 'embutida') await this.j.fechar(); }),
+      this.controle(embutida ? tr('Sair') : tr('Sair da integração'), 'sair', () => this.j.fechar()));
     if (s.modo === 'acompanhada') {
-      this.barra.append(this.botao(tr('Organizar lado a lado'), () => retro.integracao.acao(s.id, 'organizar')));
+      this.barra.append(this.controle(tr('Organizar lado a lado'), 'organizar', () => retro.integracao.acao(s.id, 'organizar')));
       this.alvo.replaceChildren(h('p', tr('Use os controles acima para trabalhar com a janela original. Fechar esta janela do Retro mantém o programa aberto.')));
     } else { this.alvo.replaceChildren(); this.aviso(''); }
     await this.posicionar();

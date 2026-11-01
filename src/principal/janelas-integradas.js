@@ -29,8 +29,8 @@ function geometria(o) {
 }
 
 class PonteNativa {
-  constructor({ plataforma = process.platform, recursos, empacotado = false, pai, processoPai = process.pid, iniciar = spawn }) {
-    this.opcoes = { plataforma, recursos, empacotado, pai, processoPai, iniciar }; this.pendentes = new Map(); this.seq = 0; this.filho = null; this.encerrada = false;
+  constructor({ plataforma = process.platform, recursos, empacotado = false, pai, processoPai = process.pid, iniciar = spawn, aoFoco = () => {} }) {
+    this.opcoes = { plataforma, recursos, empacotado, pai, processoPai, iniciar, aoFoco }; this.pendentes = new Map(); this.seq = 0; this.filho = null; this.encerrada = false;
   }
   iniciar() {
     if (this.encerrada) throw falha('sessao');
@@ -49,12 +49,13 @@ class PonteNativa {
     for (const k of Object.keys(env)) if (/^(RETRO_|ELECTRON_|OPENAI_|ANTHROPIC_|CLAUDE_|CODEX_)/.test(k)) delete env[k];
     const filho = iniciar(arquivo, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'], env }); this.filho = filho;
     // EOF faz o auxiliar devolver as janelas. Não matar o processo: ele pode estar restaurando uma delas.
-    const falhou = () => { if (this.filho !== filho) return; this.filho = null; for (const p of this.pendentes.values()) { clearTimeout(p.timer); p.reject(falha('auxiliar')); } this.pendentes.clear(); };
+    const falhou = () => { if (this.filho !== filho) return; this.filho = null; this.opcoes.aoFoco(false); for (const p of this.pendentes.values()) { clearTimeout(p.timer); p.reject(falha('auxiliar')); } this.pendentes.clear(); };
     filho.on('error', falhou); filho.on('exit', falhou); filho.stdin.on('error', falhou); filho.stderr.resume();
     const linhas = readline.createInterface({ input: filho.stdout });
     linhas.on('line', (linha) => {
       if (linha.length > 1024 * 1024) { falhou(); filho.stdin.end(); return; }
       let r; try { r = JSON.parse(linha); } catch { return; }
+      if (r.evento === 'focoIntegrado' && typeof r.ativo === 'boolean') { this.opcoes.aoFoco(r.ativo); return; }
       const p = this.pendentes.get(r.id); if (!p) return;
       clearTimeout(p.timer); this.pendentes.delete(r.id);
       if (r.erro) p.reject(falha(r.erro)); else p.resolve(r.dados);
@@ -82,6 +83,11 @@ class JanelasIntegradas {
     const e = await this.ponte.pedir('estado'); return { disponivel: true, modo: this.plataforma === 'win32' ? 'embutida' : 'acompanhada', permitido: e.permitido !== false };
   }
   async permitir() { if (this.plataforma !== 'darwin') return this.info(); await this.ponte.pedir('permitir'); return this.info(); }
+  temIncorporada() { return !this.bloqueada && [...this.sessoes.values()].some((s) => s.modo === 'embutida' && s.escolhida); }
+  async temFoco() {
+    if (this.plataforma !== 'win32' || !this.temIncorporada()) return false;
+    return (await this.ponte.pedir('focoIntegrado')).ativo === true;
+  }
   async abrir(id) {
     if (this.aberturas.has(id)) return this.aberturas.get(id);
     const ativos = new Set([...this.sessoes.values()].map((s) => s.programa));

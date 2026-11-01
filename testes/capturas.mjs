@@ -426,12 +426,12 @@ const ROTEIROS = {
     await pagina.mouse.move(titulo.x + 200, titulo.y + titulo.height / 2 + 45, { steps: 10 });
     await pagina.waitForTimeout(500); await conferir();
     await pagina.mouse.up(); await pagina.waitForTimeout(500); await conferir();
-    await pagina.locator('.int-acoes button', { hasText: T('Focar'), exact: true }).click();
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Focar'), exact: true }).click();
     await pagina.waitForTimeout(600); await conferir();
     if (!(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isFullScreen()))) throw new Error('O foco tirou o Retro da tela cheia.');
     const captura = await app.evaluate(async ({ desktopCapturer }) => { const fontes = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1600, height: 1000 } }); if (fontes[0].thumbnail.isEmpty()) throw new Error('Captura nativa vazia.'); return fontes[0].thumbnail.toPNG().toString('base64'); });
     fs.writeFileSync(path.join(SAIDA, 'integracao-chrome-real.png'), Buffer.from(captura, 'base64'));
-    await pagina.locator('.int-acoes button', { hasText: T('Fechar'), exact: true }).click();
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Fechar'), exact: true }).click();
     await pagina.waitForFunction(() => !document.querySelector('.integracao-nativa'));
   },
   async integracaoWeb() {
@@ -468,10 +468,10 @@ const ROTEIROS = {
     await pagina.waitForTimeout(500);
     if (ler().filter((p) => p.acao === 'posicionar').at(-1)?.dados.visivel !== true) throw new Error('Escondeu o programa durante o arrasto.');
     await pagina.mouse.up();
-    await pagina.locator('.int-acoes button', { hasText: T('Minimizar'), exact: true }).click();
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Minimizar'), exact: true }).click();
     await pagina.waitForFunction(() => document.querySelector('.integracao-nativa')?.classList.contains('minimizada'));
     await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('integracao-nativa')).focar());
-    await pagina.locator('.int-acoes button', { hasText: T('Fechar'), exact: true }).click();
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Fechar'), exact: true }).click();
     await pagina.waitForFunction(() => !document.querySelector('.integracao-nativa'));
     if (!ler().some((p) => p.acao === 'soltar')) throw new Error('Não devolveu a janela.');
     if (!ler().some((p) => p.acao === 'fechar')) throw new Error('Não pediu o fechamento normal.');
@@ -490,11 +490,11 @@ const ROTEIROS = {
     await pagina.locator('.integracao-nativa button', { hasText: T('Permitir controle de janelas…'), exact: true }).click();
     await pagina.locator('.integracao-nativa button', { hasText: T('Tentar novamente'), exact: true }).click();
     await pagina.waitForSelector('.integracao-nativa[data-associada="true"]');
-    await pagina.locator('.integracao-nativa button', { hasText: T('Organizar lado a lado'), exact: true }).click();
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Organizar lado a lado'), exact: true }).click();
     await foto('integracao-mac-controles');
     const pedidos = JSON.parse(fs.readFileSync(process.env.RETRO_INTEGRACAO_RELATORIO, 'utf8'));
     if (!pedidos.some((p) => p.acao === 'organizar')) throw new Error('Não organizou as janelas.');
-    await pagina.locator('.integracao-nativa button', { hasText: T('Sair da integração'), exact: true }).click();
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Sair da integração'), exact: true }).click();
   },
   async integracaoReal() {
     await fecharTudo(); await abrir('nativos');
@@ -506,7 +506,7 @@ const ROTEIROS = {
     if (!ler().parent) throw new Error('A janela real não foi incorporada.');
     const captura = await app.evaluate(async ({ desktopCapturer }) => { const fontes = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1600, height: 1000 } }); return fontes[0].thumbnail.toPNG().toString('base64'); });
     fs.writeFileSync(path.join(SAIDA, 'integracao-windows-real.png'), Buffer.from(captura, 'base64'));
-    await pagina.locator('.int-acoes button', { hasText: T('Sair'), exact: true }).click();
+    await pagina.locator('.int-acoes').getByRole('button', { name: T('Sair'), exact: true }).click();
     for (let i = 0; i < 50 && ler().parent; i++) await pagina.waitForTimeout(100);
     if (ler().parent) throw new Error('A janela real não foi devolvida.');
     // O programa próprio sobrevive à integração. Só o teste encerra seu processo ao terminar.

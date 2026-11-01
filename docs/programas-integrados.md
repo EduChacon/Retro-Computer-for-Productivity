@@ -1,6 +1,6 @@
 # Programas do computador dentro do Retro
 
-Na 2.5.2, a integração no Windows mostra apenas os controles após incorporar a janela. O conteúdo acompanha o arrasto da moldura, sem ser escondido durante o movimento. A superfície nativa avisa ao shell quando representa o Retro em tela cheia; não esconde a barra do Windows globalmente nem modifica a configuração do sistema.
+Na 2.5.2, a integração mostra uma faixa fina com ícones para os controles. Os nomes aparecem ao passar o mouse e continuam disponíveis para leitores de tela e pelo teclado. O conteúdo acompanha o arrasto da moldura, sem ser escondido durante o movimento. Em tela cheia no Windows, o programa e a barra do Retro permanecem juntos; a ordem original das janelas volta ao minimizar, sair da integração ou focar outro aplicativo. A barra do Windows não é escondida globalmente e a configuração do sistema não é alterada.
 
 Os atalhos da área de trabalho do Windows também aparecem em Programas do computador. Atalhos anunciados por instaladores são abertos pelo Shell mesmo sem um destino legível pelo Electron.
 

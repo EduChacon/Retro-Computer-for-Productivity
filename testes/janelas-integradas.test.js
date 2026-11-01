@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { JanelasIntegradas, geometria } = require('../src/principal/janelas-integradas');
+const { PonteNativa } = require('../src/principal/janelas-integradas');
 const g = { ret: { x: 15, y: 60, w: 500, h: 300 }, viewport: { w: 1024, h: 700 }, visivel: true };
 function montar(plataforma = 'win32') {
   const pedidos = [], abertos = [];
@@ -77,4 +78,23 @@ test('integração: janela original só pode ser uma da abertura conhecida, sem 
   await assert.rejects(a.j.original(s.id, 'arbitraria'), { codigo: 'sessao' });
   await a.j.original(s.id, s.janelas[0].id); assert.equal(a.pedidos.at(-1).acao, 'focar'); assert.equal(a.abertos.length, 1);
   await a.j.bloquear(true); await assert.rejects(a.j.original(s.id, s.janelas[0].id), { codigo: 'sessao' });
+});
+test('integração: o foco do hospedeiro mantém o Retro; outra janela e o bloqueio o liberam', async () => {
+  const a = montar(); assert.equal(await a.j.temFoco(), false);
+  const s = await a.j.abrir('programa'); await a.j.associar(s.id, s.janelas[0].id, g);
+  const original = a.ponte.pedir; let ativo = true;
+  a.ponte.pedir = (acao, dados) => acao === 'focoIntegrado' ? Promise.resolve({ ativo }) : original(acao, dados);
+  assert.equal(await a.j.temFoco(), true); ativo = false; assert.equal(await a.j.temFoco(), false);
+  ativo = true; await a.j.bloquear(true); assert.equal(await a.j.temFoco(), false);
+});
+test('ponte nativa: aceita só notificações booleanas de foco e libera a ordem se o auxiliar termina', async (t) => {
+  const { PassThrough } = require('node:stream'), { EventEmitter } = require('node:events');
+  const filho = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), unref() {} });
+  const focos = [], p = new PonteNativa({ plataforma: 'win32', pai: () => '1', iniciar: () => filho, aoFoco: (foco) => focos.push(foco) });
+  t.after(() => { p.encerrar(); filho.stdin.destroy(); filho.stdout.destroy(); filho.stderr.destroy(); });
+  p.iniciar();
+  filho.stdout.write(JSON.stringify({ evento: 'focoIntegrado', ativo: 'true' }) + '\n');
+  filho.stdout.write(JSON.stringify({ evento: 'focoIntegrado', ativo: true }) + '\n');
+  await new Promise(setImmediate); assert.deepEqual(focos, [true]);
+  filho.emit('exit', 1); assert.deepEqual(focos, [true, false]);
 });

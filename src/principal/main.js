@@ -534,7 +534,14 @@ function criarJanela() {
   // foco (o Windows só esconde a barra do monitor em que a janela "está"); ao trocar de programa, solta.
   if (process.platform === 'win32') {
     janela.on('focus', () => { if (espalhada && !cheiaDoVideo) janela.setAlwaysOnTop(true, 'screen-saver'); });
-    janela.on('blur', () => { if (janela.isAlwaysOnTop()) janela.setAlwaysOnTop(false); });
+    janela.on('blur', async () => {
+      const atual = janela;
+      // O foco no hospedeiro nativo continua sendo trabalho dentro do Retro. Só uma troca real
+      // para outro aplicativo solta a ordem; um auxiliar que não responde nunca prende a mesa.
+      const integrada = janelasIntegradas ? await comLimite(janelasIntegradas.temFoco(), 500).catch(() => false) : false;
+      if (janela !== atual || atual.isDestroyed() || atual.isFocused()) return;
+      ordemDaIntegracao(integrada);
+    });
   }
   // No modo sistema, o Retro Computer é a tela inteira: não há para onde sair. Ao entrar ou sair da
   // tela cheia (a tela de bloqueio, um vídeo) e depois de o Openbox mover a janela (o Alt e arrastar),
@@ -2598,11 +2605,21 @@ function criarLoja() {
   return new (falsa ? LojaFalsa : Loja)(comum);
 }
 
+function ordemDaIntegracao(ativo) {
+  if (process.platform !== 'win32' || !janela || janela.isDestroyed()) return;
+  const integrada = ativo && janelasIntegradas?.temIncorporada() && emTelaCheia();
+  const noTopo = !!integrada || (espalhada && !cheiaDoVideo && janela.isFocused());
+  // A propriedade do Electron precisa acompanhar a ordem nativa: mudar só o HWND é desfeito
+  // pelo Chromium. O auxiliar avisa também quando o foco sai para outro aplicativo.
+  janela.setAlwaysOnTop(noTopo, 'screen-saver');
+}
+
 function integracaoDeJanelas() {
   if (janelasIntegradas) return janelasIntegradas;
   const teste = process.env.RETRO_INTEGRACAO_TESTE ? require(process.env.RETRO_INTEGRACAO_TESTE) : null;
   const ponte = teste?.ponte ? teste.ponte() : new PonteNativa({
     recursos: process.resourcesPath, empacotado: app.isPackaged,
+    aoFoco: ordemDaIntegracao,
     pai: () => { const b = janela.getNativeWindowHandle(); return (b.length === 8 ? b.readBigUInt64LE() : BigInt(b.readUInt32LE())).toString(16); },
   });
   janelasIntegradas = new JanelasIntegradas({ aplicativos, ponte, plataforma: teste?.plataforma || process.platform, organizar: async () => {

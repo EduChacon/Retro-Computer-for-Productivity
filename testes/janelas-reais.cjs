@@ -20,10 +20,11 @@ for (const programa of ['notepad', 'chrome']) for (const lancador of [false, tru
     const compilar = path.join(tmp, 'compilar.ps1'); fs.writeFileSync(compilar, "param($Fonte,$Saida)\n$ErrorActionPreference='Stop'\nAdd-Type -Path $Fonte -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $Saida -OutputType WindowsApplication\n");
     const exePai = path.join(tmp, 'Hospedeiro.exe'); executar(compilar, [path.join(__dirname, 'janela-windows-falsa.cs'), exePai]);
     const dadosPai = path.join(tmp, 'pai.json'), pai = spawn(exePai, [dadosPai, programa === 'chrome' ? 'tela-cheia' : 'pai']);
-    let ponte, j, sessao;
+    let ponte, j, sessao, externo;
     t.after(async () => {
       if (j && sessao) { await j.acao(sessao.id, 'fechar').catch(() => {}); await j.soltar(sessao.id).catch(() => {}); }
       ponte?.encerrar();
+      if (externo && externo.exitCode === null && !externo.signalCode) await new Promise((r) => { externo.once('exit', r); externo.kill(); });
       if (pai.exitCode === null && !pai.signalCode) await new Promise((r) => { pai.once('exit', r); pai.kill(); });
       try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); } catch { t.diagnostic('O Windows ainda mantém o perfil temporário aberto; o runner o remove ao terminar.'); }
     });
@@ -63,11 +64,22 @@ for (const programa of ['notepad', 'chrome']) for (const lancador of [false, tru
     fs.writeFileSync(captura, JSON.stringify(await aguardar(() => JSON.parse(fs.readFileSync(dadosPai, 'utf8')))));
     executar(path.join(__dirname, 'capturar-janelas.ps1'), [captura, path.join(pasta, programa + (lancador ? '-lancador' : '-direto') + '.png')]);
     if (programa === 'chrome') {
+      const estadoPai = () => JSON.parse(fs.readFileSync(dadosPai, 'utf8'));
+      await aguardar(() => estadoPai().topo === true);
       const conferir = path.join(tmp, 'conferir.json');
       fs.writeFileSync(conferir, JSON.stringify({ pai: p.hwnd, ...g, barra: { x: 312, y: 373 } }));
       t.diagnostic(executar(path.join(__dirname, 'conferir-integracao.ps1'), [conferir]).trim());
+      await j.acao(sessao.id, 'minimizar'); await aguardar(() => estadoPai().topo === p.topo);
+      await j.atualizar(sessao.id, g); await j.acao(sessao.id, 'focar'); await aguardar(() => estadoPai().topo === true);
+      const dadosExternos = path.join(tmp, 'externo.json'); externo = spawn(exePai, [dadosExternos, 'externo']);
+      await aguardar(() => JSON.parse(fs.readFileSync(dadosExternos, 'utf8')));
+      executar(path.join(__dirname, 'tocar-janela.ps1'), [dadosExternos]);
+      await aguardar(() => estadoPai().topo === p.topo);
+      await j.acao(sessao.id, 'focar'); await aguardar(() => estadoPai().topo === true);
+      t.diagnostic('A ordem original volta ao minimizar e ao focar outro aplicativo.');
     }
     await j.acao(sessao.id, 'fechar');
+    if (programa === 'chrome') await aguardar(() => JSON.parse(fs.readFileSync(dadosPai, 'utf8')).topo === p.topo);
     assert.equal((await j.estado(sessao.id)).embutida, false);
     await j.soltar(sessao.id); sessao = null;
     assert.equal(fs.readFileSync(texto, 'utf8'), 'Documento exclusivo do teste de integração.\r\n');
