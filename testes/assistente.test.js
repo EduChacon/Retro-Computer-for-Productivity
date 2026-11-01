@@ -59,7 +59,7 @@ for (const motor of ['codex', 'claude']) {
   });
 }
 test('Assistente Claude: shims do npm no Windows resolvem instalações nativas e antigas sem shell', (t) => {
-  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-claude-npm-'));
+  const pasta = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'retro-claude-npm-')));
   t.after(() => fs.rmSync(pasta, { recursive: true, force: true }));
   const pacote = path.join(pasta, 'node_modules', '@anthropic-ai', 'claude-code');
   fs.mkdirSync(path.join(pacote, 'bin'), { recursive: true });
