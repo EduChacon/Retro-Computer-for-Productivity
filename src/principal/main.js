@@ -1774,6 +1774,8 @@ function registrarPonte() {
   tratar('disco:lerTexto', (rel) => disco.ler(rel).then((b) => b.toString('utf8')));
   tratar('disco:gravar', (rel, dados, o) => disco.gravar(rel, dados, o));
   tratar('disco:criarPasta', (pai, nome) => disco.criarPasta(pai, nome));
+  tratar('disco:tiposNovos', () => require('./documentos-novos').tiposNovos());
+  tratar('disco:criarDocumento', (pai, tipo) => require('./documentos-novos').criarDocumento(disco, String(pai || ''), String(tipo)));
   tratar('disco:nomeLivre', (pai, nome) => disco.nomeLivre(pai, nome));
   tratar('disco:renomear', (rel, nome) => disco.renomear(rel, nome));
   tratar('disco:mover', (rel, destino) => disco.mover(rel, destino));
@@ -1901,6 +1903,7 @@ function registrarPonte() {
 
   // Programas
   tratar('programas:catalogo', () => programas.catalogo());
+  tratar('programas:atualizarCatalogo', (o) => programas.atualizarCatalogo(o));
   tratar('programas:instalados', () => programas.instalados());
   tratar('programas:instalar', (id, opcoes) => programas.instalar(id, (p) => enviar('programas:progresso', id, p), opcoes || {}));
   tratar('programas:instalarArquivo', async () => {
@@ -1991,6 +1994,7 @@ function registrarPonte() {
   tratar('integracao:atualizar', (id, o) => integracaoDeJanelas().atualizar(String(id), o));
   tratar('integracao:acao', (id, acao) => integracaoDeJanelas().acao(String(id), String(acao)));
   tratar('integracao:estado', (id) => integracaoDeJanelas().estado(String(id)));
+  tratar('integracao:original', (id, alvo) => integracaoDeJanelas().original(String(id), String(alvo)));
   tratar('integracao:soltar', (id) => integracaoDeJanelas().soltar(String(id)));
   // As janelas dos programas do Linux (modo sistema): a barra de tarefas mostra e comanda.
   tratar('janelasLinux:listar', () => (janelasLinux ? janelasLinux.listar() : { lista: [], retroAtivo: true }));

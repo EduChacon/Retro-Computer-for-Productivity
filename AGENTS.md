@@ -174,6 +174,7 @@ src/sistema/           a área de trabalho (página servida em sistema://retro/)
                        pdf (Ferramentas de PDF), leitorpdf (Leitor de PDF), ocr (Copiar o texto), scanner (Digitalizar), agenda, receber (Receber do celular),
                        nuvem, diversos (Executar, Localizar, Desligar), foco, protecao, ajuda
 catalogo/programas.json      os programas conhecidos (id, repo, tipos de arquivo, ícone; a categoria e a descrição nos três idiomas)
+
 recursos/linux/        a sessão do modo sistema (sessao.sh, o tema do Openbox, o .desktop) e os scripts do .deb
 ferramentas/           icones.py, fontes.sh, fonte-serenity.py, textos.js (as traduções que faltam), emojis.py (a fonte Noto Color Emoji e os nomes do CLDR), fusos.py (a cidade de cada fuso horário),
                        icones-mac.py e controles-mac.js (os desenhos próprios do tema Mac clássico)
@@ -185,6 +186,10 @@ docs/                  uso.md, proposta.md, instalacao.md (o guia de cada comput
 .github/workflows/compilar.yml   testes e instaladores (Windows, macOS, Linux PC e ARM64) a cada push; no Windows, também testes/duas-telas.mjs
 .github/workflows/publicar.yml   na main, com versão nova no package.json: compila e cria o lançamento vX.Y.Z
 ```
+
+`catalogo-craft.js` descobre acréscimos na tabela The Crafting Apps do README oficial de `storytold/wordcraft`, com cache por perfil e intervalo de seis horas. Só aceita `storytold/*` e o `tangency-labs/solidcraft` da comunidade, com pacote web confirmado no lançamento estável. A consulta não instala nada, não altera associações e não remove conhecidos quando a rede ou o formato falha. Veja `docs/catalogo-craft.md`.
+
+`documentos-novos.js` mantém os tipos de Arquivo › Novo e os modelos próprios de Office e programação. A mesa, o fundo das pastas e o menu Arquivo usam `menuNovo` de `arquivos.js`. O processo principal recebe só o id do tipo; a criação usa nome livre e `esperado: null` para preservar arquivos existentes, inclusive em chamadas concorrentes. Não crie um `.docx`, `.xlsx` ou `.pptx` vazio: são pacotes com relações e tipos de conteúdo. O roteiro `novos` confere menus e criação nos três idiomas; `documentos-novos.test.js` confere leitura e colisões de nomes.
 
 ## Rodar, testar e compilar
 
@@ -305,6 +310,8 @@ No Mac, o Swift `nativo/janelas-mac.swift` usa Acessibilidade, preservando a mol
 `janelas-nativas.test.js` usa janelas próprias reais no Windows e consulta o auxiliar real no Mac. `integracao-falsa.cjs` só é carregado pelo caminho explícito `RETRO_INTEGRACAO_TESTE`; nunca controla programas pessoais. As capturas `integracao` e `integracaoMac` verificam os controles com o provedor de teste; `integracaoReal` verifica a integração no pacote Windows com uma janela própria real. Não confunda o teste de permissão negada com uma validação de controle de aplicativos no Mac já autorizado.
 
 `testes/janelas-reais.cjs` usa Chrome e Bloco de Notas instalados no runner, com perfis, documentos e atalhos exclusivos, inclusive um lançador com janela de progresso. Rode separadamente dos testes de outras janelas: `node --test --test-concurrency=1 testes/janelas-nativas.test.js testes/janelas-reais.cjs`. `integracaoChrome` confere a abertura pela interface no pacote Windows e guarda uma captura nativa da tela. Não substitua essa cobertura por uma janela de teste própria: a descoberta pelo atalho e o comportamento dos aplicativos reais fazem parte da integração.
+
+O arrasto da moldura não oculta a superfície integrada. `integracaoChrome` também confere o aplicativo e a barra do Retro pelo hit test nativo, durante o arrasto e após Focar em tela cheia. A superfície independente usa `ITaskbarList2.MarkFullscreenWindow` apenas enquanto representa o Retro em tela cheia; não esconda a barra globalmente nem torne a superfície filha ou possuída pelo HWND do Electron, pois a destruição do pai pode destruir o programa. A elevação é detectada antes de SetParent: não eleve o Retro inteiro nem prometa incorporação do eSAJ como administrador. Mostrar janela original só foca uma janela já reconhecida na abertura, sem relançar.
 
 ## Laboratório de programação
 

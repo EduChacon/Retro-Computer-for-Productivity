@@ -235,6 +235,60 @@
       "versaoConhecida": "0.7.0",
       "icone": "cadcraft",
       "tipos": ["dxf", "dwg"]
+    },
+    {
+      "id": "texturecraft",
+      "nome": "TextureCraft",
+      "categoria": {
+        "pt-BR": "Imagem",
+        "en": "Graphics",
+        "es": "Imagen"
+      },
+      "descricao": {
+        "pt-BR": "Pintura de texturas para modelos 3D.",
+        "en": "Texture painting for 3D models.",
+        "es": "Pintura de texturas para modelos 3D."
+      },
+      "repo": "storytold/texturecraft",
+      "versaoConhecida": "0.2.0",
+      "icone": "programa",
+      "tipos": []
+    },
+    {
+      "id": "craft-anything",
+      "nome": "Craft Anything",
+      "categoria": {
+        "pt-BR": "Programação",
+        "en": "Programming",
+        "es": "Programación"
+      },
+      "descricao": {
+        "pt-BR": "Ferramentas para estudar como um programa funciona e criar o seu.",
+        "en": "Tools to study how an app works and build your own.",
+        "es": "Herramientas para estudiar cómo funciona un programa y crear el tuyo."
+      },
+      "repo": "storytold/craft-anything",
+      "versaoConhecida": "0.2.0",
+      "icone": "programa",
+      "tipos": []
+    },
+    {
+      "id": "solidcraft",
+      "nome": "SolidCraft",
+      "categoria": {
+        "pt-BR": "Engenharia",
+        "en": "Engineering",
+        "es": "Ingeniería"
+      },
+      "descricao": {
+        "pt-BR": "CAD 3D paramétrico da Tangency Labs, listado pela comunidade ArtCraft.",
+        "en": "Parametric 3D CAD by Tangency Labs, listed by the ArtCraft community.",
+        "es": "CAD 3D paramétrico de Tangency Labs, listado por la comunidad ArtCraft."
+      },
+      "repo": "tangency-labs/solidcraft",
+      "versaoConhecida": "0.29.0",
+      "icone": "programa",
+      "tipos": []
     }
   ]
 }

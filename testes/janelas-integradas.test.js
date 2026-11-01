@@ -72,3 +72,9 @@ test('integração: geometria fica dentro da área visível e recusa números in
   assert.deepEqual(geometria(g), g);
   for (const ret of [{ ...g.ret, x: -1 }, { ...g.ret, w: Infinity }, { ...g.ret, h: NaN }, { ...g.ret, x: 1000 }]) assert.throws(() => geometria({ ...g, ret }), { codigo: 'programa' });
 });
+test('integração: janela original só pode ser uma da abertura conhecida, sem relançar ou elevar permissões', async () => {
+  const a = montar(), s = await a.j.abrir('programa');
+  await assert.rejects(a.j.original(s.id, 'arbitraria'), { codigo: 'sessao' });
+  await a.j.original(s.id, s.janelas[0].id); assert.equal(a.pedidos.at(-1).acao, 'focar'); assert.equal(a.abertos.length, 1);
+  await a.j.bloquear(true); await assert.rejects(a.j.original(s.id, s.janelas[0].id), { codigo: 'sessao' });
+});

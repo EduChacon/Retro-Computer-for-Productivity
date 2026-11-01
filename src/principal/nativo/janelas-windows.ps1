@@ -19,7 +19,7 @@ try {
         'ocultar' { [RetroJanelas]::Ocultar(); @{ ok = $true } }
         'associar' { [RetroJanelas]::Associar([string]$r.janela); [RetroJanelas]::Posicionar([string]$r.janela, $r.ret.x, $r.ret.y, $r.ret.w, $r.ret.h, $r.viewport.w, $r.viewport.h, $r.visivel); @{ ok = $true } }
         'posicionar' { [RetroJanelas]::Posicionar([string]$r.janela, $r.ret.x, $r.ret.y, $r.ret.w, $r.ret.h, $r.viewport.w, $r.viewport.h, $r.visivel); @{ ok = $true } }
-        'consultar' { @{ aberta = [RetroJanelas]::Aberta([string]$r.janela); embutida = [RetroJanelas]::Embutida([string]$r.janela) } }
+        'consultar' { @{ aberta = [RetroJanelas]::Aberta([string]$r.janela); embutida = [RetroJanelas]::Embutida([string]$r.janela); visivel = [RetroJanelas]::Visivel([string]$r.janela) } }
         'soltar' { [RetroJanelas]::Soltar([string]$r.janela); @{ ok = $true } }
         'focar' { [RetroJanelas]::Focar([string]$r.janela); @{ ok = $true } }
         'minimizar' { [RetroJanelas]::Esconder([string]$r.janela); @{ ok = $true } }
@@ -29,7 +29,8 @@ try {
       [Console]::WriteLine((@{ id = $r.id; dados = $dados } | ConvertTo-Json -Depth 8 -Compress))
     } catch {
       # Nunca repassa mensagens do SO, caminhos ou dados de outros processos à página.
-      $codigo = if ($r.acao -eq 'soltar') { 'restaurar' } elseif ($r.acao -eq 'associar') { 'incompativel' } else { 'sessao' }
+      $elevado = $_.Exception.ToString().Contains('retro-elevado')
+      $codigo = if ($elevado) { 'elevado' } elseif ($r.acao -eq 'soltar') { 'restaurar' } elseif ($r.acao -eq 'associar') { 'incompativel' } else { 'sessao' }
       [Console]::WriteLine((@{ id = $r.id; erro = $codigo } | ConvertTo-Json -Compress))
     }
   }

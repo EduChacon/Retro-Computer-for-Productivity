@@ -114,10 +114,12 @@ function iconeLinux(nome) {
 
 /* ---------- Windows: os atalhos do menu Iniciar ---------- */
 
-function listarWindows() {
+function listarWindows(desktop) {
   const pastas = [
     process.env.ProgramData && path.join(process.env.ProgramData, 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
     process.env.APPDATA && path.join(process.env.APPDATA, 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+    desktop,
+    process.env.PUBLIC && path.join(process.env.PUBLIC, 'Desktop'),
   ].filter(Boolean);
   const r = new Map();
   const andar = (pasta, prof) => {
@@ -248,7 +250,7 @@ class Aplicativos {
     if (!this.lista || atualizar) {
       let l = [];
       if (this.plataforma === 'linux') l = listarLinux(this.idioma());
-      else if (this.plataforma === 'win32') l = listarWindows();
+      else if (this.plataforma === 'win32') l = listarWindows(this.app?.getPath?.('desktop'));
       else if (this.plataforma === 'darwin') l = listarMac();
       this.lista = l.sort((a, b) => a.nome.localeCompare(b.nome, this.idioma()));
     }
@@ -283,7 +285,9 @@ class Aplicativos {
     if (this.plataforma === 'darwin') return a.arquivo;
     if (this.plataforma === 'win32') {
       try {
-        const l = this.shell.readShortcutLink(a.arquivo);
+        if (!path.win32.isAbsolute(a.arquivo) || !fs.existsSync(a.arquivo)) return null;
+        // Atalhos anunciados pelo instalador podem não ter um TargetPath legível. O Shell os resolve.
+        let l = {}; try { l = this.shell.readShortcutLink(a.arquivo); } catch { }
         const alvo = expandirVariaveis(l.target || '');
         const virtual = /shell:AppsFolder[\\/]([^"\s]+)/i.exec(l.args || '');
         const appId = virtual?.[1] || l.appUserModelId || null;

@@ -32,6 +32,11 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   await ponte.pedir('posicionar', { ...g, ret: { x: 10, y: 20, w: 500, h: 280 } });
   await esperar(() => ler().w > 450);
   await ponte.pedir('focar', { janela: id });
+  assert.equal((await ponte.pedir('consultar', { janela: id })).visivel, true);
+  await ponte.pedir('posicionar', { ...g, visivel: false });
+  assert.equal((await ponte.pedir('consultar', { janela: id })).visivel, false);
+  await ponte.pedir('posicionar', g); await ponte.pedir('focar', { janela: id });
+  assert.equal((await ponte.pedir('consultar', { janela: id })).visivel, true, 'volta sem depender de nova incorporação');
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosFilho], { windowsHide: true });
   await esperar(() => ler().texto.includes('OK_RETRO'), ler);
   const documento = ler().texto;

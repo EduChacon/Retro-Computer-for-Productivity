@@ -26,7 +26,14 @@ if (!process.env.RETRO_INTEGRACAO_REAL) exports.ponte = () => ({
     if (acao === 'abrirPrograma') return { abertura: 'abertura-local' };
     if (['listar', 'listarAbertura'].includes(acao)) return [{ id: 'janela-local', titulo: 'Documento de teste' }];
     if (acao === 'consultar') return { aberta: true };
-    if (acao === 'associar') associada = true;
+    if (acao === 'associar') {
+      if (process.env.RETRO_INTEGRACAO_ELEVADA) {
+        const { tr } = require('../src/principal/idioma');
+        const { TEXTOS } = require('../src/principal/janelas-integradas');
+        const e = new Error(tr(TEXTOS.elevado)); e.codigo = 'elevado'; throw e;
+      }
+      associada = true;
+    }
     if (acao === 'soltar') associada = false;
     return { ok: true, associada };
   },

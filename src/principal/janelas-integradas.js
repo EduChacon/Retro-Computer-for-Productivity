@@ -17,6 +17,7 @@ const TEXTOS = {
   auxiliar: marcar('O auxiliar de janelas não está disponível. Atualize ou reinstale o Retro Computer.'),
   incompativel: marcar('Não foi possível incorporar esta janela. Ela continua disponível no computador principal.'),
   restaurar: marcar('Não foi possível devolver a janela ao computador. Tente Sair da integração novamente.'),
+  elevado: marcar('Este programa está rodando como administrador. O Windows impede que o Retro controle essa janela. Use a janela original; se o programa permitir, abra-o sem Executar como administrador para integrá-lo.'),
 };
 function falha(codigo) { const e = new Error(tr(TEXTOS[codigo] || TEXTOS.auxiliar)); e.codigo = codigo; return e; }
 
@@ -145,6 +146,12 @@ class JanelasIntegradas {
     return this.ponte.pedir(acao, { janela: s.escolhida });
   }
   async estado(id) { const s = this.obter(id); return s.escolhida ? this.ponte.pedir('consultar', { janela: s.escolhida }) : { aberta: true }; }
+  async original(id, janela) {
+    if (this.bloqueada) throw falha('sessao');
+    const s = this.obter(id);
+    if (s.escolhida || !s.janelas.some((j) => j.id === janela)) throw falha('sessao');
+    return this.ponte.pedir('focar', { janela });
+  }
   async soltar(id) { const s = this.obter(id); if (s.escolhida) await this.ponte.pedir('soltar', { janela: s.escolhida }); if (s.abertura) await this.ponte.pedir('liberarAbertura', { abertura: s.abertura }); this.sessoes.delete(id); }
   async bloquear(v) { this.bloqueada = !!v; for (const s of this.sessoes.values()) s.ultima = null; if (v && this.plataforma === 'win32' && this.sessoes.size) await this.ponte.pedir('ocultar'); }
   encerrar() { this.geracao++; this.sessoes.clear(); this.ponte.encerrar(); }

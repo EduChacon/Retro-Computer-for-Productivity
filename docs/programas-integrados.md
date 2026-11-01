@@ -1,5 +1,11 @@
 # Programas do computador dentro do Retro
 
+Na 2.5.2, a integração no Windows mostra apenas os controles após incorporar a janela. O conteúdo acompanha o arrasto da moldura, sem ser escondido durante o movimento. A superfície nativa avisa ao shell quando representa o Retro em tela cheia; não esconde a barra do Windows globalmente nem modifica a configuração do sistema.
+
+Os atalhos da área de trabalho do Windows também aparecem em Programas do computador. Atalhos anunciados por instaladores são abertos pelo Shell mesmo sem um destino legível pelo Electron.
+
+Programas executados como administrador (por exemplo, algumas instalações de ferramentas do eSAJ) têm um nível de permissão que pode impedir a incorporação. O Retro detecta a elevação antes de alterar a janela e oferece **Mostrar janela original**, sem abrir outra instância nem elevar o Retro. Se o programa permitir, pode ser aberto normalmente, sem Executar como administrador, e a integração tentada novamente. Não há validação do eSAJ ou de certificados de tribunais no CI.
+
 Em **Iniciar › Programas do computador**, selecione um programa e clique em **Abrir integrado…**. O botão direito oferece os modos de abertura, a preferência **Usar integração por padrão** e a associação de uma versão web. A preferência vale também para os atalhos da mesa e do menu. **Abrir no computador** mantém a abertura normal disponível.
 
 ## Windows: moldura do Retro
@@ -10,7 +16,7 @@ A abertura usa o atalho original do Windows, incluindo seus argumentos, e acompa
 
 Você pode mover, redimensionar, maximizar e minimizar a moldura pelo Retro. A superfície nativa só fica visível quando a moldura está ativa; menus, caixas de diálogo e o bloqueio do Retro a escondem para que ela não cubra esses controles. Outros documentos e diálogos do próprio programa podem abrir como janelas normais do Windows.
 
-**Sair da integração**, inclusive pelo X da moldura, devolve a janela ao computador, com a moldura e a posição anteriores. Não fecha o documento nem encerra o programa. **Fechar programa…** devolve primeiro a janela ao Windows, encerra a moldura de integração e pede o fechamento normal à janela original: o próprio programa ainda pode perguntar se você quer salvar ou cancelar. Se você cancelar, o programa permanece aberto no computador. O Retro nunca encerra seu processo à força.
+**Sair**, inclusive pelo X da moldura, devolve a janela ao computador, com a moldura e a posição anteriores. Não fecha o documento nem encerra o programa. **Fechar** devolve primeiro a janela ao Windows, encerra a moldura de integração e pede o fechamento normal à janela original: o próprio programa ainda pode perguntar se você quer salvar ou cancelar. Se você cancelar, o programa permanece aberto no computador. O Retro nunca encerra seu processo à força.
 
 O auxiliar usa uma janela hospedeira independente do processo do Retro. Se o Retro sair ou fechar inesperadamente, o auxiliar tenta devolver as janelas antes de sair. Nenhum executável do programa é alterado e não há injeção de código. Aplicativos com processos de abertura diferentes, janelas especiais, elevação de administrador ou renderização incompatível podem recusar a integração. Nesse caso, use a abertura normal ou uma versão web. São até quatro programas integrados ao mesmo tempo, uma janela escolhida por programa.
 

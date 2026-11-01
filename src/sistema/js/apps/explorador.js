@@ -14,7 +14,7 @@ import { Janela, lista as janelas } from '../janelas.js';
 import { VistaIcones } from '../vista.js';
 import { abrirMenu } from '../menus.js';
 import { registrarApp, abrir, abrirArquivo, estado, definirConfig, pastaDocs, pastaMesa, iconeDaPasta } from '../sistema.js';
-import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir, novaPasta, novoTexto, copiarItens, colar, transferencia } from '../arquivos.js';
+import { menuDeItens, menuDoFundo, editarRotulo, renomear, excluir, novaPasta, novoTexto, menuNovo, copiarItens, colar, transferencia } from '../arquivos.js';
 import { erro, confirmar, propriedades, mensagem } from '../dialogos.js';
 import { esvaziarLixeira } from '../mesa.js';
 import { tocar } from '../sons.js';
@@ -235,11 +235,7 @@ class Explorador {
             itens.push({ separador: true });
           } else if (doDisco) {
             if (sel.length) itens.push(...menuDeItens(sel.filter((s) => s.rel), { aoRenomear: (it) => this.renomearItem(it) }), { separador: true });
-            itens.push({ rotulo: tr('&Novo'), sub: [
-              { rotulo: tr('&Pasta'), icone: 'pasta', acao: () => this.criar('pasta') },
-              { separador: true },
-              { rotulo: tr('&Documento de texto'), icone: 'texto', acao: () => this.criar('texto') },
-            ] });
+            itens.push({ rotulo: tr('&Novo'), sub: () => menuNovo(this.pasta, (rel) => this.depoisDeCriar(rel)) });
             itens.push({ rotulo: tr('&Trazer do computador principal…'), acao: () => retro.disco.importarEscolhendo(this.pasta).catch((e) => erro(e.message)) });
             itens.push({ separador: true });
           }
