@@ -86,7 +86,7 @@ class Integracao {
   async posicionar() {
     if (this.movendo || this.j.fechada || !this.sessao?.escolhida || this.modo !== 'embutida') return;
     this.movendo = true;
-    try { const o = this.medida(); if (o.ret.x + o.ret.w <= innerWidth + 1 && o.ret.y + o.ret.h <= innerHeight + 1) await retro.integracao.atualizar(this.sessao.id, o); }
+    try { const o = this.medida(), chave = JSON.stringify(o); if (chave !== this.ultimaGeometria && o.ret.x + o.ret.w <= innerWidth + 1 && o.ret.y + o.ret.h <= innerHeight + 1) { await retro.integracao.atualizar(this.sessao.id, o); this.ultimaGeometria = chave; } }
     catch { } finally { this.movendo = false; }
   }
   async consultar() {

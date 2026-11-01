@@ -41,7 +41,7 @@ public static class RetroJanelas {
   [DllImport("kernel32.dll")] static extern void SetLastError(uint e);
   public class Janela { public string id; public string titulo; }
   class Hospedeira:Form { protected override bool ShowWithoutActivation { get { return true; } } }
-  class Item { public string Id; public IntPtr H,Parent,Style,Ex; public uint Pid; public long Inicio; public PLACEMENT Lugar; public Hospedeira Host; public bool Visivel; }
+  class Item { public string Id; public IntPtr H,Parent,Style,Ex; public uint Pid; public long Inicio; public PLACEMENT Lugar; public Hospedeira Host; public bool Visivel; public double X,Y,W,Hh,Vw,Vh; }
   static Dictionary<string,Item> itens = new Dictionary<string,Item>();
   static Control fila; static Thread thread; static IntPtr pai; static int processoPai; static System.Windows.Forms.Timer timer; static bool encerrando;
   static void UI(Action f) { if (fila.InvokeRequired) fila.Invoke(f); else f(); }
@@ -52,7 +52,7 @@ public static class RetroJanelas {
     pai=new IntPtr(h); processoPai=pid; uint p; GetWindowThreadProcessId(pai,out p); if (p!=pid || !IsWindow(pai)) throw new Exception("pai");
     try { SetProcessDpiAwarenessContext(new IntPtr(-4)); } catch { }
     var pronta=new ManualResetEvent(false);
-    thread=new Thread(()=> { fila=new Control(); var handle=fila.Handle; timer=new System.Windows.Forms.Timer(); timer.Interval=150; timer.Tick+=(s,e)=>Vigiar(); timer.Start(); pronta.Set(); Application.Run(); fila.Dispose(); });
+    thread=new Thread(()=> { fila=new Control(); var handle=fila.Handle; timer=new System.Windows.Forms.Timer(); timer.Interval=50; timer.Tick+=(s,e)=>Vigiar(); timer.Start(); pronta.Set(); Application.Run(); fila.Dispose(); });
     thread.SetApartmentState(ApartmentState.STA); thread.Start(); pronta.WaitOne();
   }
   public static Janela[] Listar(string arquivo) {
@@ -86,11 +86,19 @@ public static class RetroJanelas {
   public static void Posicionar(string id,double x,double y,double w,double h,double vw,double vh,bool visivel) { UI(()=> {
     var i=Obter(id); if(i.Host==null || vw<=0 || vh<=0) throw new Exception("sessao");
     if(!visivel) { i.Visivel=false; i.Host.Hide(); return; }
-    RECT r; GetClientRect(pai,out r); var p=new POINT(); ClientToScreen(pai,ref p);
-    double sx=(r.R-r.L)/vw, sy=(r.B-r.T)/vh; int ww=Math.Max(1,(int)Math.Round(w*sx)), hh=Math.Max(1,(int)Math.Round(h*sy));
-    i.Visivel=visivel; SetWindowPos(i.Host.Handle,IntPtr.Zero,p.X+(int)Math.Round(x*sx),p.Y+(int)Math.Round(y*sy),ww,hh,0x0014);
-    SetWindowPos(i.H,IntPtr.Zero,0,0,ww,hh,0x0034); Visibilidade(i);
+    i.X=x; i.Y=y; i.W=w; i.Hh=h; i.Vw=vw; i.Vh=vh; i.Visivel=true; Mover(i); Visibilidade(i);
   }); }
+  static void Mover(Item i) {
+    if(i.Host==null || !i.Visivel || i.Vw<=0 || i.Vh<=0) return;
+    RECT r; GetClientRect(pai,out r); var p=new POINT(); ClientToScreen(pai,ref p);
+    double sx=(r.R-r.L)/i.Vw, sy=(r.B-r.T)/i.Vh;
+    int x=p.X+(int)Math.Round(i.X*sx), y=p.Y+(int)Math.Round(i.Y*sy), w=Math.Max(1,(int)Math.Round(i.W*sx)), h=Math.Max(1,(int)Math.Round(i.Hh*sy));
+    bool topo=(GetLong(pai,-20).ToInt64() & 8)!=0; if(i.Host.TopMost!=topo) i.Host.TopMost=topo;
+    RECT antes; GetWindowRect(i.Host.Handle,out antes);
+    if(antes.L!=x || antes.T!=y || antes.R-antes.L!=w || antes.B-antes.T!=h) SetWindowPos(i.Host.Handle,IntPtr.Zero,x,y,w,h,0x0014);
+    GetWindowRect(i.H,out antes);
+    if(antes.L!=x || antes.T!=y || antes.R-antes.L!=w || antes.B-antes.T!=h) SetWindowPos(i.H,IntPtr.Zero,0,0,w,h,0x0034);
+  }
   static void Visibilidade(Item i) {
     if(i.Host==null) return; var f=GetForegroundWindow(); uint pid; GetWindowThreadProcessId(f,out pid);
     bool mostrar=i.Visivel && (f==pai || IsChild(pai,f) || f==i.Host.Handle || IsChild(i.Host.Handle,f) || pid==i.Pid);
@@ -119,7 +127,7 @@ public static class RetroJanelas {
     uint pidPai; GetWindowThreadProcessId(pai,out pidPai);
     bool vivo=IsWindow(pai) && pidPai==processoPai; try { vivo=vivo && !Process.GetProcessById(processoPai).HasExited; } catch { vivo=false; }
     foreach(var i in new List<Item>(itens.Values)) {
-      try { if(!vivo || encerrando || !Valido(i)) { Restaurar(i); itens.Remove(i.Id); } else Visibilidade(i); } catch { }
+      try { if(!vivo || encerrando || !Valido(i)) { Restaurar(i); itens.Remove(i.Id); } else { Mover(i); Visibilidade(i); } } catch { }
     }
     if((!vivo || encerrando) && itens.Count==0) { timer.Stop(); Application.ExitThread(); }
   }
