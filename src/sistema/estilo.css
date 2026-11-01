@@ -2111,7 +2111,13 @@ body:has(#bloqueio) #mascote, body:has(#entrada) #mascote, body:has(#protecao-te
 .assistente-confirmacoes { overflow: auto; flex-shrink: 0; max-height: 220px; }
 .assistente-pedido { padding: 9px; background: var(--janela); color: var(--texto); border: 2px solid var(--selecao); margin-bottom: 5px; }
 .assistente-pedido pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 95px; overflow: auto; user-select: text; }
-.assistente-pedido label { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.assistente-pedido label { display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 5px; margin-top: 8px; }
+.assistente-pedido label.assistente-campo-bool { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.assistente-pedido label.assistente-campo-bool small { flex-basis: 100%; }
+.assistente-pedido select[multiple] { min-height: 65px; }
+.assistente-pedido small { white-space: pre-wrap; color: var(--texto-meio); }
+.assistente-pedido-erro { white-space: pre-wrap; font-weight: bold; }
+.assistente-pedido > .acoes { position: sticky; bottom: 0; background: var(--janela); padding-top: 5px; }
 .assistente-respostas { display: flex; flex-wrap: wrap; gap: 4px; }
 .assistente-atividade { max-height: 90px; overflow: auto; }
 .assistente-atividade > div { white-space: pre-wrap; overflow-wrap: anywhere; padding: 5px; font-family: 'Csilla', monospace; }

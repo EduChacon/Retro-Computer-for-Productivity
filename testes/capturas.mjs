@@ -383,6 +383,46 @@ const ROTEIROS = {
     if (resultado.s.estado !== 'concluido' || resultado.cfg.papel.cor !== '#224466' || resultado.html) throw new Error('Ação, finalização ou isolamento do texto incorretos: ' + JSON.stringify({ estado: resultado.s.estado, erro: resultado.s.erro, cor: resultado.cfg.papel.cor, html: resultado.html }));
     if (!(await pagina.evaluate((f) => retro.disco.versoes(f), arquivo)).length) throw new Error('Anexo sem versão anterior.');
     await foto('assistente-codex');
+    // A confirmação MCP que antes só permitia recusar agora é respondida no chat.
+    await pagina.locator('.assistente-entrada').fill('formulario-mcp');
+    await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
+    await pagina.waitForSelector('.assistente-pedido input[type="checkbox"]');
+    if (await pagina.getByLabel('Permitir alteração do fundo', { exact: true }).isChecked()) throw new Error('O formulário concedeu autorização antes da escolha do usuário.');
+    await pagina.locator('.assistente-pedido button', { hasText: T('Permitir uma vez'), exact: true }).click();
+    await pagina.waitForSelector('.assistente-pedido-erro:not([hidden])');
+    if (!await pagina.locator('.assistente-pedido input').count()) throw new Error('Resposta inválida encerrou o pedido.');
+    await pagina.getByLabel('Permitir alteração do fundo', { exact: true }).check();
+    await pagina.getByLabel('Motivo', { exact: true }).fill('Conferir autorização no chat');
+    await pagina.getByLabel('Quantidade', { exact: true }).fill('2');
+    await pagina.getByLabel('Cor', { exact: true }).selectOption({ label: 'Azul' });
+    await foto('assistente-formulario-mcp');
+    await pagina.locator('.assistente-pedido button', { hasText: T('Permitir uma vez'), exact: true }).click();
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
+    if (!(await pagina.evaluate(() => retro.assistente.estado())).conversa.mensagens.at(-1).texto.includes('Concluído')) throw new Error('O formulário não retomou a tarefa na mesma conexão.');
+    await pagina.locator('.assistente-entrada').fill('formulario-mcp');
+    await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
+    await pagina.waitForSelector('.assistente-pedido input[type="checkbox"]');
+    await pagina.locator('.assistente-pedido button', { hasText: T('Recusar'), exact: true }).click();
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
+    // A página de autorização é local e isolada, sem login, modelo pago ou navegação automática.
+    await app.evaluate(({ session }) => {
+      global.__autorizacoesAbertas = 0;
+      session.fromPartition('persist:navegador').protocol.handle('https', () => { global.__autorizacoesAbertas++; return new Response('<!doctype html><title>Autorização de teste</title><h1>Autorização de teste</h1>', { headers: { 'content-type': 'text/html; charset=utf-8' } }); });
+    });
+    await pagina.locator('.assistente-entrada').fill('url-mcp');
+    await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
+    await pagina.waitForSelector('.assistente-autorizacao-url');
+    if (await app.evaluate(() => global.__autorizacoesAbertas)) throw new Error('A autorização abriu sem consentimento.');
+    await foto('assistente-autorizacao-endereco');
+    await pagina.locator('.assistente-pedido button', { hasText: T('Abrir autorização'), exact: true }).click();
+    await pagina.waitForFunction(() => [...document.querySelectorAll('webview')].some((w) => { try { return w.getURL().startsWith('https://autorizacao.example.test/'); } catch { return false; } }));
+    const isolada = await app.evaluate(async ({ webContents }) => {
+      const w = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && w.getURL().startsWith('https://autorizacao.example.test/'));
+      return w && !(await w.executeJavaScript('!!window.retro'));
+    });
+    if (!isolada) throw new Error('A página de autorização recebeu a ponte do sistema.');
+    await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
+    await abrir('assistente');
     await pagina.locator('.assistente-entrada').fill('Faça uma pergunta');
     await pagina.locator('.assistente-enviar button', { hasText: T('Enviar'), exact: true }).click();
     await pagina.waitForSelector('.assistente-pedido input');
@@ -403,7 +443,7 @@ const ROTEIROS = {
     await pagina.waitForFunction(() => document.querySelector('.assistente-chat')?.dataset.ocupado === 'false');
     await foto('assistente-claude');
     const logs = fs.readFileSync(process.env.RETRO_ASSISTENTE_RELATORIO, 'utf8').trim().split('\n').map((s) => JSON.parse(s));
-    if (!logs.some((s) => s.motor === 'codex' && !s.chaveClaude && !s.electronComoNode && s.pedido.includes(texto))) throw new Error('Codex sem isolamento ou pedido literal.');
+    if (!logs.some((s) => s.motor === 'codex' && !s.chaveClaude && !s.electronComoNode && s.pedido?.includes(texto))) throw new Error('Codex sem isolamento ou pedido literal.');
     if (!logs.some((s) => s.motor === 'claude' && s.chaveClaude && !s.electronComoNode)) throw new Error('Claude não recebeu seu ambiente próprio.');
     await fecharTudo();
     await abrir('assistente');
@@ -416,6 +456,7 @@ const ROTEIROS = {
     const pos = await pagina.evaluate(async () => (await retro.config.obter()).assistente.posicao);
     if (!Number.isFinite(pos?.x) || !Number.isFinite(pos?.y)) throw new Error('Posição do mascote não foi guardada.');
     await foto('assistente-posicao');
+    if (erros.some((e) => e.startsWith('[pageerror]'))) throw new Error('Erro na interface do assistente: ' + erros.join('\n'));
   },
   async codexInstalar() {
     await fecharTudo();

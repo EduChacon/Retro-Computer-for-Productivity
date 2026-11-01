@@ -9,6 +9,7 @@ const { acharCodex, argumentosCodex, programaCodex } = require('./codex');
 const { acharClaude } = require('./terminal');
 const { textoSistema } = require('./mcp');
 const { tr } = require('./idioma');
+const { formulario, validar: validarFormulario, enderecoAutorizacao } = require('./assistente-formularios');
 
 const MOTORES = new Set(['codex', 'claude']);
 const MAX_LINHA = 4 * 1024 * 1024;
@@ -139,7 +140,7 @@ class Assistente {
   }
   obter() {
     return { estado: this.estado, ocupado: this.ocupado, erro: this.erro, conversa: this.conversa, atividade: this.atividade,
-      pedidos: [...this.pedidos].map(([id, p]) => ({ id, tipo: p.tipo, titulo: p.titulo, detalhe: p.detalhe, perguntas: p.perguntas || [] })) };
+      pedidos: [...this.pedidos].map(([id, p]) => ({ id, tipo: p.tipo, titulo: p.titulo, detalhe: p.detalhe, perguntas: p.perguntas || [], campos: p.campos || [], servidor: p.servidor || '', url: p.url || null })) };
   }
   mudar(estado) {
     const mudou = estado && estado !== this.estado;
@@ -279,12 +280,24 @@ class Assistente {
     const pedido = { rpcId: id, method, params, tipo: method === 'mcpServer/elicitation/request' ? 'indisponivel' : perguntas?.length ? 'perguntas' : 'permissao', titulo: this.limpar(params.tool_name || params.reason || tr('O assistente precisa da sua confirmação.')),
       detalhe: this.limpar(params.command || JSON.stringify(params.input || params.permissions || params.networkApprovalContext || params)),
       perguntas: (perguntas || []).slice(0, 8).map((q) => ({ id: String(q.id || q.question), texto: this.limpar(q.question), opcoes: (q.options || []).map((o) => this.limpar(o.label)), multipla: !!q.multiSelect })) };
+    if (method === 'mcpServer/elicitation/request') {
+      pedido.servidor = this.limpar(params.serverName || 'MCP');
+      pedido.titulo = tr('Autorização solicitada por {servidor}', { servidor: pedido.servidor });
+      pedido.detalhe = this.limpar(params.message || tr('O assistente precisa da sua confirmação.'));
+      if (params.mode === 'url') {
+        pedido.url = enderecoAutorizacao(params.url);
+        if (pedido.url) pedido.tipo = 'autorizacao-url';
+      } else if ([undefined, 'form', 'openai/form', 'openaiForm'].includes(params.mode)) {
+        pedido.campos = formulario(params.requestedSchema);
+        if (pedido.campos) pedido.tipo = 'formulario';
+      }
+    }
     this.pedidos.set(String(id), pedido); this.mudar('aguardando');
   }
   responder(id, { permitir = false, respostas = {} } = {}) {
     const p = this.pedidos.get(String(id));
     if (!p || !this.canal || !this.ocupado) throw new Error(tr('Este pedido já foi encerrado.'));
-    if (p.tipo === 'indisponivel' && permitir) throw new Error(tr('Continue esta confirmação no terminal do motor.'));
+    if (p.tipo === 'indisponivel' && permitir) throw new Error(tr('Este formato de confirmação ainda não é compatível com o assistente.'));
     const a = Object.create(null);
     for (const q of p.perguntas) {
       const valor = respostas[q.id];
@@ -299,7 +312,7 @@ class Assistente {
       let result;
       if (p.method.includes('requestUserInput')) result = { answers: Object.fromEntries(Object.entries(a).map(([k, v]) => [k, { answers: permitir ? [v] : [] }])) };
       else if (p.method === 'item/permissions/requestApproval') result = { permissions: permitir ? p.params.permissions : {}, scope: 'turn' };
-      else if (p.method === 'mcpServer/elicitation/request') result = { action: 'decline', content: null };
+      else if (p.method === 'mcpServer/elicitation/request') result = { action: permitir ? 'accept' : 'decline', content: permitir && p.tipo === 'formulario' ? validarFormulario(p.campos, respostas) : null, _meta: null };
       else {
         const disponiveis = p.params.availableDecisions;
         const decision = permitir ? 'accept' : 'decline';

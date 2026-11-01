@@ -10,6 +10,25 @@ import { TIPO_ARRASTO, relsDoArrasto } from '../arquivos.js';
 let atual = null;
 const cfg = () => estado.config.assistente || {};
 
+function campoFormulario(c) {
+  let campo, ler;
+  if (c.opcoes) {
+    campo = h('select', { multiple: c.tipo === 'array', 'aria-label': c.titulo },
+      ...(c.tipo === 'array' ? [] : [h('option', { value: '' }, tr('Selecione…'))]),
+      ...c.opcoes.map((o, i) => h('option', { value: String(i), selected: c.tipo === 'array' ? Array.isArray(c.padrao) && c.padrao.includes(o.valor) : c.padrao === o.valor }, o.titulo)));
+    ler = () => c.tipo === 'array' ? [...campo.selectedOptions].map((o) => c.opcoes[Number(o.value)].valor) : campo.value === '' ? undefined : c.opcoes[Number(campo.value)].valor;
+  } else if (c.tipo === 'boolean') {
+    campo = h('input', { type: 'checkbox', checked: c.padrao === true, 'aria-label': c.titulo }); ler = () => campo.checked;
+  } else {
+    const numero = ['number', 'integer'].includes(c.tipo);
+    campo = h('input', { type: numero ? 'number' : c.format === 'email' ? 'email' : c.format === 'date' ? 'date' : 'text', 'aria-label': c.titulo, value: c.padrao ?? '', maxLength: Math.min(c.maxLength ?? 4000, 4000) });
+    if (numero) { campo.step = c.tipo === 'integer' ? '1' : 'any'; if (c.minimum != null) campo.min = c.minimum; if (c.maximum != null) campo.max = c.maximum; }
+    ler = () => campo.value === '' && !c.obrigatorio ? undefined : numero ? campo.value === '' ? undefined : campo.valueAsNumber : campo.value;
+  }
+  const titulo = h('span', c.titulo, c.obrigatorio ? ' *' : '');
+  return { el: h('label', { class: c.tipo === 'boolean' ? 'assistente-campo-bool' : '' }, ...(c.tipo === 'boolean' ? [campo, titulo] : [titulo, campo]), c.descricao ? h('small', c.descricao) : null), ler };
+}
+
 export async function arquivosDoArrasto(dt) {
   let internos;
   try { internos = JSON.parse(dt.getData(TIPO_ARRASTO) || 'null'); } catch { }
@@ -145,12 +164,24 @@ class Chat {
         const campo = h('input', { type: 'text', maxLength: 4000, 'aria-label': q.texto }); campos.set(q.id, campo);
         el.append(h('label', h('span', q.texto), h('div.assistente-respostas', ...q.opcoes.map((o) => h('button', { on: { click: () => { campo.value = o; } } }, o))), campo));
       }
+      const formulario = new Map();
+      for (const c of p.campos || []) { const campo = campoFormulario(c); formulario.set(c.id, campo); el.append(campo.el); }
+      const aviso = h('p.assistente-pedido-erro', { hidden: true, role: 'alert' });
+      el.append(aviso);
+      el.addEventListener('input', () => { aviso.hidden = true; });
       const responder = async (permitir) => {
-        try { await retro.assistente.responder(p.id, { permitir, respostas: Object.fromEntries([...campos].map(([id, c]) => [id, c.value])) }); }
-        catch (e) { this.mostrarErro(e.message); }
+        const botoes = [...el.querySelectorAll('button')]; botoes.forEach((b) => { b.disabled = true; });
+        try {
+          // Navegar só após o clique explícito; nunca procurar ou abrir o endereço ao receber o pedido.
+          if (permitir && p.tipo === 'autorizacao-url') await abrir('navegador', { url: p.url, interno: true });
+          const respostas = p.tipo === 'formulario' ? [...formulario].map(([id, c]) => [id, c.ler()]).filter(([, v]) => v !== undefined) : [...campos].map(([id, c]) => [id, c.value]);
+          await retro.assistente.responder(p.id, { permitir, respostas: Object.fromEntries(respostas) });
+        } catch (e) { aviso.textContent = e.message; aviso.hidden = false; }
+        finally { botoes.forEach((b) => { b.disabled = false; }); }
       };
-      if (p.tipo === 'indisponivel') el.append(h('p', tr('Continue esta confirmação no terminal do motor.')));
-      el.append(h('div.acoes', h('button', { on: { click: () => responder(false) } }, tr('Recusar')), p.tipo === 'indisponivel' ? null : h('button.padrao', { on: { click: () => responder(true) } }, p.tipo === 'perguntas' ? tr('Responder') : tr('Permitir uma vez'))));
+      if (p.tipo === 'indisponivel') el.append(h('p', tr('Este formato de confirmação ainda não é compatível com o assistente.')));
+      if (p.tipo === 'autorizacao-url') el.append(h('p', tr('Conclua a autorização na página do serviço. O assistente continuará nesta conversa.')), h('pre.assistente-autorizacao-url', p.url));
+      el.append(h('div.acoes', h('button', { on: { click: () => responder(false) } }, tr('Recusar')), p.tipo === 'indisponivel' ? null : h('button.padrao', { on: { click: () => responder(true) } }, p.tipo === 'autorizacao-url' ? tr('Abrir autorização') : p.tipo === 'perguntas' ? tr('Responder') : tr('Permitir uma vez'))));
       return el;
     }));
   }
