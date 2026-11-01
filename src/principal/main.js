@@ -21,6 +21,7 @@ const { Disco, nomeValido } = require('./disco');
 const { Config } = require('./config');
 const { Programas, mimeDe, compararVersoes, ultimoLancamento, comLimite } = require('./programas');
 const { CraftWindows, CraftWindowsFalso } = require('./craft-windows');
+const { acharCodex, comandoInstalarCodex, argumentosCodex, programaCodex } = require('./codex');
 const { Terminais, acharClaude, comandoInstalarClaude, comandoClaude, ajustesClaude, configuracoesDoClaude } = require('./terminal');
 const { Aplicativos, iconeDoArquivo, acharPorNome } = require('./aplicativos');
 const { Atualizador } = require('./atualizador');
@@ -1904,12 +1905,25 @@ function registrarPonte() {
   tratar('laboratorio:executar', (o) => laboratorio.executar(o));
   tratar('laboratorio:parar', () => laboratorio.parar());
   tratar('terminal:disponivel', () => terminais.disponivel());
-  tratar('terminal:criar', (o) => {
+  tratar('terminal:criar', async (o) => {
     const env = {};
-    const chave = config.lerChave();
-    if (chave && o.comChave !== false) env.ANTHROPIC_API_KEY = chave;
+    const chave = !o.codex && o.comChave !== false ? config.lerChave() : null;
+    if (chave) env.ANTHROPIC_API_KEY = chave;
     const cwd = o.pasta != null ? disco.real(o.pasta) : disco.raiz;
     let comando = o.comando;
+    if (o.codex) {
+      const caminho = await acharCodex();
+      if (!caminho) throw new Error(tr('O Codex CLI ainda não está instalado neste computador.'));
+      const ligado = (config.obter().codex || {}).ajustes !== false;
+      const mcp = ligado && servidorMcp ? { executavel: process.execPath, script: scriptMcp() } : null;
+      const args = argumentosCodex({ acao: o.codex.acao, pedido: o.codex.pedido, raiz: disco.raiz, idioma: idioma.idioma(), mcp });
+      const programa = programaCodex(caminho, args);
+      if (mcp && !['entrar', 'entrar-codigo'].includes(o.codex.acao)) {
+        env.RETRO_MCP_ENDERECO = servidorMcp.endereco;
+        env.RETRO_MCP_TOKEN = servidorMcp.token;
+      }
+      return terminais.criar({ cols: o.cols, rows: o.rows, cwd, programa, env: { ...env, ...programa.env }, semChaveClaude: true });
+    }
     if (o.claude) {
       const pedido = typeof o.claude.pedido === 'string' ? o.claude.pedido.slice(0, 4000) : '';
       if (pedido) env.RETRO_PEDIDO = pedido;
@@ -1931,11 +1945,13 @@ function registrarPonte() {
       }
       comando = comandoClaude({ pedido: !!pedido, ajustes: !!arqs, configuracoes });
     }
-    return terminais.criar({ cols: o.cols, rows: o.rows, cwd, comando, env });
+    return terminais.criar({ cols: o.cols, rows: o.rows, cwd, comando, env, semChaveClaude: o.comChave === false });
   });
   tratar('terminal:escrever', (id, dados) => terminais.escrever(id, dados));
   tratar('terminal:redimensionar', (id, c, l) => terminais.redimensionar(id, c, l));
   tratar('terminal:fechar', (id) => terminais.fechar(id));
+  tratar('terminal:acharCodex', () => acharCodex());
+  tratar('terminal:instalarCodex', () => comandoInstalarCodex());
   tratar('terminal:acharClaude', () => acharClaude());
   tratar('terminal:instalarClaude', () => comandoInstalarClaude());
 

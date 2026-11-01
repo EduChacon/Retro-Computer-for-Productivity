@@ -30,28 +30,37 @@ const FONTE = "'Csilla', 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono',
 
 const terminais = new Map(); // id → Prompt
 let ouvindo = false;
+let criando = 0;
+const dadosIniciais = new Map();
+const saidasIniciais = new Map();
 
 function ouvirTerminais() {
   if (ouvindo) return;
   ouvindo = true;
-  retro.terminal.aoDados((id, d) => { const p = terminais.get(id); if (p) p.term.write(d); });
-  retro.terminal.aoSair((id, codigo) => { const p = terminais.get(id); if (p) p.saiu(codigo); });
+  retro.terminal.aoDados((id, d) => {
+    const p = terminais.get(id);
+    if (p) p.term.write(d);
+    else if (criando && dadosIniciais.size < 64) dadosIniciais.set(id, ((dadosIniciais.get(id) || '') + d).slice(-1048576));
+  });
+  retro.terminal.aoSair((id, codigo) => { const p = terminais.get(id); if (p) p.saiu(codigo); else if (criando) saidasIniciais.set(id, codigo); });
 }
 
 class Prompt {
-  constructor({ pasta, comando, claude, titulo, icone } = {}) {
+  constructor({ pasta, comando, claude, codex, titulo, icone, comChave } = {}) {
     this.pasta = pasta != null ? pasta : '';
     this.comando = comando || null;
     // O Claude Code: o processo principal monta o comando (e o pedido vai por uma variável, sem aspas a escapar).
     this.claude = claude || null;
+    this.codex = codex || null;
+    this.comChave = comChave;
     this.tituloBase = titulo || tr('Prompt de comando');
     this.id = null;
     this.encerrado = false;
     const cfg = estado.config.prompt || {};
     const tam = cfg.fonte || 10;
     // As cores de cada um: o Claude claro e o Prompt escuro, a não ser que o usuário tenha trocado.
-    this.chaveTema = this.claude ? 'temaClaude' : 'tema';
-    this.tema = TEMAS[cfg[this.chaveTema]] ? cfg[this.chaveTema] : this.claude ? 'claro' : 'escuro';
+    this.chaveTema = this.codex ? 'temaCodex' : this.claude ? 'temaClaude' : 'tema';
+    this.tema = TEMAS[cfg[this.chaveTema]] ? cfg[this.chaveTema] : (this.claude || this.codex) ? 'claro' : 'escuro';
     this.j = new Janela({
       titulo: this.tituloBase,
       icone: icone || 'prompt',
@@ -76,6 +85,11 @@ class Prompt {
       h('div.sep'),
       h('button.ferramenta', { title: tr('Mostrar a pasta no computador principal'), on: { click: () => retro.disco.mostrar(this.pasta) } }, img('pasta-aberta', 16), tr('Pasta')),
     );
+    if (this.codex) {
+      barra.append(h('div.sep'),
+        h('button.ferramenta', { on: { click: () => abrirCodex({ pasta: this.pasta, configurar: true }) } }, tr('Conta e opções…')),
+        h('button.ferramenta', { on: { click: () => abrirCodex({ pasta: this.pasta, acao: 'retomar' }) } }, tr('Retomar conversa')));
+    }
     this.areaTerm = h('div.prompt-corpo');
     this.areaTerm.classList.toggle('claro', this.tema === 'claro');
     this.j.corpo.append(barra, this.areaTerm);
@@ -102,6 +116,7 @@ class Prompt {
       return;
     }
     await document.fonts.load(`${tam}px Csilla`).catch(() => { });
+    if (this.j.fechada) return;
     ouvirTerminais();
     this.term = new Terminal({
       fontFamily: FONTE,
@@ -147,15 +162,23 @@ class Prompt {
       ], { x: e.clientX, y: e.clientY });
     });
     new ResizeObserver(() => this.ajustar()).observe(this.areaTerm);
+    criando++;
     try {
       // O Claude Code abre com o tema que combina com estas cores (main.js, ajustesClaude).
       const claude = this.claude ? { ...this.claude, tema: this.tema } : null;
-      this.id = await retro.terminal.criar({ cols: this.term.cols, rows: this.term.rows, pasta: this.pasta, comando: this.comando, claude });
+      this.id = await retro.terminal.criar({ cols: this.term.cols, rows: this.term.rows, pasta: this.pasta, comando: this.comando, claude, codex: this.codex, comChave: this.comChave });
+      if (this.j.fechada) { retro.terminal.fechar(this.id); return; }
       terminais.set(this.id, this);
+      if (dadosIniciais.has(this.id)) { this.term.write(dadosIniciais.get(this.id)); dadosIniciais.delete(this.id); }
+      if (saidasIniciais.has(this.id)) { this.saiu(saidasIniciais.get(this.id)); saidasIniciais.delete(this.id); }
     } catch (e) {
+      if (this.j.fechada) return;
       this.term.write(`\r\n${tr('Não foi possível abrir o terminal: {erro}', { erro: e.message })}\r\n`);
+    } finally {
+      criando--;
+      if (!criando) { dadosIniciais.clear(); saidasIniciais.clear(); }
     }
-    this.term.focus();
+    if (!this.j.fechada) this.term.focus();
   }
 
   teclas(e) {
@@ -238,6 +261,39 @@ class Prompt {
   }
 }
 
+/* ---------- O Codex ---------- */
+
+async function abrirCodex(args = {}) {
+  const pasta = args.pasta != null ? args.pasta : pastaDocs();
+  const caminho = await retro.terminal.acharCodex().catch(() => null);
+  if (caminho && !args.configurar) return new Prompt({ pasta, codex: { pedido: args.pedido || '', acao: args.acao || 'conversar' }, titulo: 'Codex', icone: 'codex' });
+  const comando = await retro.terminal.comandoInstalarCodex();
+  const j = new Janela({ titulo: 'Codex', icone: 'codex', dialogo: true, largura: 460, altura: 310 });
+  const ajustes = h('input', { type: 'checkbox', checked: (estado.config.codex || {}).ajustes !== false });
+  ajustes.addEventListener('change', () => definirConfig({ codex: { ajustes: ajustes.checked } }).catch((e) => erro(e.message)));
+  const iniciar = (acao) => { j.fechar(true); return new Prompt({ pasta, codex: { acao }, titulo: acao === 'retomar' ? tr('Retomar conversa no Codex') : tr('Entrar no Codex'), icone: 'codex' }); };
+  j.corpo.append(
+    h('div.mensagem', img('codex', 32), h('div.texto.texto-ajuda',
+      h('b', caminho ? tr('Codex CLI instalado neste computador.') : tr('O Codex CLI ainda não está instalado neste computador.')),
+      h('p', tr('O Codex trabalha nos arquivos do disco C: nesta janela retrô. A instalação usa o instalador oficial da OpenAI.')),
+      ...(!caminho ? [h('span.codigo-linha', comando)] : []),
+      h('p', tr('Entre com sua conta do ChatGPT quando o Codex pedir. O login e as credenciais ficam com o próprio Codex CLI; a chave do Claude não é usada.')),
+      h('label', ajustes, ' ', tr('Permitir que o Codex ajuste o Retro Computer')),
+      h('p', tr('As permissões e as confirmações são as do Codex. O Retro Computer não desativa essas proteções.')),
+    )),
+    h('div.acoes',
+      ...(caminho ? [
+        h('button.padrao', { on: { click: () => iniciar('entrar') } }, tr('Entrar')),
+        h('button', { on: { click: () => iniciar('entrar-codigo') } }, tr('Entrar com código…')),
+        h('button', { on: { click: () => iniciar('retomar') } }, tr('Retomar conversa')),
+      ] : [h('button.padrao', { on: { click: () => { j.fechar(true); new Prompt({ pasta, comando, comChave: false, titulo: tr('Instalar o Codex CLI'), icone: 'codex' }); } } }, tr('Instalar agora'))]),
+      h('button', { on: { click: () => j.fechar(true) } }, tr('Fechar')),
+    ),
+  );
+  ajustarAoConteudo(j, { minLarg: 460 });
+  return null;
+}
+
 /* ---------- O Claude ---------- */
 
 async function abrirClaude(args = {}) {
@@ -270,5 +326,6 @@ async function abrirClaude(args = {}) {
 
 registrarApp('prompt', { nome: 'Prompt de comando', icone: 'prompt', abrir: (args = {}) => new Prompt({ pasta: args.pasta, comando: args.comando, titulo: args.titulo }) });
 registrarApp('claude', { nome: 'Claude', icone: 'claude', abrir: abrirClaude });
+registrarApp('codex', { nome: 'Codex', icone: 'codex', abrir: abrirCodex });
 
 export { caminhoTela, erro };

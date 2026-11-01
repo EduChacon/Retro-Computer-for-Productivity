@@ -47,7 +47,8 @@ import { iniciarReabrir } from './reabrir.js';
 // Estes carregam só quando abrem (ou com o computador parado, logo depois da abertura). Os de
 // cima ficam prontos desde o início: abrem arquivos pelo tipo, recebem avisos do processo
 // principal (os links, as permissões do Navegador) ou têm relógios próprios.
-registrarPreguicoso({ prompt: { nome: 'Prompt de comando', icone: 'prompt' }, claude: { nome: 'Claude', icone: 'claude' } }, () => import('./apps/prompt.js'));
+registrarPreguicoso({ prompt: { nome: 'Prompt de comando', icone: 'prompt' }, claude: { nome: 'Claude', icone: 'claude' }, codex: { nome: 'Codex', icone: 'codex' } }, () => import('./apps/prompt.js'));
+registrarPreguicoso({ dot: { nome: 'Dot', icone: 'internet' } }, () => import('./apps/dot.js'));
 registrarPreguicoso({ painel: { nome: 'Painel de controle', icone: 'painel' } }, () => import('./apps/painel.js'));
 registrarPreguicoso({ foco: { nome: 'Foco', icone: 'foco' } }, () => import('./apps/foco.js'));
 registrarPreguicoso({ ajuda: { nome: 'Ajuda', icone: 'ajuda' } }, () => import('./apps/ajuda.js'));

@@ -318,6 +318,8 @@ contextBridge.exposeInMainWorld('retro', {
     escrever: (id, dados) => chamar('terminal:escrever', id, dados),
     redimensionar: (id, c, l) => chamar('terminal:redimensionar', id, c, l),
     fechar: (id) => chamar('terminal:fechar', id),
+    acharCodex: () => chamar('terminal:acharCodex'),
+    comandoInstalarCodex: () => chamar('terminal:instalarCodex'),
     acharClaude: () => chamar('terminal:acharClaude'),
     comandoInstalarClaude: () => chamar('terminal:instalarClaude'),
     aoDados: ouvir('terminal:dados'),

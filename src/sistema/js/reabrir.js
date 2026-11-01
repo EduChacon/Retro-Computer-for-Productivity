@@ -9,7 +9,7 @@
 import { lista, eventos as evJanelas, numAreas, garantirAreas, moverParaArea } from './janelas.js';
 import { estado, definirConfig, abrir, app } from './sistema.js';
 
-const FORA = new Set(['prompt', 'claude', 'dos', 'mac', 'ocr', 'desligar', 'executar']);
+const FORA = new Set(['prompt', 'claude', 'codex', 'dos', 'mac', 'ocr', 'desligar', 'executar']);
 const MAX = 12;
 
 // Até as janelas da última vez voltarem, nada é gravado por cima delas.

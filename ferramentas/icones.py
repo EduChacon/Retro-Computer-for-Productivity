@@ -1826,6 +1826,11 @@ def gerar(serenity):
     feitos[16]['mac'] = grade(mac_compacto(16))
 
     # As Damas: duas pedras, desenhadas como as do jogo (src/sistema/js/jogos/pecas.js).
+    from runpy import run_path
+    desenhar_codex = run_path(os.path.join(os.path.dirname(__file__), 'icone-codex.py'))['desenhar']
+    for tam in (16, 32):
+        feitos[tam]['codex'] = desenhar_codex(tam)
+
     feitos[32]['damas'] = damas(32)
     feitos[16]['damas'] = damas(16)
 

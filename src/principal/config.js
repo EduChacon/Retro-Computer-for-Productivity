@@ -9,7 +9,7 @@ const path = require('node:path');
 const { tr } = require('./idioma');
 
 const PADRAO = {
-  versao: 5,
+  versao: 6,
   disco: null,
   idioma: 'auto',
   atualizacoes: 'automatico',
@@ -34,7 +34,7 @@ const PADRAO = {
   inicioRapido: true, // a área de trabalho direto; o BIOS e a marca, em Painel › Aparência › Configurações
   protecaoTela: { ligada: true, minutos: 10, tipo: 'estrelas' },
   // Os ícones da área de trabalho (Painel › Aparência › Área de trabalho); o Prompt fica no Iniciar.
-  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'] },
+  mesa: { posicoes: {}, atalhos: ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude', 'codex', 'dot'] },
   // A tela de bloqueio (a senha fica em bloqueio.senha, só o resumo; ver bloqueio.js). Com uma senha,
   // ela é pedida ao abrir, como no Windows (desliga em Painel › Senhas). Sem naProtecao escolhida no Painel,
   // a proteção de tela pede a senha só no modo sistema (bloqueio.js da área de trabalho).
@@ -72,6 +72,7 @@ const PADRAO = {
   dos: { nativo: true },
   // O Claude do Prompt ajusta o Retro Computer pelo servidor MCP (mcp.js).
   claude: { ajustes: true },
+  codex: { ajustes: true },
   primeiraVez: true,
 };
 
@@ -124,6 +125,13 @@ function migrar(dados) {
   if (d.versao < 5) {
     if (d.bloqueio && d.bloqueio.naProtecao === false) delete d.bloqueio.naProtecao;
     d.versao = 5;
+  }
+  if (d.versao < 6) {
+    // Só a mesa padrão ganha o ícone: as escolhas pessoais ficam como estão.
+    const antes = ['meu-computador', 'meus-documentos', 'lixeira', 'navegador', 'correio', 'claude'];
+    const at = d.mesa && d.mesa.atalhos;
+    if (Array.isArray(at) && at.length === antes.length && at.every((k, i) => k === antes[i])) d.mesa.atalhos = [...at, 'codex', 'dot'];
+    d.versao = 6;
   }
   return d;
 }
