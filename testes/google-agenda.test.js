@@ -205,3 +205,21 @@ test('Google: preparação do instalador não inclui tokens nem revela JSON inv�
   const ruim = spawnSync(process.execPath, [script], { encoding: 'utf8', env: { ...process.env, GOOGLE_CALENDAR_CLIENT_JSON: '{valor-privado-nao-mostrar' } });
   assert.notEqual(ruim.status, 0); assert.ok(!ruim.stderr.includes('valor-privado-nao-mostrar'));
 });
+
+test('Google OAuth: uma autorização nova não reaproveita o refresh token de outra sessão', async (t) => {
+  const a = await montar(t, []);
+  a.g.auth.guardarTokens({ access_token: 'outra-sessao' });
+  assert.equal(a.g.auth.dados.tokens.refresh_token, null);
+  a.g.auth.guardarTokens({ access_token: 'a', refresh_token: 'renovar-esta-sessao' });
+  a.g.auth.guardarTokens({ access_token: 'a-renovado' }, true);
+  assert.equal(a.g.auth.dados.tokens.refresh_token, 'renovar-esta-sessao');
+});
+
+test('Google OAuth: desconectar com chaveiro bloqueado continua desconectado após reiniciar', async (t) => {
+  const a = await montar(t); await a.g.selecionar('retro@example.test');
+  a.g.auth.disponivel = () => false;
+  a.g.desconectar();
+  const auth = new GoogleAuth({ pasta: path.join(a.pasta, 'conta'), cofre: a.fake.cofre, disponivel: () => true, buscar: a.fake.buscar, abrir: a.fake.abrir });
+  t.after(() => auth.encerrar());
+  assert.equal(auth.estado().conectado, false); assert.equal(a.g.estado().calendario, null); assert.equal(a.ler().length, 2);
+});

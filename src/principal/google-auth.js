@@ -49,8 +49,10 @@ class GoogleAuth {
   }
   configurar(json) {
     if (this.login || this.estado().conectado) throw erro('desconectar');
+    const anterior = this.dados;
     this.dados = { cliente: this.validarCliente(json), tokens: null };
-    this.salvar(); this.aoMudar();
+    try { this.salvar(); } catch (e) { this.dados = anterior; throw e; }
+    this.aoMudar();
   }
   validarCliente(json) {
     const c = json?.installed;
@@ -72,7 +74,7 @@ class GoogleAuth {
     try { return await this.solicitar(TOKEN, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(formulario).toString() }); }
     catch (e) { if (e.status === 400 || e.status === 401) throw erro('entrar'); throw e; }
   }
-  guardarTokens(tokens) {
+  guardarTokens(tokens, renovacao = false) {
     if (!tokens || typeof tokens.access_token !== 'string') throw erro('resposta');
     if (tokens.scope) {
       if (typeof tokens.scope !== 'string') throw erro('resposta');
@@ -82,8 +84,9 @@ class GoogleAuth {
       const lista = todos || [ESCOPOS[1], 'https://www.googleapis.com/auth/calendar.calendarlist', 'https://www.googleapis.com/auth/calendar.readonly'].some((x) => s.includes(x));
       if (!eventos || !lista) throw erro('permissao');
     }
-    this.dados.tokens = { access_token: tokens.access_token, refresh_token: tokens.refresh_token || this.dados.tokens?.refresh_token || null, expira: Date.now() + Math.min(Math.max(Number(tokens.expires_in) || 3600, 60), 86400) * 1000 };
-    this.salvar();
+    const anteriores = this.dados.tokens;
+    this.dados.tokens = { access_token: tokens.access_token, refresh_token: tokens.refresh_token || (renovacao ? anteriores?.refresh_token : null) || null, expira: Date.now() + Math.min(Math.max(Number(tokens.expires_in) || 3600, 60), 86400) * 1000 };
+    try { this.salvar(); } catch (e) { this.dados.tokens = anteriores; throw e; }
   }
   async conectar() {
     if (!this.disponivel()) throw erro('cofre');
@@ -128,14 +131,22 @@ class GoogleAuth {
     if (!forcar && t.access_token && t.expira > Date.now() + 60000) return t.access_token;
     if (!t.refresh_token) throw erro('entrar');
     const geracao = this.geracao;
-    if (!this.renovando) this.renovando = this.trocar({ ...this.dados.cliente, grant_type: 'refresh_token', refresh_token: t.refresh_token }).then((r) => { if (geracao !== this.geracao) throw erro('cancelado'); this.guardarTokens(r); return this.dados.tokens.access_token; }).finally(() => { this.renovando = null; });
+    if (!this.renovando) this.renovando = this.trocar({ ...this.dados.cliente, grant_type: 'refresh_token', refresh_token: t.refresh_token }).then((r) => { if (geracao !== this.geracao) throw erro('cancelado'); this.guardarTokens(r, true); return this.dados.tokens.access_token; }).finally(() => { this.renovando = null; });
     return this.renovando;
   }
   async api(caminho, opcoes = {}) {
     const executar = async (forcar) => this.solicitar('https://www.googleapis.com/calendar/v3/' + caminho, { ...opcoes, headers: { 'content-type': 'application/json', ...opcoes.headers, authorization: 'Bearer ' + await this.token(forcar) } });
     try { return await executar(false); } catch (e) { if (e.status !== 401) throw e; return executar(true); }
   }
-  desconectar() { this.geracao++; this.cancelar(); this.aborto.abort(); this.aborto = new AbortController(); this.carregar(); if (this.dados) { this.dados.tokens = null; this.salvar(); } this.aoMudar(); }
+  desconectar() {
+    this.geracao++; this.cancelar(); this.aborto.abort(); this.aborto = new AbortController(); this.carregar();
+    const cliente = this.dados?.cliente || this.clientePadrao;
+    // Desconectar precisa retirar o token persistido mesmo com o chaveiro bloqueado.
+    try { fs.rmSync(this.arquivo, { force: true }); } catch { throw erro('gravar'); }
+    this.dados = cliente ? { cliente, tokens: null } : null;
+    if (this.dados && this.disponivel()) { try { this.salvar(); } catch { /* a conta já está desconectada */ } }
+    this.aoMudar();
+  }
   encerrar() { this.geracao++; this.cancelar(); this.aborto.abort(); }
 }
 module.exports = { GoogleAuth, ESCOPOS, jsonLimitado };
