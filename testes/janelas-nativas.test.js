@@ -13,7 +13,7 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   fs.writeFileSync(compilar, "param($Fonte,$Saida)\n$ErrorActionPreference='Stop'\nAdd-Type -Path $Fonte -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $Saida -OutputType WindowsApplication\n");
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', compilar, path.join(__dirname, 'janela-windows-falsa.cs'), exe], { windowsHide: true });
   const dadosPai = path.join(tmp, 'pai.json'), dadosFilho = path.join(tmp, 'filho.json');
-  const pai = spawn(exe, [dadosPai]), filho = spawn(exe, [dadosFilho]);
+  const pai = spawn(exe, [dadosPai, 'pai']), filho = spawn(exe, [dadosFilho]);
   let ponte, id;
   t.after(async () => {
     if (ponte?.filho && id && pai.exitCode === null) await ponte.pedir('soltar', { janela: id }).catch(() => {}); ponte?.encerrar();
