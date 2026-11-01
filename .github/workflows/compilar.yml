@@ -91,6 +91,11 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas googleAgenda
           RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en googleAgenda
           RETRO_IDIOMA=es xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/es googleAgenda
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas integracao
+          RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en integracao
+          RETRO_IDIOMA=es xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/es integracao
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas integracaoMac
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas integracaoWeb
 
       - name: Guardar as capturas
         if: matrix.os == 'ubuntu-latest' && always()
@@ -138,6 +143,8 @@ jobs:
           node testes/capturas.mjs capturas-mac codex
           node testes/capturas.mjs capturas-mac mascotes
           node testes/capturas.mjs capturas-mac googleAgenda
+          node testes/capturas.mjs capturas-mac integracaoMac
+          node testes/capturas.mjs capturas-mac integracaoWeb
 
       - name: Testar o Codex no aplicativo do Windows empacotado
         if: runner.os == 'Windows'
@@ -148,6 +155,7 @@ jobs:
           node testes/capturas.mjs capturas-codex codexInstalar
           node testes/capturas.mjs capturas-codex mascotes
           node testes/capturas.mjs capturas-codex googleAgenda
+          node testes/capturas.mjs capturas-codex integracaoReal
 
       - name: Guardar as capturas do Codex no Windows
         if: runner.os == 'Windows' && always()

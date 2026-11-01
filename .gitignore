@@ -8,3 +8,4 @@ _to_delete/
 
 # Configuração OAuth opcional do aplicativo, preparada fora do histórico.
 recursos/google-oauth.json
+recursos/janelas/retro-janelas-mac

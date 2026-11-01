@@ -33,6 +33,22 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-teste-'));
 const dados = process.env.RETRO_DADOS || path.join(tmp, 'dados');
 const disco = process.env.RETRO_DISCO || path.join(tmp, 'disco');
 
+if (['integracao', 'integracaoMac', 'integracaoReal', 'integracaoWeb'].includes(ROTEIRO)) {
+  process.env.RETRO_SEM_BOAS_VINDAS = '1';
+  process.env.RETRO_INTEGRACAO_TESTE = path.join(RAIZ, 'testes/integracao-falsa.cjs');
+  process.env.RETRO_INTEGRACAO_MODO = ROTEIRO === 'integracaoMac' ? 'darwin' : 'win32';
+  process.env.RETRO_INTEGRACAO_RELATORIO = path.join(tmp, 'integracao-pedidos.json');
+  if (ROTEIRO === 'integracaoReal') {
+    if (process.platform !== 'win32') throw new Error('O roteiro real exige Windows.');
+    process.env.RETRO_INTEGRACAO_REAL = '1';
+    process.env.RETRO_INTEGRACAO_EXE = path.join(tmp, 'Janela de teste.exe');
+    process.env.RETRO_INTEGRACAO_JANELA = path.join(tmp, 'janela-real.json');
+    const compilar = path.join(tmp, 'compilar.ps1');
+    fs.writeFileSync(compilar, "param($Fonte,$Saida)\n$ErrorActionPreference='Stop'\nAdd-Type -Path $Fonte -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $Saida -OutputType WindowsApplication\n");
+    execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', compilar, path.join(RAIZ, 'testes/janela-windows-falsa.cs'), process.env.RETRO_INTEGRACAO_EXE]);
+  }
+}
+
 // O Codex das capturas é um CLI local: não acessa contas, modelos nem credenciais reais.
 if (ROTEIRO === 'codex') {
   const cli = path.join(tmp, 'Codex de teste.cjs');
@@ -325,6 +341,77 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
+  async integracaoWeb() {
+    await fecharTudo();
+    await app.evaluate(({ session }) => session.fromPartition('persist:navegador').protocol.handle('https', () => new Response('<!doctype html><html><head><title>Programa web de teste</title></head><body><h1 id="prova">Versão web dentro do Retro</h1></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } })));
+    await abrir('nativos');
+    const item = pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }); await item.click({ button: 'right' });
+    await pagina.locator('.menu .opcao', { hasText: T('Associar versão web…'), exact: true }).click();
+    await pagina.locator('.janela.dialogo input').fill('https://versao.retro.test/');
+    await pagina.locator('.janela.dialogo button.padrao').click();
+    await pagina.waitForFunction(() => window.__retro.estado.config.nativos?.web?.['retro:janela-de-teste'] === 'https://versao.retro.test/');
+    await item.dblclick(); await pagina.waitForSelector('.janela.webapp webview');
+    await pagina.waitForFunction(async () => { const w = document.querySelector('.janela.webapp webview'); try { return await w.executeJavaScript('document.getElementById("prova")?.textContent') === 'Versão web dentro do Retro'; } catch { return false; } });
+    await foto('integracao-versao-web');
+    if (fs.existsSync(process.env.RETRO_INTEGRACAO_RELATORIO)) throw new Error('A versão web abriu o programa nativo.');
+    await fecharTudo(); await abrir('nativos');
+    await pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }).click({ button: 'right' });
+    await pagina.locator('.menu .opcao', { hasText: T('Associar versão web…'), exact: true }).click();
+    await pagina.locator('.janela.dialogo input').fill(''); await pagina.locator('.janela.dialogo button.padrao').click();
+    await pagina.waitForFunction(() => !window.__retro.estado.config.nativos?.web?.['retro:janela-de-teste']);
+  },
+  async integracao() {
+    await fecharTudo(); await abrir('nativos');
+    const item = pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }); await item.click();
+    await pagina.locator('.janela.ativa button', { hasText: T('Abrir integrado…'), exact: true }).click();
+    await pagina.waitForSelector('.integracao-nativa[data-associada="true"]');
+    await foto('integracao-windows');
+    const ler = () => JSON.parse(fs.readFileSync(process.env.RETRO_INTEGRACAO_RELATORIO, 'utf8'));
+    if (!ler().some((p) => p.acao === 'associar')) throw new Error('Não associou a janela.');
+    await pagina.locator('.integracao-nativa button', { hasText: T('Minimizar programa'), exact: true }).click();
+    await pagina.waitForFunction(() => document.querySelector('.integracao-nativa')?.classList.contains('minimizada'));
+    await pagina.evaluate(() => window.__retro.janelas.lista.find((j) => j.el.classList.contains('integracao-nativa')).focar());
+    await pagina.locator('.integracao-nativa button', { hasText: T('Fechar programa…'), exact: true }).click();
+    await pagina.waitForFunction(() => !document.querySelector('.integracao-nativa'));
+    if (!ler().some((p) => p.acao === 'soltar')) throw new Error('Não devolveu a janela.');
+    if (!ler().some((p) => p.acao === 'fechar')) throw new Error('Não pediu o fechamento normal.');
+    await pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }).click({ button: 'right' });
+    await pagina.locator('.menu .opcao', { hasText: T('Usar integração por padrão'), exact: true }).click();
+    await pagina.waitForFunction(() => window.__retro.estado.config.nativos?.integrados?.includes('retro:janela-de-teste'));
+    const cfg = await pagina.evaluate(() => window.__retro.estado.config.nativos);
+    if (!cfg.integrados.includes('retro:janela-de-teste')) throw new Error('Não guardou a preferência.');
+  },
+  async integracaoMac() {
+    await fecharTudo(); await abrir('nativos');
+    await pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }).click();
+    await pagina.locator('.janela.ativa button', { hasText: T('Abrir integrado…'), exact: true }).click();
+    await pagina.locator('.integracao-nativa button', { hasText: T('Permitir controle de janelas…'), exact: true }).waitFor();
+    await foto('integracao-mac-permissao');
+    await pagina.locator('.integracao-nativa button', { hasText: T('Permitir controle de janelas…'), exact: true }).click();
+    await pagina.locator('.integracao-nativa button', { hasText: T('Tentar novamente'), exact: true }).click();
+    await pagina.waitForSelector('.integracao-nativa[data-associada="true"]');
+    await pagina.locator('.integracao-nativa button', { hasText: T('Organizar lado a lado'), exact: true }).click();
+    await foto('integracao-mac-controles');
+    const pedidos = JSON.parse(fs.readFileSync(process.env.RETRO_INTEGRACAO_RELATORIO, 'utf8'));
+    if (!pedidos.some((p) => p.acao === 'organizar')) throw new Error('Não organizou as janelas.');
+    await pagina.locator('.integracao-nativa button', { hasText: T('Sair da integração'), exact: true }).click();
+  },
+  async integracaoReal() {
+    await fecharTudo(); await abrir('nativos');
+    await pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }).click();
+    await pagina.locator('.janela.ativa button', { hasText: T('Abrir integrado…'), exact: true }).click();
+    await pagina.waitForSelector('.integracao-nativa[data-associada="true"]');
+    const ler = () => JSON.parse(fs.readFileSync(process.env.RETRO_INTEGRACAO_JANELA, 'utf8'));
+    for (let i = 0; i < 50 && !ler().parent; i++) await pagina.waitForTimeout(100);
+    if (!ler().parent) throw new Error('A janela real não foi incorporada.');
+    const captura = await app.evaluate(async ({ desktopCapturer }) => { const fontes = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1600, height: 1000 } }); return fontes[0].thumbnail.toPNG().toString('base64'); });
+    fs.writeFileSync(path.join(SAIDA, 'integracao-windows-real.png'), Buffer.from(captura, 'base64'));
+    await pagina.locator('.integracao-nativa button', { hasText: T('Sair da integração'), exact: true }).click();
+    for (let i = 0; i < 50 && ler().parent; i++) await pagina.waitForTimeout(100);
+    if (ler().parent) throw new Error('A janela real não foi devolvida.');
+    // O programa próprio sobrevive à integração. Só o teste encerra seu processo ao terminar.
+    const pid = ler().pid; process.kill(pid);
+  },
   async googleAgendaSemConfig() {
     await fecharTudo(); await abrir('agenda');
     await pagina.locator('.ag-corpo button', { hasText: T('Google Calendar…'), exact: true }).click();

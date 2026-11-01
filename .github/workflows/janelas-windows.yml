@@ -1,0 +1,25 @@
+name: Janelas nativas do Windows
+on:
+  push:
+    paths:
+      - 'src/principal/janelas-integradas.js'
+      - 'src/principal/nativo/**'
+      - 'testes/janelas-nativas.test.js'
+      - 'testes/janela-windows-falsa.cs'
+      - 'testes/tocar-janela.ps1'
+      - '.github/workflows/janelas-windows.yml'
+permissions:
+  contents: read
+jobs:
+  janelas:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Só módulos do Node e .NET do Windows: não precisa instalar npm ou os compiladores do laboratório.
+      - run: node --test testes/janelas-nativas.test.js

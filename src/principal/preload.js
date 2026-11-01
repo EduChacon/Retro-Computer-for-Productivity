@@ -388,6 +388,16 @@ contextBridge.exposeInMainWorld('retro', {
     icone: (id) => chamar('nativos:icone', id),
     abrir: (id) => chamar('nativos:abrir', id),
   },
+  integracao: {
+    info: () => chamar('integracao:info'),
+    permitir: () => chamar('integracao:permitir'),
+    abrir: (id) => chamar('integracao:abrir', id),
+    associar: (id, alvo, o) => chamar('integracao:associar', id, alvo, o),
+    atualizar: (id, o) => chamar('integracao:atualizar', id, o),
+    acao: (id, acao) => chamar('integracao:acao', id, acao),
+    estado: (id) => chamar('integracao:estado', id),
+    soltar: (id) => chamar('integracao:soltar', id),
+  },
   // A loja dos programas do Linux (o Flathub).
   loja: {
     info: () => chamar('loja:info'),

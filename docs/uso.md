@@ -2,6 +2,8 @@
 
 Este documento descreve o uso no dia a dia. A arquitetura e as decisões técnicas ficam em [proposta.md](proposta.md).
 
+Para abrir programas instalados com a moldura do Retro no Windows, controlar suas janelas no Mac ou associar uma versão web interna, veja [Programas integrados](programas-integrados.md).
+
 ## Em resumo
 
 - O Retro Computer é um programa comum, instalado no Windows, no macOS ou no Linux (inclusive no Raspberry Pi). Ao abrir, ele ocupa a tela inteira e mostra um computador dos anos 90: área de trabalho, botão Iniciar, janelas e barra de tarefas.

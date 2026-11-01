@@ -294,6 +294,14 @@ Ao criar um recurso, acrescente um teste em `testes/` quando a regra for do proc
 - Foco no trabalho: poucas distrações, tudo à mão.
 - Nada perdido e arquivos sempre acessíveis fora do programa.
 
+## Programas integrados
+
+`janelas-integradas.js` limita cada sessão a um programa do registro de `Aplicativos` e uma janela escolhida. A página nunca escolhe PID, HWND, executável nem comandos. O Windows usa o auxiliar próprio `nativo/janelas-windows.ps1`/`.cs` (desempacotado do ASAR) e uma superfície hospedeira independente do Electron: devolver restaura pai, estilos e posição; EOF e fim do processo principal também devolvem. Não mate o auxiliar antes da restauração nem os programas integrados. Fechar a moldura só devolve; Fechar programa devolve primeiro e envia `WM_SYSCOMMAND/SC_CLOSE`, como o X original. Não envie `WM_CLOSE` avulso: o WinForms o classifica como fechamento pelo Gerenciador de Tarefas. O bloqueio força as superfícies a ficarem ocultas no processo principal.
+
+No Mac, o Swift `nativo/janelas-mac.swift` usa Acessibilidade, preservando a moldura original. A consulta não solicita permissão; só o botão Permitir o faz. O auxiliar é compilado e assinado ad hoc por `ferramentas/preparar-janelas.cjs` no Mac e incluído nos recursos. Não prometa incorporação de janelas nativas no Mac. A associação HTTPS em `nativos.web` abre explicitamente pelo navegador interno; `nativos.integrados` guarda a preferência dos atalhos. O guia e os limites estão em `docs/programas-integrados.md`.
+
+`janelas-nativas.test.js` usa janelas próprias reais no Windows e consulta o auxiliar real no Mac. `integracao-falsa.cjs` só é carregado pelo caminho explícito `RETRO_INTEGRACAO_TESTE`; nunca controla programas pessoais. As capturas `integracao` e `integracaoMac` verificam os controles com o provedor de teste; `integracaoReal` verifica a integração no pacote Windows com uma janela própria real. Não confunda o teste de permissão negada com uma validação de controle de aplicativos no Mac já autorizado.
+
 ## Laboratório de programação
 
 `src/sistema/js/apps/laboratorio.js` abre os fontes de C, C++, C#, Python, Rust e Java. Os exemplos ficam em `linguagens.js`, e as sete lições de C em `licoes-c.js`. O processo principal só aceita as linguagens de `LINGUAGENS` (`src/principal/laboratorio.js`), nunca caminhos ou opções de compilador vindos da tela. Cada execução usa uma pasta temporária e um ambiente sem as chaves do Claude, com limite de entrada, saída, tempo e cancelamento. Isso não é uma sandbox: a interface avisa que o programa roda com as permissões do usuário. O C# usa só as bibliotecas do SDK e o NuGet.Config temporário sem fontes externas. O roteiro `laboratorio` de `testes/capturas.mjs` confere as sete lições, Python, C++, salvar com versão anterior e Parar; o Mac o roda também no .app empacotado, depois de conferir a assinatura ad hoc. Os testes das linguagens estão em `testes/laboratorio.test.js`.
