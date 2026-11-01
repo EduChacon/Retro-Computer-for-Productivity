@@ -33,7 +33,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-teste-'));
 const dados = process.env.RETRO_DADOS || path.join(tmp, 'dados');
 const disco = process.env.RETRO_DISCO || path.join(tmp, 'disco');
 
-if (['integracao', 'integracaoMac', 'integracaoReal'].includes(ROTEIRO)) {
+if (['integracao', 'integracaoMac', 'integracaoReal', 'integracaoWeb'].includes(ROTEIRO)) {
   process.env.RETRO_SEM_BOAS_VINDAS = '1';
   process.env.RETRO_INTEGRACAO_TESTE = path.join(RAIZ, 'testes/integracao-falsa.cjs');
   process.env.RETRO_INTEGRACAO_MODO = ROTEIRO === 'integracaoMac' ? 'darwin' : 'win32';
@@ -341,6 +341,25 @@ async function esperarPronto(ms = 90000) {
 }
 
 const ROTEIROS = {
+  async integracaoWeb() {
+    await fecharTudo();
+    await app.evaluate(({ session }) => session.fromPartition('persist:navegador').protocol.handle('https', () => new Response('<!doctype html><html><head><title>Programa web de teste</title></head><body><h1 id="prova">Versão web dentro do Retro</h1></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } })));
+    await abrir('nativos');
+    const item = pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }); await item.click({ button: 'right' });
+    await pagina.locator('.menu .opcao', { hasText: T('Associar versão web…'), exact: true }).click();
+    await pagina.locator('.janela.dialogo input').fill('https://versao.retro.test/');
+    await pagina.locator('.janela.dialogo button.padrao').click();
+    await pagina.waitForFunction(() => window.__retro.estado.config.nativos?.web?.['retro:janela-de-teste'] === 'https://versao.retro.test/');
+    await item.dblclick(); await pagina.waitForSelector('.janela.webapp webview');
+    await pagina.waitForFunction(async () => { const w = document.querySelector('.janela.webapp webview'); try { return await w.executeJavaScript('document.getElementById("prova")?.textContent') === 'Versão web dentro do Retro'; } catch { return false; } });
+    await foto('integracao-versao-web');
+    if (fs.existsSync(process.env.RETRO_INTEGRACAO_RELATORIO)) throw new Error('A versão web abriu o programa nativo.');
+    await fecharTudo(); await abrir('nativos');
+    await pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }).click({ button: 'right' });
+    await pagina.locator('.menu .opcao', { hasText: T('Associar versão web…'), exact: true }).click();
+    await pagina.locator('.janela.dialogo input').fill(''); await pagina.locator('.janela.dialogo button.padrao').click();
+    await pagina.waitForFunction(() => !window.__retro.estado.config.nativos?.web?.['retro:janela-de-teste']);
+  },
   async integracao() {
     await fecharTudo(); await abrir('nativos');
     const item = pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }); await item.click();

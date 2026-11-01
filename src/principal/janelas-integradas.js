@@ -82,6 +82,8 @@ class JanelasIntegradas {
   async permitir() { if (this.plataforma !== 'darwin') return this.info(); await this.ponte.pedir('permitir'); return this.info(); }
   async abrir(id) {
     if (this.aberturas.has(id)) return this.aberturas.get(id);
+    const ativos = new Set([...this.sessoes.values()].map((s) => s.programa));
+    if (!ativos.has(id) && new Set([...ativos, ...this.aberturas.keys()]).size >= 4) throw falha('programa');
     const p = this._abrir(id).finally(() => this.aberturas.delete(id)); this.aberturas.set(id, p); return p;
   }
   async _abrir(id) {
@@ -92,7 +94,8 @@ class JanelasIntegradas {
     if (existente) return this.resumo(existente);
     if (this.sessoes.size >= 4) throw falha('programa');
     const geracao = this.geracao;
-    await this.aplicativos.abrir(id);
+    if (this.plataforma === 'darwin') await this.ponte.pedir('abrir', { arquivo: alvo });
+    else await this.aplicativos.abrir(id);
     let janelas = [];
     for (let i = 0; i < 24; i++) {
       if (geracao !== this.geracao) throw falha('sessao');

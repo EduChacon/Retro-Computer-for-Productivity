@@ -34,6 +34,11 @@ class Integracao {
     try {
       const info = await retro.integracao.info(); if (this.j.fechada) return;
       this.modo = info.modo;
+      if (info.modo === 'acompanhada') {
+        const a = document.getElementById('janelas').getBoundingClientRect();
+        this.j.ret.w = Math.min(540, a.width - 8); this.j.ret.h = Math.min(320, a.height - 8);
+        this.j.ret.x = Math.max(0, Math.min(this.j.ret.x, a.width - this.j.ret.w - 8)); this.j.aplicarRet();
+      }
       if (!info.disponivel) throw new Error(tr('A integração de programas está disponível no Windows e no Mac.'));
       if (!info.permitido) {
         this.aviso(tr('O Mac precisa da sua permissão de Acessibilidade para controlar janelas. A moldura do aplicativo continua sendo a do macOS.'));
@@ -61,7 +66,7 @@ class Integracao {
   medida() {
     const r = this.alvo.getBoundingClientRect(), w = innerWidth, h = innerHeight;
     const x = Math.max(0, r.left), y = Math.max(0, r.top), largura = Math.min(w, r.right) - x, altura = Math.min(h, r.bottom) - y;
-    const visivel = document.visibilityState === 'visible' && janelaAtiva() === this.j && daAreaAtual(this.j) && !this.j.minimizada && !this.j.recolhida && !document.body.classList.contains('arrastando') && !document.querySelector('.menu, .bloqueio, #bloqueio, #protecao') && !document.body.classList.contains('bloqueado');
+    const visivel = document.visibilityState === 'visible' && janelaAtiva() === this.j && daAreaAtual(this.j) && !this.j.minimizada && !this.j.recolhida && !document.body.classList.contains('arrastando') && !document.querySelector('.menu, .bloqueio, #bloqueio, #protecao, #visao-tarefas') && !document.body.classList.contains('bloqueado');
     return { ret: { x, y, w: Math.max(1, largura), h: Math.max(1, altura) }, viewport: { w, h }, visivel: !!visivel && largura > 0 && altura > 0 };
   }
   async associar(id) {

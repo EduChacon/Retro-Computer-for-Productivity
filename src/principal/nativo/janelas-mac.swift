@@ -24,7 +24,20 @@ func executar(_ r: [String: Any]) throws -> Any {
         let opcoes = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         return ["permitido": AXIsProcessTrustedWithOptions(opcoes)]
     }
+    // Liberar a sessão não exige continuar com a autorização do usuário.
+    if acao == "soltar" {
+        let id = r["janela"] as? String ?? ""
+        janelas.removeValue(forKey: id); processos.removeValue(forKey: id); return ["ok": true]
+    }
     guard AXIsProcessTrusted() else { throw Falha(codigo: "permissao") }
+    if acao == "abrir" {
+        guard let arquivo = r["arquivo"] as? String, arquivo.hasSuffix(".app"), arquivo.hasPrefix("/") else { throw Falha(codigo: "programa") }
+        let processo = Process(); processo.executableURL = URL(fileURLWithPath: "/usr/bin/open"); processo.arguments = ["-g", arquivo]
+        processo.standardOutput = FileHandle.nullDevice; processo.standardError = FileHandle.nullDevice
+        try processo.run(); processo.waitUntilExit()
+        guard processo.terminationStatus == 0 else { throw Falha(codigo: "programa") }
+        return ["ok": true]
+    }
     if acao == "listar" {
         let arquivo = URL(fileURLWithPath: r["arquivo"] as? String ?? "").standardizedFileURL.resolvingSymlinksInPath()
         var lista: [[String: String]] = []
@@ -44,7 +57,6 @@ func executar(_ r: [String: Any]) throws -> Any {
     }
     let id = r["janela"] as? String ?? ""
     if acao == "consultar" { return ["aberta": (try? obter(id)) != nil] }
-    if acao == "soltar" { janelas.removeValue(forKey: id); processos.removeValue(forKey: id); return ["ok": true] }
     let el = try obter(id)
     switch acao {
     case "associar": break // No Mac a janela mantém a moldura do próprio aplicativo.
@@ -63,6 +75,7 @@ func executar(_ r: [String: Any]) throws -> Any {
         try definir(el, kAXMinimizedAttribute, kCFBooleanFalse)
         guard let posicao = AXValueCreate(.cgPoint, &p), let medidas = AXValueCreate(.cgSize, &tamanho) else { throw Falha(codigo: "incompativel") }
         try definir(el, kAXPositionAttribute, posicao); try definir(el, kAXSizeAttribute, medidas)
+        if let pid = processos[id] { NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateIgnoringOtherApps]) }
     default: throw Falha(codigo: "programa")
     }
     return ["ok": true]

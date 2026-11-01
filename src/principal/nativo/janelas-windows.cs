@@ -34,6 +34,8 @@ public static class RetroJanelas {
   [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h,int cmd);
   [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] static extern IntPtr SetFocus(IntPtr h);
+  [DllImport("user32.dll")] static extern bool AttachThreadInput(uint a,uint b,bool ligar);
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
   [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h,uint msg,IntPtr w,IntPtr l);
   [DllImport("user32.dll")] static extern bool SetProcessDpiAwarenessContext(IntPtr context);
   [DllImport("kernel32.dll")] static extern void SetLastError(uint e);
@@ -76,13 +78,14 @@ public static class RetroJanelas {
     i.Host=new Hospedeira { FormBorderStyle=FormBorderStyle.None,ShowInTaskbar=false,StartPosition=FormStartPosition.Manual,BackColor=Color.Black };
     var host=i.Host.Handle;
     try {
-      ShowWindow(i.H,0); SetLastError(0); SetParent(i.H,host); if(GetParent(i.H)!=host) throw new Exception("incompativel");
-      SetLong(i.H,-16,new IntPtr((i.Style.ToInt64() & ~0x80CF0000L) | 0x40000000L));
+      ShowWindow(i.H,0); SetLong(i.H,-16,new IntPtr((i.Style.ToInt64() & ~0x80CF0000L) | 0x40000000L));
+      SetLastError(0); SetParent(i.H,host); if(GetParent(i.H)!=host) throw new Exception("incompativel");
       SetWindowPos(i.H,IntPtr.Zero,0,0,400,300,0x0034); ShowWindow(i.H,5);
     } catch { Restaurar(i); throw; }
   }); }
   public static void Posicionar(string id,double x,double y,double w,double h,double vw,double vh,bool visivel) { UI(()=> {
     var i=Obter(id); if(i.Host==null || vw<=0 || vh<=0) throw new Exception("sessao");
+    if(!visivel) { i.Visivel=false; i.Host.Hide(); return; }
     RECT r; GetClientRect(pai,out r); var p=new POINT(); ClientToScreen(pai,ref p);
     double sx=(r.R-r.L)/vw, sy=(r.B-r.T)/vh; int ww=Math.Max(1,(int)Math.Round(w*sx)), hh=Math.Max(1,(int)Math.Round(h*sy));
     i.Visivel=visivel; SetWindowPos(i.Host.Handle,IntPtr.Zero,p.X+(int)Math.Round(x*sx),p.Y+(int)Math.Round(y*sy),ww,hh,0x0014);
@@ -94,7 +97,12 @@ public static class RetroJanelas {
     if(mostrar) { if(!i.Host.Visible) i.Host.Show(); SetWindowPos(i.Host.Handle,IntPtr.Zero,0,0,0,0,0x0013); } else if(i.Host.Visible) i.Host.Hide();
   }
   public static bool Aberta(string id) { bool aberta=false; UI(()=> { Item i; aberta=itens.TryGetValue(id,out i) && Valido(i); }); return aberta; }
-  public static void Focar(string id) { UI(()=> { var i=Obter(id); if(i.Host!=null) { i.Visivel=true; i.Host.Show(); SetForegroundWindow(i.Host.Handle); } else ShowWindow(i.H,9); SetForegroundWindow(i.H); SetFocus(i.H); }); }
+  public static void Focar(string id) { UI(()=> {
+    var i=Obter(id); uint p; uint atual=GetCurrentThreadId(), destino=GetWindowThreadProcessId(i.H,out p), frente=GetWindowThreadProcessId(GetForegroundWindow(),out p);
+    bool a=destino!=atual && AttachThreadInput(atual,destino,true), b=frente!=atual && frente!=destino && AttachThreadInput(atual,frente,true);
+    try { if(i.Host!=null) { i.Visivel=true; i.Host.Show(); SetForegroundWindow(i.Host.Handle); } else { ShowWindow(i.H,9); SetForegroundWindow(i.H); } SetFocus(i.H); }
+    finally { if(b) AttachThreadInput(atual,frente,false); if(a) AttachThreadInput(atual,destino,false); }
+  }); }
   public static void Esconder(string id) { UI(()=> { var i=Obter(id); i.Visivel=false; if(i.Host!=null) i.Host.Hide(); }); }
   public static void Ocultar() { UI(()=> { foreach(var i in itens.Values) { i.Visivel=false; if(i.Host!=null) i.Host.Hide(); } }); }
   public static void Fechar(string id) { UI(()=> { var i=Obter(id); Focar(id); PostMessage(i.H,0x0010,IntPtr.Zero,IntPtr.Zero); }); }
@@ -108,7 +116,8 @@ public static class RetroJanelas {
   }
   public static void Soltar(string id) { UI(()=> { Item i; if(itens.TryGetValue(id,out i)) { Restaurar(i); itens.Remove(id); } }); }
   static void Vigiar() {
-    bool vivo=IsWindow(pai); try { vivo=vivo && !Process.GetProcessById(processoPai).HasExited; } catch { vivo=false; }
+    uint pidPai; GetWindowThreadProcessId(pai,out pidPai);
+    bool vivo=IsWindow(pai) && pidPai==processoPai; try { vivo=vivo && !Process.GetProcessById(processoPai).HasExited; } catch { vivo=false; }
     foreach(var i in new List<Item>(itens.Values)) {
       try { if(!vivo || encerrando || !Valido(i)) { Restaurar(i); itens.Remove(i.Id); } else Visibilidade(i); } catch { }
     }

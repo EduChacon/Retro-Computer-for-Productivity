@@ -29,6 +29,9 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   await ponte.pedir('associar', g); await esperar(() => ler().parent !== 0); assert.equal(filho.exitCode, null);
   await ponte.pedir('posicionar', { ...g, ret: { x: 10, y: 20, w: 500, h: 280 } });
   await esperar(() => ler().w > 450);
+  await ponte.pedir('focar', { janela: id });
+  execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosFilho], { windowsHide: true });
+  await esperar(() => ler().texto === 'OK_RETRO');
   await ponte.pedir('fechar', { janela: id }); await esperar(() => ler().fechamentos === 1); assert.equal((await ponte.pedir('consultar', { janela: id })).aberta, true);
   await ponte.pedir('soltar', { janela: id }); await esperar(() => ler().parent === 0);
   assert.equal(ler().style, inicial.style); assert.equal(ler().w, inicial.w); assert.equal(ler().h, inicial.h);
@@ -39,5 +42,6 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
 test('Mac real: auxiliar assinado informa a permissão sem abrir uma solicitação automática', { skip: process.platform !== 'darwin', timeout: 15000 }, async (t) => {
   const ponte = new PonteNativa({ plataforma: 'darwin', empacotado: false }); t.after(() => ponte.encerrar());
   const r = await ponte.pedir('estado'); assert.equal(typeof r.permitido, 'boolean');
+  assert.equal((await ponte.pedir('soltar', { janela: 'sessao-inexistente' })).ok, true);
   if (!r.permitido) await assert.rejects(ponte.pedir('listar', { arquivo: '/System/Applications/TextEdit.app' }), { codigo: 'permissao' });
 });
