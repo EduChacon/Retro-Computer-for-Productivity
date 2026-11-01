@@ -92,7 +92,10 @@ class JanelasIntegradas {
     if (!a || a.terminal || !alvo) throw falha('programa');
     const info = await this.info(); if (!info.disponivel) throw falha('plataforma'); if (!info.permitido) throw falha('permissao');
     const existente = [...this.sessoes.values()].find((s) => s.programa === id);
-    if (existente) return this.resumo(existente);
+    if (existente) {
+      if (existente.abertura && !existente.escolhida) existente.janelas = (await this.ponte.pedir('listarAbertura', { abertura: existente.abertura })).slice(0, 50);
+      return this.resumo(existente);
+    }
     if (this.sessoes.size >= 4) throw falha('programa');
     const geracao = this.geracao;
     let abertura = null, vinculada = false;
@@ -103,11 +106,13 @@ class JanelasIntegradas {
         const r = await this.ponte.pedir('abrirPrograma', d); abertura = r?.abertura;
         if (typeof abertura !== 'string' || !abertura) throw falha('auxiliar');
       }
-      let janelas = []; const limite = this.agora() + this.esperaJanela;
+      let janelas = [], anteriores = '', estaveis = 0; const limite = this.agora() + this.esperaJanela;
       do {
         if (geracao !== this.geracao) throw falha('sessao');
         janelas = await this.ponte.pedir(abertura ? 'listarAbertura' : 'listar', abertura ? { abertura } : { arquivo: alvo });
-        if (janelas.length || this.agora() >= limite) break;
+        const assinatura = janelas.map((j) => j.id).sort().join(',');
+        estaveis = assinatura && assinatura === anteriores ? estaveis + 1 : assinatura ? 1 : 0; anteriores = assinatura;
+        if (estaveis >= 3 || this.agora() >= limite) break;
         await this.esperar(300);
       } while (true);
       if (geracao !== this.geracao) throw falha('sessao');

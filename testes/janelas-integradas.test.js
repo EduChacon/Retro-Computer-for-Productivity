@@ -62,6 +62,12 @@ test('integração: procura sem resultados libera a abertura, preservando o apli
   await assert.rejects(a.j.abrir('programa'), { codigo: 'ausente' }); assert.equal(a.pedidos.at(-1).acao, 'liberarAbertura');
   assert.equal(a.pedidos.some((p) => p.acao === 'fechar'), false);
 });
+test('integração: nova tentativa atualiza janelas sem executar o lançador de novo', async () => {
+  const a = montar(); const s = await a.j.abrir('programa'); const original = a.ponte.pedir;
+  a.ponte.pedir = async (acao, dados) => acao === 'listarAbertura' ? [{ id: 'janela-definitiva', titulo: 'Documento pronto' }] : original(acao, dados);
+  const deNovo = await a.j.abrir('programa'); assert.equal(deNovo.id, s.id); assert.equal(deNovo.janelas[0].id, 'janela-definitiva'); assert.equal(a.abertos.length, 1);
+  await a.j.associar(s.id, deNovo.janelas[0].id, g);
+});
 test('integração: geometria fica dentro da área visível e recusa números inválidos', () => {
   assert.deepEqual(geometria(g), g);
   for (const ret of [{ ...g.ret, x: -1 }, { ...g.ret, w: Infinity }, { ...g.ret, h: NaN }, { ...g.ret, x: 1000 }]) assert.throws(() => geometria({ ...g, ret }), { codigo: 'programa' });
