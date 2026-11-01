@@ -16,7 +16,7 @@ if ($Mover) {
   [RetroEntradaTeste]::MoveWindow([IntPtr][Convert]::ToInt64($r.hwnd,16), ($r.x + 100), ($r.y + 60), $r.w, $r.h, $true) | Out-Null
   exit 0
 }
-[RetroEntradaTeste]::SetCursorPos(($r.sx + 40), ($r.sy + 35)) | Out-Null
+[RetroEntradaTeste]::SetCursorPos(($r.cx + 20), ($r.cy + 10)) | Out-Null
 [RetroEntradaTeste]::mouse_event(2,0,0,0,[UIntPtr]::Zero)
 [RetroEntradaTeste]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
 [System.Threading.Thread]::Sleep(100)

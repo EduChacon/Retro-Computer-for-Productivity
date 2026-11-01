@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn, execFileSync } = require('node:child_process');
 const { PonteNativa } = require('../src/principal/janelas-integradas');
-async function esperar(fn) { for (let i = 0; i < 100; i++) { try { const r = fn(); if (r) return r; } catch { } await new Promise((r) => setTimeout(r, 100)); } throw new Error('A janela nativa não chegou ao estado esperado.'); }
+async function esperar(fn, diagnostico = () => null) { for (let i = 0; i < 100; i++) { try { const r = fn(); if (r) return r; } catch { } await new Promise((r) => setTimeout(r, 100)); } throw new Error('A janela nativa não chegou ao estado esperado. ' + JSON.stringify(diagnostico())); }
 test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve a janela original', { skip: process.platform !== 'win32', timeout: 60000 }, async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-janelas-')), exe = path.join(tmp, 'Janela de teste.exe'), compilar = path.join(tmp, 'compilar.ps1');
   const ps = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
@@ -31,7 +31,7 @@ test('Windows real: incorpora, redimensiona, respeita Fechar cancelado e devolve
   await esperar(() => ler().w > 450);
   await ponte.pedir('focar', { janela: id });
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosFilho], { windowsHide: true });
-  await esperar(() => ler().texto === 'OK_RETRO');
+  await esperar(() => ler().texto === 'OK_RETRO', ler);
   const antes = ler();
   execFileSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'tocar-janela.ps1'), dadosPai, '-Mover'], { windowsHide: true });
   await esperar(() => Math.abs(ler().sx - antes.sx - 100) <= 2 && Math.abs(ler().sy - antes.sy - 60) <= 2);

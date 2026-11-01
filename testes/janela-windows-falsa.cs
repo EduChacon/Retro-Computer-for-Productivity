@@ -20,8 +20,10 @@ public class JanelaDeTeste {
     var timer=new System.Windows.Forms.Timer { Interval=80 };
     timer.Tick+=(s,e)=> { try {
       RECT r; GetWindowRect(form.Handle,out r);
+      var ponto=campo.PointToScreen(System.Drawing.Point.Empty);
       string texto=campo.Text.Replace("\\","\\\\").Replace("\"","\\\"").Replace("\r","\\r").Replace("\n","\\n").Replace("\t","\\t");
-      File.WriteAllText(args[0],"{\"pid\":"+Process.GetCurrentProcess().Id+",\"hwnd\":\""+form.Handle.ToInt64().ToString("x")+"\",\"parent\":"+GetParent(form.Handle).ToInt64()+",\"style\":"+GetLong(form.Handle,-16).ToInt64()+",\"x\":"+form.Left+",\"y\":"+form.Top+",\"w\":"+form.Width+",\"h\":"+form.Height+",\"sx\":"+r.X+",\"sy\":"+r.Y+",\"texto\":\""+texto+"\",\"fechamentos\":"+tentativas+"}",new UTF8Encoding(false));
+      File.WriteAllText(args[0]+".tmp","{\"pid\":"+Process.GetCurrentProcess().Id+",\"hwnd\":\""+form.Handle.ToInt64().ToString("x")+"\",\"parent\":"+GetParent(form.Handle).ToInt64()+",\"style\":"+GetLong(form.Handle,-16).ToInt64()+",\"x\":"+form.Left+",\"y\":"+form.Top+",\"w\":"+form.Width+",\"h\":"+form.Height+",\"sx\":"+r.X+",\"sy\":"+r.Y+",\"cx\":"+ponto.X+",\"cy\":"+ponto.Y+",\"foco\":"+(campo.Focused?"true":"false")+",\"texto\":\""+texto+"\",\"fechamentos\":"+tentativas+"}",new UTF8Encoding(false));
+      if(File.Exists(args[0])) File.Replace(args[0]+".tmp",args[0],null); else File.Move(args[0]+".tmp",args[0]);
     } catch { } };
     timer.Start(); Application.Run(form);
   }
