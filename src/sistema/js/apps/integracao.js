@@ -5,6 +5,13 @@ import { nomeNativo, abrirNativo, configurarWeb } from '../nativos.js';
 import { tr } from '../idioma.js';
 
 const abertas = new Map();
+const icones = {
+  focar: '<path d="M2.5 6.5v-4h4m3 0h4v4m0 3v4h-4m-3 0h-4v-4"/>',
+  minimizar: '<path d="M3 11.5h10"/>',
+  fechar: '<path d="m4 4 8 8m0-8-8 8"/>',
+  sair: '<path d="M6.5 3.5h-3v9h9v-3m-4-6h4v4m0-4-7 7"/>',
+  organizar: '<path d="M1.5 3.5h5v9h-5zm8 0h5v9h-5z"/>',
+};
 class Integracao {
   constructor(id) {
     this.id = id; this.sessao = null; this.ocupada = false; this.movendo = false;
@@ -18,10 +25,15 @@ class Integracao {
   }
   aviso(texto) { this.mensagem.textContent = texto; }
   botao(texto, fn) { return h('button', { type: 'button', on: { click: () => this.executar(fn) } }, texto); }
+  controle(texto, icone, fn) {
+    const mostrar = () => { this.dica.textContent = texto; }, limpar = () => { this.dica.textContent = ''; };
+    return h('button.int-bt', { type: 'button', 'aria-label': texto, on: { click: () => this.executar(fn), pointerenter: mostrar, pointerleave: limpar, focus: mostrar, blur: limpar } },
+      h('span', { 'aria-hidden': 'true', html: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1">${icones[icone]}</svg>` }));
+  }
   async executar(fn) {
     if (this.ocupada || this.j.fechada) return;
     this.ocupada = true;
-    try { await fn(); } catch (e) { if (!this.j.fechada) this.aviso(String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); }
+    try { await fn(); } catch (e) { if (!this.j.fechada) { this.aviso(String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); if (this.sessao && !this.sessao.escolhida && this.tentativa) this.alternativas(); } }
     finally { this.ocupada = false; }
   }
   async iniciar() {
@@ -49,7 +61,7 @@ class Integracao {
       const s = await retro.integracao.abrir(this.id);
       if (this.j.fechada) { await retro.integracao.soltar(s.id); return; }
       this.sessao = s; this.j.el.dataset.modo = s.modo;
-      this.aviso(s.modo === 'embutida' ? tr('Integração experimental do Windows. A moldura é do Retro; o conteúdo continua sendo do programa.') : tr('No Mac, esta janela controla o programa no computador. A janela original mantém sua moldura e pode ser organizada ao lado do Retro.'));
+      this.aviso(s.modo === 'embutida' ? '' : tr('No Mac, esta janela controla o programa no computador. A janela original mantém sua moldura e pode ser organizada ao lado do Retro.'));
       this.alvo.replaceChildren();
       if (s.janelas.length === 1) await this.associar(s.janelas[0].id);
       else {
@@ -61,27 +73,34 @@ class Integracao {
   }
   alternativas() {
     this.alvo.replaceChildren(h('p', tr('Você pode abrir normalmente ou associar uma versão web para usar uma janela interna completa.')),
-      this.botao(tr('Abrir no computador'), async () => { await abrirNativo(this.id, { modo: 'externo' }); await this.j.fechar(); }),
+      this.sessao?.janelas.length ? this.botao(tr('Mostrar janela original'), async () => {
+        const alvo = this.tentativa || this.sessao.janelas[0].id;
+        await retro.integracao.original(this.sessao.id, alvo); await this.j.fechar();
+      }) : this.botao(tr('Abrir no computador'), async () => { await abrirNativo(this.id, { modo: 'externo' }); await this.j.fechar(); }),
       this.botao(tr('Associar versão web…'), async () => { if (await configurarWeb(this.id)) { await this.j.fechar(); await abrirNativo(this.id, { modo: 'integrado' }); } }));
   }
   medida() {
     const r = this.alvo.getBoundingClientRect(), w = innerWidth, h = innerHeight;
     const x = Math.max(0, r.left), y = Math.max(0, r.top), largura = Math.min(w, r.right) - x, altura = Math.min(h, r.bottom) - y;
-    const visivel = document.visibilityState === 'visible' && janelaAtiva() === this.j && daAreaAtual(this.j) && !this.j.minimizada && !this.j.recolhida && !document.body.classList.contains('arrastando') && !document.querySelector('.menu, .bloqueio, #bloqueio, #protecao, #visao-tarefas') && !document.body.classList.contains('bloqueado');
+    const visivel = document.visibilityState === 'visible' && janelaAtiva() === this.j && daAreaAtual(this.j) && !this.j.minimizada && !this.j.recolhida && !document.querySelector('.menu, .bloqueio, #bloqueio, #protecao, #visao-tarefas') && !document.body.classList.contains('bloqueado');
     return { ret: { x, y, w: Math.max(1, largura), h: Math.max(1, altura) }, viewport: { w, h }, visivel: !!visivel && largura > 0 && altura > 0 };
   }
   async associar(id) {
+    this.tentativa = id;
     const s = await retro.integracao.associar(this.sessao.id, id, this.medida());
     this.sessao = s; if (this.j.fechada) return;
     this.j.el.dataset.associada = 'true';
-    this.barra.replaceChildren(this.botao(tr('Focar programa'), () => retro.integracao.acao(s.id, 'focar')),
-      this.botao(tr('Minimizar programa'), async () => { if (this.modo === 'embutida') this.j.minimizar(); else await retro.integracao.acao(s.id, 'minimizar'); }),
-      this.botao(tr('Fechar programa…'), async () => { await retro.integracao.acao(s.id, 'fechar'); if (s.modo === 'embutida') await this.j.fechar(); }),
-      this.botao(tr('Sair da integração'), () => this.j.fechar()));
+    const embutida = s.modo === 'embutida';
+    this.dica = h('span.int-dica', { 'aria-hidden': 'true' });
+    this.barra.replaceChildren(this.controle(embutida ? tr('Focar') : tr('Focar programa'), 'focar', () => retro.integracao.acao(s.id, 'focar')),
+      this.controle(embutida ? tr('Minimizar') : tr('Minimizar programa'), 'minimizar', async () => { if (this.modo === 'embutida') this.j.minimizar(); else await retro.integracao.acao(s.id, 'minimizar'); }),
+      this.controle(embutida ? tr('Fechar') : tr('Fechar programa…'), 'fechar', async () => { await retro.integracao.acao(s.id, 'fechar'); if (s.modo === 'embutida') await this.j.fechar(); }),
+      this.controle(embutida ? tr('Sair') : tr('Sair da integração'), 'sair', () => this.j.fechar()));
     if (s.modo === 'acompanhada') {
-      this.barra.append(this.botao(tr('Organizar lado a lado'), () => retro.integracao.acao(s.id, 'organizar')));
+      this.barra.append(this.controle(tr('Organizar lado a lado'), 'organizar', () => retro.integracao.acao(s.id, 'organizar')));
       this.alvo.replaceChildren(h('p', tr('Use os controles acima para trabalhar com a janela original. Fechar esta janela do Retro mantém o programa aberto.')));
-    } else this.alvo.replaceChildren(h('p', tr('O programa aparece nesta área quando esta janela está ativa. Fechar a integração devolve a janela ao computador.')));
+    } else { this.alvo.replaceChildren(); this.aviso(''); }
+    this.barra.append(this.dica);
     await this.posicionar();
   }
   async posicionar() {

@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld('retro', {
     lerTexto: (rel) => chamar('disco:lerTexto', rel),
     gravar: (rel, dados, o) => chamar('disco:gravar', rel, dados, o),
     criarPasta: (pai, nome) => chamar('disco:criarPasta', pai, nome),
+    tiposNovos: () => chamar('disco:tiposNovos'),
+    criarDocumento: (pai, tipo) => chamar('disco:criarDocumento', pai, tipo),
     nomeLivre: (pai, nome) => chamar('disco:nomeLivre', pai, nome),
     renomear: (rel, nome) => chamar('disco:renomear', rel, nome),
     mover: (rel, destino) => chamar('disco:mover', rel, destino),
@@ -325,6 +327,7 @@ contextBridge.exposeInMainWorld('retro', {
   },
   programas: {
     catalogo: () => chamar('programas:catalogo'),
+    atualizarCatalogo: (o) => chamar('programas:atualizarCatalogo', o),
     instalados: () => chamar('programas:instalados'),
     instalar: (id, opcoes) => chamar('programas:instalar', id, opcoes),
     instalarArquivo: () => chamar('programas:instalarArquivo'),
@@ -389,6 +392,7 @@ contextBridge.exposeInMainWorld('retro', {
     abrir: (id) => chamar('nativos:abrir', id),
   },
   integracao: {
+    original: (id, alvo) => chamar('integracao:original', id, alvo),
     info: () => chamar('integracao:info'),
     permitir: () => chamar('integracao:permitir'),
     abrir: (id) => chamar('integracao:abrir', id),

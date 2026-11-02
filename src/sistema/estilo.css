@@ -2151,8 +2151,17 @@ body:has(#bloqueio) #mascote, body:has(#entrada) #mascote, body:has(#protecao-te
 /* A moldura das janelas nativas usa os mesmos temas e controles das outras janelas. */
 .int-corpo { display: flex; flex-direction: column; min-height: 0; padding: 6px; gap: 6px; }
 .int-mensagem { flex: none; padding: 4px; background: var(--face); color: var(--texto); }
+.int-mensagem:empty { display: none; }
 .int-acoes { display: flex; flex-wrap: wrap; gap: 5px; flex: none; }
 .int-acoes button, .int-alvo button { cursor: var(--cur-default, default); }
+.integracao-nativa[data-associada="true"] .int-corpo { padding: 3px; gap: 3px; }
+.integracao-nativa[data-associada="true"] .int-acoes { gap: 2px; min-height: 18px; }
+.int-acoes .int-bt { display: flex; align-items: center; justify-content: center; width: 20px; min-width: 20px; height: 18px; min-height: 0; padding: 0; flex: none; border: 1px solid transparent; background: transparent; box-shadow: none; }
+.int-acoes .int-bt:hover { border-color: var(--luz) var(--sombra) var(--sombra) var(--luz); }
+.int-acoes .int-bt:active { border-color: var(--sombra) var(--luz) var(--luz) var(--sombra); }
+.int-acoes .int-bt:focus-visible { outline: 1px dotted var(--texto); outline-offset: -2px; }
+.int-bt span, .int-bt svg { display: block; width: 14px; height: 14px; pointer-events: none; }
+.int-dica { flex: 1; min-width: 0; align-self: center; margin-left: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 16px; pointer-events: none; }
 .int-alvo { flex: 1; min-height: 50px; overflow: auto; background: var(--janela); color: var(--texto); border: 1px solid var(--sombra); padding: 8px; }
 .int-alvo p { margin: 4px 0 10px; }
 .int-alvo button { display: block; margin: 5px 0; }

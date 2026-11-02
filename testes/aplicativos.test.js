@@ -29,6 +29,14 @@ test('integração Windows reconhece um atalho AppsFolder sem confundir o Explor
   assert.deepEqual(a.alvoIntegracao('programa'), { atalho, arquivo: null, appId, processoEsperado: null });
 });
 
+test('integração Windows deixa o Shell resolver um atalho sem TargetPath legível', (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-atalho-')), atalho = path.join(tmp, 'Tribunal.lnk'); fs.writeFileSync(atalho, 'teste');
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  const a = new Aplicativos({ plataforma: 'win32', shell: { readShortcutLink: () => { throw new Error('atalho anunciado'); } } });
+  a.lista = [{ id: 'programa', arquivo: atalho }];
+  assert.deepEqual(a.alvoIntegracao('programa'), { atalho, arquivo: null, appId: null, processoEsperado: null });
+});
+
 const WRITER = `[Desktop Entry]
 Version=1.0
 Type=Application

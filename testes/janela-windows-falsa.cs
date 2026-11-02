@@ -15,6 +15,7 @@ public class JanelaDeTeste {
     SetProcessDpiAwarenessContext(new IntPtr(-4));
     var form=new Form { Text="Programa de teste do Retro",Left=90,Top=90,Width=640,Height=420,StartPosition=FormStartPosition.Manual };
     if(args.Length>1) form.Location=new System.Drawing.Point(300,230);
+    if(args.Length>1 && args[1]=="tela-cheia") { form.FormBorderStyle=FormBorderStyle.None; form.Bounds=Screen.PrimaryScreen.Bounds; }
     var campo=new TextBox { Left=20,Top=25,Width=400,Text="Documento preservado" };
     form.Controls.Add(campo); int tentativas=0;
     form.FormClosing+=(s,e)=> { if(e.CloseReason==CloseReason.UserClosing) { tentativas++; e.Cancel=true; } };
@@ -23,7 +24,7 @@ public class JanelaDeTeste {
       RECT r; GetWindowRect(form.Handle,out r);
       var ponto=campo.PointToScreen(System.Drawing.Point.Empty);
       string texto=campo.Text.Replace("\\","\\\\").Replace("\"","\\\"").Replace("\r","\\r").Replace("\n","\\n").Replace("\t","\\t");
-      File.WriteAllText(args[0]+".tmp","{\"pid\":"+Process.GetCurrentProcess().Id+",\"hwnd\":\""+form.Handle.ToInt64().ToString("x")+"\",\"campo\":\""+campo.Handle.ToInt64().ToString("x")+"\",\"parent\":"+GetParent(form.Handle).ToInt64()+",\"style\":"+GetLong(form.Handle,-16).ToInt64()+",\"x\":"+form.Left+",\"y\":"+form.Top+",\"w\":"+form.Width+",\"h\":"+form.Height+",\"sx\":"+r.X+",\"sy\":"+r.Y+",\"cx\":"+ponto.X+",\"cy\":"+ponto.Y+",\"foco\":"+(campo.Focused?"true":"false")+",\"texto\":\""+texto+"\",\"fechamentos\":"+tentativas+"}",new UTF8Encoding(false));
+      File.WriteAllText(args[0]+".tmp","{\"pid\":"+Process.GetCurrentProcess().Id+",\"hwnd\":\""+form.Handle.ToInt64().ToString("x")+"\",\"campo\":\""+campo.Handle.ToInt64().ToString("x")+"\",\"parent\":"+GetParent(form.Handle).ToInt64()+",\"style\":"+GetLong(form.Handle,-16).ToInt64()+",\"topo\":"+((GetLong(form.Handle,-20).ToInt64() & 8)!=0?"true":"false")+",\"x\":"+form.Left+",\"y\":"+form.Top+",\"w\":"+form.Width+",\"h\":"+form.Height+",\"sx\":"+r.X+",\"sy\":"+r.Y+",\"cx\":"+ponto.X+",\"cy\":"+ponto.Y+",\"foco\":"+(campo.Focused?"true":"false")+",\"texto\":\""+texto+"\",\"fechamentos\":"+tentativas+"}",new UTF8Encoding(false));
       if(File.Exists(args[0])) File.Replace(args[0]+".tmp",args[0],null); else File.Move(args[0]+".tmp",args[0]);
     } catch { } };
     timer.Start(); Application.Run(form);

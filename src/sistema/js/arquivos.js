@@ -143,9 +143,22 @@ export async function novaPasta(pai) {
 }
 
 export async function novoTexto(pai) {
-  const nome = await retro.disco.nomeLivre(pai, tr('Novo documento de texto') + '.txt');
-  const r = await retro.disco.gravar(juntar(pai, nome), new Uint8Array(0), { versao: false });
-  return r.rel;
+  return novoDocumento(pai, 'texto');
+}
+
+export async function novoDocumento(pai, tipo) { return (await retro.disco.criarDocumento(pai, tipo)).rel; }
+
+/** O mesmo menu na mesa, no fundo das pastas e em Arquivo › Novo. */
+export async function menuNovo(pasta, aoNovo) {
+  const criar = async (tipo) => {
+    try { const rel = tipo === 'pasta' ? await novaPasta(pasta) : await novoDocumento(pasta, tipo); if (aoNovo) await aoNovo(rel); }
+    catch (e) { erro(e.message); }
+  };
+  const tipos = await retro.disco.tiposNovos();
+  const item = (t) => ({ rotulo: t.rotulo, icone: t.icone, acao: () => criar(t.id) });
+  return [{ rotulo: tr('&Pasta'), icone: 'pasta', acao: () => criar('pasta') }, { separador: true },
+    ...tipos.filter((t) => t.grupo !== 'codigo').map(item), { separador: true },
+    { rotulo: tr('Código-fonte'), icone: 'texto', sub: tipos.filter((t) => t.grupo === 'codigo').map(item) }];
 }
 
 /** Move (ou copia, com Ctrl) para uma pasta. */
@@ -447,11 +460,7 @@ export function menuDoFundo(pasta, { aoNovo, organizar, vista, atualizar } = {})
   itens.push({ rotulo: tr('&Colar'), atalho: 'Ctrl+V', desativado: !transferencia.rels.length, acao: () => colar(pasta) });
   itens.push({ separador: true });
   itens.push({
-    rotulo: tr('&Novo'), sub: () => [
-      { rotulo: tr('&Pasta'), icone: 'pasta', acao: async () => { const r = await novaPasta(pasta).catch((e) => erro(e.message)); if (r && aoNovo) aoNovo(r); } },
-      { separador: true },
-      { rotulo: tr('&Documento de texto'), icone: 'texto', acao: async () => { const r = await novoTexto(pasta).catch((e) => erro(e.message)); if (r && aoNovo) aoNovo(r); } },
-    ],
+    rotulo: tr('&Novo'), sub: () => menuNovo(pasta, aoNovo),
   });
   itens.push({ rotulo: tr('&Trazer do computador principal…'), acao: () => retro.disco.importarEscolhendo(pasta).catch((e) => erro(e.message)) });
   itens.push({ separador: true });

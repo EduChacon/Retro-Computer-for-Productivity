@@ -17,6 +17,7 @@ const { tr } = require('./idioma');
 const yauzl = require('yauzl');
 
 const CATALOGO = require('../../catalogo/programas.json');
+const { CatalogoCraft } = require('./catalogo-craft');
 const ADAPTADOR = path.join(__dirname, '..', 'adaptador', 'adaptador.js');
 
 const MIME = {
@@ -152,15 +153,18 @@ class Programas {
     this.pasta = pasta;
     this.buscar = buscar;
     this.emAndamento = new Map();
+    this.crafts = new CatalogoCraft(pasta, buscar);
   }
 
   catalogo() {
-    return CATALOGO.programas.map((p) => ({ ...p, instalado: this.instalado(p.id) }));
+    return this.crafts.lista().map((p) => ({ ...p, instalado: this.instalado(p.id) }));
   }
 
   doCatalogo(id) {
-    return CATALOGO.programas.find((p) => p.id === id) || null;
+    return this.crafts.lista().find((p) => p.id === id) || null;
   }
+
+  atualizarCatalogo(o) { return this.crafts.atualizar({ forcar: o?.forcar === true }); }
 
   instalado(id) {
     if (!ID_VALIDO.test(String(id))) return null;

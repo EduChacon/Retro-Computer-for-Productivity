@@ -49,6 +49,7 @@ class Programas {
     this.selModo.value = (estado.config && estado.config.atualizacoes) || 'automatico';
     this.selModo.addEventListener('change', () => definirConfig({ atualizacoes: this.selModo.value }));
     this.btProcurar = h('button', { on: { click: () => this.procurar(true) } }, tr('Procurar atualizações'));
+    this.btLista = h('button', { style: { flexShrink: '0' }, on: { click: () => this.atualizarLista(true) } }, tr('Atualizar lista'));
     this.j.corpo.style.padding = '8px';
     const abaRetro = h('div.aba-programas');
     abaRetro.append(
@@ -56,7 +57,7 @@ class Programas {
         img('programas-caixa', 32),
         h('div', { style: { lineHeight: '14px' } },
           tr('Para instalar um programa, selecione-o e clique em Instalar. Ele é baixado do lançamento oficial (a versão para navegador) e depois funciona sem internet.'),
-        )),
+        ), this.btLista),
       this.listaEl,
       h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' } },
         h('label', this.chkAtalho, h('span', tr('Criar atalho na área de trabalho'))),
@@ -109,8 +110,22 @@ class Programas {
       this.mostrarAba(abaPedida(args.aba));
     });
     this.paraDeOuvir = retro.programas.aoProgresso((id, p) => this.progresso(id, p));
-    this.j.ev.on('fechada', () => { this.paraDeOuvir(); this.linux.fechar(); if (this.craftWindows) this.craftWindows.fechar(); });
-    this.carregar(args.instalar).then(() => this.procurar(false));
+    this.relogioCatalogo = setInterval(() => this.atualizarLista(false), 6 * 3600 * 1000);
+    this.j.ev.on('fechada', () => { clearInterval(this.relogioCatalogo); this.paraDeOuvir(); this.linux.fechar(); if (this.craftWindows) this.craftWindows.fechar(); });
+    this.carregar(args.instalar).then(async () => { await this.atualizarLista(false); await this.procurar(false); });
+  }
+
+  async atualizarLista(forcar) {
+    if (this.atualizandoLista || this.j.fechada) return;
+    this.atualizandoLista = true; this.btLista.disabled = true;
+    if (forcar) this.estadoEl.textContent = tr('Atualizando a lista de programas…');
+    try {
+      const r = await retro.programas.atualizarCatalogo({ forcar });
+      if (this.j.fechada) return;
+      if (r.atualizado && r.novos > 0) await this.carregar();
+      if (forcar) this.estadoEl.textContent = r.offline ? tr('Sem conexão. A lista salva continua disponível.') : tr('Lista de programas atualizada.');
+    } catch { if (forcar && !this.j.fechada) this.estadoEl.textContent = tr('Sem conexão. A lista salva continua disponível.'); }
+    finally { this.atualizandoLista = false; this.btLista.disabled = false; }
   }
 
   async carregar(selecionar) {
