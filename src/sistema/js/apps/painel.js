@@ -9,7 +9,7 @@ import { abrirMenu } from '../menus.js';
 import { registrarApp, estado, definirConfig, abrir, carregarConfig, avisar, abrirEndereco, programasPara, pastaDocs, adicionarPapel, removerPapel } from '../sistema.js';
 import { ajustarAoConteudo, acompanharConteudo, confirmar, confirmarComPrazo, erro, info, entrada, caixaArquivo } from '../dialogos.js';
 import { deslizante } from '../controles.js';
-import { CORES, PADROES, FUNDO_INICIO, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS, fundoParaTema } from '../aparencia.js';
+import { CORES, PADROES, FUNDO_INICIO, FUNDO_TEMA, MODOS_PAPEL, EXTS_PAPEL, fundoCss, aplicarFundo, aplicarEscala, pixelsAutomaticos, ESCALAS, fundoParaTema } from '../aparencia.js';
 import { TEMAS, temaMac } from '../tema.js';
 import { ESQUEMAS, esquemaValido, variaveisDoEsquema, fundoParaEsquema } from '../esquemas.js';
 import { solDoFuso, fusoDoComputador } from '../sol.js';
@@ -262,8 +262,11 @@ function dialogoBarra(args = {}) {
  */
 function escolhaDeFundo(papel, aoMudar) {
   const cores = h('div.cores', CORES.map((cor) => {
-    const el = h('div', { title: cor }, h('div', { style: { background: cor } }));
-    el.addEventListener('mousedown', () => { papel.cor = cor; marcarCores(); outra.value = cor; aoMudar(); });
+    const nome = cor === FUNDO_TEMA.mac.cor ? tr('Cor original do Mac') : cor === FUNDO_TEMA.pc.cor ? tr('Cor original do PC') : cor;
+    const el = h('div', { title: nome, role: 'button', tabIndex: 0, 'aria-label': nome, dataset: { cor } }, h('div', { style: { background: cor } }));
+    const escolher = () => { papel.cor = cor; marcarCores(); outra.value = cor; aoMudar(); };
+    el.addEventListener('mousedown', escolher);
+    el.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); escolher(); } });
     return el;
   }));
   const marcarCores = () => [...cores.children].forEach((el, i) => el.classList.toggle('sel', CORES[i] === papel.cor));
@@ -347,6 +350,9 @@ function dialogoAparencia(args = {}) {
   // O tema: o PC clássico ou o Mac clássico (tema.js), com a prévia de cada um. O fundo de sempre de
   // um vira o do outro (um fundo escolhido pelo usuário fica como está).
   let tema = c.tema === 'mac' ? 'mac' : 'pc';
+  abaFundo.append(h('div.acoes', { style: { marginTop: '10px' } }, h('button', { type: 'button', on: { click: () => {
+    Object.assign(papel, FUNDO_TEMA[tema], { imagem: null }); desenharImagens(); fundo.atualizar(); atualizarPrevia();
+  } } }, tr('Restaurar fundo original do tema'))));
   const temaAntes = tema;
   const opcoesTema = Object.entries(TEMAS).map(([k, nome]) => {
     const radio = h('input', { type: 'radio', name: 'tema', checked: k === tema });

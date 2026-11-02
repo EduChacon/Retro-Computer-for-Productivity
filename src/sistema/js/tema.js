@@ -9,6 +9,7 @@
  */
 import { marcar } from './idioma.js';
 import { ICONES_MAC } from './icones-mac.js';
+import { iconeCraft } from './icones-craft.js';
 
 export const TEMAS = { pc: marcar('PC clássico'), mac: marcar('Mac clássico') };
 
@@ -20,6 +21,7 @@ export const temaMac = () => atual === 'mac';
 
 /** O endereço de um ícone no tema de agora ("icones/16/pasta.png" ou "icones-mac/16/pasta.png"). */
 export function caminhoIcone(nome, tam) {
+  const craft = iconeCraft(nome, tam); if (craft) return craft;
   return atual === 'mac' && ICONES_MAC.has(`${tam}/${nome}`) ? `icones-mac/${tam}/${nome}.png` : `icones/${tam}/${nome}.png`;
 }
 

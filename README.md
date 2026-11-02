@@ -7,6 +7,7 @@ A retro computer for productivity: the desktop of a 1990s PC, with your work pro
 - **Version:** 2.6.0 · [Download](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
 - **Breakout:** 24 original levels, eight power-ups, combos and saved level unlocks, with retro graphics and synthesized sound.
 - **Google Calendar:** two-way Calendar sync, offline changes and explicit conflict resolution; Google OAuth setup is required.
+- **Appearance:** distinct retro icons for new Craft apps and restoration of the original theme background. Mac native window controls are labeled separately from internal web versions.
 - **Integrated apps:** experimental Retro frames for compatible Windows apps, Mac window controls and internal web versions. [Guide](docs/programas-integrados.md)
 - **Assistant:** eight animated desktop companions with an integrated Claude Code or Codex chat, file attachments and Retro system tools.
 - **Languages:** English, Portuguese and Spanish (Control Panel › Language)

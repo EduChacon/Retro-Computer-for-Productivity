@@ -3029,5 +3029,13 @@
   "Atravessa os tijolos destrutíveis por 11 segundos.": "Atraviesa los ladrillos destructibles durante 11 segundos.",
   "Vida extra": "Vida extra",
   "Ganha uma vida, até cinco. Com cinco vidas, vale 500 pontos.": "Añade una vida, hasta cinco. Con cinco vidas, otorga 500 puntos.",
-  "Placar": "Puntos"
+  "Placar": "Puntos",
+  "Abrir versão web no Retro…": "Abrir versión web en Retro…",
+  "Controlar janela do Mac…": "Controlar ventana de Mac…",
+  "Usar controles do Mac por padrão": "Usar los controles de Mac de forma predeterminada",
+  "Usar versão web no Retro…": "Usar versión web en Retro…",
+  "No Mac, os programas nativos usam janelas do macOS. Controlar janela do Mac oferece foco, minimizar e organizar lado a lado. Para abrir o conteúdo dentro do Retro, associe uma versão web pelo botão direito.": "En Mac, las aplicaciones nativas usan ventanas de macOS. Controlar ventana de Mac permite enfocar, minimizar y organizar lado a lado. Para abrir el contenido dentro de Retro, asocia una versión web desde el menú contextual.",
+  "Cor original do Mac": "Color original de Mac",
+  "Cor original do PC": "Color original de PC",
+  "Restaurar fundo original do tema": "Restaurar fondo original del tema"
 }

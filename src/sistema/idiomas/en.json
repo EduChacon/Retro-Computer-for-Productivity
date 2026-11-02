@@ -3029,5 +3029,13 @@
   "Atravessa os tijolos destrutíveis por 11 segundos.": "Passes through breakable bricks for 11 seconds.",
   "Vida extra": "Extra life",
   "Ganha uma vida, até cinco. Com cinco vidas, vale 500 pontos.": "Adds a life, up to five. With five lives, awards 500 points.",
-  "Placar": "Score"
+  "Placar": "Score",
+  "Abrir versão web no Retro…": "Open web version in Retro…",
+  "Controlar janela do Mac…": "Control Mac window…",
+  "Usar controles do Mac por padrão": "Use Mac window controls by default",
+  "Usar versão web no Retro…": "Use web version in Retro…",
+  "No Mac, os programas nativos usam janelas do macOS. Controlar janela do Mac oferece foco, minimizar e organizar lado a lado. Para abrir o conteúdo dentro do Retro, associe uma versão web pelo botão direito.": "On Mac, native apps use macOS windows. Control Mac window offers focus, minimize and side-by-side layout. To open the content inside Retro, use the context menu to associate a web version.",
+  "Cor original do Mac": "Original Mac color",
+  "Cor original do PC": "Original PC color",
+  "Restaurar fundo original do tema": "Restore original theme background"
 }

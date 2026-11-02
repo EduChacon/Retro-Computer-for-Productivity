@@ -77,8 +77,9 @@ class Integracao {
         const alvo = this.tentativa || this.sessao.janelas[0].id;
         await retro.integracao.original(this.sessao.id, alvo); await this.j.fechar();
       }) : this.botao(tr('Abrir no computador'), async () => { await abrirNativo(this.id, { modo: 'externo' }); await this.j.fechar(); }),
-      this.botao(tr('Associar versão web…'), async () => { if (await configurarWeb(this.id)) { await this.j.fechar(); await abrirNativo(this.id, { modo: 'integrado' }); } }));
+      this.botao(tr('Associar versão web…'), () => this.usarWeb()));
   }
+  async usarWeb() { if (await configurarWeb(this.id)) { await this.j.fechar(); await abrirNativo(this.id, { modo: 'integrado' }); } }
   medida() {
     const r = this.alvo.getBoundingClientRect(), w = innerWidth, h = innerHeight;
     const x = Math.max(0, r.left), y = Math.max(0, r.top), largura = Math.min(w, r.right) - x, altura = Math.min(h, r.bottom) - y;
@@ -98,7 +99,8 @@ class Integracao {
       this.controle(embutida ? tr('Sair') : tr('Sair da integração'), 'sair', () => this.j.fechar()));
     if (s.modo === 'acompanhada') {
       this.barra.append(this.controle(tr('Organizar lado a lado'), 'organizar', () => retro.integracao.acao(s.id, 'organizar')));
-      this.alvo.replaceChildren(h('p', tr('Use os controles acima para trabalhar com a janela original. Fechar esta janela do Retro mantém o programa aberto.')));
+      this.alvo.replaceChildren(h('p', tr('Use os controles acima para trabalhar com a janela original. Fechar esta janela do Retro mantém o programa aberto.')),
+        this.botao(tr('Usar versão web no Retro…'), () => this.usarWeb()));
     } else { this.alvo.replaceChildren(); this.aviso(''); }
     this.barra.append(this.dica);
     await this.posicionar();

@@ -39,5 +39,12 @@ test('catálogo: uma fonte inválida não apaga a cópia salva nem suas associa�
   fs.writeFileSync(path.join(pasta, 'catalogo-remoto.json'), JSON.stringify({ programas: [{ id: 'novocraft', nome: 'Novo', repo: 'storytold/novocraft', versaoConhecida: '1.0.0', tipos: ['exe'], icone: 'https://outro.example' }, { id: 'invasor', repo: '../fora' }] }));
   const c = new CatalogoCraft(pasta, async () => ({ ok: true, text: async () => 'formato novo' }));
   assert.equal((await c.atualizar()).offline, true);
-  const p = c.lista().find((p) => p.id === 'novocraft'); assert.deepEqual(p.tipos, []); assert.equal(p.icone, 'programa'); assert.equal(c.lista().some((p) => p.id === 'invasor'), false);
+  const p = c.lista().find((p) => p.id === 'novocraft'); assert.deepEqual(p.tipos, []); assert.equal(p.icone, 'craft-auto-novocraft'); assert.equal(c.lista().some((p) => p.id === 'invasor'), false);
+});
+
+test('catálogo: novos Craft têm identificadores próprios de ícone, sem alterar o catálogo base', () => {
+  const c = new CatalogoCraft(os.tmpdir(), async () => { throw new Error('offline'); });
+  for (const id of ['texturecraft', 'craft-anything', 'solidcraft']) assert.equal(c.lista().find((p) => p.id === id).icone, 'craft-auto-' + id);
+  assert.equal(c.lista().find((p) => p.id === 'wordcraft').icone, 'wordcraft');
+  assert.equal(require('../catalogo/programas.json').programas.find((p) => p.id === 'solidcraft').icone, 'programa');
 });

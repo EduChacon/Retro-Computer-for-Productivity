@@ -169,7 +169,10 @@ class Programas {
   instalado(id) {
     if (!ID_VALIDO.test(String(id))) return null;
     try {
-      return JSON.parse(fs.readFileSync(path.join(this.pasta, id, 'programa.json'), 'utf8'));
+      const info = JSON.parse(fs.readFileSync(path.join(this.pasta, id, 'programa.json'), 'utf8'));
+      const p = this.doCatalogo(id);
+      // Atualiza só a apresentação: instalações anteriores ganham o ícone sem reinstalar ou gravar arquivos.
+      return p && (!info.icone || info.icone === 'programa') ? { ...info, icone: p.icone } : info;
     } catch {
       return null;
     }
