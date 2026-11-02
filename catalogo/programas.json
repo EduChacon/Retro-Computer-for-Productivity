@@ -18,7 +18,16 @@
       "versaoConhecida": "0.7.0",
       "tamanho": "15 MB",
       "icone": "wordcraft",
-      "tipos": ["docx", "doc", "dotx", "odt", "rtf", "md", "htm", "html"]
+      "tipos": [
+        "docx",
+        "doc",
+        "dotx",
+        "odt",
+        "rtf",
+        "md",
+        "htm",
+        "html"
+      ]
     },
     {
       "id": "gridcraft",
@@ -36,7 +45,14 @@
       "repo": "storytold/gridcraft",
       "versaoConhecida": "0.7.0",
       "icone": "gridcraft",
-      "tipos": ["xlsx", "xls", "xlsm", "ods", "csv", "tsv"]
+      "tipos": [
+        "xlsx",
+        "xls",
+        "xlsm",
+        "ods",
+        "csv",
+        "tsv"
+      ]
     },
     {
       "id": "deckcraft",
@@ -54,7 +70,11 @@
       "repo": "storytold/deckcraft",
       "versaoConhecida": "0.7.0",
       "icone": "deckcraft",
-      "tipos": ["pptx", "ppt", "odp"]
+      "tipos": [
+        "pptx",
+        "ppt",
+        "odp"
+      ]
     },
     {
       "id": "pdfcraft",
@@ -72,7 +92,9 @@
       "repo": "storytold/pdfcraft",
       "versaoConhecida": "0.8.0",
       "icone": "pdfcraft",
-      "tipos": ["pdf"]
+      "tipos": [
+        "pdf"
+      ]
     },
     {
       "id": "photocraft",
@@ -90,7 +112,17 @@
       "repo": "storytold/photocraft",
       "versaoConhecida": "0.9.0",
       "icone": "photocraft",
-      "tipos": ["psd", "png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff"]
+      "tipos": [
+        "psd",
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp",
+        "bmp",
+        "tif",
+        "tiff"
+      ]
     },
     {
       "id": "lightcraft",
@@ -108,7 +140,16 @@
       "repo": "storytold/lightcraft",
       "versaoConhecida": "0.8.0",
       "icone": "lightcraft",
-      "tipos": ["dng", "cr2", "cr3", "nef", "arw", "raf", "orf", "rw2"]
+      "tipos": [
+        "dng",
+        "cr2",
+        "cr3",
+        "nef",
+        "arw",
+        "raf",
+        "orf",
+        "rw2"
+      ]
     },
     {
       "id": "vectorcraft",
@@ -126,7 +167,11 @@
       "repo": "storytold/vectorcraft",
       "versaoConhecida": "0.11.0",
       "icone": "vectorcraft",
-      "tipos": ["svg", "ai", "eps"]
+      "tipos": [
+        "svg",
+        "ai",
+        "eps"
+      ]
     },
     {
       "id": "figcraft",
@@ -162,7 +207,9 @@
       "repo": "storytold/designcraft",
       "versaoConhecida": "0.8.0",
       "icone": "designcraft",
-      "tipos": ["idml"]
+      "tipos": [
+        "idml"
+      ]
     },
     {
       "id": "filmcraft",
@@ -216,7 +263,13 @@
       "repo": "storytold/soundcraft",
       "versaoConhecida": "0.7.0",
       "icone": "soundcraft",
-      "tipos": ["wav", "mp3", "flac", "ogg", "aiff"]
+      "tipos": [
+        "wav",
+        "mp3",
+        "flac",
+        "ogg",
+        "aiff"
+      ]
     },
     {
       "id": "cadcraft",
@@ -234,7 +287,10 @@
       "repo": "storytold/cadcraft",
       "versaoConhecida": "0.7.0",
       "icone": "cadcraft",
-      "tipos": ["dxf", "dwg"]
+      "tipos": [
+        "dxf",
+        "dwg"
+      ]
     },
     {
       "id": "texturecraft",
@@ -251,7 +307,7 @@
       },
       "repo": "storytold/texturecraft",
       "versaoConhecida": "0.2.0",
-      "icone": "programa",
+      "icone": "craft-auto-texturecraft",
       "tipos": []
     },
     {
@@ -269,7 +325,7 @@
       },
       "repo": "storytold/craft-anything",
       "versaoConhecida": "0.2.0",
-      "icone": "programa",
+      "icone": "craft-auto-craft-anything",
       "tipos": []
     },
     {
@@ -287,7 +343,7 @@
       },
       "repo": "tangency-labs/solidcraft",
       "versaoConhecida": "0.29.0",
-      "icone": "programa",
+      "icone": "craft-auto-solidcraft",
       "tipos": []
     }
   ]

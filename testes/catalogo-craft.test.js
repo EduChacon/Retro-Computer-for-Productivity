@@ -46,5 +46,5 @@ test('catálogo: novos Craft têm identificadores próprios de ícone, sem alter
   const c = new CatalogoCraft(os.tmpdir(), async () => { throw new Error('offline'); });
   for (const id of ['texturecraft', 'craft-anything', 'solidcraft']) assert.equal(c.lista().find((p) => p.id === id).icone, 'craft-auto-' + id);
   assert.equal(c.lista().find((p) => p.id === 'wordcraft').icone, 'wordcraft');
-  assert.equal(require('../catalogo/programas.json').programas.find((p) => p.id === 'solidcraft').icone, 'programa');
+  assert.equal(require('../catalogo/programas.json').programas.find((p) => p.id === 'solidcraft').icone, 'craft-auto-solidcraft', 'o catálogo usado pelos Craft nativos do Windows também recebe o desenho');
 });
