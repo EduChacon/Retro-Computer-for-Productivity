@@ -81,3 +81,12 @@ test('sem internet, atualizar não cai na versão conhecida do catálogo', async
   await assert.rejects(prog.instalar('wordcraft', () => { }, { atualizar: true }), /versão mais recente/);
   assert.ok(pedidos.every((u) => !u.includes('/download/')), 'não tentou baixar nada');
 });
+
+test('os ícones novos aparecem nas instalações antigas sem mudar o manifesto nem a versão', (t) => {
+  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-icones-')); t.after(() => fs.rmSync(pasta, { recursive: true, force: true }));
+  const arq = path.join(pasta, 'solidcraft/programa.json'); fs.mkdirSync(path.dirname(arq));
+  const anterior = JSON.stringify({ id: 'solidcraft', nome: 'SolidCraft', versao: '0.20.0', origem: 'arquivo local', icone: 'programa' }); fs.writeFileSync(arq, anterior);
+  const prog = new Programas(pasta, async () => { throw new Error('Não deveria consultar a rede.'); });
+  assert.equal(prog.instalados()[0].icone, 'craft-auto-solidcraft'); assert.equal(prog.instalados()[0].versao, '0.20.0');
+  assert.equal(fs.readFileSync(arq, 'utf8'), anterior);
+});

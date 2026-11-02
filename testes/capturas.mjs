@@ -485,19 +485,31 @@ const ROTEIROS = {
     if (!cfg.integrados.includes('retro:janela-de-teste')) throw new Error('Não guardou a preferência.');
   },
   async integracaoMac() {
-    await fecharTudo(); await abrir('nativos');
+    await fecharTudo();
+    await pagina.evaluate(() => { window.__retro.estado.config.plataforma = 'darwin'; });
+    await abrir('nativos');
     await pagina.locator('.janela.ativa .item', { hasText: 'Programa de teste' }).click();
-    await pagina.locator('.janela.ativa button', { hasText: T('Abrir integrado…'), exact: true }).click();
+    await pagina.locator('.janela.ativa button', { hasText: T('Controlar janela do Mac…'), exact: true }).click();
     await pagina.locator('.integracao-nativa button', { hasText: T('Permitir controle de janelas…'), exact: true }).waitFor();
     await foto('integracao-mac-permissao');
     await pagina.locator('.integracao-nativa button', { hasText: T('Permitir controle de janelas…'), exact: true }).click();
     await pagina.locator('.integracao-nativa button', { hasText: T('Tentar novamente'), exact: true }).click();
     await pagina.waitForSelector('.integracao-nativa[data-associada="true"]');
     await pagina.locator('.int-acoes').getByRole('button', { name: T('Organizar lado a lado'), exact: true }).click();
+    await pagina.getByRole('button', { name: T('Usar versão web no Retro…'), exact: true }).waitFor();
     await foto('integracao-mac-controles');
     const pedidos = JSON.parse(fs.readFileSync(process.env.RETRO_INTEGRACAO_RELATORIO, 'utf8'));
     if (!pedidos.some((p) => p.acao === 'organizar')) throw new Error('Não organizou as janelas.');
-    await pagina.locator('.int-acoes').getByRole('button', { name: T('Sair da integração'), exact: true }).click();
+    await app.evaluate(({ session }) => session.fromPartition('persist:navegador').protocol.handle('https', () => new Response('<!doctype html><html><body><h1 id="prova">Versão web dentro do Retro</h1></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } })));
+    await pagina.getByRole('button', { name: T('Usar versão web no Retro…'), exact: true }).click();
+    await pagina.locator('.janela.dialogo input').fill('https://versao.retro.test/');
+    await pagina.locator('.janela.dialogo button.padrao').click();
+    await pagina.waitForSelector('.janela.webapp webview');
+    await pagina.waitForFunction(async () => { const w = document.querySelector('.janela.webapp webview'); try { return await w.executeJavaScript('document.getElementById("prova")?.textContent') === 'Versão web dentro do Retro'; } catch { return false; } });
+    if (await pagina.locator('.integracao-nativa').count()) throw new Error('O painel antigo deve fechar ao abrir a versão web.');
+    await foto('integracao-mac-versao-web-interna');
+    await abrir('nativos');
+    await pagina.getByRole('button', { name: T('Abrir versão web no Retro…'), exact: true }).waitFor();
   },
   async integracaoReal() {
     await fecharTudo(); await abrir('nativos');
@@ -5925,6 +5937,151 @@ addEventListener('drop', (e) => { e.preventDefault(); ipcRenderer.send('soltou',
   },
 
   // Os jogos: as regras (conferidas aqui) e as janelas.
+  // Breakout: entradas reais, cápsulas pelo teste de colisão, avanço e reabertura com o progresso salvo.
+  async iconesCraft() {
+    await fecharTudo();
+    const ids = ['texturecraft', 'craft-anything', 'solidcraft'];
+    for (const id of ids) {
+      const p = path.join(dados, 'programas', id); fs.mkdirSync(p, { recursive: true });
+      fs.writeFileSync(path.join(p, 'programa.json'), JSON.stringify({ id, nome: id, versao: '0.1.0', origem: 'arquivo local', icone: 'programa' }));
+      fs.writeFileSync(path.join(p, 'index.html'), '<!doctype html><html><body><h1>Programa de teste</h1></body></html>');
+    }
+    await pagina.evaluate(async () => { const s = await import('./js/sistema.js'); await s.atualizarProgramas(); });
+    await abrir('programas');
+    await pagina.waitForTimeout(400);
+    await pagina.waitForFunction(() => { const p = window.__retro.janelas.lista.find((j) => j.programas)?.programas; return p && !p.atualizandoLista && !p.btProcurar.disabled; });
+    const urls = [];
+    for (const id of ids) {
+      const nome = id === 'texturecraft' ? 'TextureCraft' : id === 'craft-anything' ? 'Craft Anything' : 'SolidCraft';
+      const linha = pagina.locator('.linha-programa', { hasText: nome }).first(); await linha.scrollIntoViewIfNeeded();
+      await linha.locator('img').evaluate((im) => im.decode());
+      const src = await linha.locator('img').getAttribute('src'); urls.push(src);
+      if (!src.startsWith('data:image/svg+xml,')) throw new Error('O catálogo manteve o ícone genérico de ' + id);
+    }
+    if (new Set(urls).size !== 3) throw new Error('Os novos Craft devem ter desenhos distintos.');
+    await foto('craft-icones-catalogo');
+    await fecharTudo(); await abrir('craft:solidcraft');
+    const im = pagina.locator('.janela.ativa > .titulo img'); await im.evaluate((el) => el.decode());
+    if (!(await im.getAttribute('src')).startsWith('data:image/svg+xml,')) throw new Error('A instalação antiga não ganhou o ícone na janela.');
+    await foto('craft-icone-instalacao-antiga');
+    await fecharTudo();
+    await pagina.evaluate(async () => { const { aplicarTema } = await import('./js/tema.js'); aplicarTema('mac'); });
+    await abrir('programas');
+    await pagina.waitForTimeout(400);
+    await pagina.waitForFunction(() => { const p = window.__retro.janelas.lista.find((j) => j.programas)?.programas; return p && !p.atualizandoLista && !p.btProcurar.disabled; });
+    await pagina.locator('.linha-programa', { hasText: 'SolidCraft' }).first().scrollIntoViewIfNeeded();
+    await pagina.waitForTimeout(150); await foto('craft-icones-tema-mac');
+    console.log('Craft: três desenhos diferentes no catálogo, título e tema Mac; sem reinstalar.');
+  },
+  async fundoMac() {
+    await fecharTudo();
+    await pagina.evaluate(async () => {
+      const s = await import('./js/sistema.js'), a = await import('./js/aparencia.js'), t = await import('./js/tema.js');
+      await s.definirConfig({ tema: 'mac', papel: { cor: '#800000', padrao: 'losangos', imagem: null } }); t.aplicarTema('mac'); a.aplicarFundo(s.estado.config.papel);
+    });
+    await abrir('painel', { secao: 'aparencia' });
+    const cor = pagina.getByRole('button', { name: T('Cor original do Mac'), exact: true });
+    await cor.focus(); await pagina.keyboard.press('Enter');
+    if (!await cor.evaluate((el) => el.classList.contains('sel'))) throw new Error('A cor original precisa ser uma predefinição acessível pelo teclado.');
+    await foto('fundo-mac-predefinicao');
+    await pagina.locator('.cores [data-cor="#008000"]').click();
+    await pagina.getByRole('button', { name: T('Restaurar fundo original do tema'), exact: true }).click();
+    await pagina.getByRole('button', { name: T('OK'), exact: true }).click();
+    await pagina.waitForFunction(() => window.__retro.estado.config.papel.cor === '#6a6aa8' && window.__retro.estado.config.papel.padrao === 'nenhum');
+    await foto('fundo-mac-restaurado');
+    // Cancelar uma restauração deve conservar a escolha anterior.
+    await pagina.evaluate(async () => { const s = await import('./js/sistema.js'); await s.definirConfig({ papel: { cor: '#800000', padrao: 'losangos' } }); });
+    await abrir('painel', { secao: 'aparencia' });
+    await pagina.getByRole('button', { name: T('Restaurar fundo original do tema'), exact: true }).click();
+    await pagina.getByRole('button', { name: T('Cancelar'), exact: true }).click();
+    if (!await pagina.evaluate(() => window.__retro.estado.config.papel.cor === '#800000' && window.__retro.estado.config.papel.padrao === 'losangos')) throw new Error('Cancelar aplicou a restauração.');
+    console.log('Fundo Mac: predefinição por teclado, restauração e Cancelar conferidos.');
+  },
+
+  async breakout() {
+    const assert = (ok, texto) => { if (!ok) throw new Error(texto); };
+    await fecharTudo();
+    await pagina.evaluate(async () => {
+      const s = await import('./js/sistema.js');
+      await s.definirConfig({ jogos: { ...(s.estado.config.jogos || {}), breakout: { recorde: 123456, maiorFase: 1, som: true } } });
+      window.__breakoutRoteiro = await s.abrir('breakout');
+    });
+    await pagina.waitForTimeout(350);
+    await foto('breakout-inicio');
+    await pagina.getByRole('button', { name: T('Fases…'), exact: true }).click();
+    assert(await pagina.locator('.bo-fases button:disabled').count() === 23, 'As fases futuras devem começar bloqueadas.');
+    await foto('breakout-fases-bloqueadas');
+    await pagina.getByRole('button', { name: T('Voltar'), exact: true }).click();
+    await pagina.keyboard.press('p'); // retorna da pausa feita pelo seletor
+    await pagina.keyboard.press('Space');
+    await pagina.keyboard.down('ArrowRight'); await pagina.waitForTimeout(150); await pagina.keyboard.up('ArrowRight');
+    const teclado = await pagina.evaluate(() => ({ x: window.__breakoutRoteiro.motor.raquete.x, estado: window.__breakoutRoteiro.motor.estado }));
+    assert(teclado.x > 220 && teclado.estado === 'jogando', 'O teclado deve mover a raquete e lançar.');
+    const campo = pagina.locator('.bo-campo'); let r = await campo.boundingBox();
+    await pagina.mouse.move(r.x + r.width * 0.25, r.y + r.height * 0.9);
+    assert(await pagina.evaluate(() => Math.abs(window.__breakoutRoteiro.motor.raquete.x + window.__breakoutRoteiro.motor.raquete.w / 2 - 120) < 2), 'O mouse deve respeitar a escala do campo.');
+    await abrir('calculadora');
+    const parado = await pagina.evaluate(() => { const b = window.__breakoutRoteiro; return [b.motor.estado, JSON.stringify(b.motor.bolas), b.teclas.size]; });
+    await pagina.waitForTimeout(150);
+    assert(parado[0] === 'pausa' && parado[2] === 0 && await pagina.evaluate(() => JSON.stringify(window.__breakoutRoteiro.motor.bolas)) === parado[1], 'Trocar de janela deve pausar e soltar as teclas.');
+    await pagina.evaluate(() => { const b = window.__breakoutRoteiro; b.j.focar(); b.acao(); });
+    // A última bola acerta de fato o último tijolo; as outras peças são removidas para encurtar o roteiro.
+    await pagina.evaluate(() => {
+      const b = window.__breakoutRoteiro, m = b.motor;
+      for (let fase = 0; fase < 5; fase++) {
+        if (m.estado === 'pronto') m.acao();
+        const ultimo = m.tijolos.find((t) => t.tipo !== '#');
+        for (const t of m.tijolos) if (t !== ultimo && t.tipo !== '#') t.vivo = false;
+        ultimo.vidas = 1;
+        m.bolas = [{ x: ultimo.x + ultimo.w / 2, y: ultimo.y + ultimo.h + 6, vx: 0, vy: -500 }];
+        m.passo(0.02);
+        if (m.estado !== 'passou') throw new Error('A colisão deve concluir a fase.');
+        b.salvar(); m.acao();
+      }
+      m.acao();
+      // Todos os bônus passam pela coleta normal da raquete, não por uma tela de demonstração.
+      const tipos = ['larga', 'multi', 'laser', 'lenta', 'ima', 'escudo', 'fogo', 'vida'];
+      m.poderes = tipos.map((tipo) => ({ tipo, x: m.raquete.x + 24, y: 397, w: 20, h: 16 }));
+      m.passo(0.01);
+      m.bolas.forEach((b, i) => { b.x = 200 + i * 40; b.y = 280 + i * 25; });
+    });
+    await pagina.waitForFunction(() => window.__breakoutRoteiro.motor.efeitos.fogo > 0 && window.__breakoutRoteiro.motor.bolas.length === 3);
+    await pagina.keyboard.down('Space'); await pagina.waitForTimeout(90); await pagina.keyboard.up('Space');
+    await foto('breakout-powerups');
+    const efeitos = await pagina.evaluate(() => {
+      const b = window.__breakoutRoteiro, m = b.motor; b.pausar();
+      return { fase: m.fase, bolas: m.bolas.length, efeitos: Object.keys(m.efeitos), escudo: m.escudo, vidas: m.vidas, largura: m.raquete.w };
+    });
+    assert(efeitos.fase === 5 && efeitos.bolas === 3 && efeitos.efeitos.length === 5 && efeitos.escudo === 2 && efeitos.vidas === 4 && efeitos.largura === 116, 'Os oito poderes devem funcionar juntos.');
+    await pagina.getByRole('button', { name: T('Como jogar'), exact: true }).click();
+    assert(await pagina.locator('.bo-legenda > div').count() === 8, 'A ajuda deve explicar os oito poderes.');
+    await foto('breakout-ajuda');
+    await pagina.getByRole('button', { name: T('Voltar'), exact: true }).click();
+    await pagina.getByRole('button', { name: T('Fases…'), exact: true }).click();
+    assert(await pagina.locator('.bo-fases button:not(:disabled)').count() === 6, 'O progresso deve desbloquear seis fases.');
+    await foto('breakout-fases');
+    await pagina.locator('.bo-fases button').nth(5).click();
+    assert(await pagina.evaluate(() => window.__breakoutRoteiro.motor.fase === 5 && window.__breakoutRoteiro.motor.pontos === 0), 'Escolher uma fase deve iniciar nova partida nela.');
+    // Redimensionamento, alinhamento do mouse e teclado com o campo menor.
+    await pagina.evaluate(() => { const j = window.__breakoutRoteiro.j; j.ret.w = 390; j.ret.h = 490; j.aplicarRet(); });
+    await pagina.waitForTimeout(150); r = await campo.boundingBox();
+    await pagina.mouse.move(r.x + r.width * 0.75, r.y + r.height * 0.8);
+    assert(Math.abs(r.width / r.height - 480 / 440) < 0.01, 'O campo deve preservar a proporção.');
+    assert(await pagina.evaluate(() => Math.abs(window.__breakoutRoteiro.motor.raquete.x + 36 - 360) < 3), 'O mouse deve alinhar após redimensionar.');
+    await foto('breakout-compacto');
+    await pagina.keyboard.press('F2');
+    assert(await pagina.evaluate(() => window.__breakoutRoteiro.motor.fase === 0 && window.__breakoutRoteiro.recorde >= 123456 && window.__breakoutRoteiro.desbloqueada === 6), 'F2 não pode apagar recorde ou desbloqueios.');
+    await fecharTudo();
+    const encerrou = new Promise((resolve) => app.process().once('exit', resolve));
+    await app.evaluate(({ app: a }) => a.exit(0)); await encerrou; await lancar();
+    await pagina.waitForSelector('#iniciar', { timeout: 30000 }); await fecharTudo();
+    await pagina.evaluate(async () => { window.__breakoutRoteiro = await window.__retro.abrir('breakout'); });
+    const salvo = await pagina.evaluate(() => { const b = window.__breakoutRoteiro; return { recorde: b.recorde, desbloqueada: b.desbloqueada }; });
+    assert(salvo.recorde >= 123456 && salvo.desbloqueada === 6, 'O progresso deve sobreviver ao reiniciar o aplicativo.');
+    await foto('breakout-reaberto');
+    console.log('breakout:', JSON.stringify({ teclado, efeitos, salvo }));
+  },
+
   async jogos() {
     await fecharTudo();
     const regras = await pagina.evaluate(async () => {

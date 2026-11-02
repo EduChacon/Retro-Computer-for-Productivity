@@ -615,7 +615,7 @@ const TOPICOS = [
 <h2>Mac Plus</h2>
 <p>O <b>Mac Plus</b> (em Acessórios) é o PCE.js, um emulador do Macintosh da época, em preto e branco e sem internet, para jogos como o SimAnt. Nada da Apple vem com o Retro Computer: ponha na pasta <b>C:\\Mac</b> a imagem da ROM do seu Mac (um arquivo .rom: 128 KB no Mac Plus, 256 KB no Mac SE ou 512 KB no Mac Classic), o disquete do Sistema (o System 6 ou o 7) e os disquetes dos jogos (.dsk, .img ou .image, do Disk Copy 4.2). O disco com <b>System</b>, <b>Sistema</b> ou <b>Boot</b> no nome vai na primeira unidade, e o Mac parte por ele; dois cliques num disco do Mac o abrem junto. A tecla Alt faz o papel da Command, e a Ctrl, o da Option. O que o Mac gravar volta para o disco ao fechar a janela, com a versão de antes de ligá-lo guardada.</p>
 <h2>Jogos</h2>
-<p>Paciência, Campo Minado e Breakout, para as pausas.</p>
+<p>Paciência, Campo Minado e <b>Breakout</b>, para as pausas. O Breakout tem 24 fases próprias, tijolos reforçados, aço, explosões, combos e oito power-ups: raquete larga, multibola, laser, bola lenta, ímã, escudo, fogo e vida extra. Mouse, toque ou setas movem a raquete; Espaço lança e dispara; P pausa. Em <b>Fases…</b>, recomece de uma fase desbloqueada. O recorde e os desbloqueios ficam salvos; fechar não guarda a partida em andamento.</p>
 <p><b>Damas</b> (as regras brasileiras ou as inglesas, em Jogo › Regras) e <b>Xadrez</b>: contra o computador, em três níveis, ou entre duas pessoas no mesmo computador. Clique na peça e depois na casa (ou arraste); Jogo › Desfazer (Ctrl+Z) volta o último lance. A partida fica guardada: fechar a janela não a perde.</p>`],
     en: ['Accessories and games', `
 <h2>In Start › Programs › Accessories</h2>
@@ -633,7 +633,7 @@ const TOPICOS = [
 <h2>Mac Plus</h2>
 <p><b>Mac Plus</b> (in Accessories) is PCE.js, an emulator of the Macintosh of the time, in black and white and without the internet, for games such as SimAnt. Nothing from Apple comes with Retro Computer: put in the <b>C:\\Mac</b> folder the ROM image of your Mac (a .rom file: 128 KB for the Mac Plus, 256 KB for the Mac SE or 512 KB for the Mac Classic), the System floppy (System 6 or 7) and the floppies of your games (.dsk, .img or .image, from Disk Copy 4.2). The disk with <b>System</b> or <b>Boot</b> in its name goes into the first drive, and the Mac starts from it; double-clicking a Mac disk opens it as well. The Alt key works as Command, and Ctrl as Option. What the Mac writes goes back to the disk when you close the window, with the version from before it was started kept.</p>
 <h2>Games</h2>
-<p>Solitaire, Minesweeper and Breakout, for the breaks.</p>
+<p>Solitaire, Minesweeper and <b>Breakout</b>, for the breaks. Breakout has 24 original levels, reinforced and steel bricks, explosions, combos and eight power-ups: wide paddle, multiball, laser, slow ball, magnet, shield, fireball and extra life. Mouse, touch or arrows move the paddle; Space launches and fires; P pauses. Use <b>Levels…</b> to start from an unlocked level. Your best score and unlocks are saved; closing does not save the ongoing game.</p>
 <p><b>Checkers</b> (Brazilian draughts or American checkers, in Game › Rules) and <b>Chess</b>: against the computer, at three levels, or between two people on the same computer. Click a piece and then the square (or drag it); Game › Undo (Ctrl+Z) takes back the last move. The game is saved: closing the window does not lose it.</p>`],
     es: ['Accesorios y juegos', `
 <h2>En Inicio › Programas › Accesorios</h2>
@@ -651,7 +651,7 @@ const TOPICOS = [
 <h2>Mac Plus</h2>
 <p>El <b>Mac Plus</b> (en Accesorios) es PCE.js, un emulador del Macintosh de la época, en blanco y negro y sin internet, para juegos como SimAnt. Nada de Apple viene con Retro Computer: pon en la carpeta <b>C:\\Mac</b> la imagen de la ROM de tu Mac (un archivo .rom: 128 KB en el Mac Plus, 256 KB en el Mac SE o 512 KB en el Mac Classic), el disquete del Sistema (el System 6 o el 7) y los disquetes de los juegos (.dsk, .img o .image, de Disk Copy 4.2). El disco con <b>System</b>, <b>Sistema</b> o <b>Boot</b> en el nombre va en la primera unidad, y el Mac arranca desde él; un doble clic en un disco del Mac lo abre también. La tecla Alt hace de Command, y Ctrl, de Option. Lo que el Mac grabe vuelve al disco al cerrar la ventana, con la versión de antes de encenderlo guardada.</p>
 <h2>Juegos</h2>
-<p>Solitario, Buscaminas y Breakout, para las pausas.</p>
+<p>Solitario, Buscaminas y <b>Breakout</b>, para las pausas. Breakout tiene 24 niveles originales, ladrillos reforzados y de acero, explosiones, combos y ocho potenciadores: paleta ancha, multibola, láser, bola lenta, imán, escudo, fuego y vida extra. El ratón, el tacto o las flechas mueven la paleta; Espacio lanza y dispara; P pausa. En <b>Niveles…</b>, empieza desde un nivel desbloqueado. El récord y los desbloqueos se guardan; cerrar no conserva la partida en curso.</p>
 <p><b>Damas</b> (las reglas brasileñas o las inglesas, en Juego › Reglas) y <b>Ajedrez</b>: contra la computadora, en tres niveles, o entre dos personas en la misma computadora. Haz clic en la pieza y luego en la casilla (o arrástrala); Juego › Deshacer (Ctrl+Z) vuelve la última jugada. La partida queda guardada: cerrar la ventana no la pierde.</p>`],
   },
   {

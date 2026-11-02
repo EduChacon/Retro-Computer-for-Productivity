@@ -94,6 +94,15 @@ jobs:
           sudo apt-get update && sudo apt-get install -y xvfb
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas geral
           RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en geral
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas iconesCraft
+          RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en iconesCraft
+          RETRO_IDIOMA=es xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/es iconesCraft
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas fundoMac
+          RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en fundoMac
+          RETRO_IDIOMA=es xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/es fundoMac
+          xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas breakout
+          RETRO_IDIOMA=en xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/en breakout
+          RETRO_IDIOMA=es xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas/es breakout
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas laboratorio
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas codex
           xvfb-run -a -s "-screen 0 1280x800x24" node testes/capturas.mjs capturas codexInstalar
@@ -155,6 +164,9 @@ jobs:
           if [ "$RUNNER_ARCH" = "ARM64" ]; then pasta="dist/mac-arm64"; else pasta="dist/mac"; fi
           codesign --verify --deep --strict --verbose=2 "$pasta/Retro Computer.app"
           export RETRO_EXECUTAVEL="$PWD/$pasta/Retro Computer.app/Contents/MacOS/Retro Computer"
+          node testes/capturas.mjs capturas-mac iconesCraft
+          node testes/capturas.mjs capturas-mac fundoMac
+          node testes/capturas.mjs capturas-mac breakout
           node testes/capturas.mjs capturas-mac laboratorio
           node testes/capturas.mjs capturas-mac codex
           node testes/capturas.mjs capturas-mac mascotes
@@ -167,6 +179,12 @@ jobs:
         shell: pwsh
         run: |
           $env:RETRO_EXECUTAVEL = Join-Path $PWD 'dist/win-unpacked/Retro Computer.exe'
+          node testes/capturas.mjs capturas-codex iconesCraft
+          if ($LASTEXITCODE -ne 0) { throw 'O teste dos ícones dos Craft falhou.' }
+          node testes/capturas.mjs capturas-codex fundoMac
+          if ($LASTEXITCODE -ne 0) { throw 'O teste do fundo do tema Mac falhou.' }
+          node testes/capturas.mjs capturas-codex breakout
+          if ($LASTEXITCODE -ne 0) { throw 'O teste do Breakout empacotado falhou.' }
           node testes/capturas.mjs capturas-codex codex
           node testes/capturas.mjs capturas-codex codexInstalar
           node testes/capturas.mjs capturas-codex mascotes

@@ -38,6 +38,10 @@ O caminho para a assinatura e o custo dela estão em [instalacao.md](instalacao.
 
 **No pendrive**: com uma pasta `Retro Computer (dados)` ao lado do programa sem instalador (o `.zip` do Windows, o `.AppImage` do Linux ou o aplicativo do Mac), o Retro Computer entra no modo portátil: as configurações, os programas e o disco C: ficam nela, e nada fica no computador. O Linux Mint inteiro também pode ir num pendrive ou SSD externo; os dois caminhos estão em [instalacao.md](instalacao.md), seção 8.
 
+Em Aparência › Plano de fundo, **Cor original do Mac** está na paleta. **Restaurar fundo original do tema** recupera a cor e o padrão do tema escolhido, retirando a seleção atual de imagem sem apagar as imagens guardadas; confirme em Aplicar ou OK. Os novos Craft têm ícones próprios e os futuros programas descobertos recebem monogramas locais.
+
+O **Breakout** agora tem 24 fases e oito power-ups. Veja os [controles e as regras](breakout.md).
+
 ## 2. O dia a dia
 
 | Para… | Faça |

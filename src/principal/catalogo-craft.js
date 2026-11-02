@@ -24,7 +24,7 @@ function lerLista(texto) {
 }
 function entrada(p) {
   if (!p || !ID.test(p.id) || !REPO.test(p.repo) || p.repo.split('/')[1] !== p.id || typeof p.nome !== 'string' || p.nome.length > 80 || !/^\d+\.\d+\.\d+(?:[.-][\w.-]+)?$/.test(p.versaoConhecida || '')) return null;
-  return { id: p.id, nome: p.nome, repo: p.repo, versaoConhecida: p.versaoConhecida, icone: 'programa', tipos: [],
+  return { id: p.id, nome: p.nome, repo: p.repo, versaoConhecida: p.versaoConhecida, icone: 'craft-auto-' + p.id, tipos: [],
     categoria: { 'pt-BR': 'Novos Craft', en: 'New Craft apps', es: 'Nuevos Craft' },
     descricao: { 'pt-BR': 'Programa da lista oficial dos Craft, com versão para navegador.', en: 'An app from the official Craft list, with a browser release.', es: 'Programa de la lista oficial de Craft, con versión para navegador.' } };
 }
@@ -38,7 +38,7 @@ class CatalogoCraft {
       if (Number.isFinite(c.verificadoEm) && c.verificadoEm <= agora()) this.verificadoEm = c.verificadoEm;
     } catch { }
   }
-  lista() { return [...BASE, ...this.extras.filter((p) => !BASE.some((b) => b.id === p.id))]; }
+  lista() { return [...BASE, ...this.extras.filter((p) => !BASE.some((b) => b.id === p.id))].map((p) => p.icone === 'programa' ? { ...p, icone: 'craft-auto-' + p.id } : p); }
   async atualizar({ forcar = false } = {}) {
     if (this.pendente) return this.pendente;
     if (!forcar && this.agora() - Math.max(this.verificadoEm, this.tentadoEm) < INTERVALO) return { atualizado: false };

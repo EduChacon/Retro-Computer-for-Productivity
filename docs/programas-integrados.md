@@ -22,6 +22,8 @@ O auxiliar usa uma janela hospedeira independente do processo do Retro. Se o Ret
 
 ## Mac: controles da janela original
 
+Na 2.6.0, o botão no Mac se chama **Controlar janela do Mac…**, inclusive no menu do programa. Ele não incorpora o conteúdo nativo à moldura do Retro. Quando há uma versão web associada, o botão se chama **Abrir versão web no Retro…**. O painel de controles também oferece **Usar versão web no Retro…**, para cadastrar essa alternativa sem procurar o menu de novo.
+
 O macOS não oferece incorporação geral de janelas de outros processos. O modo do Mac mostra isso claramente: a janela do Retro oferece **Focar programa**, **Minimizar programa**, **Fechar programa…** e **Organizar lado a lado**. A janela original mantém a moldura do macOS. Fechar o painel do Retro mantém o programa aberto.
 
 No primeiro uso, clique em **Permitir controle de janelas…**. Em **Ajustes do Sistema › Privacidade e Segurança › Acessibilidade**, permita o controle ao Retro Computer ou ao auxiliar `retro-janelas-mac`, conforme o nome mostrado pelo sistema. Volte ao Retro e clique em **Tentar novamente**. A solicitação só ocorre por esse botão; a integração usa a API pública de Acessibilidade e não pede gravação de tela.

@@ -34,6 +34,8 @@ export async function alternarNoMenu(id, nome) {
 
 export const integradoPorPadrao = (id) => (cfg().integrados || []).includes(id);
 export const versaoWeb = (id) => (cfg().web || {})[id] || null;
+export const controlesMac = (id) => estado.config.plataforma === 'darwin' && !versaoWeb(id);
+export const rotuloIntegracao = (id, menu = false) => versaoWeb(id) ? tr('Abrir versão web no Retro…') : controlesMac(id) ? tr('Controlar janela do Mac…') : menu ? tr('Abrir integrado ao Retro…') : tr('Abrir integrado…');
 
 export async function alternarIntegrado(id) {
   const lista = cfg().integrados || [];

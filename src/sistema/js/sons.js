@@ -164,6 +164,15 @@ const SONS = {
     const t = contexto().currentTime + 0.005;
     nota(hz(84), t, 0.06, { tipo: 'square', vol: 0.045, soltura: 0.04, destino: saidaSeca() });
   },
+  bonusBreakout() {
+    const t = contexto().currentTime + 0.005, s = saidaSeca();
+    [72, 76, 79].forEach((n, i) => nota(hz(n), t + i * 0.045, 0.09, { tipo: 'square', vol: 0.035, soltura: 0.06, destino: s }));
+  },
+  laserBreakout() {
+    const t = contexto().currentTime + 0.005, s = saidaSeca();
+    nota(hz(91), t, 0.045, { tipo: 'triangle', vol: 0.035, soltura: 0.03, destino: s });
+    nota(hz(79), t + 0.025, 0.05, { tipo: 'triangle', vol: 0.025, soltura: 0.04, destino: s });
+  },
   parede() {
     const t = contexto().currentTime + 0.005;
     nota(hz(60), t, 0.05, { tipo: 'square', vol: 0.035, soltura: 0.04, destino: saidaSeca() });

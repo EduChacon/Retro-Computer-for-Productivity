@@ -4,8 +4,10 @@
 
 Una computadora retro para la productividad: el escritorio de una PC de los años 90, con tus programas de trabajo, tus archivos y Claude Code, sin las distracciones de la computadora de hoy. Funciona en Windows, macOS y Linux (incluida la Raspberry Pi), y en Linux puede ser el sistema completo de la computadora, convirtiendo una laptop vieja o una mini PC en una computadora retro dedicada. Código abierto (licencia MIT).
 
-- **Versión:** 2.5.2 · [Descargar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Versión:** 2.6.0 · [Descargar](https://github.com/EduChacon/Retro-Computer-for-Productivity/releases/latest)
+- **Breakout:** 24 niveles originales, ocho potenciadores, combos y niveles desbloqueados guardados, con gráficos retro y sonidos sintetizados.
 - **Google Calendar:** sincronización de la Agenda en ambos sentidos, cambios sin internet y resolución explícita de conflictos; requiere configurar OAuth de Google.
+- **Apariencia:** iconos propios para los nuevos Craft y restauración del fondo original del tema. En Mac, los controles de la ventana nativa se identifican aparte de la versión web interna.
 - **Programas integrados:** marco retro experimental para programas compatibles de Windows, controles de ventanas de Mac y versiones web internas. [Guía](docs/programas-integrados.md)
 - **Asistente:** ocho mascotas animadas, chat integrado con Claude Code o Codex, archivos adjuntos y herramientas del sistema retro.
 - **Idiomas:** español, inglés y portugués (Panel de control › Idioma)
