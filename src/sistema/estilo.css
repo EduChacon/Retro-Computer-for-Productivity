@@ -1286,8 +1286,32 @@ button.cm-rosto:active { padding: 1px 0 0 1px; }
 .cm-c.n5 { color: #800000; } .cm-c.n6 { color: #008080; } .cm-c.n7 { color: #000; } .cm-c.n8 { color: #808080; }
 
 /* Breakout */
-.breakout .corpo { padding: 2px; }
-.bo-campo { display: block; outline: none; box-shadow: 0 0 0 1px var(--escuro); touch-action: none; image-rendering: pixelated; }
+.breakout .corpo { padding: 6px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+.bo-placar { display: flex; gap: 6px; padding: 5px 8px; background: #101d30; color: #edf7ff; box-shadow: inset 1px 1px var(--escuro), inset -1px -1px var(--claro); }
+.bo-placar > div { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.bo-placar > div + div { border-left: 1px solid #40516a; padding-left: 6px; }
+.bo-placar span { color: #a9bed5; font-size: 11px; }
+.bo-placar strong { font: bold 16px monospace; font-variant-numeric: tabular-nums; }
+.bo-fase { text-align: center; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bo-area { flex: 1; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; background: #080f1b; box-shadow: inset 1px 1px var(--escuro), inset -1px -1px var(--claro); overflow: hidden; }
+.bo-campo { display: block; flex-shrink: 0; outline: none; touch-action: none; image-rendering: pixelated; }
+.bo-campo:focus-visible { outline: 1px dotted #e6edf5; outline-offset: -3px; }
+.bo-efeitos { display: flex; flex-wrap: wrap; gap: 3px; min-height: 22px; align-items: center; }
+.bo-efeito { border: 1px solid; padding: 1px 4px; font-size: 11px; }
+.bo-espera, .bo-dica { color: var(--texto-meio); font-size: 11px; }
+.bo-comandos { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+.bo-comandos button { min-width: 70px; }
+.bo-dica { text-align: center; }
+.bo-dialogo .corpo { padding: 10px; }
+.bo-dialogo p { margin: 0 0 10px; }
+.bo-fases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
+.bo-fases button { padding: 4px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.bo-fases canvas { width: 96px; height: 48px; max-width: 100%; image-rendering: pixelated; }
+.bo-fases span { max-width: 96px; width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; }
+.bo-fases button:disabled canvas { opacity: .35; }
+.bo-legenda { display: grid; gap: 7px; margin-bottom: 12px; }
+.bo-legenda > div { display: flex; gap: 8px; align-items: center; }
+.bo-legenda strong { width: 24px; height: 22px; display: grid; place-items: center; flex-shrink: 0; font: bold 12px monospace; box-shadow: inset 1px 1px #ffffff80, inset -1px -1px #0006; }
 
 /* Painel › Barra de tarefas e menu Iniciar: as listas dos fixados */
 .lp-topo { display: flex; gap: 6px; }
