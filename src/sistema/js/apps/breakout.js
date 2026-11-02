@@ -141,7 +141,7 @@ class Breakout {
     const m = this.motor;
     this.recorde = Math.max(this.recorde, m.pontos);
     this.desbloqueada = Math.max(this.desbloqueada, m.maiorFase + 1);
-    const placar = [tr('Pontos'), String(m.pontos).padStart(6, '0'), tr('Recorde'), String(this.recorde).padStart(6, '0'), tr('Vidas'), String(m.vidas)].join('|');
+    const placar = [tr('Placar'), String(m.pontos).padStart(6, '0'), tr('Recorde'), String(this.recorde).padStart(6, '0'), tr('Vidas'), String(m.vidas)].join('|');
     if (placar !== this.ultimoPlacar) {
       this.ultimoPlacar = placar;
       const partes = placar.split('|');

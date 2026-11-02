@@ -172,6 +172,7 @@ jobs:
         run: |
           $env:RETRO_EXECUTAVEL = Join-Path $PWD 'dist/win-unpacked/Retro Computer.exe'
           node testes/capturas.mjs capturas-codex breakout
+          if ($LASTEXITCODE -ne 0) { throw 'O teste do Breakout empacotado falhou.' }
           node testes/capturas.mjs capturas-codex codex
           node testes/capturas.mjs capturas-codex codexInstalar
           node testes/capturas.mjs capturas-codex mascotes
